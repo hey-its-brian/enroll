@@ -1019,6 +1019,51 @@ RSpec.describe ConsumerRole, dbclean: :after_each, type: :model do
       end
     end
 
+    describe "#update_verification_type" do
+      let(:person) {FactoryBot.create(:person, :with_consumer_role) }
+      let(:consumer) { person.consumer_role }
+      let!(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+      let(:product) { FactoryBot.create(:benefit_markets_products_health_products_health_product, benefit_market_kind: :aca_individual, kind: :health, csr_variant_id: '01') }
+      let!(:hbx_enrollment) { FactoryBot.create(:hbx_enrollment, family: family, product: product, household: family.active_household, aasm_state: "unverified", kind: 'individual') }
+      let!(:hbx_enrollment_member) { FactoryBot.create(:hbx_enrollment_member, applicant_id: family.primary_applicant.id, eligibility_date: (TimeKeeper.date_of_record - 10.days), hbx_enrollment: hbx_enrollment) }
+      let!(:enrollment) {consumer.person.primary_family.active_household.hbx_enrollments.first}
+
+      before do
+        allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+        allow(EnrollRegistry[:indian_alaskan_tribe_details].feature).to receive(:is_enabled).and_return(false)
+        person.dob = TimeKeeper.date_of_record - 25.to_i.years
+        consumer.update_attributes!(aasm_state: "verification_outstanding")
+        consumer.save
+        person.verification_types.by_name("Social Security Number").first.update_attributes(validation_status: 'verified')
+        person.verification_types.by_name("DC Residency").first.update_attributes(validation_status: 'verified')
+        enrollment.update_attributes!(is_any_enrollment_member_outstanding: true)
+      end
+      it "returns array of verification types" do
+        expect(person.verification_types.class).to be Array
+      end
+
+      it "returns verification types" do
+        expect(consumer.verification_types.count).to eq 4
+      end
+
+      it "contains verification types" do
+        expect(consumer.verification_types.map(&:type_name)).to eq [VerificationType::LOCATION_RESIDENCY, "Social Security Number", "Citizenship", "Alive Status"]
+      end
+
+      context 'admin verifies Citizenship' do
+        it 'consumer aasm state should be in fully_verified if all verification types are verified' do
+          citizenship = person.verification_types.by_name("Citizenship").first
+          consumer.update_verification_type(citizenship, "update_reason")
+          enrollment.reload
+          expect(consumer.aasm_state).to eq 'fully_verified'
+          expect(enrollment.is_any_enrollment_member_outstanding).to eq false
+          expect(enrollment.aasm_state).to eq "coverage_selected"
+          expect(consumer.all_types_verified?).to eq true
+          expect(person.verification_types.by_name("Alive Status").first.validation_status).to eq "unverified"
+        end
+      end
+    end
+
     describe "#check_native_status" do
       let(:person) {FactoryBot.create(:person, :with_consumer_role)}
       let(:consumer_role) {person.consumer_role}

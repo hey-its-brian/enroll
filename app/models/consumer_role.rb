@@ -360,7 +360,11 @@ class ConsumerRole
   end
 
   def all_types_verified?
-    verification_types.all?{ |type| type.type_verified? }
+    status = []
+    status << verification_types.without_alive_status_type.all?(&:type_verified?)
+    alive_status_type = verification_types.alive_status_type.first
+    status << alive_status_type.type_verified? if alive_status_type.present? && alive_status_type.validation_status == "outstanding"
+    status.all?
   end
 
   def local_residency_outstanding?
@@ -1222,7 +1226,7 @@ class ConsumerRole
 
   def update_all_verification_types(*args)
     authority = (args.first && args.first[:authority]) ? args.first[:authority] : lawful_presence_determination.try(:vlp_authority)
-    verification_types.each do |v_type|
+    verification_types.without_alive_status_type.each do |v_type|
       update_verification_type(v_type, "fully verified by curam", authority)
     end
   end
