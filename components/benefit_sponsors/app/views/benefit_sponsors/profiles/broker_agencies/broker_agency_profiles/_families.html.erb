@@ -60,6 +60,66 @@
             }
           },
           "columns": filteredColumnList,
+          "buttons": [
+            {
+              extend: 'copy',
+              exportOptions: {
+                format: {
+                  header: function(str) { return $("<div>" + str + "</div>").text().trim(); },
+                  body: function(data, row, column, node) {
+                    if (typeof data === 'string' && data.includes('<')) {
+                      return $(node).text().trim();
+                    }
+                    return data;
+                  }
+                },
+                columns: ':not(.col-actions)'
+              }
+            },
+            {
+              extend: 'excel',
+              exportOptions: {
+                format: {
+                  header: function(str) { return $("<div>" + str + "</div>").text().trim(); },
+                  body: function(data, row, column, node) {
+                    if (typeof data === 'string' && data.includes('<')) {
+                      return $(node).text().trim();
+                    }
+                    return data;
+                  }
+                },
+                columns: ':not(.col-actions)'
+              }
+            },
+            {
+              extend: 'csv',
+              exportOptions: {
+                format: {
+                  header: function(str) { return $("<div>" + str + "</div>").text().trim(); },
+                  body: function(data, row, column, node) {
+                    if (typeof data === 'string' && data.includes('<')) {
+                      return $(node).text().trim();
+                    }
+                    return data;
+                  }
+                },
+                columns: ':not(.col-actions)'
+              }
+            },
+            {
+              extend: 'print',
+              exportOptions: {
+                columns: ':not(.col-actions)'
+              },
+              customize: function(win) {
+                // Convert any HTML in the print view to plain text
+                $(win.document.body).find('table').find('td,th').each(function() {
+                  var $cell = $(this);
+                  $cell.text($cell.text().trim());
+                });
+              }
+            }
+          ],
           'dom': "<'d-flex align-items-center w-100 justify-content-between mb-4'" +
           "Bf" +
           ">" +
@@ -154,6 +214,66 @@
             }
           },
           "columns": filteredColumnList,
+          "buttons": [
+            {
+              extend: 'copy',
+              exportOptions: {
+                format: {
+                  header: function(str) { return $("<div>" + str + "</div>").text().trim(); },
+                  body: function(data, row, column, node) {
+                    if (typeof data === 'string' && data.includes('<')) {
+                      return $(node).text().trim();
+                    }
+                    return data;
+                  }
+                },
+                columns: ':not(.col-actions)'
+              }
+            },
+            {
+              extend: 'excel',
+              exportOptions: {
+                format: {
+                  header: function(str) { return $("<div>" + str + "</div>").text().trim(); },
+                  body: function(data, row, column, node) {
+                    if (typeof data === 'string' && data.includes('<')) {
+                      return $(node).text().trim();
+                    }
+                    return data;
+                  }
+                },
+                columns: ':not(.col-actions)'
+              }
+            },
+            {
+              extend: 'csv',
+              exportOptions: {
+                format: {
+                  header: function(str) { return $("<div>" + str + "</div>").text().trim(); },
+                  body: function(data, row, column, node) {
+                    if (typeof data === 'string' && data.includes('<')) {
+                      return $(node).text().trim();
+                    }
+                    return data;
+                  }
+                },
+                columns: ':not(.col-actions)'
+              }
+            },
+            {
+              extend: 'print',
+              exportOptions: {
+                columns: ':not(.col-actions)'
+              },
+              customize: function(win) {
+                // Convert any HTML in the print view to plain text
+                $(win.document.body).find('table').find('td,th').each(function() {
+                  var $cell = $(this);
+                  $cell.text($cell.text().trim());
+                });
+              }
+            }
+          ],
           'dom': "<'row'" +
           "<'col-sm-7 col-md-7'B><'col-sm-5 col-md-5'f>" +
           ">" +

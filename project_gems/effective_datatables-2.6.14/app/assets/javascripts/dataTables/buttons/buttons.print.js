@@ -77,6 +77,9 @@ DataTable.ext.buttons.print = {
 	action: function ( e, dt, button, config ) {
 		// Function to remove href tags
 		function removeHrefTags(data) {
+			if (!data || typeof data !== 'string') {
+				return data || '';
+			}
 			return data.replace(/<a\b[^>]*>(.*?)<\/a>/gi, '$1');
 		}
 
