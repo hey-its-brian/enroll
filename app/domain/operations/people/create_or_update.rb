@@ -66,9 +66,14 @@ module Operations
       end
 
       def update_existing_person(person, person_entity)
+        person_params = person_entity.to_h
         attributes_to_exclude = %i[addresses phones emails hbx_id]
-        attributes_to_exclude << :is_incarcerated if person_entity.to_h[:is_incarcerated].nil?
-        person.assign_attributes(person_entity.except(*attributes_to_exclude))
+        if person.is_incarcerated && person_params[:is_incarcerated].nil?
+          attributes_to_exclude << :is_incarcerated
+        else
+          person_params[:is_incarcerated] = person_params[:is_incarcerated].nil? ? false : person_params[:is_incarcerated]
+        end
+        person.assign_attributes(person_params.except(*attributes_to_exclude))
         person.save!
 
         %i[addresses emails phones].each do |association|

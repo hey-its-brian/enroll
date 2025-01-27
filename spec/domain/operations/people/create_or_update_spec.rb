@@ -72,7 +72,7 @@ RSpec.describe Operations::People::CreateOrUpdate, type: :model, dbclean: :after
         end
       end
 
-      context 'nil incarceration status' do
+      context 'nil incarceration status in payload' do
         before do
           person_params.merge!({is_incarcerated: nil})
           @result = subject.call(params: person_params)
@@ -81,6 +81,32 @@ RSpec.describe Operations::People::CreateOrUpdate, type: :model, dbclean: :after
         it 'should return success' do
           expect(@result).to be_a(Dry::Monads::Result::Success)
           expect(@result.value!.is_incarcerated).to eq false
+        end
+      end
+
+      context 'nil incarceration status in payload and EA db' do
+        before do
+          person.update_attributes!(is_incarcerated: nil)
+          person_params.merge!({is_incarcerated: nil})
+          @result = subject.call(params: person_params)
+        end
+
+        it 'should return success' do
+          expect(@result).to be_a(Dry::Monads::Result::Success)
+          expect(@result.value!.is_incarcerated).to eq false
+        end
+      end
+
+      context 'nil incarceration status in payload, but true in EA' do
+        before do
+          person.update_attributes!(is_incarcerated: true)
+          person_params.merge!({is_incarcerated: nil})
+          @result = subject.call(params: person_params)
+        end
+
+        it 'should return success' do
+          expect(@result).to be_a(Dry::Monads::Result::Success)
+          expect(@result.value!.is_incarcerated).to eq true
         end
       end
     end
