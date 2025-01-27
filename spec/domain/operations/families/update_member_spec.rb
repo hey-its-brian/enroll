@@ -159,6 +159,25 @@ RSpec.describe Operations::Families::UpdateMember, type: :model, dbclean: :after
           expect(@person.consumer_role.vlp_documents.count).to eq 2
         end
       end
+
+      context 'when relationthip is changed to non-immediate coverage household' do
+        let(:params) do
+          member_hash.merge!(gender: 'female', is_incarcerated: false, :ethnicity => ["Filipino", "Japanese", "Korean", "Vietnamese", "Other Asian"], relationship: 'unrelated')
+          member_hash[:consumer_role][:immigration_documents_attributes][0].merge!(i94_number: '45612378985')
+          member_hash
+        end
+
+        before do
+          @result = subject.call({member_params: params, family_id: family.id, person_hbx_id: dependent.hbx_id})
+          family.reload
+          @person = Person.by_hbx_id(member_hash[:hbx_id]).first
+        end
+
+        it 'should create CHHM in non-immediate CH and persist to db' do
+          expect(family.active_household.coverage_households[0].coverage_household_members.count).to eq(1)
+          expect(family.active_household.coverage_households[1].coverage_household_members.count).to eq(1)
+        end
+      end
     end
 
     context 'failure' do

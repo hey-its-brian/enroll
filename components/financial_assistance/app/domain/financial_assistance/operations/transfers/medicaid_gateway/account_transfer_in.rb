@@ -601,13 +601,13 @@ module FinancialAssistance
               persisted_applicant.is_medicare_eligible = applicant[:is_medicare_eligible]
               persisted_applicant.transfer_referral_reason = applicant[:transfer_referral_reason]
               ::FinancialAssistance::Applicant.skip_callback(:update, :after, :propagate_applicant, raise: false) # TODO: remove raise: false after FFE migration
-              ::FinancialAssistance::Relationship.skip_callback(:create, :after, :propagate_applicant)
+              ::FinancialAssistance::Relationship.skip_callback(:save, :after, :propagate_applicant)
               persisted_applicant.save(validate: false)
               persisted_applicant.relationships.each do |rel|
                 rel.save(validate: false)
               end
               ::FinancialAssistance::Applicant.set_callback(:update, :after, :propagate_applicant, raise: false) # TODO: remove raise: false after FFE migration
-              ::FinancialAssistance::Relationship.set_callback(:create, :after, :propagate_applicant)
+              ::FinancialAssistance::Relationship.set_callback(:save, :after, :propagate_applicant)
             end
             Success("Successfully transferred in account")
           rescue Mongoid::Errors::Validations => e

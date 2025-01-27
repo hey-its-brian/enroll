@@ -546,6 +546,7 @@ class Person
   end
 
   def person_create_or_update_handler
+    return if skip_person_updated_event_callback
     ::Operations::FinancialAssistance::PersonCreateOrUpdateHandler.new.call({person: self, event: :person_updated}) if ::EnrollRegistry.feature_enabled?(:financial_assistance)
   rescue StandardError => e
     Rails.logger.error {"FAA Engine: Unable to do action Operations::FinancialAssistance::PersonCreateOrUpdateHandler for person with object_id: #{self.id} due to #{e.message}"}
@@ -709,6 +710,20 @@ class Person
                                                             :kind => relationship,
                                                             :relative_id => person.id
                                                           })
+    end
+  end
+
+  def build_or_assign_relationship_with(person, relationship, opts = {})
+    return if person.blank? || relationship.blank?
+
+    existing_relationship = person_relationships.detect{ |rel| rel.relative_id.to_s == person.id.to_s }
+    attributes = { kind: relationship, skip_relationship_updated_event_callback: opts[:skip_relationship_updated_event_callback] }
+
+    if existing_relationship
+      existing_relationship.assign_attributes(attributes)
+      existing_relationship
+    elsif id != person.id
+      person_relationships.build(attributes.merge(relative_id: person.id))
     end
   end
 

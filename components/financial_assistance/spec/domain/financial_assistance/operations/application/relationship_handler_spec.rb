@@ -54,9 +54,9 @@ RSpec.describe FinancialAssistance::Operations::Application::RelationshipHandler
   context 'success' do
 
     before do
-      FinancialAssistance::Relationship.skip_callback(:create, :after, :propagate_applicant)
+      FinancialAssistance::Relationship.skip_callback(:save, :after, :propagate_applicant)
       application.ensure_relationship_with_primary(applicant2, "spouse")
-      FinancialAssistance::Relationship.set_callback(:create, :after, :propagate_applicant)
+      FinancialAssistance::Relationship.set_callback(:save, :after, :propagate_applicant)
       @result = FinancialAssistance::Operations::Application::RelationshipHandler.new.call({relationship: application.relationships[1]})
     end
 
@@ -70,9 +70,9 @@ RSpec.describe FinancialAssistance::Operations::Application::RelationshipHandler
 
   context 'failure' do
     before do
-      FinancialAssistance::Relationship.skip_callback(:create, :after, :propagate_applicant)
+      FinancialAssistance::Relationship.skip_callback(:save, :after, :propagate_applicant)
       relationship = application.relationships.create(kind: 'child', applicant_id: applicant2.id, relative_id: applicant.id)
-      FinancialAssistance::Relationship.set_callback(:create, :after, :propagate_applicant)
+      FinancialAssistance::Relationship.set_callback(:save, :after, :propagate_applicant)
       @result = FinancialAssistance::Operations::Application::RelationshipHandler.new.call({relationship: relationship})
     end
 

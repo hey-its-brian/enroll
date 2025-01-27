@@ -81,7 +81,7 @@ module FinancialAssistance
           applicant.callback_update = true
 
           if applicant.save
-            @application.ensure_relationship_with_primary(applicant, values.to_h[:relationship]) unless applicant.is_primary_applicant
+            @application.ensure_relationship_with_primary(applicant, values.to_h[:relationship], {callback_update: true}) unless applicant.is_primary_applicant
             @application.save!
 
             Success(applicant)

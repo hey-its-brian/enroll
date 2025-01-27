@@ -29,12 +29,17 @@ module FinancialAssistance
     def create
       authorize @application, :create?
       @bs4 = true if params[:bs4] == "true"
-      applicant_id = params[:applicant_id]
-      relative_id = params[:relative_id]
-      predecessor = FinancialAssistance::Applicant.find(applicant_id)
-      successor = FinancialAssistance::Applicant.find(relative_id)
-      @application.add_relationship(predecessor, successor, params[:kind], true)
-      @application.add_relationship(successor, predecessor, FinancialAssistance::Relationship::INVERSE_MAP[params[:kind]], true)
+
+      relationship_params = {application: @application, applicant_id: params[:applicant_id], relative_id: params[:relative_id], relationship_kind: params[:kind]}
+      result = FinancialAssistance::Operations::Application::UpdateOrCreateRelationships.new.call(relationship_params)
+      if result.success?
+        @application = result.success
+      else
+        flash[:error] = result.failure
+        Rails.logger.error { "Failed to update/create relationship for application_hbx_id: #{@application.hbx_id}: #{result.failure}" }
+        @application.reload
+      end
+
       @matrix = @application.build_relationship_matrix
       @missing_relationships = @application.find_missing_relationships(@matrix)
       @all_relationships = @application.find_all_relationships(@matrix)

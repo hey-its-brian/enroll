@@ -896,6 +896,64 @@ describe Person, :dbclean => :after_each do
     end
   end
 
+  describe '#build_or_assign_relationship_with' do
+    let(:primary_person) { FactoryBot.create(:person) }
+
+    describe 'with no relationship to a dependent' do
+      context 'after build_or_assign_relationship_with' do
+        let(:child_person) { FactoryBot.create(:person) }
+
+        before do
+          @child_relationship = primary_person.build_or_assign_relationship_with(child_person, 'child')
+        end
+
+        it 'should not persist' do
+          expect(primary_person.person_relationships.first).not_to be_persisted
+        end
+
+        it 'should have one relationship' do
+          expect(primary_person.person_relationships.size).to eq(1)
+        end
+      end
+    end
+
+    describe 'with an existing relationship to a dependent' do
+      context 'after build_or_assign_relationship_with a different type of relationship' do
+        let(:child_person) do
+          child = FactoryBot.create(:person)
+          primary_person.person_relationships << PersonRelationship.new(relative_id: child.id, kind: 'child')
+          primary_person.save!
+          child
+        end
+
+        before do
+          primary_person.build_or_assign_relationship_with(child_person, 'spouse')
+        end
+
+        it "should correct the existing relationship but not commit to db" do
+          expect(primary_person.person_relationships.first.kind).to eq('spouse')
+          primary_person.reload
+          expect(primary_person.person_relationships.first.kind).to eq('child')
+        end
+      end
+    end
+
+    context 'should not create a relationship from self to self' do
+      before do
+        primary_person.build_or_assign_relationship_with(primary_person, 'unrelated')
+        primary_person.save!
+      end
+
+      it 'should not create any relationships' do
+        expect(primary_person.person_relationships).to be_empty
+      end
+
+      it 'should have fixed number of relationships' do
+        expect(primary_person.person_relationships.count).to be_zero
+      end
+    end
+  end
+
   describe "call notify change event when after save" do
     before do
       extend Notify

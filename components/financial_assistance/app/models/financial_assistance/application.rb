@@ -45,6 +45,8 @@ module FinancialAssistance
       "FinancialAssistance::Operations::EnrollmentDates::ApplicationYear" => FinancialAssistance::Operations::EnrollmentDates::ApplicationYear
     }.freeze
 
+    INVERSE_RELATIONSHIPS_MAP = ::FinancialAssistance::Relationship::INVERSE_MAP
+
     # TODO: Need enterprise ID assignment call for Assisted Application
     field :hbx_id, type: String
 
@@ -277,8 +279,8 @@ module FinancialAssistance
       aasm.states.map(&:name)
     end
 
-    def ensure_relationship_with_primary(applicant, relation_kind)
-      add_or_update_relationships(applicant, primary_applicant, relation_kind)
+    def ensure_relationship_with_primary(applicant, relation_kind, opts = {})
+      add_or_update_relationships(applicant, primary_applicant, relation_kind, opts)
     end
 
     def self.families_with_latest_determined_outstanding_verification
@@ -302,20 +304,23 @@ module FinancialAssistance
 
     # Creates both relationships A to B, and B to A.
     # This way we do not have to call two methods to create relationships
-    def add_or_update_relationships(applicant, applicant2, relation_kind)
-      update_or_build_relationship(applicant, applicant2, relation_kind)
-      inverse_relationship_kind = ::FinancialAssistance::Relationship::INVERSE_MAP[relation_kind]
-      update_or_build_relationship(applicant2, applicant, inverse_relationship_kind) if inverse_relationship_kind.present?
+    def add_or_update_relationships(applicant, applicant2, relation_kind, opts = {})
+      update_or_build_relationship(applicant, applicant2, relation_kind, opts)
+      inverse_relationship_kind = INVERSE_RELATIONSHIPS_MAP[relation_kind]
+      update_or_build_relationship(applicant2, applicant, inverse_relationship_kind, opts) if inverse_relationship_kind.present?
     end
 
-    def update_or_build_relationship(applicant, relative, relation_kind)
+    def update_or_build_relationship(applicant, relative, relation_kind, opts = {})
       return if applicant.blank? || relative.blank? || relation_kind.blank?
       return if applicant == relative
 
       relationship = relationships.where(applicant_id: applicant.id, relative_id: relative.id).first
+
       if relationship.present?
         # Update relationship object only if the existing RelationshipKind is different from the incoming RelationshipKind.
-        relationship.update(kind: relation_kind) if relationship.kind != relation_kind
+        params_to_update = {kind: relation_kind}
+        params_to_update[:callback_update] = opts[:callback_update] if opts[:callback_update].present?
+        relationship.update(params_to_update) if relationship.kind != relation_kind
       else
         self.relationships << ::FinancialAssistance::Relationship.new(
           {

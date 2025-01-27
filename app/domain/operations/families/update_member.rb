@@ -104,7 +104,9 @@ module Operations
         existing_relationship = primary_person.person_relationships.where(kind: relationship_kind, relative_id: BSON::ObjectId(person.id.to_s)).first
         return Success() if existing_relationship
 
-        primary_person.ensure_relationship_with(person, relationship_kind)
+        relationship = primary_person.build_or_assign_relationship_with(person, relationship_kind, {skip_relationship_updated_event_callback: true})
+        relationship&.save!
+
         Success()
       rescue StandardError => e
         Failure("Relationship creation failed: #{e}")
@@ -131,7 +133,16 @@ module Operations
                                                 end
 
         family_member.save!
+        family_member.family.active_household.coverage_households.each { |ch| ch.save! if ch.changed? }
+        log_if_invalid(family_member)
         Success([person_changes, consumer_role_changes])
+      end
+
+      def log_if_invalid(family_member)
+        family = family_member.family
+        family.reload
+        return if family.active_household.members_match_family_members?
+        Rails.logger.error { "Family ID: #{family.id} | FamilyMember: (#{family_member.id}) with person hbx id #{family_member.hbx_id}  is update | but there is a mismatch in coverage household members" }
       end
 
       def save_person(person)
@@ -147,7 +158,6 @@ module Operations
 
           person.addresses.where(:id.in => destroy_address_ids).destroy_all
         end
-
         person.save!
         changes
       end

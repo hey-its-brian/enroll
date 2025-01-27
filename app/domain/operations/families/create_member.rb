@@ -71,7 +71,9 @@ module Operations
       def build_relationship(person, family, relationship_kind)
         primary_person = family.primary_person
 
-        primary_person.ensure_relationship_with(person, relationship_kind) if primary_person.present?
+        relationship = primary_person.build_or_assign_relationship_with(person, relationship_kind, {skip_relationship_updated_event_callback: true}) if primary_person.present?
+        relationship&.save!
+
         Success()
       rescue StandardError => e
         Failure("Relationship creation failed: #{e}")
@@ -81,7 +83,7 @@ module Operations
         family_member.save!
 
         family.active_household.coverage_households.each { |ch| ch.save! if ch.changed? }
-        Rails.logger.error { "Error adding coverage household member when creating applicant: #{family_member.hbx_id}" } if family.active_household.members_match_family_members?
+        Rails.logger.error { "Error adding coverage household member when creating applicant: #{family_member.hbx_id}" } unless family.active_household.members_match_family_members?
         # family.save!
         Success(family_member.id)
       end

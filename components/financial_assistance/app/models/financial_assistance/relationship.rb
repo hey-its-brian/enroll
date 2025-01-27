@@ -101,7 +101,9 @@ module FinancialAssistance
               inclusion: { in: RELATIONSHIPS, message: "%{value} is not a valid kind" },
               allow_blank: false
 
-    after_create :propagate_applicant
+    after_save :propagate_applicant
+
+    attr_accessor :callback_update
 
     def applicant
       return @applicant if defined? @applicant
@@ -115,6 +117,7 @@ module FinancialAssistance
 
     def propagate_applicant
       return unless application.draft?
+      return if callback_update
       FinancialAssistance::Operations::Application::RelationshipHandler.new.call({relationship: self})
     end
 

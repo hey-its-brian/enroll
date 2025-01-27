@@ -120,6 +120,8 @@ class PersonRelationship
   after_save :notify_updated
   after_update :relationship_updated, if: :kind_changed?
 
+  attr_accessor :skip_relationship_updated_event_callback
+
   def notify_updated
     person.notify_updated
   end
@@ -130,6 +132,7 @@ class PersonRelationship
   # This is the reason why we have to call person_create_or_update_handler on relative
   # to be able to notify FAA engine with the relationship change.
   def relationship_updated
+    return if skip_relationship_updated_event_callback
     relative&.person_create_or_update_handler
   end
 
