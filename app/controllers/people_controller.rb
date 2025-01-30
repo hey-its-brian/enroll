@@ -45,8 +45,22 @@ class PeopleController < ApplicationController
           @vlp_doc_subject = get_vlp_doc_subject_by_consumer_role(@person.consumer_role)
         end
         build_nested_models
-        person_error_megs = @person.errors.full_messages.join('<br/>') if @person.errors.present?
-        format.html { redirect_to redirect_path, alert: "Person update failed. #{person_error_megs}" }
+
+        person_error_msgs = if @person.errors.present?
+                              @person.errors.full_messages.map do |msg|
+                                if msg.match?(l10n("email"))
+                                  l10n("invalid_email_error")
+                                elsif msg.match?(l10n("phone"))
+                                  l10n("invalid_phone_error")
+                                else
+                                  "#{l10n('person_update_failed')} #{msg}"
+                                end
+                              end.uniq.join('<br/>')
+                            else
+                              l10n('person_update_failed')
+                            end
+
+        format.html { redirect_to redirect_path, alert: person_error_msgs }
         # format.html { redirect_to edit_insured_employee_path(@person) }
         format.json { render json: @person.errors, status: :unprocessable_entity }
       end

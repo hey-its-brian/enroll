@@ -896,5 +896,8 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.tax_household_enrollment.members' => 'Members',
   :'en.tax_household_enrollment.health_plan_benchmark_value' => 'Health Plan Benchmark Value',
   :'en.tax_household_enrollment.dental_plan_benchmark_value' => 'Dental Plan Benchmark Value',
-  :'en.tax_household_enrollment.aptc_amount' => 'APTC Amount'
+  :'en.tax_household_enrollment.aptc_amount' => 'APTC Amount',
+  :'en.invalid_email_error' => "Person update failed. Email is invalid",
+  :'en.invalid_phone_error' => "Person update failed. Phone is invalid",
+  :'en.person_update_failed' => "Person update failed.",
 }.freeze
