@@ -12,5 +12,3 @@
 //= require ./sliders
 //= require ./validators
 //= require ./mask_inputs
-//= require ./datepickerForInputs
-
