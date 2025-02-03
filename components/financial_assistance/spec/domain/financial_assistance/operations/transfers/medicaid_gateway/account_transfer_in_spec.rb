@@ -38,6 +38,11 @@ RSpec.describe ::FinancialAssistance::Operations::Transfers::MedicaidGateway::Ac
         expect(app.transferred_at).not_to eq nil
       end
 
+      it "persists all family_members" do
+        family = Family.all.first
+        expect(family.family_members.count).to eq(@transformed['family']['family_members'].count)
+      end
+
       it 'should persist the person name' do
         app = FinancialAssistance::Application.find(@result.value!)
         @transformed.deep_symbolize_keys!
@@ -432,6 +437,38 @@ RSpec.describe ::FinancialAssistance::Operations::Transfers::MedicaidGateway::Ac
         expect(family_member["person"]["person_demographics"]["tribal_name"]).not_to eq matching_person.tribal_name
         expect(family_member["person"]["person_demographics"]["tribal_state"]).not_to eq matching_person.tribal_state
         expect(family_member["person"]["person_demographics"]["indian_tribe_member"]).not_to eq matching_person.indian_tribe_member
+      end
+    end
+
+    context 'Updating an existing family' do
+      let!(:person) {FactoryBot.create(:person, first_name: 'Laura', last_name: 'Banfield', dob: Date.new(1984,1,1))}
+      let!(:family) {FactoryBot.create(:family, :with_primary_family_member, person: person)}
+
+      before do
+        record = serializer.parse(xml)
+        @transformed = transformer.transform(record.to_hash(identifier: true))
+        @result = subject.call(@transformed)
+        @family_member_rels = Family.first.family_members.map(&:relationship)
+        family.reload
+      end
+
+      it 'adds family members' do
+        expect(family.family_members.count).to eq @transformed['family']['family_members'].count
+      end
+
+      it 'adds person records for new family members' do
+        expect(family.family_members.map(&:person).count).to eql(@transformed['family']['family_members'].count)
+      end
+
+      it 'adds family member relationships' do
+        family_member_rels = family.family_members.map(&:relationship)
+        expect(family_member_rels).to eq ["self", "parent", "domestic_partner"]
+      end
+
+
+      it 'adds primary applicant relationships' do
+        application_rels = FinancialAssistance::Application.first.relationships
+        expect(application_rels.map(&:kind)).to eq ["child", "domestic_partner", "parent", "domestic_partner"]
       end
     end
   end

@@ -166,7 +166,6 @@ module FinancialAssistance
               fm_result = create_member(family_member_hash)
               return fm_result unless fm_result.success?
             end
-            @family.save!
             Success(@family)
           rescue Mongoid::Errors::Validations => e
             Failure("build_family validation: #{e.summary}")
@@ -273,7 +272,6 @@ module FinancialAssistance
             family_member = family.add_family_member(person, fm_attr)
             family_member.save!
 
-            family.save!
             Success(family_member)
           rescue Mongoid::Errors::Validations => e
             first_name = family_member_hash['person']['person_name']['first_name']
