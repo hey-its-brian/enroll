@@ -3,7 +3,7 @@
 Then(/^the user is on the Your Preferences page$/) do
   find('#eligibility_easier_yes').click
   find('#mailed_yes').click if FinancialAssistanceRegistry.feature_enabled?(:voter_registration_through_hbx)
-  expect(page).to have_content('Your Preferences')
+  expect(page).to have_css('h2', text: l10n('insured.preferences.heading'))
 end
 
 Given(/^the user has a parent living outside the home$/) do

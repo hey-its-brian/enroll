@@ -46,7 +46,9 @@
             <div class="row card-detail-titles">
               <div class="col-lg-3">Name</div>
               <div class="col-lg-5">Relationship</div>
-              <div class="col-lg-4">Household Member</div>
+              <div class="col-lg-4">
+                <%= l10n("en.faa.tax_info.household_member") %>
+              </div>
             </div>
             <div class="row">
               <div class="col-lg-3"><%= @application.applicants.find(er[:applicant]).first_name %></div>

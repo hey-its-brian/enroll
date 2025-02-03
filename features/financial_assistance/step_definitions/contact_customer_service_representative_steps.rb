@@ -5,11 +5,11 @@ When(/the consumer clicks the Get Help Signing Up Button?/) do
 end
 
 Then(/they should see the Contact Customer Support and Certified Applicant Counselor links?/) do
-  page.should have_content('Help from a Customer Service Representative')
-  page.should have_content('Help from a Certified Applicant Counselor')
+  page.should have_css('.interaction-click-control-help-from-a-customer-service-representative', text: l10n('insured.plan_shoppings.help_from_a_customer_service_representative'))
+  page.should have_css('.interaction-click-control-help-from-a-certified-applicant-counselor-\\(cac\\)', text: l10n('insured.plan_shoppings.help_from_a_certified_applicant_counselor'))
 end
 
 Then(/they should not see the Contact Customer Support and Certified Applicant Counselor links?/) do
-  page.should_not have_content('Help from a Customer Service Representative')
-  page.should_not have_content('Help from a Certified Applicant Counselor')
+  page.should_not have_css('.interaction-click-control-help-from-a-customer-service-representative', text: l10n('insured.plan_shoppings.help_from_a_customer_service_representative'))
+  page.should_not have_css('.interaction-click-control-help-from-a-certified-applicant-counselor-\\(cac\\)', text: l10n('insured.plan_shoppings.help_from_a_certified_applicant_counselor'))
 end

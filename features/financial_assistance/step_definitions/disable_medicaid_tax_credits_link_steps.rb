@@ -21,11 +21,11 @@ Given(/consumer visits enroll app home page?/) do
 end
 
 Then(/^they should see the Assisted Consumer Family Portal tile$/) do
-  expect(page).to have_content("Assisted Consumer")
+  expect(page).to have_css('[data-cuke="assisted_consumer_family_portal_link"]', text: l10n("welcome.index.assisted_consumer_family_portal"))
 end
 
 Then(/^they should not see the Assisted Consumer Family Portal tile$/) do
-  expect(page).to_not have_content("Assisted Consumer")
+  expect(page).to_not have_css('[data-cuke="assisted_consumer_family_portal_link"]', text: l10n("welcome.index.assisted_consumer_family_portal"))
 end
 
 Given(/consumer visits the privacy notice page?/) do
@@ -33,5 +33,6 @@ Given(/consumer visits the privacy notice page?/) do
 end
 
 Then(/^they should be redirected to the enroll app home page$/) do
-  expect(page).to have_content("Medicaid And Tax Credits Link Is Disabled")
+  # this string is generated as an alert message and does not have l10n available
+  expect(page).to have_css('.container', text: "Medicaid And Tax Credits Link Is Disabled")
 end

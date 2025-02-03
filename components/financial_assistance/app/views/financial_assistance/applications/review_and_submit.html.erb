@@ -607,7 +607,9 @@
                       <div class="row review-relation-headers">
                         <div class="col-lg-3">Name</div>
                         <div class="col-lg-5">RELATIONSHIP</div>
-                        <div class="col-lg-4">HOUSEHOLD MEMBER</div>
+                        <div class="col-lg-4">
+                          <%= l10n("en.faa.tax_info.household_member").upcase %>
+                        </div>
                       </div>
                       <div class="row">
                         <div class="col-lg-3"><%= member_name_by_id(er.applicant_id) %></div>

@@ -89,7 +89,7 @@ Given(/^at least two other household members exist$/) do
 
   sleep 1
 
-  expect(page).to have_content('ADD INCOME & COVERAGE INFO', count: 3)
+  expect(page).to have_css('.interaction-click-control-add-income---coverage-info', text: l10n('add_income_coverage_info').upcase, count: 3)
 end
 
 Given(/^that the user is on the FAA Family Relationships page$/) do
@@ -98,11 +98,11 @@ end
 
 
 Then(/^View My Applications left section WILL display$/) do
-  expect(page).to have_content('View My Applications')
+  expect(page).to have_css('.view-nav-app', text: l10n('faa.results.view_my_applications').titleize)
 end
 
 Then(/^Review & Submit left section WILL display$/) do
-  expect(page).to have_content('Review & Submit')
+  expect(page).to have_css('.interaction-click-control-review---submit', text: l10n('faa.nav.review'))
 end
 
 Given(/^there is a nil value for at least one relationship$/) do
@@ -139,5 +139,5 @@ And(/^all the relationships have been entered$/) do
 end
 
 Then(/^the user will navigate to the Review & Submit page$/) do
-  expect(page).to have_content("Review Your Application")
+  expect(page).to have_css('h2', text: l10n('faa.review.review_and_submit'))
 end

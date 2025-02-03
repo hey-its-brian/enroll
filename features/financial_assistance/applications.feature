@@ -28,7 +28,6 @@ Feature: Start a new Financial Assistance Application
 
   Scenario: A consumer adds Job income for an application's applicant
     Given the consumer has started a financial assistance application
-    And has added tax information for an applicant
     And they visit the applicant's Job income page
     And they answer job income question and complete the form for the Job income
     Then they should see the newly added Job income
@@ -36,7 +35,6 @@ Feature: Start a new Financial Assistance Application
 
   Scenario: A consumer adds Job income with incorrect date format
     Given the consumer has started a financial assistance application
-    And has added tax information for an applicant
     And they visit the applicant's Job income page
     And they answer job income question and complete the form with incorrect data format
     Then I should see a JS alert

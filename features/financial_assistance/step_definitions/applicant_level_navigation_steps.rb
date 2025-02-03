@@ -21,7 +21,7 @@ Then(/^the user will navigate to the FAA Household Info page for the correspondi
 end
 
 When(/^the user clicks Income & Coverage section on the left navigation$/) do
-  expect(page).to have_content('Income and Coverage Info')
+  expect(page).to have_css('.interaction-click-control-income---coverage-info', text: l10n('income_coverage_info'))
 end
 
 Then(/^the cursor will display disabled\.$/) do

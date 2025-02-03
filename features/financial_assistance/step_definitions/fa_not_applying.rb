@@ -17,8 +17,8 @@ end
 
 And(/the primary member has filled mandatory information required$/) do
   visit privacy_insured_consumer_role_index_path
-  expect(page).to have_content("Your Information")
-  expect(page).to have_content("CONTINUE")
+  expect(page).to have_css('h1', text: l10n('your_information'))
+  expect(page).to have_css('.interaction-click-control-continue', text: l10n('faa.tax_info.continue'))
   find(YourInformation.continue_btn).click
   fill_in IvlPersonalInformation.first_name, with: "Patrick"
   fill_in IvlPersonalInformation.last_name, with: "Doe"
@@ -27,7 +27,7 @@ And(/the primary member has filled mandatory information required$/) do
   find(IvlPersonalInformation.male_radiobtn).click
   find(:xpath, '//label[@for="is_applying_coverage_true"]').click
   find('.btn', text: 'CONTINUE').click
-  expect(page).to have_content("Next, we need to verify if you or you and your family are eligible to enroll in coverage through #{EnrollRegistry[:enroll_app].setting(:short_name).item}. Select CONTINUE.")
+  expect(page).to have_css('.alert-success', text: l10n('insured.consumer_roles.no_match_info', site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item))
   find('.btn', text: 'CONTINUE').click
   click_and_wait_on_stylized_radio('//label[@for="person_us_citizen_true"]', "person_us_citizen_true", "person[us_citizen]", "true")
   click_and_wait_on_stylized_radio('//label[@for="person_naturalized_citizen_false"]', "person_naturalized_citizen_false", "person[naturalized_citizen]", "false")
@@ -45,17 +45,17 @@ And(/the primary member has filled mandatory information required$/) do
 end
 
 Given(/^the primary member authorizes system to call EXPERIAN$/) do
-  expect(page).to have_content('Authorization and Consent')
+  expect(page).to have_css('h2', text: l10n('insured.consumer_roles.auth_and_consent'))
   find(:xpath, '//label[@for="agreement_agree"]').click
   find('.btn', text: 'CONTINUE').click
 end
 
 Given(/^system receives a positive response from the EXPERIAN$/) do
-  expect(page).to have_content('Verify Identity')
+  expect(page).to have_css('h2', text: l10n("verify_identity"))
 end
 
 Given(/^the user answers all the VERIFY IDENTITY  questions$/) do
-  expect(page).to have_content('Verify Identity')
+  expect(page).to have_css('h2', text: l10n("verify_identity"))
   find(:xpath, '//label[@for="interactive_verification_questions_attributes_0_response_id_a"]').click
   find(:xpath, '//label[@for="interactive_verification_questions_attributes_1_response_id_c"]').click
 end
@@ -69,7 +69,7 @@ When(/^the Experian returns a VERIFIED response$/) do
 end
 
 Then(/^the user will navigate to the Help Paying for Coverage page$/) do
-  expect(page).to have_content('Your Application for Premium Reductions')
+  expect(page).to have_css('h2', text: l10n('faa.application_for_premium_reductions'))
 end
 
 Given(/^the user navigates to the "Household Info" page with "no" selected$/) do
@@ -84,7 +84,7 @@ When(/the user clicks on add member button/) do
 end
 
 And(/^the user fills the the add member form/) do
-  expect(page).to have_content(/lives with primary subscriber/i)
+  expect(page).to have_css('strong', text: /#{l10n('live_with_primary_subscriber')}/i)
   fill_in "dependent[first_name]", :with => "John"
   fill_in "dependent[last_name]", :with => "Doe"
   fill_in "dependent[ssn]", :with => "763434355"
@@ -106,7 +106,7 @@ And(/^the user fills the the add member form/) do
 end
 
 And(/^the user fills the applicant add member form with indian member yes/) do
-  expect(page).to have_content('Lives with primary subscriber')
+  expect(page).to have_css('label[for="dependent_same_with_primary"]', text: l10n('live_with_primary_subscriber'))
   fill_in "applicant[first_name]", :with => "John"
   fill_in "applicant[last_name]", :with => "Doe"
   fill_in "applicant[ssn]", :with => "763434355"
@@ -126,7 +126,7 @@ end
 And(/^the user fills the applicant add member form with indian member no/) do
   sleep 5
 
-  expect(page).to have_content('Lives with primary subscriber')
+  expect(page).to have_css('label[for="dependent_same_with_primary"]', text: l10n('live_with_primary_subscriber'))
   fill_in "applicant[first_name]", :with => "John"
   fill_in "applicant[last_name]", :with => "Doe"
   fill_in "applicant[ssn]", :with => "763434355"
@@ -157,7 +157,7 @@ Then(/the user should see tribe checkbox options/) do
 end
 
 Then(/user should still see the member of a tribe question/) do
-  expect(page).to have_content('Is this person a member of an')
+  expect(page).to have_css('label', text: 'Is this person a member of an')
 end
 
 And(/the user clicks submit applicant form/) do
@@ -171,7 +171,8 @@ end
 
 Then(/the user should see an error message for indian tribal name/) do
   sleep 1
-  expect(page).to have_text("Tribal name is required when native american / alaska native is selected")
+  # this is checking for an error message, therefore it does not have l10n
+  expect(page).to have_css('li', text: "Tribal name is required when native american / alaska native is selected")
 end
 
 Then(/the user should see an error message for indian tribal id/) do
@@ -183,7 +184,8 @@ And(/the user enters a tribal name with a number/) do
 end
 
 Then(/the user should see an error for tribal name containing a number/) do
-  expect(page).to have_content("cannot contain numbers")
+  # this is checking for an error message, therefore it does not have l10n
+  expect(page).to have_css('li', text: "cannot contain numbers")
 end
 
 Given(/AI AN Details feature is enabled/) do
@@ -207,7 +209,7 @@ Given(/Featured Tribe Selection feature is disabled/) do
 end
 
 Then(/the user should see the AI AN Details fields/) do
-  expect(page).to have_content("Where is this person's tribe located?")
+  expect(page).to have_css('label', text: l10n('insured.tribal_state'))
 end
 
 And(/^the user clicks the PREVIOUS link1/) do
@@ -217,7 +219,7 @@ end
 
 Then(/^the user navigates to Help Paying for Coverage page/) do
   sleep 2
-  expect(page).to have_content('Your Application for Premium Reductions')
+  expect(page).to have_css('h2', text: l10n('faa.application_for_premium_reductions'))
 end
 
 Given(/^the user navigates to the "Household Info" page with "yes" selected/) do
@@ -233,14 +235,15 @@ Given(/^the user navigates to the "Household Info" page with "yes" selected/) do
 end
 
 And(/^the .+ is navigated to Application checklist page/) do
-  expect(page).to have_content('Application Checklist')
+  expect(page).to have_css('h2', text: l10n('faa.checklist.heading'))
 end
 
 And(/^the .+ is navigated to year selection page/) do
+  # both expects are checking on sections of a larger translation string, so they do not have l10n
   if EnrollRegistry[:enroll_app].setting(:site_key).item.to_s.downcase == 'dc'
-    expect(page).to have_content('districtdirect.dc.gov')
+    expect(page).to have_css('a', text: 'districtdirect.dc.gov')
   else
-    expect(page).to have_content(/submit a webform/)
+    expect(page).to have_css('p', text: /submit a webform/)
   end
 end
 
@@ -277,9 +280,9 @@ And(/Individual fills in info required and selects text only as contact option/)
   find(IvlPersonalInformation.need_coverage_yes).click
   find(IvlPersonalInformation.continue_btn).click
   if EnrollRegistry[:bs4_consumer_flow].enabled?
-    expect(page).to have_content("We need to verify if you or you and your family are eligible to enroll in coverage through CoverME.gov.")
+    expect(page).to have_css('.alert-success', text: l10n('insured.consumer_roles.no_match_info', site_short_name: 'CoverME.gov'))
   else
-    expect(page).to have_content("Next, we need to verify if you or you and your family are eligible to enroll in coverage through #{EnrollRegistry[:enroll_app].setting(:short_name).item}. Select CONTINUE.")
+    expect(page).to have_css('.alert-success', text: l10n('insured.consumer_roles.no_match_info', site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item))
   end
   find(IvlPersonalInformation.continue_btn_2).click
   find(IvlPersonalInformation.us_citizen_or_national_yes_radiobtn).click
@@ -318,9 +321,9 @@ And(/Individual fills in info required and selects no contact option/) do
   find(IvlPersonalInformation.continue_btn).click
 
   if EnrollRegistry[:bs4_consumer_flow].enabled?
-    expect(page).to have_content("We need to verify if you or you and your family are eligible to enroll in coverage through CoverME.gov.")
+    expect(page).to have_css('.alert-success', text: l10n('insured.consumer_roles.no_match_info', site_short_name: 'CoverME.gov'))
   else
-    expect(page).to have_content("Next, we need to verify if you or you and your family are eligible to enroll in coverage through #{EnrollRegistry[:enroll_app].setting(:short_name).item}. Select CONTINUE.")
+    expect(page).to have_css('.alert-success', text: l10n('insured.consumer_roles.no_match_info', site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item))
   end
   find(IvlPersonalInformation.continue_btn_2).click
   find(IvlPersonalInformation.us_citizen_or_national_yes_radiobtn).click

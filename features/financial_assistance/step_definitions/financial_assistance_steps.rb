@@ -30,10 +30,6 @@ Given(/^a benchmark plan exists$/) do
   create_plan
 end
 
-When(/^the consumer views their applications$/) do
-  visit financial_assistance.applications_path
-end
-
 When(/^a consumer visits the Get Help Paying for coverage page$/) do
   visit help_paying_coverage_insured_consumer_role_index_path
 end
@@ -59,7 +55,7 @@ end
 
 Then(/^they should see a new finanical assistance application$/) do
   expect(page.current_url).to match("/applications/.*/edit")
-  expect(page).to have_content(l10n('insured.family_members.index.continue_to_get_insurance'), wait: 10)
+  expect(page).to have_css('p', text: l10n('insured.family_members.index.continue_to_get_insurance'), wait: 10)
 end
 
 Given(/IAP Assistance Year Display feature is enabled/) do
@@ -81,8 +77,9 @@ Then(/They should see the application assistance year above Info Needed/) do
 end
 
 Then(/They should not see the application assistance year above Info Needed/) do
-  expect(page).to have_content('Your Application for Premium Reductions')
-  expect(page).to_not have_content(l10n('faa.application_for_coverage'))
+  sleep 5
+  expect(page).to have_css('p', text: l10n('faa.application_for_premium_reductions'))
+  expect(page).to_not have_css(l10n('faa.application_for_coverage'))
 end
 
 Then(/^they should see each of their dependents listed$/) do
@@ -152,245 +149,20 @@ Then(/^.+ should see a JS alert$/) do
 end
 
 Then(/^they should see the newly added Job income$/) do
-  page.should have_content('Sample Employer')
+  # this is checking on user-inputed data, therefore not l10n
+  page.should have_css('#name', text: 'Sample Employer')
 end
 
 Then(/^they should see the dates in correct format$/) do
-  page.should have_content('11/11/2016')
-  page.should have_content('11/11/2017')
-end
-
-Then(/^they should be taken back to the application's details page for applicant$/) do
-  page.should have_content('Applicant deleted.')
-end
-
-When(/^they click edit for an applicant$/) do
-  click_link 'Add Info', href: "/financial_assistance/applications/#{application.id}/applicants/#{application.primary_applicant.id}/step/1"
-end
-
-When(/^they complete and submit the Income and Coverage information$/) do
-  choose("income_from_employer_yes")
-  choose("self_employed_no")
-  choose("other_income_no")
-  choose("adjustments_income_no")
-  choose("enrolled_in_coverage_no")
-  choose("access_to_other_coverage_no")
-
-  click_button 'CONTINUE'
-end
-
-
-Given(/^has added tax information for an applicant$/) do
-  # right now this step is unnecessary but not always be
-end
-
-Given(/^they visit the applicant's Income page$/) do
-  visit financial_assistance.application_applicant_incomes_path(application, application.primary_applicant)
-end
-
-Given(/^they visit the applicant's Benefits page$/) do
-  visit financial_assistance.application_applicant_benefits_path(application, application.primary_applicant)
-end
-
-Given(/^they visit the applicant's Deductions page$/) do
-  visit financial_assistance.application_applicant_deductions_path(application, application.primary_applicant)
-end
-
-And(/^they click on the 'Add Income' button$/) do
-  click_link 'Add Income'
-end
-
-And(/^they complete the form for the income$/) do
-  fill_in 'income[amount]', with: '23.3'
-  find_all(".interaction-choice-control-financial-assistance-income-employer-address-state")[0].trigger('click')
-  find_all(".interaction-choice-control-financial-assistance-income-employer-address-state").select('Monthly')
-  fill_in 'income[start_on]', with: "11/11/2016"
-  fill_in 'income[end_on]', with: "11/11/2017"
-  fill_in 'income[employer_name]', with: "Sample Employer 1"
-  fill_in 'employer_phone[full_phone_number]', with: "2036548484"
-  fill_in 'employer_address[address_1]', with: "12 main st"
-  fill_in 'employer_address[address_2]', with: "beside starbucks"
-  fill_in 'employer_address[city]', with: "washington"
-  find('#employer_address_state').select('DC')
-  fill_in 'employer_address[zip]', with: "22046"
-
-  click_button 'CONTINUE'
-end
-
-And(/^they click on 'Remove Income' button$/) do
-  find(:xpath, '//a[@data-method="delete"][span]').click
-  page.accept_alert
-end
-
-And(/^they should see the newly added income/) do
-  page.should have_content('Income Added')
-end
-
-Then(/^they should be taken back to the application's details page for income$/) do
-  page.should have_content("Income for #{application.primary_applicant.first_name}")
-end
-
-Then(/^the income should be no longer be shown$/) do
-  page.should have_content('Income deleted')
-end
-
-Then(/^the benefit should be no longer be shown$/) do
-  page.should have_content('Benefit deleted')
-end
-
-Then(/^the deduction should be no longer be shown$/) do
-  page.should have_content('Deduction deleted')
-end
-
-Given(/^the consumer has completed a financial assistance application$/) do
-  # Kelly to John
-  application.active_applicants.second.person.person_relationships.create(
-    {
-      kind: 'spouse',
-      family_id: consumer.primary_family.id,
-      successor_id: application.active_applicants.first.person.id,
-      predecessor_id: application.active_applicants.second.person.id
-    }
-  )
-  # Danny to John
-  application.active_applicants.third.person.person_relationships.create(
-    {
-      kind: 'parent',
-      family_id: consumer.primary_family.id,
-      successor_id: application.active_applicants.first.person.id,
-      predecessor_id: application.active_applicants.third.person.id
-    }
-  )
-  # Danny to Kelly
-  application.active_applicants.third.person.person_relationships.create(
-    {
-      kind: 'parent',
-      family_id: consumer.primary_family.id,
-      successor_id: application.active_applicants.second.person.id,
-      predecessor_id: application.active_applicants.third.person.id
-    }
-  )
-  application.active_applicants.each do |applicant|
-    applicant.update_attributes(
-      is_required_to_file_taxes: false,
-      is_claimed_as_tax_dependent: false,
-      is_living_in_state: false,
-      is_temp_out_of_state: false,
-      has_other_income: false,
-      has_deductions: false,
-      has_enrolled_health_coverage: false
-    )
-  end
-end
-
-When(/^they view the financial assistance application for review$/) do
-  visit financial_assistance.edit_application_path(application)
-end
-
-And(/^click the 'Review and Continue' button$/) do
-  click_link "Continue"
-end
-
-And(/^they review and submit the application$/) do
-  click_link 'Continue'
+  # this is checking on user-inputed data, therefore not l10n
+  page.should have_css('#name', text: '11/11/2016')
 end
 
 When(/^click the "([^"]*)" button$/) do |_rg1|
   pending # Write code here that turns the phrase above into concrete actions
 end
 
-Then(/^they are taken back to view all applications$/) do
-  visit financial_assistance.applications_path
-end
-
-Then(/^they will see that their application has been submitted$/) do
-  page.find(".interaction-click-control-start-new-application")
-end
-
-When(/^they click on the 'Add Income Adjustment' button$/) do
-  click_link 'Add Income Adjustment'
-end
-
-When(/^they click on 'Add Benefit' button$/) do
-  click_link 'Add Health Coverage'
-end
-
-# And(/^has added an benefit$/) do
-#   choose("yes2")
-#   find('#benefit_kind').select('medicare')
-#   fill_in 'benefit[start_on]', with: "11/11/2016"
-#   fill_in 'benefit[end_on]', with: "11/11/2017"
-#   click_button 'Next step'
-#   choose("access_to_hc_yes")
-#   fill_in 'benefit[employer_name]', with: "JOHN"
-#   fill_in 'employer_address[address_1]', with: " Test address 1"
-#   fill_in 'employer_address[city]', with: " Herdon"
-#   fill_in 'employer_address[zip]', with: " 51023"
-#   choose("is_eligible_no")
-#   choose("health_plan_yes")
-#   fill_in 'benefit[employee_cost]', with: " 2.3"
-# end
-
-And(/^they complete the form for the benefit$/) do
-  find('#is_eligible').click
-  find('#benefit_insurance_kind').select('Acf Refugee Medical Assistance')
-  click_button 'CONTINUE'
-end
-
-Then(/^they should be taken back to the applicant's detail page$/) do
-
-end
-And(/^they should see the newly added benefit$/) do
-  page.should have_content('Benefit Info Added.')
-end
-
-# When (/^they view the applicant's details page$/) do
-#   page.should have_content('Edit Applicant')
-# end
-
-When(/^they click on 'Remove Benefit' button/) do
-  find(:xpath, '//a[@data-method="delete"][span]').click
-  page.accept_alert
-end
-
-When(/^they click on 'Remove Deduction' button$/) do
-  find(:xpath, '//a[@data-method="delete"][span]').click
-  page.accept_alert
-end
-
-And(/^they should be taken back to the application's details page for benefit$/) do
-  page.should have_content("Health Coverage for #{consumer.person.first_name}")
-end
-
 ## Remove Deduction
-
-When(/^they click on 'Add Deduction' button$/) do
-  click_link 'Add Deductions'
-end
-
-And(/^they complete the form for the deduction/) do
-  find('#deduction_kind').select('Alimony Paid')
-  find('#deduction_frequency_kind').select('quarterly')
-  fill_in 'deduction[amount]', with: "2.2"
-  # find_all(".interaction-choice-control-deduction-frequency-kind")[2].click
-  fill_in 'deduction[start_on]', with: "10/11/2016"
-  fill_in 'deduction[end_on]', with: "11/18/2016"
-  click_button 'CONTINUE'
-end
-
-Given(/^the consumer has an income$/) do
-  application.active_applicants.first.incomes.create(
-    {
-      :amount => '5000',
-      :frequency_kind => 'monthly',
-      :employer_name => 'Ideacrew',
-      :start_on => '2017/01/01',
-      :end_on => '2017/12/31',
-      :employer_phone => {:kind => 'phone main', :full_phone_number => '202-222-2222'},
-      :employer_address => {:kind => 'primary', :address_1 => '2nd St', :city => 'Washington', :state => 'DC', :zip => '20001'}
-    }
-  )
-end
 
 Given(/^the consumer has a benefit$/) do
   application.active_applicants.first.update_attributes has_enrolled_health_coverage: true
@@ -417,29 +189,8 @@ And(/^the consumer has an esi benefit$/) do
   )
 end
 
-Given(/^the consumer has a deduction$/) do
-  application.active_applicants.first.deductions.create! kind: 'alimony_paid'
-end
-
-And(/^they should see the newly added deduction$/) do
-  page.should have_content('Deduction Added')
-end
-
-Then(/^they click on 'Remove deduction' button/) do
-  page.find('.interaction-click-control-delete').click
-  page.accept_alert
-end
-
-And(/^they should be taken back to the application's details page for deduction$/) do
-  page.should have_content("Income Adjustments for #{application.applicant.first.first_name}")
-end
-
 Given(/^the primary caretaker question configuration is enabled$/) do
   enable_feature :primary_caregiver_other_question, {registry_name: FinancialAssistanceRegistry}
-end
-
-Given(/^the primary caretaker question configuration is diasbled$/) do
-  disable_feature :primary_caregiver_other_question, {registry_name: FinancialAssistanceRegistry}
 end
 
 Given(/^the primary caretaker relationship question configuration is enabled$/) do
@@ -496,24 +247,12 @@ Given(/the mec check feature is enabled/) do
   allow(EnrollRegistry[:mec_check].feature).to receive(:is_enabled).and_return(true)
 end
 
-Given(/the mec check feature is disabled/) do
-  allow(EnrollRegistry[:mec_check].feature).to receive(:is_enabled).and_return(false)
-end
-
 Given(/the shop coverage check feature is enabled/) do
   allow(EnrollRegistry[:shop_coverage_check].feature).to receive(:is_enabled).and_return(true)
 end
 
-Given(/the shop coverage check feature is disabled/) do
-  allow(EnrollRegistry[:shop_coverage_check].feature).to receive(:is_enabled).and_return(false)
-end
-
 Given(/the coverage check banners feature is enabled/) do
   allow(EnrollRegistry[:coverage_check_banners].feature).to receive(:is_enabled).and_return(true)
-end
-
-Given(/the coverage check banners feature is disabled/) do
-  allow(EnrollRegistry[:coverage_check_banners].feature).to receive(:is_enabled).and_return(false)
 end
 
 Given(/an applicant has shop coverage/) do
@@ -568,12 +307,14 @@ Given(/^expands the "Other Options" panel/) do
   # TODO: Maybe figure out how to do this with something other than glyphicon
   other_actions_link = page.all('a').detect { |link| link[:id] == 'open_button' }
   other_actions_link.click
-  expect(page).to have_content(
-    l10n(
-      "faa.full_long_name_determination",
-      program_long_name: FinancialAssistanceRegistry[:medicaid_or_chip_agency_long_name].setting(:name).item,
-      program_short_name: FinancialAssistanceRegistry[:medicaid_or_chip_program_short_name].setting(:name).item
-    )
+  expect(page).to have_css(
+    '.panel-group',
+    text:
+      l10n(
+        "faa.full_long_name_determination",
+        program_long_name: FinancialAssistanceRegistry[:medicaid_or_chip_agency_long_name].setting(:name).item,
+        program_short_name: FinancialAssistanceRegistry[:medicaid_or_chip_program_short_name].setting(:name).item
+      )
   )
   find_link(
     l10n(
@@ -585,19 +326,6 @@ end
 Given(/clicks the "Send To OFI" button/) do
   find_link(l10n("faa.send_to_external_verification"))
   click_link(l10n("faa.send_to_external_verification"))
-end
-
-Then(/^the user should see the external verification link$/) do
-  # TODO: Maybe figure out how to do this with something other than glyphicon
-  # other_actions_link = page.all('a').detect { |link| link[:class] == 'glyphicon glyphicon-plus pull-right' }
-  # other_actions_link.click
-  expect(page).to have_content(
-    l10n(
-      "faa.full_long_name_determination",
-      program_long_name: FinancialAssistanceRegistry[:medicaid_or_chip_agency_long_name].setting(:name).item,
-      program_short_name: FinancialAssistanceRegistry[:medicaid_or_chip_program_short_name].setting(:name).item
-    )
-  )
 end
 
 Then(/the "Send To OFI" button will be disabled and the user will see the button text changed to "Sent To OFI"/) do
@@ -616,17 +344,17 @@ end
 
 Then(/^they should see the Medicaid Currently Enrolled warning text$/) do
   expect(page).to have_selector('#mec-check-response')
-  expect(page).to have_content(l10n('faa.mc_continue_bold'))
+  expect(page).to have_css('b', text: l10n('faa.mc_continue_bold'))
 end
 
 Then(/^they should see the shop coverage exists warning text$/) do
-  expect(page).to have_content(l10n('faa.shop_check_success'))
-  expect(page).to have_content(l10n('faa.mc_continue_bold'))
+  expect(page).to have_css('b', text: l10n('faa.shop_check_success'))
+  expect(page).to have_css('p', text: l10n('faa.mc_continue_bold'))
 end
 
 Then(/^they should not see the shop coverage exists warning text$/) do
-  expect(page).to_not have_content(l10n('faa.shop_check_success'))
-  expect(page).to_not have_content('faa.mc_continue_bold')
+  expect(page).to_not have_css('b', text: l10n('faa.shop_check_success'))
+  expect(page).to_not have_css('p', text: l10n('faa.mc_continue_bold'))
 end
 
 # TODO: Refactor these with the resource_registry_world.rb helpers
@@ -647,7 +375,8 @@ When(/^the consumer manually enters the "Cost Savings" url in the browser search
 end
 
 Then(/^the consumer will not have access to the (.*) page$/) do |_title|
-  expect(page).to have_content("The page you were looking for doesn't exist.")
+  # this is a part of our 404.html displays. We should probably refactor them all to use l10n.
+  expect(page).to have_css('.dialog', text: "The page you were looking for doesn't exist.")
 end
 
 When(/^the consumer clicks the Cost Savings link$/) do
@@ -655,11 +384,11 @@ When(/^the consumer clicks the Cost Savings link$/) do
 end
 
 Then(/^the consumer will navigate to the Cost Savings page$/) do
-  expect(page).to have_content('Cost Savings Applications', wait: 10)
+  expect(page).to have_css('h1', text: l10n('faa.cost_savings_applications'), wait: 10)
 end
 
 Then(/the application year will be present on the table/) do
-  expect(page).to have_content('APPLICATION YEAR')
+  expect(page).to have_css('.form-heading', text: l10n('application_year').upcase)
 end
 
 When(/^the consumer manually enters the "Help Paying for Coverage" url in the browser search bar$/) do
@@ -716,29 +445,30 @@ When(/^.+ clicks on Action dropdown$/) do
 end
 
 Then(/^the .+ should see text Full Application$/) do
-  expect(page).to have_content('Full Application')
+  expect(page).to have_css('.interaction-click-control-full-application', text: l10n('faa.applications.actions.full_application'))
 end
 
 Then(/^.+ clicks on Full application action$/) do
-  click_link 'Full Application'
+  click_link l10n('faa.applications.actions.full_application')
 end
 
 Then(/^the social security type - (.*) benefits should show$/) do |ssi_type|
-  expect(page).to have_content(l10n("faa.income.social_security_benefit.#{ssi_type}"))
+  expect(page).to have_css('td', text: l10n("faa.income.social_security_benefit.#{ssi_type}"))
 end
 
 Then(/^the (.*) type should display$/) do |income_type|
-  expect(page).to have_content(l10n("faa.income.#{income_type.parameterize.underscore}"))
+  expect(page).to have_css('td', text: l10n("faa.income.#{income_type.parameterize.underscore}"))
 end
 
 Then(/^the caretaker questions should show$/) do
-  expect(page).to have_content(l10n("faa.other_ques.primary_caretaker_question_text", subject: l10n("faa.this_person")).split(' *').first)
-  expect(page).to have_content(l10n("faa.review.coverage.caretaker"))
+  expect(page).to have_css('div', text: l10n("faa.other_ques.primary_caretaker_question_text", subject: l10n("faa.this_person")).split(' *').first)
+  expect(page).to have_css('div', text: l10n("faa.review.coverage.caretaker"))
 end
 
 Then(/^.+ should see county under Mailing and Home address$/) do
-  expect(page).to have_content('COUNTY')
-  expect(page).to have_content('Cumberland')
+  expect(page).to have_css('div', text: l10n('count').upcase)
+  # this is checking on user-inputed data, therefore not l10n
+  expect(page).to have_css('div', text: 'Cumberland')
 end
 
 Then(/^user should land on full application page and should see 2 view my applications buttons$/) do
@@ -750,14 +480,15 @@ Then(/^user should see 2 print buttons$/) do
 end
 
 And(/^user should see Medicaid eligibility question$/) do
-  expect(page).to have_content("Medicaid eligibility")
+  # this expect is checking on a section of a larger translation string, so it does not have l10n
+  expect(page).to have_css('div', text: "Medicaid eligibility")
 end
 
 And(/^user should have feature toggled questions in review$/) do
   # Add more stuff here as you add more conditional questions please, fam
   if EnrollRegistry.feature_enabled?(:financial_assistance) &&
      FinancialAssistanceRegistry.feature_enabled?(:primary_caregiver_other_question)
-    expect(page).to have_content(l10n("faa.other_ques.primary_caretaker_question_text", subject: l10n("faa.this_person")))
+    expect(page).to have_css('div', text: l10n("faa.other_ques.primary_caretaker_question_text", subject: l10n("faa.this_person")))
   end
 end
 
@@ -789,8 +520,7 @@ And(/^user should have an answer related to applicant$/) do
 end
 
 Then(/^the user should see the popup for the remove applicant confirmation$/) do
-  popup_text = "Are you sure you want to remove this applicant?"
-  expect(page).to have_content(popup_text)
+  expect(page).to have_css('.modal-body', text: "Are you sure you want to remove this applicant?")
 end
 
 And(/^all applicants are not medicaid chip eligible and are non magi medicaid eligible$/) do
@@ -798,12 +528,4 @@ And(/^all applicants are not medicaid chip eligible and are non magi medicaid el
     applicant.update_attributes(is_medicaid_chip_eligible: false)
     applicant.update_attributes(is_non_magi_medicaid_eligible: false)
   end
-end
-
-And(/^there is a (.*) evidence present with the option to upload a document$/) do |evidence_type|
-  evidence = application.applicants.first.send("#{evidence_type}_evidence".to_sym)
-  # confirm evidence is visible
-  find("#evidence_kind_#{evidence_type}_evidence")
-  # confirm id on hidden input for upload is present
-  find(:xpath, "//input[@id='upload_evidence_#{evidence.id}']", :visible => false)
 end
