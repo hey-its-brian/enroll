@@ -55,7 +55,7 @@ class PeopleController < ApplicationController
                                 else
                                   "#{l10n('person_update_failed')} #{msg}"
                                 end
-                              end.uniq.join('\n')
+                              end.uniq.join('<br>')
                             else
                               l10n('person_update_failed')
                             end
