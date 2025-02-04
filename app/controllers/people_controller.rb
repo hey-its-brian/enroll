@@ -47,15 +47,16 @@ class PeopleController < ApplicationController
         build_nested_models
 
         person_error_msgs = if @person.errors.present?
-                              @person.errors.full_messages.map do |msg|
+                              error_messages = @person.errors.full_messages.map do |msg|
                                 if msg.match?(l10n("email"))
-                                  l10n("invalid_email_error")
+                                  l10n("invalid_email_error_message")
                                 elsif msg.match?(l10n("phone"))
-                                  l10n("invalid_phone_error")
+                                  l10n("invalid_phone_error_message")
                                 else
                                   "#{l10n('person_update_failed')} #{msg}"
                                 end
-                              end.uniq.join('<br>')
+                              end
+                              sanitize_html("<ul><li>#{error_messages.uniq.join('</li><li>')}</li></ul>")
                             else
                               l10n('person_update_failed')
                             end

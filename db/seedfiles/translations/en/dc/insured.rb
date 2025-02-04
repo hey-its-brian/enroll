@@ -813,7 +813,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.insured.domestic_partner_value' => "Domestic partner's child",
   :'en.insured.parents_partner_key' => "parents_domestic_partner",
   :'en.insured.parents_partner_value' => "Parent's domestic partner",
-  :'en.invalid_email_error' => "Person update failed. Email is invalid",
-  :'en.invalid_phone_error' => "Person update failed. Phone is invalid",
+  :'en.invalid_email_error_message' => "Person update failed. Email is invalid",
+  :'en.invalid_phone_error_message' => "Person update failed. Phone is invalid",
   :'en.person_update_failed' => "Person update failed.",
 }.freeze
