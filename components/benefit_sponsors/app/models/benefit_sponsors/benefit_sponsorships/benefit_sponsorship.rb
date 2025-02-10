@@ -268,7 +268,10 @@ module BenefitSponsors
       where(:"benefit_applications.effective_period.min".gte => start_on)
     }
 
-    index({ hbx_id: 1 })
+    # @!index [Hash] Creates an index on the hbx_id field
+    # @param hbx_id [Integer] The field to index, with 1 indicating ascending order
+    # @option options [Boolean] :unique (true) Ensures the index is unique
+    index({ hbx_id: 1 }, { unique: true })
     index({ aasm_state: 1 })
     index({ profile_id: 1 })
     index({ organization_id: 1 })

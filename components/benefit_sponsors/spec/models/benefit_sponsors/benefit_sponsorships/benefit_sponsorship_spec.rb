@@ -11,7 +11,7 @@ module BenefitSponsors
     let!(:service_area) { create_default(:benefit_markets_locations_service_area) }
     let!(:next_rating_area) { create_default(:benefit_markets_locations_rating_area, active_year: Date.current.year + 1) }
     let!(:next_service_area) { create_default(:benefit_markets_locations_service_area, active_year: Date.current.year + 1) }
-  
+
     let(:site) { ::BenefitSponsors::SiteSpecHelpers.create_site_with_hbx_profile_and_benefit_market }
     let(:benefit_market)  { site.benefit_markets.first }
 
@@ -688,7 +688,7 @@ module BenefitSponsors
       end
 
       context '.may_end_open_enrollment?' do
-        context 'applications that are under enrollment_open state' do 
+        context 'applications that are under enrollment_open state' do
           let(:initial_application_state) { :enrollment_open }
           let(:renewal_application_state) { :enrollment_open }
 
@@ -698,7 +698,7 @@ module BenefitSponsors
           end
         end
 
-        context 'applications that are under enrollment_extended state' do 
+        context 'applications that are under enrollment_extended state' do
           let(:initial_application_state) { :enrollment_extended }
           let(:renewal_application_state) { :enrollment_extended }
 
@@ -781,7 +781,7 @@ module BenefitSponsors
           )
         end
 
-        it "should fetch only valid initial applications" do 
+        it "should fetch only valid initial applications" do
           applications = subject.may_transmit_initial_enrollment?(april_effective_date)
 
           expect((applications & april_sponsors).sort).to eq april_sponsors.sort
@@ -912,7 +912,7 @@ module BenefitSponsors
 
       end
 
-      context '.may_transition_as_initial_ineligible?' do 
+      context '.may_transition_as_initial_ineligible?' do
         let(:initial_application_state) { :enrollment_closed }
         let(:renewal_application_state) { :enrollment_closed }
         let(:april_enrollment_elgible_sponsor) { april_sponsors[0] }
@@ -1019,7 +1019,7 @@ module BenefitSponsors
 
       let(:april_application) { april_sponsor.benefit_applications.detect{|app| app.start_on == april_effective_date} }
 
- 
+
       context '.oe_extendable_benefit_applications' do
 
         let(:current_date)  { Date.new(this_year, 4, 10) }
@@ -1044,13 +1044,13 @@ module BenefitSponsors
 
             it "should not return application for enrollment extension" do
               expect(april_sponsor.oe_extendable_benefit_applications).to be_empty
-            end 
+            end
           end
 
           context "approved" do
             let(:aasm_state) { :approved }
 
-            it "should not return application for enrollment extension" do 
+            it "should not return application for enrollment extension" do
               expect(april_sponsor.oe_extendable_benefit_applications).to be_empty
             end
           end
@@ -1058,7 +1058,7 @@ module BenefitSponsors
           context "enrollment_extended" do
             let(:aasm_state) { :enrollment_extended }
 
-            it "should return only already extended application" do 
+            it "should return only already extended application" do
               expect(april_sponsor.oe_extendable_benefit_applications).to be_present
               expect(april_sponsor.oe_extendable_benefit_applications).to eq [april_application]
             end
@@ -1075,7 +1075,7 @@ module BenefitSponsors
           context "draft" do
             let(:aasm_state) { :draft }
 
-            it "should return application for enrollment extension" do 
+            it "should return application for enrollment extension" do
               expect(april_sponsor.oe_extendable_benefit_applications).to be_present
               expect(april_sponsor.oe_extendable_benefit_applications).to eq [new_application]
             end
@@ -1100,7 +1100,7 @@ module BenefitSponsors
             expect(april_sponsor.oe_extendable_benefit_applications).to be_present
             expect(april_sponsor.oe_extendable_benefit_applications).to eq [new_application]
           end
-        end 
+        end
       end
 
       context '.oe_extended_applications' do
@@ -1566,6 +1566,57 @@ module BenefitSponsors
           expect(evidence.key).to eq :shop_osse_evidence
           expect(evidence.current_state).to eq :not_approved
           expect(evidence.state_histories.count).to eq 1
+        end
+      end
+    end
+
+    describe 'duplicate hbx_id' do
+      let(:sponsorship1) do
+        FactoryBot.create(
+          :benefit_sponsors_benefit_sponsorship,
+          site: site,
+          aasm_state: :active,
+          profile_id: employer_profile.id,
+          organization: employer_organization,
+          benefit_market: benefit_market
+        )
+      end
+
+      let(:sponsorship2) do
+        FactoryBot.create(
+          :benefit_sponsors_benefit_sponsorship,
+          site: site,
+          aasm_state: :active,
+          profile_id: employer_profile.id,
+          organization: employer_organization,
+          benefit_market: benefit_market,
+          hbx_id: hbx_id
+        )
+      end
+
+      before do
+        sponsorship1
+        BenefitSponsors::BenefitSponsorships::BenefitSponsorship.remove_indexes
+        BenefitSponsors::BenefitSponsorships::BenefitSponsorship.create_indexes
+      end
+
+      context 'when hbx_id is not unique' do
+        let(:hbx_id) { sponsorship1.hbx_id }
+
+        it 'raises an error' do
+          expect { sponsorship2 }.to raise_error(
+            Mongo::Error::OperationFailure
+          ).with_message(
+            /E11000 duplicate key error collection/
+          )
+        end
+      end
+
+      context 'when hbx_id is unique' do
+        let(:hbx_id) { '12345678901234567890' }
+
+        it 'creates a new benefit sponsorship' do
+          expect(sponsorship2).to be_a(BenefitSponsors::BenefitSponsorships::BenefitSponsorship)
         end
       end
     end

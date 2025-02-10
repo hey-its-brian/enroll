@@ -50,4 +50,45 @@ RSpec.describe PaymentTransaction, :type => :model, dbclean: :after_each do
       expect(indexes).to include({:payment_transaction_id => 1})
     end
   end
+
+  describe 'duplicate payment_transaction_id' do
+    let(:payment_transaction1) do
+      FactoryBot.create(:payment_transaction, family: family, enrollment_id: hbx_enrollment.id, source: source)
+    end
+
+    let(:payment_transaction2) do
+      FactoryBot.create(
+        :payment_transaction,
+        family: family,
+        enrollment_id: hbx_enrollment.id,
+        source: source,
+        payment_transaction_id: payment_transaction_id
+      )
+    end
+
+    before do
+      PaymentTransaction.remove_indexes
+      PaymentTransaction.create_indexes
+    end
+
+    context 'when payment_transaction_id is not unique' do
+      let(:payment_transaction_id) { payment_transaction1.payment_transaction_id }
+
+      it 'raises an error' do
+        expect { payment_transaction2 }.to raise_error(
+          Mongo::Error::OperationFailure
+        ).with_message(
+          /E11000 duplicate key error collection/
+        )
+      end
+    end
+
+    context 'when payment_transaction_id is unique' do
+      let(:payment_transaction_id) { '12345678901234567890' }
+
+      it 'creates a new payment transaction' do
+        expect(payment_transaction2).to be_a(PaymentTransaction)
+      end
+    end
+  end
 end

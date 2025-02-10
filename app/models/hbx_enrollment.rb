@@ -336,7 +336,12 @@ class HbxEnrollment
   index({"product_id" => 1}, { sparse: true })
   index({"family_id" => 1})
   index({"writing_agent_id" => 1}, { sparse: true })
-  index({"hbx_id" => 1})
+
+  # @!index [Hash] Creates an index on the hbx_id field
+  # @param hbx_id [Integer] The field to index, with 1 indicating ascending order
+  # @option options [Boolean] :unique (true) Ensures the index is unique
+  index({ hbx_id: 1 }, { unique: true })
+
   index({"external_id" => 1})
   index({"kind" => 1})
   index({"submitted_at" => 1})

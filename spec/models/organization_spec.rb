@@ -644,6 +644,35 @@ RSpec.describe Organization, dbclean: :after_each do
     end
   end
 
+  describe 'duplicate hbx_id' do
+    let(:organization1) { FactoryBot.create(:organization) }
+    let(:organization2) { FactoryBot.create(:organization, hbx_id: org_hbx_id) }
+
+    before do
+      Organization.remove_indexes
+      Organization.create_indexes
+    end
+
+    context 'when hbx_id is unique' do
+      let(:org_hbx_id) { '1234567890' }
+
+      it 'creates a new organization' do
+        expect(organization2).to be_a(Organization)
+      end
+    end
+
+    context 'when hbx_id is not unique' do
+      let(:org_hbx_id) { organization1.hbx_id }
+
+      it 'raises an error' do
+        expect { organization2 }.to raise_error(
+          Mongo::Error::OperationFailure
+        ).with_message(
+          /E11000 duplicate key error collection/
+        )
+      end
+    end
+  end
 end
 
 RSpec.describe Organization, "with valid indexes" do

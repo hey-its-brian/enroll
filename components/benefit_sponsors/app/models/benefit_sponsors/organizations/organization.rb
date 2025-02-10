@@ -119,7 +119,11 @@ module BenefitSponsors
 
 
       index({ legal_name: 1 })
-      index({ hbx_id: 1 })
+
+      # @!index [Hash] Creates an index on the hbx_id field
+      # @param hbx_id [Integer] The field to index, with 1 indicating ascending order
+      # @option options [Boolean] :unique (true) Ensures the index is unique
+      index({ hbx_id: 1 }, { unique: true })
       index({ dba: 1 },   { sparse: true })
       index({ fein: 1 },  { :sparse => true, :name => "temporary_org_fein_non_unique" })
       index({ :"profiles._id" => 1 })

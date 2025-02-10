@@ -16,7 +16,11 @@ class PaymentTransaction
   index({ status: 1 })
   index({ enrollment_id: 1 })
   index({ enrollment_effective_date: 1 })
-  index({ payment_transaction_id: 1 })
+
+  # @!index [Hash] Creates an index on the payment_transaction_id field
+  # @param payment_transaction_id [Integer] The ID of the payment transaction.
+  # @option options [Boolean] :unique (true) Ensures the index is unique.
+  index({ payment_transaction_id: 1 }, { unique: true })
   index({ carrier_id: 1 })
 
   before_save :generate_payment_transaction_id, :set_submitted_at

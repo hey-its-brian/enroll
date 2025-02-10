@@ -33,6 +33,11 @@ class TaxHouseholdGroup
             inclusion: { in: SOURCE_KINDS,
                          message: "%{value} is not a valid source kind" }
 
+  # Validates that the HBX ID is unique within the TaxHouseholdGroup model.
+  # @!attribute [r] hbx_id
+  #   @return [String] the unique identifier for the tax household group
+  validates_uniqueness_of :hbx_id, message: 'HBX ID must be unique'
+
   embeds_many :tax_households, cascade_callbacks: true
 
   before_save :generate_hbx_id

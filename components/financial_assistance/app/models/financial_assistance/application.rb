@@ -164,7 +164,11 @@ module FinancialAssistance
 
     index({ renewal_draft_blocker_reasons: 1 })
 
-    index({ hbx_id: 1 })
+    # @!index [Hash] Creates an index on the hbx_id field
+    # @param hbx_id [Integer] The field to index, with 1 indicating ascending order
+    # @option options [Boolean] :unique (true) Ensures the index is unique
+    index({ hbx_id: 1 }, { unique: true })
+
     index({ aasm_state: 1 })
     index({ created_at: 1 })
     index({ assistance_year: 1 })

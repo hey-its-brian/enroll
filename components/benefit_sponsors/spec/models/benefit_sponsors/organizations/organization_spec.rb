@@ -3,6 +3,8 @@ require_relative '../../../concerns/observable_spec.rb'
 
 module BenefitSponsors
   RSpec.describe Organizations::Organization, type: :model, dbclean: :after_each do
+    require "#{BenefitSponsors::Engine.root}/spec/support/benefit_sponsors_site_spec_helpers.rb"
+
     it_behaves_like 'observable', :benefit_sponsors_organizations_general_organization, :with_site, :with_aca_shop_cca_employer_profile
 
     context "an Organization is hierarchical with a top level agency and child divisions" do
@@ -33,7 +35,6 @@ module BenefitSponsors
         expect(it_division.divisions.first.agency.agency.agency).to be_nil
       end
     end
-
 
     context "a broker gains access to an employer's information for plan_design" do
       let(:employer_name)           { "Classy Cupcakes, Corp" }
@@ -71,7 +72,6 @@ module BenefitSponsors
         end
       end
     end
-
 
     context "a health exchange sets up a site offering ACA individual and shop benefit markets" do
       let(:shop_kind)           { :aca_shop }
@@ -197,6 +197,54 @@ module BenefitSponsors
           second_general_agency_profile.update_attributes(aasm_state: 'is_approved')
           search_params = {q: ''}
           expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, true).count). to eq 0
+        end
+      end
+    end
+
+    describe 'duplicate hbx_id' do
+      let(:site) { ::BenefitSponsors::SiteSpecHelpers.create_site_with_hbx_profile_and_benefit_market }
+      let(:benefit_market)  { site.benefit_markets.first }
+
+      let(:organization1) do
+        FactoryBot.create(
+          :benefit_sponsors_organizations_general_organization,
+          :with_aca_shop_cca_employer_profile,
+          site: site
+        )
+      end
+
+      let(:organization2) do
+        FactoryBot.create(
+          :benefit_sponsors_organizations_general_organization,
+          :with_aca_shop_cca_employer_profile,
+          site: site,
+          hbx_id: hbx_id
+        )
+      end
+
+      before do
+        organization1
+        BenefitSponsors::Organizations::Organization.remove_indexes
+        BenefitSponsors::Organizations::Organization.create_indexes
+      end
+
+      context 'when hbx_id is not unique' do
+        let(:hbx_id) { organization1.hbx_id }
+
+        it 'raises an error' do
+          expect { organization2 }.to raise_error(
+            Mongo::Error::OperationFailure
+          ).with_message(
+            /E11000 duplicate key error collection/
+          )
+        end
+      end
+
+      context 'when hbx_id is unique' do
+        let(:hbx_id) { '12345678901234567890' }
+
+        it 'creates a new organization' do
+          expect(organization2).to be_a(BenefitSponsors::Organizations::Organization)
         end
       end
     end

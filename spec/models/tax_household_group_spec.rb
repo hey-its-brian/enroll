@@ -59,4 +59,33 @@ RSpec.describe TaxHouseholdGroup, type: :model do
       end
     end
   end
+
+  describe 'duplicate hbx_id' do
+    let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+    let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+    let(:thhg1) { FactoryBot.create(:tax_household_group, family: family, source: 'Admin') }
+    let(:thhg2) { FactoryBot.create(:tax_household_group, family: family, source: 'Admin', hbx_id: thhg_hbx_id) }
+
+    before { thhg1 }
+
+    context 'when hbx_id is not unique' do
+      let(:thhg_hbx_id) { thhg1.hbx_id }
+
+      it 'raises an error' do
+        expect { thhg2 }.to raise_error(
+          Mongoid::Errors::Validations
+        ).with_message(
+          /HBX ID must be unique/
+        )
+      end
+    end
+
+    context 'when hbx_id is unique' do
+      let(:thhg_hbx_id) { '12345678901234567890' }
+
+      it 'creates a new tax household group' do
+        expect(thhg2).to be_a(TaxHouseholdGroup)
+      end
+    end
+  end
 end

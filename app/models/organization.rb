@@ -64,7 +64,11 @@ class Organization
 
   validate :office_location_kinds
 
+  # @!index [Hash] Creates an index on the hbx_id field
+  # @param hbx_id [Integer] The field to index, with 1 indicating ascending order
+  # @option options [Boolean] :unique (true) Ensures the index is unique
   index({ hbx_id: 1 }, { unique: true })
+
   index({ legal_name: 1 })
   index({ dba: 1 }, {sparse: true})
   index({ fein: 1 }, { unique: true })
@@ -296,7 +300,7 @@ class Organization
 
         unless (filters[:primary_office_location].nil?)
           next carrier_names unless CarrierServiceArea.valid_for?(office_location: office_location, carrier_profile: org.carrier_profile)
-          
+
           if filters[:active_year]
             next carrier_names if CarrierServiceArea.valid_for_carrier_on(address: office_location.address, carrier_profile: org.carrier_profile, year: filters[:active_year]).empty?
           end
