@@ -965,10 +965,8 @@ document.addEventListener('click', function(event) {
         input.value = '';
       });
 
-      // Clear select fields
-      el.querySelectorAll("select").forEach(select => {
-        select.value = '';
-      });
+      $(".mailing-div #state_id_mailing").val("")
+
       el.classList.add('d-none');
       el.classList.remove('d-block');
     });

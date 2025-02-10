@@ -830,7 +830,6 @@ function demographicValidations() {
   $('form.edit_person, form.new_dependent, form.edit_dependent').on(
     'submit',
     function (e) {
-      $('.mailing-div .stateInput').not(':visible').val('');
       PersonValidations.validationForUsCitizenOrUsNational(e);
       PersonValidations.validationForNaturalizedCitizen(e);
       PersonValidations.validationForEligibleImmigrationStatuses(e);

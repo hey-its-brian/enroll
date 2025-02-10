@@ -55,7 +55,7 @@
               </div>
               <div class="col-sm col-md-6 pr-0">
                 <%= address.label :state, class: "required" %>
-                <%= address.select(:state, options_for_select(State::STATE_IDS, selected: address.object.try(:state)), {include_blank: "SELECT STATE"}, class:"w-100 stateInput required", required: true) %>
+                <%= address.select(:state, options_for_select(State::STATE_IDS, selected: address.object.try(:state)), {include_blank: l10n('select_state')}, id: "state_id_#{kind}", class:"w-100 required", required: true) %>
               </div>
             </div>
             <div class="d-flex col-sm col-md-6 pr-0">
