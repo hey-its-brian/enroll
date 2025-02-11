@@ -168,7 +168,7 @@ namespace :reports do
     CSV.open("enroll_enrollment_report.csv", 'w') do |csv|
       csv << ["Primary Member ID", "Member ID", "Policy ID", "Policy Last Updated", "Policy Subscriber ID", "Status", "Member Status",
               #"First Name", "Last Name","SSN", "DOB", 
-              "Age", "Gender", "Relationship", "Benefit Type", "Tobacco Status",
+              "Age", "Gender", "Relationship", "Exchange Kind", "Benefit Type", "Tobacco Status",
               "Plan Name", "HIOS ID", "Plan Metal Level", "Carrier Name", "Rating Area",
               "Premium Amount", "Premium Total", "Policy APTC", "Responsible Premium Amt", "FPL",
               "Purchase Date", "Coverage Start", "Coverage End", "SEP Reason", "Term Reason",
@@ -209,6 +209,7 @@ namespace :reports do
                   per.age_on(enr.effective_on),
                   per.gender,
                   en.primary_relationship,
+                  enr.kind,
                   enr.coverage_kind,
                   en.tobacco_use_value_for_edi,
                   product.name, product.hios_id, product.metal_level, product.carrier_profile.abbrev,
