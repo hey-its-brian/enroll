@@ -2240,7 +2240,7 @@ GEM
     multipart-post (2.3.0)
     mustermann (2.0.2)
       ruby2_keywords (~> 0.0.1)
-    net-imap (0.4.17)
+    net-imap (0.4.19)
       date
       net-protocol
     net-pop (0.1.2)
@@ -2658,6 +2658,7 @@ DEPENDENCIES
   mongoid-rspec (~> 4)
   mongoid_rails_migrations (~> 1.2)
   mongoid_userstamp (~> 0.4)!
+  net-imap (>= 0.4.19)
   net-ssh (= 4.2.0)
   newrelic_rpm (~> 9.6)
   nokogiri
