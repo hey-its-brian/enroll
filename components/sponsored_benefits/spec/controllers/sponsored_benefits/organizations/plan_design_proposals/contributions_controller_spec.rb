@@ -5,7 +5,7 @@ RSpec.configure do |config|
   config.include RSpec::Benchmark::Matchers
 end
 
-include ApplicationHelper
+# include ApplicationHelper
 
 module SponsoredBenefits
   RSpec.describe Organizations::PlanDesignProposals::ContributionsController, type: :controller, dbclean: :around_each do
