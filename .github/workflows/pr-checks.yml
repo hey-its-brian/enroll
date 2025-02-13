@@ -3,7 +3,6 @@ on:
   pull_request:
     branches:
       - trunk
-      - epic_188588775_csp_enabled
 
 concurrency:
   group: pr-${{ github.ref }}
