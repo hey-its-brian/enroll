@@ -34,9 +34,7 @@
       min: 110.years.ago,
       max: 16.years.ago.beginning_of_month,
       data: {input: "", invalid_dob_title: l10n('broker_agencies.invalid_dob_title'), invalid_dob_body: l10n('broker_agencies.invalid_dob_body'), invalid_dob_after: l10n("broker_agencies.invalid_dob_after", date: 16.years.ago.beginning_of_month.strftime('%m/%d/%Y')), invalid_dob_before: l10n("broker_agencies.invalid_dob_before", date: 110.years.ago.strftime('%m/%d/%Y'))},
-      required: true,
-      onblur: 'validDob(this)',
-      onkeydown: 'storeDateInput(event)'
+      required: true
     %>
     <div class="invalid-feedback">
       <%= l10n("invalid_dob") %>
@@ -51,8 +49,8 @@
       id: 'inputNPN',
       class: 'form-control',
       maxlength: '10',
-      onkeypress: EnrollRegistry.feature_enabled?(:allow_alphanumeric_npn) ? 'return isAlphaNumeric(event);' : 'return isNumberKey(event);',
-      disabled: npn_disabled
+      disabled: npn_disabled,
+      data: {enroll_registry_feature_enabled: EnrollRegistry.feature_enabled?(:allow_alphanumeric_npn) ? 'true' : 'false'}
     %>
     <div class="invalid-feedback">
       <%= l10n('npn_error') %>

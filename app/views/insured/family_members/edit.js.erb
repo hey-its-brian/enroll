@@ -1,7 +1,7 @@
 
 if ($(".my-household-page").length == 0) {
   <% if @dependent.errors.present? || @address_errors.present?  %>
-    var dependent_response = $("<%= escape_javascript(render 'dependent_form', dependent: @dependent, person: @person) %>");
+    var dependent_response = $("<%= escape_javascript(render 'dependent_form', dependent: @dependent, person: @person) %>").ready(init_partials_js());
     if($("#dependent_ul").find("form#edit_dependent .alert-error").length){
       $("#dependent_ul").find("form#edit_dependent .alert-error").replaceWith($(dependent_response).find(".alert-error"));
     }else {
@@ -11,7 +11,7 @@ if ($(".my-household-page").length == 0) {
     $("#new_employee_dependent_form").each(function(idx, ele) {
       $(ele).remove();
     });
-    $("#add_member_list_<%= @dependent.id %>").replaceWith("<%= escape_javascript(render 'dependent_form', dependent: @dependent,person: @person) %>");
+    $("#add_member_list_<%= @dependent.id %>").replaceWith("<%= escape_javascript(render 'dependent_form', dependent: @dependent,person: @person) %>").ready(init_partials_js());
   <% end %>
 
   $("#add_member_list_<%= @dependent.id %>").attr('data-confirm', '');
@@ -27,7 +27,7 @@ if ($(".my-household-page").length == 0) {
 
   var personContainer = $("#person-" + id)
   if (personContainer.length) {
-    personContainer.find('.append_consumer_info').html("<%= escape_javascript(render 'dependent_form', dependent: @dependent, person: @person) %>");
+    personContainer.find('.append_consumer_info').html("<%= escape_javascript(render 'dependent_form', dependent: @dependent, person: @person) %>").ready(init_partials_js());
     personContainer.removeClass('hidden');
     var memberContainer = $(".member-" + id + "-row");
     if ($("#family_information").length == 0) {
@@ -36,7 +36,7 @@ if ($(".my-household-page").length == 0) {
       memberContainer.find(".edit-buttons").removeClass('hidden');
     }
   } else {
-    $(".append_consumer_info").replaceWith("<%= escape_javascript(render 'dependent_form', dependent: @dependent, person: @person) %>");
+    $(".append_consumer_info").replaceWith("<%= escape_javascript(render 'dependent_form', dependent: @dependent, person: @person) %>").ready(init_partials_js());
   }
   $("#add-new-member").addClass("hidden");
   applyListeners();
@@ -51,3 +51,11 @@ semantic_class();
 applyJQDatePickers();
 isApplyingCoverage("dependent");
 indicateRequiredFields()
+
+function init_partials_js() {
+  init_dependent_form()
+  init_dependent_address_fields()
+  init_tribe_fields()
+  init_glossary()
+  initSSNValidation()
+}

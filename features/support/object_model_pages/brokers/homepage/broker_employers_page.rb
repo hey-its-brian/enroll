@@ -82,4 +82,8 @@ class BrokerEmployersPage
   def self.hc4cc_eligibility
     'tbody .col-hc4cc'
   end
+
+  def self.actions_dropdown_assign_general_agency
+    '.dropdown-menu li:nth-child(5)'
+  end
 end

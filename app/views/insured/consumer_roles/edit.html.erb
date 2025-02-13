@@ -3,6 +3,7 @@
   <%= render :partial => 'insured/families/horizontal_status.html.erb', locals: {step: 1} if show_component(request.path) %>
 <% end %>
 <% if @bs4 %>
+  <%= javascript_pack_tag 'benefit_sponsors', 'data-turbolinks-track': 'reload' %>
   <div class="mt-4 mb-4">
     <%= form_for(@consumer_role.person, url: insured_consumer_role_path(id: @consumer_role.id), :enctype =>"multipart/form-data", html: { multipart: true }, method: :put) do |f| %>
       <%= render partial: "form", locals: {f: f} %>

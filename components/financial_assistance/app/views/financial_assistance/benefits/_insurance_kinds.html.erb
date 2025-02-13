@@ -57,7 +57,7 @@
   <%= render partial: 'financial_assistance/benefits/non_esi_benefit_form', locals: { benefit: @applicant.benefits.build, kind: kind, insurance_kind: "", edit: false} %>
 </div>
 
-<button tabindex="0" onkeydown="handleButtonKeyDown(event, 'add_new_insurance_kind')" id="add_new_benefit_kind_<%= kind %>" class="button secondary add_new_benefit_kind <%= 'hidden' unless @applicant.benefits.where(kind: kind).any? %>" data-kind="<%= kind %>">
+<button tabindex="0" data-keydown-id='add_new_insurance_kind_<%= kind %>' id="add_new_benefit_kind_<%= kind %>" class="button secondary add_new_benefit_kind <%= 'hidden' unless @applicant.benefits.where(kind: kind).any? %>" data-kind="<%= kind %>">
   <%= l10n("faa.health_coverage.add_cov_type") %>
 </button>
 

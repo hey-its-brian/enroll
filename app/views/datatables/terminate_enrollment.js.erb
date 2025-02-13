@@ -23,3 +23,23 @@ else {
   $("li>a:contains('Collapse Form')").eq(containing_row.index()).removeClass('disabled');
   $('.dropdown.pull-right').removeClass('open');
 }
+
+jQuery('[id^="terminate_hbx_"]').click(function($) {
+  if (this.checked) {
+    jQuery(jQuery(this).closest('tr').find('[type=checkbox]')[1]).prop('disabled', false);
+  }
+  else {
+    jQuery(jQuery(this).closest('tr').find('[type=checkbox]')[1]).prop('disabled', true);
+    jQuery(jQuery(this).closest('tr').find('[type=checkbox]')[1]).prop('checked', false);
+  }
+});
+
+$( "[id^=edit_hbx_enrollment]" ).submit(function( event ) {
+  if($('input[id^="termination_date_picker"]').val().length !=0)
+        this.submit();
+  else {
+    event.preventDefault();
+    alert("Please select a valid date.");
+  }
+});
+

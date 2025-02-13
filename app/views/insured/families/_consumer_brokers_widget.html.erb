@@ -13,7 +13,7 @@
       <% if current_broker_agency && display_broker_info_for_consumer %>
         <%= h(link_to l10n("insured.go_to_my_expert"), brokers_insured_families_path, class: 'btn w-100 btn-default') %>
       <% else %>
-        <%= h(link_to l10n("insured.assign_an_expert"), '', class: 'btn w-100 btn-default', data: { target: "#help_with_plan_shopping", toggle: "modal" }, id: "help_me_sign_up", tabindex: "0", onkeydown: "handleButtonKeyDown(event, 'help_me_sign_up')") %>
+        <%= h(link_to l10n("insured.assign_an_expert"), '', class: 'btn w-100 btn-default', data: { target: "#help_with_plan_shopping", toggle: "modal", keydown_id: "help_me_sign_up" }, id: "help_me_sign_up", tabindex: "0") %>
       <% end %>
     </div>
   </div>

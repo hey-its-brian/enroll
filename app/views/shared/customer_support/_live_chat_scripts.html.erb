@@ -1,6 +1,5 @@
 <script
   src="https://apps.usw2.pure.cloud/widgets/9.0/cxbus.min.js"
-  onload="javascript:CXBus.configure({debug:false,pluginsPath:'https://apps.usw2.pure.cloud/widgets/9.0/plugins/'}); CXBus.loadPlugin('widgets-core');"
 ></script>
 
 <script>
@@ -138,17 +137,21 @@
     };
   }
 
-  const customPlugin = CXBus.registerPlugin('Custom');
+if (!window.customPlugin) {
+  window.customPlugin = CXBus.registerPlugin('Custom');
 
   <% if EnrollRegistry.feature_enabled?(:live_chat_widget_error_logging) %>
     // throw error when the webchat gets rejected or has an error for visibility
-
-    customPlugin.subscribe('WebChat.rejected', function(e){
+    window.customPlugin.subscribe('WebChat.rejected', function(e){
       console.error("rejected chat", e.stack);
     });
 
-    customPlugin.subscribe('WebChat.error', function(e){
+    window.customPlugin.subscribe('WebChat.error', function(e){
       console.error("chat error", e.stack);
     });
   <% end %>
+}
+
 </script>
+
+<%= javascript_pack_tag 'live_chat_widget', 'data-turbolinks-track': 'reload' %>

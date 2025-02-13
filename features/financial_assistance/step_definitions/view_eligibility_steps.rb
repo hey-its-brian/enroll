@@ -18,7 +18,7 @@ When(/^the user clicks the "Action" dropdown corresponding to the "draft" applic
 end
 
 Then(/^the "View Eligibility Determination" link will be disabled$/) do
-  find_link('View Eligibility Determination')['disabled'].should == 'disabled'
+  expect(find_link('View Eligibility Determination')['disabled']).not_to eq nil
 end
 
 Given(/^that a user with a family has a Financial Assistance application in the "submitted" state$/) do

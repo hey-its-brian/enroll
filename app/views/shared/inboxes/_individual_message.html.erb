@@ -1,6 +1,7 @@
 <% if @bs4 %>
   <tr
     class='msg-inbox <%= message.message_read==true ? "msg-inbox-read" : "msg-inbox-unread" %>'
+    data-partial="individual_message"
     data-url="<%= retrieve_show_path(provider, message) %>">
 
     <td tabindex="0">
@@ -26,7 +27,7 @@
   </tr>
 
 <% else %>
-  <tr tabindex="0" onkeydown="handleButtonKeyDown(event, 'message_inbox')", id="message_inbox" class='<%=message.message_read==true ? "msg-inbox-read" : "msg-inbox-unread"%>' onclick="showMessage('<%= retrieve_show_path(provider, message) %>');">
+  <tr tabindex="0" id="message_inbox" class='<%=message.message_read==true ? "msg-inbox-read" : "msg-inbox-unread"%>' data-show-path="<%= retrieve_show_path(provider, message) %>">
     <td style="font-weight:bold">
       <%= message.try(:from) if @folder == 'Inbox' %>
       <%= message.try(:to)   if @folder == 'Sent'%>
@@ -46,12 +47,20 @@
       <% end %>
     </td>
   </tr>
+
+  <script>
+    $(document).on('click', '#message_inbox', function() {
+      showMessage($(this).data('show-path'))
+    })
+    $(document).on('keydown', '#message_inbox', function(event) {
+      handleButtonKeyDown(event, 'message_inbox')
+    })
+
+    function showMessage(url) {
+      $.ajax({type: "GET", url: url, dataType: 'script'});
+    }
+    function deleteMessage(url, e) {
+      $.ajax({type: "DELETE", url: url, dataType: 'script'});
+    }
+  </script>
 <% end %>
-<script>
-  function showMessage(url) {
-    $.ajax({type: "GET", url: url, dataType: 'script'});
-  }
-  function deleteMessage(url, e) {
-    $.ajax({type: "DELETE", url: url, dataType: 'script'});
-  }
-</script>

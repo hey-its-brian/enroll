@@ -7,9 +7,103 @@ if ( $('tr.child-row:visible').length > 0 ) {
 }
 
 if ( !($parent_row.next().hasClass('child-row'))) {
-  $parent_row.after('<tr class="child-row"><td colspan="100"><%= j render "new_benefit_application"%></td></tr>');
+  $parent_row.after('<tr class="child-row"><td colspan="100"><%= j render "new_benefit_application"%></td></tr>').ready(initNewBAForm());
   $("li>a:contains('Collapse Form')").eq(containing_row.index()).removeClass('disabled');
   $('.dropdown.pull-right').removeClass('open');
 }
 
 applyJQDatePickers();
+
+function initNewBAForm() {
+  $(document).on('change', '#baStartDate', function() {
+    selectedDate(this);
+    validateInputs()
+  })
+
+  $(document).on('change', '#fteCount', function() {enableDisableSubmit()})
+  $(document).on('blur', '#fteCount', function() {checkifValid(this)})
+
+  $( function() {
+    $("#open_enrollment_start_on").datepicker();
+    $("#open_enrollment_end_on").datepicker();
+    $("#binder_due_date").datepicker();
+  } );
+
+  function selectedDate(element) {
+    if (element && element.value) {
+      assignBenefitApplicationDates(element.value)
+      document.getElementById('open_enrollment_start_on').classList.remove('blocking');
+      document.getElementById('open_enrollment_end_on').classList.remove('blocking');
+    } else {
+      resetInputOptions()
+    }
+    enableDisableSubmit()
+  }
+
+  function checkifValid(element) {
+    input = element.closest('input');
+    label = element.closest('.col-md-4').getElementsByTagName('label')[0];
+    feedback = element.nextSibling;
+    if (!element.value) {
+      label.setAttribute("class", "required-feedback");
+      input.setAttribute("class", "required-input");
+      feedback.classList.remove('hidden');
+    } else {
+      feedback.classList.add('hidden');
+      label.classList.remove('required-feedback');
+      input.classList.remove('required-input');
+    }
+  }
+
+  function validateInputs() {
+    inputs = document.getElementsByClassName('admin-plan-year-form')[0].querySelectorAll('input');
+    for (input of inputs) {
+      if (input.id === 'open_enrollment_start_on' || input.id === 'open_enrollment_end_on') {
+        checkifValid(input);
+      }
+    }
+  }
+
+  $(document).on('click', '#closeBAForm', function() {
+    closeRow(this)
+  })
+
+  function closeRow(element) {
+    element.closest('tr').remove();
+  }
+
+  function enableDisableSubmit() {
+    var employeeCounts = {
+      fte: Number
+    }
+    var start_on = document.getElementById('baStartDate');
+    var end_on = document.getElementById('end_on');
+    var oe_start_on = document.getElementById('open_enrollment_start_on');
+    var oe_end_on = document.getElementById('open_enrollment_end_on');
+    var fte_count = document.getElementById('fteCount');
+
+    if (fte_count) {
+      employeeCounts.fte = fte_count.value
+    }
+
+    if ((employeeCounts.fte >= 1) && start_on.value && end_on.value && oe_start_on.value && oe_end_on.value) {
+      document.getElementById('adminCreatePyButton').classList.remove('disabled');
+    } else {
+      document.getElementById('adminCreatePyButton').classList.add('disabled')
+    }
+  }
+
+  function resetInputOptions() {
+    document.querySelector('input#end_on').value = '';
+    document.querySelector("input#open_enrollment_start_on").value = '';
+    document.querySelector("input#open_enrollment_end_on").value = '';
+  }
+
+  function assignBenefitApplicationDates(targetDate) {
+    // var date = JSON.parse('#{@ba_form.start_on_options.to_json.html_safe}');
+    var date = JSON.parse($('#start_on_options_json').attr('value'))
+    document.querySelector('input#end_on').value = getFormattedDate(date[targetDate]["benefit_application_end_on"]);
+    document.querySelector("input#open_enrollment_start_on").value = getFormattedDate(date[targetDate]["open_enrollment_start_on"]);
+    document.querySelector("input#open_enrollment_end_on").value = getFormattedDate(date[targetDate]["open_enrollment_end_on"]);
+  }
+}

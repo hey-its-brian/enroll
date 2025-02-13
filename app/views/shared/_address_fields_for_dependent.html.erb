@@ -1,5 +1,4 @@
 <% if @bs4 %>
-<%= javascript_pack_tag 'benefit_sponsors', 'data-turbolinks-track': 'reload' %>
 <% show_no_dc_address = (defined? show_no_dc_address) ? show_no_dc_address : false %>
 <div id="address_info" class="">
   <% mailing_addresses = f.object.addresses.select{|addr| addr.created_at.present? && addr.kind == "mailing" }%>
@@ -61,7 +60,7 @@
             <div class="d-flex col-sm col-md-6 pr-0">
               <div class="mr-auto col-sm col-md-6 pl-0">
                 <%= address.label :zip, l10n("zip_code"), class: "required" %>
-                <%= address.text_field :zip, class: "w-100 required", required: true, placeholder: l10n("zip_code"), data: { action: true ? 'change->zip-check#zipChange' : '', 'child-index': "#{address.index.to_s}" } %>
+                <%= address.text_field :zip, class: "w-100 required", required: true, placeholder: l10n("zip_code"), data: { action: 'change->zip-check#zipChange', 'child-index': "#{address.index.to_s}" } %>
               </div>
               <% if EnrollRegistry.feature_enabled?(:display_county) %>
                 <div id="county-select-<%= f.index %>" class="col-sm col-md-6 pr-0">
@@ -109,13 +108,6 @@
 
   </div>
 </div>
-<script>
-  $(document).ready(function () {
-    $('#state_id').change(function(){
-      if (!$("#no_dc_address").is(':checked') && $(this).val() != 'DC') {alert('You have selected a Non DC state, please check No DC Address')}
-    });
-  });
-</script>
 <% else %>
 
 <% show_no_dc_address = (defined? show_no_dc_address) ? show_no_dc_address : false %>
@@ -220,19 +212,4 @@
   <span tabindex="0" onkeydown="handleButtonKeyDown(event, 'add_dependent_mailing_address')" id="add_dependent_mailing_address" class="form-action btn btn-default">Add Mailing Address</span>
 <% end %>
 
-<script>
-$(document).ready(function () {
-  $('#state_id').change(function(){
-    if (!$("#no_dc_address").is(':checked') && $(this).val() != 'DC') {alert('You have selected a Non DC state, please check No DC Address')}
-  });
-});
-
-  // $(function() {
-  //   $('select.county-input').selectric('destroy');
-  // });
-
-  // $(document).on('ready page:load turbolinks:load', function () {
-  //   $('select.county-input').selectric('destroy');
-  // })
-</script>
 <% end %>

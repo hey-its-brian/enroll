@@ -8,7 +8,7 @@ When(/^Hbx Admin click Families link$/) do
   visit exchanges_hbx_profiles_path
   find('.interaction-click-control-families').click
   wait_for_ajax
-  find(:xpath, "//*[@id='myTab']/li[2]/ul/li[2]/a", :wait => 10).click
+  find(AdminHomepage.families_btn, :wait => 10).click
   wait_for_ajax
 end
 

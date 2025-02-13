@@ -8,13 +8,12 @@ $(document).on('change', '#market_kind_coverall', function() {
 });
 
 function setGroupSelectionHandlers(){
-
   var employers = $("[id^=census_employee_]");
   hideAllErrors();
 
   if ($("#employer-selection .n-radio-group .n-radio-row").length) {
 
-    var checked_er = $("#employer-selection .n-radio-group .n-radio-row input[checked^= 'checked']:enabled");
+    var checked_er = $("#employer-selection .n-radio-group .n-radio-row input:checked:enabled");
 
     if (checked_er.length) {
       var employer_id = checked_er.val();
@@ -158,9 +157,9 @@ function errorsForChangeInEmployer(element) {
 }
 
 function errorsForChangeInCoverageKind(employer_id){
-  $('#coverage_kind_health').on('change', function() {
+  $(document).on('change', '#coverage_kind_health', function() {
     hideAllErrors();
-    if ($("#employer-selection .n-radio-group .n-radio-row input[checked^= 'checked']:enabled").length) {
+    if ($("#employer-selection .n-radio-group .n-radio-row input:checked:enabled").length) {
 
       $(".health_errors_" + employer_id ).show();
       disableShopHealthIneligible(employer_id);
@@ -173,9 +172,9 @@ function errorsForChangeInCoverageKind(employer_id){
     }
   });
 
-  $('#coverage_kind_dental').on('change', function() {
+  $(document).on('change', '#coverage_kind_dental', function() {
     hideAllErrors();
-    if ($("#employer-selection .n-radio-group .n-radio-row input[checked^= 'checked']:enabled").length) {
+    if ($("#employer-selection .n-radio-group .n-radio-row input:checked:enabled").length) {
 
       $(".dental_errors_" + employer_id ).show();
       disableShopDentalIneligible(employer_id);

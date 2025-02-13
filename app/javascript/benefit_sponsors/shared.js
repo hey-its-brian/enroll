@@ -1,10 +1,10 @@
 function checkOLKind(element) {
   var addressKind = $(element).val();
-  var row = $(element).closest(".row").next(".row").next(".row");
-  if (addressKind == "primary") {
+  var row = $(element).closest('.row').next('.row').next('.row');
+  if (addressKind == 'primary') {
     row.find('#inputCounty').attr('required', true);
     row.find('#inputCounty').prop('disabled', true);
-    row.find('#inputCounty').attr('data-target','zip-check.countySelect');
+    row.find('#inputCounty').attr('data-target', 'zip-check.countySelect');
     row.find('#inputZip').attr('required', true);
     row.find('#inputZip').attr('data-action', 'change->zip-check#zipChange');
   } else {
@@ -29,8 +29,18 @@ function closeWarning(event, elementId) {
   event.preventDefault();
 
   let warning = document.getElementById(elementId);
-  warning.classList.add("hidden");
+  warning.classList.add('hidden');
 }
+
+// Event listener for the close button with id 'closeLanguageWarning'
+document.addEventListener('DOMContentLoaded', function() {
+  let closeLanguageWarning = document.getElementById('closeLanguageWarning');
+  if (closeLanguageWarning) {
+    closeLanguageWarning.addEventListener('click', function(event) {
+      closeWarning(event, 'languageWarning');
+    });
+  }
+});
 
 window.checkOLKind = checkOLKind;
 window.closeWarning = closeWarning;

@@ -9,7 +9,7 @@
           <legend class="bb"><%= render partial:"shared/glossary", locals: {key: "metal_level", term: "Metal Level", question_mark: true } %></legend>
           <% @metal_levels.each do |level| %>
             <label for="plan-metal-level-<%= level %>" class="weight-n d-flex align-items-center mb-2">
-              <input id="plan-metal-level-<%= level %>" class="plan-metal-level-selection-filter checkbox-custom mr-2" name="plan-metal-level-<%= level %>" type="checkbox" onClick="filterMetalLevel(this)" data-plan-metal-level="<%= level %>" data-category="planMetalLevel">
+              <input id="plan-metal-level-<%= level %>" class="plan-metal-level-selection-filter checkbox-custom mr-2" name="plan-metal-level-<%= level %>" type="checkbox" data-plan-metal-level="<%= level %>" data-category="planMetalLevel">
               <span data-toggle="tooltip" data-placement="right" data-container="body" title="<%= l10n('insured.plan_shoppings.plan_filters_'"#{level}"'_title_info') %>"></span>
               <%= l10n("#{level}") %>
             </label>
@@ -22,7 +22,7 @@
           <legend class="bb"><%= render partial:"shared/glossary", locals: {key: "plan_type_title_info", term: l10n("plan_type"), question_mark: true } %></legend>
           <% @plan_types.each_with_index do |type, i| %>
             <label for="checkbox-<%= 10+i %>" class="weight-n d-flex align-items-center mb-2">
-              <input id="checkbox-<%= 10+i %>" class="plan-type-selection-filter checkbox-custom mr-2" name="checkbox-<%= 10+i %>" type="checkbox" data-plan-type="<%= type %>" onClick="filterPlanType(this)" data-category="planType">
+              <input id="checkbox-<%= 10+i %>" class="plan-type-selection-filter checkbox-custom mr-2" name="checkbox-<%= 10+i %>" type="checkbox" data-plan-type="<%= type %>" data-category="planType">
               <span data-toggle="tooltip" data-placement="right" data-container="body" title="<%= l10n('insured.plan_shoppings.'"#{type}"'_title_info') %>"></span>
               <%= l10n("#{type}").upcase %>
             </label>
@@ -37,7 +37,7 @@
           <% if @market_kind == 'shop' || @market_kind == 'fehb' %>
             <% @networks.each_with_index do |network, i| %>
               <label for="checkbox-<%= 15+i %>" class="weight-n d-flex align-items-center mb-2">
-                <input id="checkbox-<%= 15+i %>" class="plan-metal-network-selection-filter checkbox-custom mr-2" name="checkbox-<%= 15+i %>" type="checkbox" data-plan-network="<%= network %>" onClick="filterPlanNetwork(this)" data-category="planNetwork">
+                <input id="checkbox-<%= 15+i %>" class="plan-metal-network-selection-filter checkbox-custom mr-2" name="checkbox-<%= 15+i %>" type="checkbox" data-plan-network="<%= network %>" data-category="planNetwork">
                 <span data-toggle="tooltip" data-placement="right" data-container="body" title="<%= l10n('insured.plan_shoppings.plan_shoppings_'"#{network}"'_title_info') %>"></span>
                 <%= l10n("#{network}") %>
               </label>
@@ -45,7 +45,7 @@
           <% else %>
             <% @networks.each_with_index do |network, i| %>
               <label for="checkbox-<%= 15+i %>" class="weight-n d-flex align-items-center mb-2">
-                <input id="checkbox-<%= 15+i %>" class="plan-metal-network-selection-filter checkbox-custom mr-2" name="checkbox-<%= 15+i %>" type="checkbox" data-plan-network="<%= network.gsub('-', ' ').downcase! %>" onClick="filterPlanNetwork(this)" data-category="planNetwork">
+                <input id="checkbox-<%= 15+i %>" class="plan-metal-network-selection-filter checkbox-custom mr-2" name="checkbox-<%= 15+i %>" type="checkbox" data-plan-network="<%= network.gsub('-', ' ').downcase! %>" data-category="planNetwork">
                 <span data-toggle="tooltip" data-placement="right" data-container="body" title="<%= l10n('insured.plan_shoppings.plan_shoppings_' "#{network}" '_title_info') %>"></span>
                 <%= l10n("#{network}") %>
               </label>
@@ -81,7 +81,7 @@
         <div class="w-100">
           <fieldset class="filter-input-block d-block">
             <legend class="bb"><%= render partial:"shared/glossary", locals: {key: "hc4cc_eligible_title_info", term: "HC4CC Eligible", question_mark: true } %></legend>
-            <%= select_tag :osse_eligibility, options_for_select(["Yes", "No"]), class: "plan-osse-eligibility-selection-filter form-control", include_blank: "All", onchange: "filterOSSEEligibility(this)" %>
+            <%= select_tag :osse_eligibility, options_for_select(["Yes", "No"]), class: "plan-osse-eligibility-selection-filter form-control v1-filter", include_blank: "All" %>
           </fieldset>
         </div>
       </div>
@@ -91,7 +91,7 @@
       <fieldset class="filter-input-block d-block">
         <legend ><%= render partial:"shared/glossary", locals: {key: "hsa_eligible_title_info", term: l10n("hsa_eligible"), question_mark: true } %></legend>
 
-        <%= select_tag :hsa_eligibility, options_for_select(["Yes", "No"]), class: "plan-hsa-eligibility-selection-filter w-100", include_blank: "All", onchange:"filterHSAEligibility(this)" %>
+        <%= select_tag :hsa_eligibility, options_for_select(["Yes", "No"]), class: "plan-hsa-eligibility-selection-filter w-100 v1-filter", include_blank: "All" %>
       </fieldset>
 
       </div>
@@ -100,7 +100,7 @@
           <legend><%= render partial:"shared/glossary", locals: {key: "filter_by_carrier", term: l10n("carrier"), question_mark: true } %></legend>
 
           <% issuer_names = (@market_kind == 'shop' || @market_kind == 'fehb') ? @carrier_names : @carriers %>
-          <%= select_tag :carrier, options_for_select(issuer_names), class: "plan-carrier-selection-filter w-100", include_blank: "All", onchange:"filterPlanCarriers(this)" %>
+          <%= select_tag :carrier, options_for_select(issuer_names), class: "plan-carrier-selection-filter w-100 v1-filter", include_blank: "All" %>
         </fieldset>
       </div>
     </div>
@@ -109,10 +109,10 @@
         <legend><%= render partial:"shared/glossary", locals: {key: "premium_amount_title_info", term: l10n("premium_amount"), question_mark: true } %></legend>
         <div class="d-flex col-sm px-0 d-flex justify-content-between align-items-center">
           <label for="premium_min" class="sr-only">Premium Minimum</label>
-          <input class="plan-metal-premium-from-selection-filter" type="text" placeholder="$0" value="0" onblur="premiumFromAmount(this)" maxlength="10" oninput="toCurrency(this)" id="premium_min">
+          <input class="plan-metal-premium-from-selection-filter" type="text" placeholder="$0" value="0" maxlength="10" id="premium_min">
         <small class="px-2">To</small>
         <label for="premium_max" class="sr-only">Premium Maximum</label>
-        <input class="plan-metal-premium-to-selection-filter" type="text" placeholder="$<%= @max_total_employee_cost || 2000 %>" value="<%= @max_total_employee_cost || 2000 %>" onblur="premiumToAmount(this)" maxlength="10" oninput="toCurrency(this)" id="premium_max">
+        <input class="plan-metal-premium-to-selection-filter" type="text" placeholder="$<%= @max_total_employee_cost || 2000 %>" value="<%= @max_total_employee_cost || 2000 %>" maxlength="10" id="premium_max">
         <%= hidden_field_tag :max_total_employee_cost, (@max_total_employee_cost || 2000) %>
         </div>
       </fieldset>
@@ -120,10 +120,10 @@
         <legend><%= l10n("deductible_amount") %></legend>
         <div class="d-flex col-sm px-0 d-flex justify-content-between align-items-center">
           <label for="deductible_min" class="sr-only">Deductible Minimum</label>
-          <input class="plan-metal-deductible-from-selection-filter" type="text" placeholder="$0" value="0" onblur="deductibleFromAmount(this)" maxlength="10" oninput="toCurrency(this)" id="deductible_min">
+          <input class="plan-metal-deductible-from-selection-filter" type="text" placeholder="$0" value="0" maxlength="10" id="deductible_min">
           <small class="px-2">To</small>
           <label for="deductible_max" class="sr-only">Deductible Maximum</label>
-          <input class="plan-metal-deductible-to-selection-filter" type="text" placeholder="$<%= @max_deductible || 5000 %>" value="<%= @max_deductible || 5000 %>" onblur="deductibleToAmount(this)" maxlength="10" oninput="toCurrency(this)" id="deductible_max">
+          <input class="plan-metal-deductible-to-selection-filter" type="text" placeholder="$<%= @max_deductible || 5000 %>" value="<%= @max_deductible || 5000 %>" maxlength="10" id="deductible_max">
         </div>
       </fieldset>
     </div>
@@ -131,13 +131,13 @@
     <div class="mt-2">
       <% if @market_kind == 'shop' || @market_kind == 'fehb' %>
         <div class="form-inline search-apply-wrapper mt-1">
-          <a class="btn btn-primary mz" href="javascript:void(0)" onclick="filterResults()" title="Apply all filters"><%= l10n("apply") %></a>
-          <a class="btn btn-default" id="reset-btn" onclick="resetAllFilters()"><%= l10n("reset") %></a>
+          <a class="btn btn-primary apply-btn mz" href="#" title="Apply all filters"><%= l10n("apply") %></a>
+          <a class="btn outline reset-btn mr-2" id="reset-btn" href="#"><%= l10n("reset") %></a>
         </div>
       <% else %>
         <div class="form-inline search-apply-wrapper">
-          <a class="btn outline reset-btn mr-2" id="reset-btn" href="javascript:void(0);"><%= l10n("reset") %></a>
-          <a class="btn btn-primary apply-btn mz" href="javascript:void(0);" title="Apply all filters"><%= l10n("apply") %></a>
+          <a class="btn outline reset-btn mr-2" id="reset-btn" href="#"><%= l10n("reset") %></a>
+          <a class="btn btn-primary apply-btn mz" href="#" title="Apply all filters"><%= l10n("apply") %></a>
         </div>
       <% end %>
     </div>
@@ -322,13 +322,13 @@
     <div class="checkbox-filter-wrapper" style="border-bottom:0;">
       <% if @market_kind == 'shop' || @market_kind == 'fehb' %>
         <div class="form-inline search-apply-wrapper mt-1">
-          <a class="btn btn-primary mz" href="javascript:void(0)" onclick="filterResults()" title="Apply all filters"><%= l10n("apply") %></a>
+          <a class="btn btn-primary mz apply-filters-btn" href="#" title="Apply all filters"><%= l10n("apply") %></a>
           <a id="reset-btn" class="btn btn-default" onclick="resetAllFilters()"><%= l10n("reset") %></a>
         </div>
       <% else %>
         <div class="form-inline search-apply-wrapper">
-          <a class="btn btn-primary apply-btn mz" href="javascript:void(0);" title="Apply all filters"><%= l10n("apply") %></a>
-          <a id="reset-btn" class="btn btn-default reset-btn" href="javascript:void(0);"><%= l10n("reset") %></a>
+          <a class="btn btn-primary apply-btn mz" href="#" title="Apply all filters"><%= l10n("apply") %></a>
+          <a id="reset-btn" class="btn btn-default reset-btn" href="#"><%= l10n("reset") %></a>
         </div>
       <% end %>
     </div>
@@ -419,7 +419,7 @@
             <li>
               <div class="filter-input-block" style="text-align:left">
                 <label>
-                  <input id="plan-metal-level-<%= level %>" class="plan-metal-level-selection-filter checkbox-custom" name="plan-metal-level-<%= level %>" type="checkbox" onClick="filterMetalLevel(this)" data-plan-metal-level="<%= level %>" data-category="planMetalLevel">
+                  <input id="plan-metal-level-<%= level %>" class="plan-metal-level-selection-filter checkbox-custom" name="plan-metal-level-<%= level %>" type="checkbox" data-plan-metal-level="<%= level %>" data-category="planMetalLevel">
                   <label for="plan-metal-level-<%= level %>" class="checkbox-custom-label">
                     <span data-toggle="tooltip" data-placement="right" data-container="body" title="<%= l10n('insured.plan_shoppings.plan_filters_'"#{level}"'_title_info') %>"></span>
                     <%= l10n("#{level}") %>
@@ -509,7 +509,7 @@
         <li>
           <div class="filter-input-block">
             <% issuer_names = (@market_kind == 'shop' || @market_kind == 'fehb') ? @carrier_names : @carriers %>
-            <%= select_tag :carrier, options_for_select(issuer_names), class: "plan-carrier-selection-filter form-control", include_blank: "All", onchange:"filterPlanCarriers(this)" %>
+            <%= select_tag :carrier, options_for_select(issuer_names), class: "plan-carrier-selection-filter form-control v1-filter", include_blank: "All" %>
           </div>
         </li>
       </ul>
@@ -566,8 +566,8 @@
         </div>
       <% else %>
         <div class="form-inline search-apply-wrapper">
-          <a class="btn btn-primary apply-btn mz" href="javascript:void(0);" title="Apply all filters"><%= l10n("apply") %></a>
-          <a class="btn btn-default reset-btn" id="reset-btn" href="javascript:void(0);"><%= l10n("reset") %></a>
+          <a class="btn btn-primary apply-btn mz" href="#" title="Apply all filters"><%= l10n("apply") %></a>
+          <a class="btn btn-default reset-btn" id="reset-btn" href="#"><%= l10n("reset") %></a>
         </div>
       <% end %>
     </div>

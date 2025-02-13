@@ -14,7 +14,7 @@
           <td><%= agency.legal_name %></td>
           <td><%= agency.general_agency_primary_staff.npn %></td>
           <td><%= agency.general_agency_primary_staff.person.full_name %></td>
-          <td colspan="1"> <a href="javascript:void(0)" class='btn btn-primary select-general-agency' onclick="selectGeneralAgency(this);" data-general_agency_profile_id="<%= agency._id %>"><%= l10n("select_this_general_agency").upcase %></a>
+          <td colspan="1"> <a href="#" class='btn btn-primary select-general-agency' data-general_agency_profile_id="<%= agency._id %>"><%= l10n("select_this_general_agency").upcase %></a>
           </td>
         </tr>
       </tbody>

@@ -1,2 +1,51 @@
 setTabContent("<%= escape_javascript render "families"%>")
 set_active_ontab("#families-tab");
+
+var ssnRemoved = "<%= EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields) %>";
+if (ssnRemoved) {
+  var columnList = [{ data: 'name'}, { data: 'dob' }, { data: 'hbx_id'}, { data: 'family_count'}, { data: 'registered'}];
+} else {
+  var columnList = [{ data: 'name'}, { data: 'ssn' }, { data: 'dob' }, { data: 'hbx_id'}, { data: 'family_count'}, { data: 'registered'}];
+}
+var market_enabled = document.getElementById("market_enabled_check").value;
+if (market_enabled == 'true') {
+  columnList.push({data: 'consumer'}, {data: 'employee'})
+  var filteredColumnList = columnList
+} else {
+  var filteredColumnList = columnList
+}
+
+// datatables setup
+$(document).ready(function() {
+  $('#Broker-Family-dataTable').DataTable( {
+    "processing": true,
+    "serverSide": true,
+    "ordering" : false,
+    "paging": true,
+    "lengthMenu": [ 10, 25, 50, 100],
+    "searchDelay" : 500,
+    "ajax": {
+      url: "<%= family_datatable_profiles_broker_agencies_broker_agency_profile_path(id: @broker_agency_profile.id, :format => :json) %>",
+      type: "POST",
+      data: function ( d ) {
+        console.log("Broker-Family-dataTable datatable")
+      }
+    },
+    "columns": filteredColumnList,
+    'dom': "<'row'" +
+    "<'col-sm-7 col-md-7'B><'col-sm-5 col-md-5'f>" +
+    ">" +
+    "<'row'" +
+    "<'col-sm-12 col-md-12'>" +
+    ">" +
+    "<'row'" +
+    "<'col-sm-12 col-md-12'tr>"+
+    ">" +
+    "<'row'" +
+    "<'col-sm-11 col-md-11'i><'col-sm-1 col-md-1'l>" +
+    ">" +
+    "<'row'" +
+    "<'col-sm-12 col-md-12'p>" +
+    ">"
+  } );
+});

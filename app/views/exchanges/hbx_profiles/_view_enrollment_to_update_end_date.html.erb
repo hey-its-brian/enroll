@@ -1,84 +1,9 @@
-<script type="text/javascript">
-    var id = $('[id^="terminate_hbx_"]:checked').first().attr('id').split('_').reverse()[0];
-    jQuery('[id^="terminate_hbx_"]:checked').closest('tr').find("input[type=checkbox]").prop('disabled', false);
-    $('#termination-date-picker_' + id).prop('disabled', false);
-    jQuery('[id^="terminate_hbx_"]').click(function($) {
-        jQuery('[id^="terminate_hbx_"]').each(function($) {
-            id = jQuery(this).attr('id').split('_').reverse()[0];
-            if (this.checked) {
-                jQuery(jQuery(this).closest('tr').find('[type=checkbox]')[0]).prop('disabled', false);
-                jQuery('#termination-date-picker_' + id).prop('disabled', false);
-            }else{
-                jQuery(jQuery(this).closest('tr').find('[type=checkbox]')[0]).prop('disabled', true);
-                jQuery(jQuery(this).closest('tr').find('[type=checkbox]')[0]).prop('checked', false);
-                jQuery('#termination-date-picker_' + id).prop('disabled', true);            }
-        });
-    });
 
-    var TerminateWithEarlierDate = function () {
-        $('#termiante_with_earlier_date').modal('show');
-        jQuery('[id^="terminate_hbx_"]').each(function($) {
-            if (this.checked) {
-
-                var dup_enr_ids = <%= raw @dup_enr_ids %>;
-                var input_id = this.value;
-                var output = dup_enr_ids.includes(input_id);
-                var new_term_date = jQuery(this).closest('tr').find("input[name=new_termination_date]")[0].value
-                var enrollment_effective = jQuery(this).closest('tr').find("td#enrollment_effective_on").html();
-                if(new_term_date == enrollment_effective && !output){
-                    jQuery('#cancel_message').show();
-                    jQuery('#termination_message').hide();
-                    jQuery('#no_termination_message').show();
-                    jQuery(".btn-confirmation").show();
-                }
-                else if(new_term_date !== enrollment_effective && output ){
-                  jQuery('#cancel_message').hide();
-                  jQuery('#termination_message').hide();
-                  jQuery('#no_termination_message').show();
-                  jQuery(".btn-confirmation").hide();
-                }
-                else{
-                    jQuery('#cancel_message').hide();
-                    jQuery('#termination_message').show();
-                    jQuery('#no_termination_message').hide();
-                    jQuery(".btn-confirmation").show();
-                }
-            }
-        });
-    }
-
-    function confirmUpdateEndDate(event){
-      $(".btn-confirmation").prop('disabled', true);
-
-      event.preventDefault();
-      event.stopImmediatePropagation();
-
-      $('.modal-backdrop').removeClass('modal-backdrop');
-      $('.modal-open').removeClass('modal-open');
-
-      var formData = new FormData($('#termiante_with_earlier_date-form')[0]);
-
-      $.ajax({
-        url: '/exchanges/hbx_profiles/update_enrollment_terminated_on_date.js',
-        type: "POST",
-        data : formData,
-        contentType: false,
-        processData: false,
-      });
-    }
-
-    <% if @bs4 %>
-      $('.btn-confirmation').on('click', function(event) {
-        confirmUpdateEndDate(event);
-        return false;
-      });
-    <% end %>
-</script>
 
 <% if @bs4 %>
   <td colspan="90%">
     <%if @enrollments.present?%>
-        <%= form_tag update_enrollment_terminated_on_date_exchanges_hbx_profiles_path, :method => :post, remote: true, id: 'termiante_with_earlier_date-form' do %>
+        <%= form_tag update_enrollment_terminated_on_date_exchanges_hbx_profiles_path, :method => :post, remote: true, id: 'terminate_with_earlier_date-form' do %>
             <h3 class='title'><%= l10n('hbx_profiles.enrollment_end_date.header')%></h3>
             <br />
             <table  class="table table-striped vertically-center">
@@ -112,9 +37,9 @@
               <tr><td colspan = "7"><br /></td></tr>
               <tr>
                 <td colspan = "6">
-                  <span class="btn btn-default" onclick="$('tr.child-row:visible').remove();">Cancel</span>&nbsp;&nbsp;&nbsp;
+                  <span class="btn btn-default remove-child-row-btn">Cancel</span>&nbsp;&nbsp;&nbsp;
                   <%= hidden_field_tag :family_actions_id, params[:family_actions_id] %>
-                  <button class='btn btn-primary', type="button", onclick = "TerminateWithEarlierDate()" > Submit </button>
+                  <button class='btn btn-primary update-enrollment-end-date-btn', type="button"> Submit </button>
                 </td>
               </tr>
             </table>
@@ -123,7 +48,7 @@
         <h4 class='title'><%= l10n('hbx_profiles.enrollment_end_date.empty') %></h4>
     <%end%>
 
-    <div class="modal" id="termiante_with_earlier_date" tabindex="-1" role="dialog" role="document">
+    <div class="modal" id="terminate_with_earlier_date" tabindex="-1" role="dialog" role="document">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header" style="border-bottom:none">
@@ -163,7 +88,7 @@
 <% else %>
   <td colspan="90%">
     <%if @enrollments.present?%>
-        <%= form_tag update_enrollment_terminated_on_date_exchanges_hbx_profiles_path, :method => :post, remote: true, id: 'termiante_with_earlier_date-form' do %>
+        <%= form_tag update_enrollment_terminated_on_date_exchanges_hbx_profiles_path, :method => :post, remote: true, id: 'terminate_with_earlier_date-form' do %>
             <h3 class='title'>Terminated Enrollment To Update End Date</h3>
             <br />
             <table  class="table table-striped">
@@ -207,7 +132,7 @@
         <h4 class='title'>No Enrollments to terminate</h4>
     <%end%>
 
-    <div class="modal fade" id="termiante_with_earlier_date" tabindex="-1" role="dialog" aria-labelledby="RetermConfirm" role="document">
+    <div class="modal fade" id="terminate_with_earlier_date" tabindex="-1" role="dialog" aria-labelledby="RetermConfirm" role="document">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header" style="border-bottom:none">

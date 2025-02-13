@@ -139,7 +139,7 @@
       <%= f.button(id: 'confirm-member', class: "btn btn-primary hidden") do %>
         <%= l10n("confirm_member") %>
       <% end %>
-      <span tabindex="0" onkeydown="handleButtonKeyDown(event, 'confirm_member')" id="confirm_member" class="btn btn-primary">
+      <span tabindex="0" data-keydown-id="confirm_member" id="confirm_member" class="btn btn-primary">
         <%= l10n("confirm_member") %>
       </span>
     </div>
@@ -148,79 +148,21 @@
   <%= render 'users/security_question_responses/edit_modal', action: 'replace', method: 'POST', edit_mode: true %>
 
   <div class="modal" id="destroyApplicant" role="dialog">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-body">
-        <%= l10n('faa.edit.delete_applicant') %>
-        <strong><br /><%= l10n('faa.edit.remove_warning') %></strong>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default pull-left" data-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary btn-confirmation" onclick='confirmDestoyApplicant(event, "<%=application_applicant_path(@application, @applicant)%>"); return false;'>Confirm</button>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-body">
+          <%= l10n('faa.edit.delete_applicant') %>
+          <strong><br /><%= l10n('faa.edit.remove_warning') %></strong>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default pull-left" data-dismiss="modal">Cancel</button>
+          <button type="button" class="" id="destroy-confirm" data-url="<%=application_applicant_path(@application, @applicant)%>">Confirm</button>
+
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-  <script>
-    $(document).ready(function() {
-      $.inputMasks();
-    });
-
-    $('#applicant_same_with_primary').click(function(){
-      if($(this).is(':checked')){
-          $('#applicant-home-address-area').addClass("hidden");
-      } else {
-          $('#applicant-home-address-area').removeClass("hidden");
-      }
-    });
-
-    $(document).on('click', 'button#delete_applicant_button', function(e) {
-      e.preventDefault();
-      $("#destroyApplicant").modal();
-
-      $("#destroyApplicant .modal-cancel-button").click(function(e) {
-        $("#destroyApplicant").modal('hidden');
-      });
-      $(".btn-confirmation").removeAttr('disabled');
-    });
-
-    function confirmDestoyApplicant(event, url){
-      $(".btn-confirmation").prop('disabled', true);
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      //
-      $('.modal-backdrop').removeClass('modal-backdrop');
-      $('.modal-open').removeClass('modal-open');
-
-      $.ajax({
-        url: url,
-        type: "DELETE",
-        dataType: 'script',
-        contentType: false,
-        processData: false,
-      });
-    }
-
-    $(document).off('click', '#confirm_member');
-    $(document).on('click', '#confirm_member', function(e) {
-      if ($("input#applicant_same_with_primary").length) {
-        if($("input#applicant_same_with_primary").is(":checked")){
-          $("#applicant-home-address-area input.required, #applicant-home-address-area select.required, #applicant-home-address-area .address_required").removeAttr('required');
-        } else {
-          $("#applicant-home-address-area input.required, #applicant-home-address-area select.required, #applicant-home-address-area .address_required").attr('required', true);
-        }
-
-        $(".btn-confirmation").removeAttr('disabled');
-      }
-      $(this).addClass("disabled").attr('tabindex', -1).blur();
-      PersonValidations.manageRequiredValidations($('#confirm_member'));
-
-      if ($(this).closest('form')[0].checkValidity()) {
-        $(this).removeClass("disabled").attr('tabindex', 0);
-      }
-    });
-  </script>
 
 <% else %>
   <%= form_for @applicant, url: application_applicant_path(@application, @applicant), method: :patch do |f|%>
@@ -354,7 +296,7 @@
                   <i class="fa fa-user icn-out fa-lg" aria-hidden="true"></i>
                 </div>
               </div>
-              <div class="col-lg-4 mt18 static-font">
+              <div class="col-lg-4 col-md-4 mt18 static-font">
                 <label class="static_label label-floatlabel mt-label">ACCOUNT HOLDER</label>
                 <span class="position-full-name"> <%= @applicant.application.primary_applicant.full_name %> </span>
               </div>
@@ -424,54 +366,55 @@
     <button type="button" class="btn btn-default close_member_form hide cancel_<%=@applicant.id%>_edit"> Cancel</button>
     <span tabindex="0" tabindex="0" onkeydown="handleButtonKeyDown(event, 'confirm_member')" id="confirm_member" class='btn btn-primary btn-br save_member applicant-confirm-member' onclick='confirmMember($(this));'> Confirm member</span>
   </div>
-<% end %>
-<br>
-<%= render 'users/security_question_responses/edit_modal', action: 'replace', method: 'POST', edit_mode: true %>
-<script>
-  Freebies.floatlabels();
-  $.inputMasks();
 
-    $('#applicant_same_with_primary').click(function(){
-      if($(this).is(':checked')){
-          $('#applicant-home-address-area').css("display", "none");
-      } else {
-          $('#applicant-home-address-area').css("display", "block");
+  <% end %>
+  <br>
+  <%= render 'users/security_question_responses/edit_modal', action: 'replace', method: 'POST', edit_mode: true %>
+  <script>
+    Freebies.floatlabels();
+    $.inputMasks();
+
+      $('#applicant_same_with_primary').click(function(){
+        if($(this).is(':checked')){
+            $('#applicant-home-address-area').css("display", "none");
+        } else {
+            $('#applicant-home-address-area').css("display", "block");
+        }
+      });
+
+      $(document).on('click', '#delete_applicant_button', function(e) {
+        e.preventDefault();
+        $("#destroyApplicant").modal();
+
+      $("#destroyApplicant .modal-cancel-button").click(function(e) {
+        $("#destroyApplicant").modal('hide');
+      });
+      $(".btn-confirmation").removeAttr('disabled');
+    });
+
+    function confirmMember(element) {
+      const form = element.closest('form')[0];
+      const maleRadio = document.getElementById('radio_male');
+      const femaleRadio = document.getElementById('radio_female');
+      const confirmButtonText = "<%= l10n('confirm_member') %>";
+      const applicantSSN = document.getElementById('applicant_ssn')
+      const applicantNoSSN = document.getElementById('applicant_no_ssn')
+      element.text("Please Wait...").addClass("disabled");
+
+      PersonValidations.manageRequiredValidations(element);
+
+      if (!form.checkValidity() || !isGenderSelected(maleRadio, femaleRadio) || !isSsnSelected(applicantSSN, applicantNoSSN)) {
+        element.text(confirmButtonText).removeClass("disabled");
       }
-    });
-
-    $(document).on('click', '#delete_applicant_button', function(e) {
-      e.preventDefault();
-      $("#destroyApplicant").modal();
-
-    $("#destroyApplicant .modal-cancel-button").click(function(e) {
-      $("#destroyApplicant").modal('hide');
-    });
-    $(".btn-confirmation").removeAttr('disabled');
-  });
-
-  function confirmMember(element) {
-    const form = element.closest('form')[0];
-    const maleRadio = document.getElementById('radio_male');
-    const femaleRadio = document.getElementById('radio_female');
-    const confirmButtonText = "<%= l10n('confirm_member') %>";
-    const applicantSSN = document.getElementById('applicant_ssn')
-    const applicantNoSSN = document.getElementById('applicant_no_ssn')
-    element.text("Please Wait...").addClass("disabled");
-
-    PersonValidations.manageRequiredValidations(element);
-
-    if (!form.checkValidity() || !isGenderSelected(maleRadio, femaleRadio) || !isSsnSelected(applicantSSN, applicantNoSSN)) {
-      element.text(confirmButtonText).removeClass("disabled");
     }
-  }
 
-  function isGenderSelected(maleRadio, femaleRadio) {
-    return (maleRadio && maleRadio.checked) || (femaleRadio && femaleRadio.checked);
-  }
+    function isGenderSelected(maleRadio, femaleRadio) {
+      return (maleRadio && maleRadio.checked) || (femaleRadio && femaleRadio.checked);
+    }
 
-  function isSsnSelected(applicantSSN, applicantNoSSN) {
-    return (applicantSSN && applicantSSN.value.replace(/-/g, '').length == 9) || (applicantNoSSN && applicantNoSSN.checked);
-  }
+    function isSsnSelected(applicantSSN, applicantNoSSN) {
+      return (applicantSSN && applicantSSN.value.replace(/-/g, '').length == 9) || (applicantNoSSN && applicantNoSSN.checked);
+    }
 
     function confirmDestoyApplicant(event, url){
       $(".btn-confirmation").prop('disabled', true);

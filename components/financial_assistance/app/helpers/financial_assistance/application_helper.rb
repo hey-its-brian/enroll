@@ -115,41 +115,25 @@ module FinancialAssistance
       %w[AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA PR RI SC SD TN TX UT VA VI VT WA WV WI WY]
     end
 
-    def income_form_for(application, applicant, income)
-      url = if income.new_record?
-              application_applicant_incomes_path(application, applicant)
+    def form_for_record(application, applicant, record, show_date_warnings: true, &block)
+      class_name = record.class.name.demodulize.underscore
+      url = if record.new_record?
+              send("application_applicant_#{class_name.pluralize}_path", application, applicant)
             else
-              application_applicant_income_path(@application, @applicant, income)
+              send("application_applicant_#{class_name}_path", application, applicant, record)
             end
 
-      form_for income, url: url, remote: true do |f|
-        yield f
-      end
+      data = {"#{class_name}_id".to_sym => record.id.to_s, income_and_deduction_date_warning_flag: FinancialAssistanceRegistry[:income_and_deduction_date_warning].enabled?} if show_date_warnings
+      form_for record, url: url, remote: true, data: data, &block
     end
 
-    def benefit_form_for(application, applicant, benefit)
-      url = if benefit.new_record?
-              application_applicant_benefits_path(application, applicant)
-            else
-              application_applicant_benefit_path(@application, @applicant, benefit)
-            end
+    alias income_form_for form_for_record
 
-      form_for benefit, url: url, remote: true do |f|
-        yield f
-      end
+    def benefit_form_for(application, applicant, benefit, &block)
+      form_for_record(application, applicant, benefit, show_date_warnings: false, &block)
     end
 
-    def deduction_form_for(application, applicant, deduction)
-      url = if deduction.new_record?
-              application_applicant_deductions_path(application, applicant)
-            else
-              application_applicant_deduction_path(@application, @applicant, deduction)
-            end
-
-      form_for deduction, url: url, remote: true do |f|
-        yield f
-      end
-    end
+    alias deduction_form_for form_for_record
 
     def income_and_deductions_for(applicant)
       applicant.incomes + applicant.deductions

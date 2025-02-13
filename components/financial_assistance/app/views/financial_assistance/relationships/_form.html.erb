@@ -19,21 +19,7 @@
       </div>
     <% end %>
   <% end %>
-  <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: review_and_submit_application_path(@application), disable_link: @missing_relationships.any?} %>
-  <script>
-    $(function() {
-      if(<%= @missing_relationships.any? || @all_relationships.detect{|applicant| applicant[:error]} %>){
-        $('#btn-continue', '#continue_button').attr('disabled', true);
-        $('#btn-continue', '#continue_button').addClass('disabled');
-        $('#btn-continue').addClass('disabled');
-
-      } else {
-        $('#btn-continue', '#continue_button').removeAttr('disabled');
-        $('#btn-continue', "#continue_button").removeClass('disabled');
-        $('#btn-continue').removeClass('disabled');
-      }
-    });
-  </script>
+  <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: review_and_submit_application_path(@application), disable_link: @missing_relationships.any? || @all_relationships.detect{|applicant| applicant[:error]}} %>
 <% else %>
 <h1 class="darkblue">Family Relationships</h1>
 <p>We need to understand how members of your household are related. Select the relationship for each person listed

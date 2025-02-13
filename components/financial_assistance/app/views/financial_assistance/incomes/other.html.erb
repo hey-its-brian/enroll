@@ -13,7 +13,7 @@
             <%= radio_button_tag("has_unemployment_income", true, @applicant.has_unemployment_income, class: "required", required: true) %>
             <span class="yes_no_pair"><%= l10n("yes") %></span>
           </label>
-          <label for="has_unemployment_income_false" tabindex="0" onkeydown="handleRadioKeyDown(event, 'has_unemployment_income_false')" class="radio">
+          <label for="has_unemployment_income_false" tabindex="0" data-keydown-id='has_unemployment_income_false' class="radio">
             <%= radio_button_tag("has_unemployment_income", false, @applicant.has_unemployment_income == false, class: "required", required: true) %>
             <span class="yes_no_pair"><%= l10n("no") %></span>
           </label>
@@ -29,7 +29,7 @@
         <% end %>
       </div>
       <div class="<%= 'hidden' unless @applicant.incomes.unemployment.present? %>" id="add-more-link-unemployment">
-        <button tabindex="0" onkeydown="handleButtonKeyDown(event, 'new-unemployment-income')" id="new-unemployment-income" class='new-unemployment-income button'><%= l10n("faa.other_incomes.add", kind: "Unemployment") %></button>
+        <button tabindex="0" data-keydown-id='new-unemployment-income' id="new-unemployment-income" class='new-unemployment-income button'><%= l10n("faa.other_incomes.add", kind: "Unemployment") %></button>
       </div>
       <div id='new-unemployment-income-form' class='new-unemployment-income-form my-4 hidden'>
         <%= render partial: 'financial_assistance/incomes/unemployment_income_form', locals: { income: @applicant.incomes.build(kind: 'unemployment_income'), new_form: true} %>
@@ -47,7 +47,7 @@
           <%= radio_button_tag("has_other_income", true, @applicant.has_other_income, class: "radio", required: true) %>
           <span class="yes_no_pair"><%= l10n("yes") %></span>
         </label>
-        <label for="has_other_income_false" tabindex="0" onkeydown="handleRadioKeyDown(event, 'has_other_income_false')" class="radio">
+        <label for="has_other_income_false" tabindex="0" data-keydown-id='has_other_income_false' class="radio">
           <%= radio_button_tag("has_other_income", false, @applicant.has_other_income == false, class: "required", required: true) %>
           <span class="yes_no_pair"><%= l10n("no") %></span>
         </label>
@@ -76,7 +76,7 @@
           <% end %>
         </div>
         <div class="add-more-link mt-4 <%= 'hidden' unless @applicant.incomes.of_kind(other_income_kind).present? %>" id="add-more-link-<%=other_income_kind%>">
-          <button tabindex="0" onkeydown="handleButtonKeyDown(event, 'add_new_other_income_kind')" class='add_new_other_income_kind button'><%= l10n("faa.other_incomes.add", kind: label.chomp(' income')).titleize %></button>
+          <button tabindex="0" data-keydown-id='add_new_other_income_kind' id="add_new_other_income_kind" class='add_new_other_income_kind button'><%= l10n("faa.other_incomes.add", kind: label.chomp(' income')).titleize %></button>
         </div>
         <div id="new-other-income-form" class='new-other-income-form hidden <%= other_income_kind %>'>
           <%= render partial: 'financial_assistance/incomes/other_income_form', locals: { other_income: FinancialAssistance::Income.new, kind: other_income_kind, disabled: true, new_form: true} %>
@@ -96,7 +96,7 @@
             <%= radio_button_tag("has_american_indian_alaskan_native_income", true, @applicant.has_american_indian_alaskan_native_income, class: "required", required: true) %>
             <span class="yes_no_pair"><%= l10n("yes") %></span>
           </label>
-          <label for="has_american_indian_alaskan_native_income_false" tabindex="0" onkeydown="handleRadioKeyDown(event, 'has_american_indian_alaskan_native_income_false')" class="radio">
+          <label for="has_american_indian_alaskan_native_income_false" tabindex="0" data-keydown-id='has_american_indian_alaskan_native_income_false' class="radio">
             <%= radio_button_tag("has_american_indian_alaskan_native_income", false, @applicant.has_american_indian_alaskan_native_income == false, class: "required", required: true) %>
             <span class="yes_no_pair"><%= l10n("no") %></span>
           </label>
@@ -112,7 +112,7 @@
         <% end %>
       </div>
       <div class="mt-4 <%= 'hidden' unless @applicant.incomes.american_indian_and_alaskan_native.present? %>" id="add-more-link-ai">
-        <button tabindex="0" onkeydown="handleButtonKeyDown(event, 'new-ai-an-income')" id="new-ai-an-income" class="button"><%= l10n("faa.other_incomes.add", kind: "American Indian/Alaskan Native") %></button>
+        <button tabindex="0" data-keydown-id='new-ai-an-income' id="new-ai-an-income" class="button"><%= l10n("faa.other_incomes.add", kind: "American Indian/Alaskan Native") %></button>
       </div>
       <div class='new-ai-an-income-form hidden'>
         <%= render partial: 'financial_assistance/incomes/ai_an_income_form', locals: { income: @applicant.incomes.build(kind: 'american_indian_and_alaskan_native'), new_form: true } %>
@@ -529,7 +529,7 @@
       <div class="col-xs-12">
         <div class="back-link">
           <i class="fa fa-caret-left fa-2x" aria-hidden="true"></i>
-          <a href="javascript:void(0);" onclick="notifyUserPrompt(this)" data-path="<%= edit_application_path(@application) %>"> <b>BACK TO ALL HOUSEHOLD MEMBERS</b> </a> <span>(Go back and work on another person)</span>
+          <a href="#" class="back-to-household-link" data-path="<%= edit_application_path(@application) %>"> <b>BACK TO ALL HOUSEHOLD MEMBERS</b> </a> <span>(Go back and work on another person)</span>
         </div>
       </div>
     </div>

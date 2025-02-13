@@ -139,4 +139,12 @@ class AdminHomepage
   def self.shop_for_employer
     '[data-cuke="shop_for_employer"]'
   end
+
+  def self.term_actions_voluntary
+    '#term_actions_voluntary'
+  end
+
+  def self.term_actions_nonpayment
+    '#term_actions_nonpayment'
+  end
 end

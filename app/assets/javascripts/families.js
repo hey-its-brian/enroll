@@ -65,7 +65,27 @@ function enableTransition() {
 
 }
 
+ $(document).on('click', '.terminate_reason_submit', function() {
+   fetchDate($(this).data('enrollment-id'))
+ })
+
 function fetchDate(id){
   var date = document.getElementById(id).value;
   document.getElementById(`terminate_date_${id}`).value = date;
 }
+
+$(document).on('click', '#cancel-new', function() {
+  $('tr.child-row:visible').remove();
+});
+
+$(document).on('click', '#previous_click', function() {
+  var url = $(this).data('url');
+  $.ajax({
+    url: url,
+    type: "GET",
+  });
+});
+
+$(document).on('click', '#cancel_click', function() {
+  $('tr.child-row-mthh:visible').remove();
+});

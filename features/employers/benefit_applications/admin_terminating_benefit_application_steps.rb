@@ -36,9 +36,9 @@ end
 
 When(/^the user enters (mid_month|any_day|last_day|last_month) and other details for (voluntary|non-payment) termination$/) do |termination_date, termination_type|
   if termination_type == 'voluntary'
-    find(:xpath, '//input[@id="term_actions_voluntary"]').click
+    find(AdminHomepage.term_actions_voluntary).click
   else
-    find(:xpath, '//input[@id="term_actions_nonpayment"]').click
+    find(AdminHomepage.term_actions_nonpayment).click
   end
 
   if termination_date == 'mid_month'

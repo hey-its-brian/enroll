@@ -29,6 +29,29 @@ function filterPlanNetwork(element) {
   processValues(element);
 }
 
+$(document).on('change', '.plan-carrier-selection-filter.v1-filter', function() { filterPlanCarriers(this) })
+
+$(document).on('change', '.plan-hsa-eligibility-selection-filter.v1-filter', function() { filterHSAEligibility(this) })
+
+$(document).on('change', '.plan-osse-eligibility-selection-filter.v1-filter', function() { filterOSSEEligibility(this) })
+
+$(document).on('click', '.plan-type-selection-filter.checkbox-custom', function() { filterPlanType(this) })
+
+$(document).on('click', '.plan-metal-network-selection-filter.checkbox-custom', function() { filterPlanNetwork(this) })
+
+$(document).on('blur', '#premium_min', function() { premiumFromAmount(this) })
+$(document).on('input', '#premium_min', function() { toCurrency(this) })
+
+$(document).on('blur', '#premium_max', function() { premiumToAmount(this) })
+$(document).on('input', '#premium_max', function() { toCurrency(this) })
+
+$(document).on('blur', '#deductible_min', function() { deductibleFromAmount(this) })
+$(document).on('input', '#deductible_min', function() { toCurrency(this) })
+
+$(document).on('blur', '#deductible_max', function() { deductibleToAmount(this) })
+$(document).on('input', '#deductible_max', function() { toCurrency(this) })
+
+
 function filterPlanCarriers(element) {
   filterParams.selectedCarrier = element.value;
 }
@@ -114,6 +137,11 @@ function clearAll() {
   filterParams.deductibleFromAmountValue = '';
   filterParams.deductibleToAmountValue = '';
 }
+
+$(document).on('click', '.apply-filters-btn', function(e) {
+  e.preventDefault()
+  filterResults()
+})
 
 // Gets the filtered Results
 function filterResults() {

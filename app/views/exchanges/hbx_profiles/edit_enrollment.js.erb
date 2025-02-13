@@ -9,9 +9,32 @@ if ( $('tr.child-row:visible').length > 0 ) {
 
 if ( $parent_row.next().hasClass('child-row') ) {
 //
-} 
+}
 else {
-  $parent_row.after('<tr class="child-row"><td colspan="100"><%= j render "edit_enrollment"%></td></tr>');
+  $parent_row.after('<tr class="child-row"><td colspan="100"><%= j render "edit_enrollment"%></td></tr>').ready(function() {
+    $.inputMasks();
+
+    let typingTimer;
+
+    $('#person_dob')
+      .off('keyup')
+      .on('keyup', function() {
+        if (event.keyCode === 9 || event.key === 'Tab') {
+          return;
+        }
+        const dobInput = $(this);
+        clearTimeout(typingTimer);
+        if (dobInput.val()) {
+          typingTimer = setTimeout(() => submitDate(dobInput), 1200);
+        }
+      });
+
+    function submitDate(dobInput) {
+      check_dob_change_implication('<%= @person.id %>', $(dobInput).val(), '<%= @element_to_replace_id %>');
+    }
+
+    initSSNValidation();
+  });
   $("li>a:contains('Collapse Form')").eq(containing_row.index()).removeClass('disabled');
   $('.dropdown.pull-right').removeClass('open');
 }

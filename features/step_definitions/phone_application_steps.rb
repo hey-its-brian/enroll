@@ -65,7 +65,7 @@ When(/^the Admin clicks CONTINUE without uploading and verifying an application$
 end
 
 Then(/^the Admin can not navigate to the next page$/) do
-  find('.interaction-click-control-continue')['disabled'].should == "disabled"
+  expect(['disabled', 'true', '']).to include(find('.interaction-click-control-continue')['disabled'])
 end
 
 When(/^the Admin clicks CONTINUE after uploading and verifying an application$/) do

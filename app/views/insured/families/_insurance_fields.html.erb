@@ -9,7 +9,7 @@
           <%= l10n("insured.is_your_health_coverage_ending") %>
         <% end %>
       </legend>
-      <div class="focus" onkeydown="handleButtonKeyDown(event, 'qle_submit_reason')">
+      <div class="focus" data-keydown-id='qle_submit_reason'>
         <label class="weight-n" class="radio">
           <%= radio_button_tag :reason, "yes", !EnrollRegistry.feature_enabled?(:default_is_your_health_coverage_ending_no), id: "reason_accept" %>
           <%= l10n("yes") %>

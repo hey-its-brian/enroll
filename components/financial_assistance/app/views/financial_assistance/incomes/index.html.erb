@@ -19,7 +19,7 @@
             <%= radio_button_tag("has_job_income", true, @applicant.has_job_income, class: "radio", required: true) %>
             <span class="yes_no_pair"><%= l10n("yes") %></span>
           </label>
-          <label for="has_job_income_false" tabindex="0" onkeydown="handleRadioKeyDown(event, 'has_job_income_false')" class="radio">
+          <label for="has_job_income_false" tabindex="0" data-keydown-id='has_job_income_false' class="radio">
             <%= radio_button_tag("has_job_income", false, @applicant.has_job_income == false, class: "required", required: true) %>
             <span class="yes_no_pair"><%= l10n("no") %></span>
           </label>
@@ -37,7 +37,7 @@
         <% end %>
       </div>
       <div class="add-more-link mt-3">
-        <button tabindex="0" onkeydown="handleButtonKeyDown(event, 'new-income')" id="new-income" class='<%= 'hidden' unless @applicant.incomes.jobs.present? %> new-income new-income-job button'><%= l10n("faa.other_incomes.add", kind: "") %></a>
+        <button tabindex="0" data-keydown-id='new-income' id="new-income" class='<%= 'hidden' unless @applicant.incomes.jobs.present? %> new-income new-income-job button'><%= l10n("faa.other_incomes.add", kind: "") %></a>
       </div>
       <div id='new-income-form' class='new-income-form my-4 hidden'>
         <%= render partial: 'financial_assistance/incomes/job_income_form', locals: { income: @applicant.incomes.build, new_form: true } %>
@@ -56,7 +56,7 @@
             <%= radio_button_tag("has_self_employment_income", true, @applicant.has_self_employment_income, class: "radio", required: true) %>
             <span class="yes_no_pair"><%= l10n("yes") %></span>
           </label>
-          <label for="has_self_employment_income_false" tabindex="0" onkeydown="handleRadioKeyDown(event, 'has_self_employment_income_false')" class="radio">
+          <label for="has_self_employment_income_false" tabindex="0" data-keydown-id='has_self_employment_income_false' class="radio">
             <%= radio_button_tag("has_self_employment_income", false, @applicant.has_self_employment_income == false, class: "required", required: true) %>
             <span class="yes_no_pair"><%= l10n("no") %></span>
           </label>
@@ -74,7 +74,7 @@
         <% end %>
       </div>
       <div class="add-more-link mt-3">
-        <button tabindex="0" onkeydown="handleButtonKeyDown(event, 'self-employed-income', 'new-income-form')" id="self-employed-income" class='<%= 'hidden' unless @applicant.incomes.self_employment.present? %> new-income new-income-self-employed button'><%= l10n("faa.other_incomes.add", kind: l10n("faa.incomes.self_employed_income")) %></a>
+        <button tabindex="0" data-keydown-id='self-employed-income' id="self-employed-income" class='<%= 'hidden' unless @applicant.incomes.self_employment.present? %> new-income new-income-self-employed button'><%= l10n("faa.other_incomes.add", kind: l10n("faa.incomes.self_employed_income")) %></a>
       </div>
       <div id='new-self-employed-income-form' class='new-income-form my-4 hidden'>
         <%= render partial: 'financial_assistance/incomes/self_employed_income_form', locals: { income: @applicant.incomes.build, new_form: true } %>
@@ -125,7 +125,7 @@
             <div class="mt-1 mb-1">
               <h4 class="modal-title darkblue" id="myModalLabel"><%= l10n("faa.edit.confirm_deletion") %></h4>
             </div>
-            <span tabindex="0" onkeydown="handleButtonKeyDown(event, 'unsaved-delete')" id="unsaved-delete" class="glyphicon glyphicon-remove close" aria-hidden="true" data-dismiss="modal" aria-label="Close"></span>
+            <span tabindex="0" data-keydown-id='unsaved-delete' id="unsaved-delete" class="glyphicon glyphicon-remove close" aria-hidden="true" data-dismiss="modal" aria-label="Close"></span>
           </div>
           <div class="pl-3">
             <%= l10n("faa.edit.sure_remove", income_type: l10n('faa.incomes.job_income').downcase) %>
@@ -152,7 +152,7 @@
             <div class="mt-1 mb-1">
               <h4 class="modal-title darkblue" id="myModalLabel"><%= l10n("faa.edit.confirm_deletion") %></h4>
             </div>
-            <span tabindex="0" onkeydown="handleButtonKeyDown(event, 'unsaved-delete')" id="unsaved-delete" class="glyphicon glyphicon-remove close" aria-hidden="true" data-dismiss="modal" aria-label="Close"></span>
+            <span tabindex="0" data-keydown-id='unsaved-delete' id="unsaved-delete" class="glyphicon glyphicon-remove close" aria-hidden="true" data-dismiss="modal" aria-label="Close"></span>
           </div>
           <div class="pl-3">
             <%= l10n("faa.edit.sure_remove", income_type: l10n('faa.incomes.income')) %>
@@ -179,7 +179,7 @@
             <div class="mt-1 mb-1">
               <h4 class="modal-title darkblue" id="myModalLabel"><%= l10n("faa.edit.confirm_deletion") %></h4>
             </div>
-            <span tabindex="0" onkeydown="handleButtonKeyDown(event, 'unsaved-delete')" id="unsaved-delete" class="glyphicon glyphicon-remove close" aria-hidden="true" data-dismiss="modal" aria-label="Close"></span>
+            <span tabindex="0" data-keydown-id='unsaved-delete' id="unsaved-delete" class="glyphicon glyphicon-remove close" aria-hidden="true" data-dismiss="modal" aria-label="Close"></span>
           </div>
           <div class="pl-3">
             <%= l10n("faa.edit.sure_remove_all", income_type: l10n('faa.incomes.job_income').downcase) %>
@@ -206,7 +206,7 @@
             <div class="mt-1 mb-1">
               <h4 class="modal-title darkblue" id="myModalLabel"><%= l10n("faa.edit.confirm_deletion") %></h4>
             </div>
-            <span tabindex="0" onkeydown="handleButtonKeyDown(event, 'unsaved-delete')" id="unsaved-delete" class="glyphicon glyphicon-remove close" aria-hidden="true" data-dismiss="modal" aria-label="Close"></span>
+            <span tabindex="0" data-keydown-id='unsaved-delete' id="unsaved-delete" class="glyphicon glyphicon-remove close" aria-hidden="true" data-dismiss="modal" aria-label="Close"></span>
           </div>
           <div class="pl-3">
             <%= l10n("faa.edit.sure_remove_all", income_type: l10n('faa.incomes.income').downcase) %>
@@ -337,7 +337,7 @@
         <div class="col-xs-12">
           <div class="back-link">
           <i class="fa fa-caret-left fa-2x" aria-hidden="true"></i>
-            <a href="javascript:void(0);" onclick="notifyUserPrompt(this)" data-path="<%= edit_application_path(@application) %>"> <b>BACK TO ALL HOUSEHOLD MEMBERS</b> </a> <span>(Go back and work on another person)</span>
+            <a href="#" class="back-to-household-link" data-path="<%= edit_application_path(@application) %>"> <b>BACK TO ALL HOUSEHOLD MEMBERS</b> </a> <span>(Go back and work on another person)</span>
           </div>
         </div>
       </div>

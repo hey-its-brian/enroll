@@ -1,11 +1,11 @@
 <% if @bs4 %>
   <% if @applicant.is_primary_applicant? %>
-    $(".append_consumer_info").html("<%= escape_javascript(render partial: 'edit')%>");
+    $(".append_consumer_info").html("<%= escape_javascript(render partial: 'edit')%>").ready(initEditJS());
 
     $("#member-<%= @applicant.id %>-info-display").addClass('hidden');
     $(".member-<%= @applicant.id %>-buttons").addClass('hidden');
   <% else %>
-    $("#edit_applicant_<%= @applicant.id %>_form_section").html("<%= escape_javascript(render partial: 'edit')%>");
+    $("#edit_applicant_<%= @applicant.id %>_form_section").html("<%= escape_javascript(render partial: 'edit')%>").ready(initEditJS());
 
     $("#member-<%= @applicant.id %>-info-display").addClass('hidden');
     $(".member-<%= @applicant.id %>-buttons").addClass('hidden');
@@ -25,11 +25,11 @@
   indicateRequiredFields()
 <% else %>
   <% if @applicant.is_primary_applicant? %>
-    $(".append_consumer_info").html("<%= escape_javascript(render partial: "edit")%>")
+    $(".append_consumer_info").html("<%= escape_javascript(render partial: "edit")%>").ready(initEditJS())
     $(".faa-row").addClass('hide');
   <% else %>
     $("#edit_applicant_<%= @applicant.id %>").addClass('hide');
-    $("#edit_applicant_<%= @applicant.id %>_form_section").html("<%= escape_javascript(render partial: "edit")%>")
+    $("#edit_applicant_<%= @applicant.id %>_form_section").html("<%= escape_javascript(render partial: "edit")%>").ready(initEditJS())
   <% end %>
 
   $("#jq_datepicker_ignore_applicant_dob").closest(".floatlabel-wrapper").hide();
@@ -53,3 +53,8 @@ applicantDemographicValidations();
 
 hideOrShowApplicantMailingAddress();
 addApplicantMailingAddressKeyboardNavigation();
+
+function initEditJS() {
+  initSecurityQuestionsModal();
+  initSSNValidation();
+}

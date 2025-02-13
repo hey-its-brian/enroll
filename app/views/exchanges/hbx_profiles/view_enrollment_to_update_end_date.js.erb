@@ -10,3 +10,77 @@ else {
     $("li>a:contains('Collapse Form')").eq(containing_row.index()).removeClass('disabled');
     $('.dropdown.pull-right').removeClass('open');
 }
+
+
+var id = $('[id^="terminate_hbx_"]:checked').first().attr('id').split('_').reverse()[0]
+jQuery('[id^="terminate_hbx_"]:checked').closest('tr').find('input[type=checkbox]').prop('disabled', false)
+$('#termination-date-picker_' + id).prop('disabled', false)
+jQuery('[id^="terminate_hbx_"]').on('click',function ($) {
+	jQuery('[id^="terminate_hbx_"]').each(function ($) {
+		id = jQuery(this).attr('id').split('_').reverse()[0]
+		if (this.checked) {
+			jQuery(jQuery(this).closest('tr').find('[type=checkbox]')[0]).prop('disabled', false)
+			jQuery('#termination-date-picker_' + id).prop('disabled', false)
+		} else {
+			jQuery(jQuery(this).closest('tr').find('[type=checkbox]')[0]).prop('disabled', true)
+			jQuery(jQuery(this).closest('tr').find('[type=checkbox]')[0]).prop('checked', false)
+			jQuery('#termination-date-picker_' + id).prop('disabled', true)
+		}
+	})
+})
+
+function TerminateWithEarlierDate () {
+	$('#terminate_with_earlier_date').modal('show')
+	jQuery('[id^="terminate_hbx_"]').each(function ($) {
+		if (this.checked) {
+			var dup_enr_ids = [];
+			var input_id = this.value
+			var output = dup_enr_ids.includes(input_id)
+			var new_term_date = jQuery(this).closest('tr').find('input[name=new_termination_date]')[0].value
+			var enrollment_effective = jQuery(this).closest('tr').find('td#enrollment_effective_on').html()
+			if (new_term_date == enrollment_effective && !output) {
+				jQuery('#cancel_message').show()
+				jQuery('#termination_message').hide()
+				jQuery('#no_termination_message').show()
+				jQuery('.btn-confirmation').show()
+			} else if (new_term_date !== enrollment_effective && output) {
+				jQuery('#cancel_message').hide()
+				jQuery('#termination_message').hide()
+				jQuery('#no_termination_message').show()
+				jQuery('.btn-confirmation').hide()
+			} else {
+				jQuery('#cancel_message').hide()
+				jQuery('#termination_message').show()
+				jQuery('#no_termination_message').hide()
+				jQuery('.btn-confirmation').show()
+			}
+		}
+	})
+}
+
+function confirmUpdateEndDate(event) {
+	$('.btn-confirmation').prop('disabled', true)
+
+	event.preventDefault()
+	event.stopImmediatePropagation()
+
+	$('.modal-backdrop').removeClass('modal-backdrop')
+	$('.modal-open').removeClass('modal-open')
+
+	var formData = new FormData($('#terminate_with_earlier_date-form')[0])
+
+	$.ajax({
+		url: '/exchanges/hbx_profiles/update_enrollment_terminated_on_date.js',
+		type: 'POST',
+		data: formData,
+		contentType: false,
+		processData: false,
+	})
+}
+
+<% if @bs4 %>
+  $('.btn-confirmation').on('click', function(event) {
+    confirmUpdateEndDate(event);
+    return false;
+  });
+<% end %>

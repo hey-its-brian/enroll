@@ -3,7 +3,7 @@
     $("#edit-primary-person").hide();
     $("#primary-info-display").addClass('hidden');
 
-    $("#append_consumer_info").html("<%= escape_javascript(render partial: "personal")%>");
+    $("#append_consumer_info").html("<%= escape_javascript(render partial: "personal")%>").ready(initPersonalJS());
 
     // Had to extensively call this function because this is being called only on Document load.
     // FAA specific case For Primary Demographic fields conditional edit.
@@ -13,7 +13,7 @@
     // manage family/ my household page
     var id = "<%= @person.id %>";
     var personContainer = $("#person-" + id);
-    $("#person-" + id + " .append_consumer_info").html("<%= escape_javascript(render partial: "personal")%>");
+    $("#person-" + id + " .append_consumer_info").html("<%= escape_javascript(render partial: "personal")%>").ready(initPersonalJS());
     personContainer.removeClass('hidden');
     if ($("#family_information").length == 0) {
       var memberContainer = $(".member-" + id + "-row");
@@ -26,6 +26,13 @@
   applyListeners();
   indicateRequiredFields()
   demographicValidations();
+  init_glossary();
+
+  function initPersonalJS() {
+    initSecurityQuestionsModal();
+    initSSNValidation();
+  }
+
 <% else %>
   $(".append_consumer_info").html("<%= escape_javascript(render partial: "personal")%>");
   $("#jq_datepicker_ignore_person_dob").closest(".floatlabel-wrapper").hide();
@@ -36,3 +43,9 @@
   // FAA specific case For Primary Demographic fields conditional edit.
   demographicValidations();
 <% end %>
+
+// Both BS4 and non-BS4
+Freebies.floatlabels();
+if (!disableSelectric) {
+  $("select[multiple!='multiple']").not('[name*="dataTable_length"], .chosen-select, .no-selectric').selectric();
+}

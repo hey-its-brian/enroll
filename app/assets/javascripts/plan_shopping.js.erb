@@ -65,31 +65,32 @@ function applyPlanFilterCBs(cbKlass, cbFilterKlass, planValueTag) {
 }
 
 
-
+// Setup an interval to look for [data-plans-loading] presence
+// If it is not present, we can assume the plans are loaded
+let ogPlanSort
+let intervalId
 
 // Only load this script on the plan shopping page
-  if (window.location.pathname.includes('/insured/plan_shoppings')) {
+$(document).on('turbolinks:load', function() {
+  intervalId = setInterval(checkPlansLoadedState, 500);
+});
 
-  // Setup an interval to look for [data-plans-loading] presence
-  // If it is not present, we can assume the plans are loaded
-  let intervalId = setInterval(checkPlansLoadedState, 500);
-  var ogPlanSort; // stores original plan sort order
-  function checkPlansLoadedState() {
-    const loading = document.querySelector('[data-plans-loading]');
-    if (!loading) {
-      clearInterval(intervalId);
-      initSorts();
-    } else {
-      console.log('Plans are still loading');
-    }
-  }
-
-  function initSorts() {
-    console.log('Plans are loaded');
-    ogPlanSort = $('#all-plans #ivl_plans .plan-row')
-  }
+function checkPlansLoadedState() {
+  const loading = document.querySelector('[data-plans-loading]');
+  if (!loading) {
+    clearInterval(intervalId);
+    initSorts();
+  } 
 }
 
+function initSorts() {
+  const compareChecks = document.querySelectorAll(".compare_plan_checkbox");
+  compareChecks.forEach(check => check.addEventListener('click', event => {
+    comparePlan(check);
+  }));
+
+  ogPlanSort = $('#all-plans #ivl_plans .plan-row')
+}
 
 function applyPlanFilters() {
   var all_selectors = [
@@ -356,7 +357,8 @@ $(function() {
     });
   }
 
-  $(document).on('click', '.all-filters-row .apply-btn', function(){
+  $(document).on('click', '.all-filters-row .apply-btn', function(event){
+    event.preventDefault();
 		applyPlanFilters();
 
     const sort_by = $('#sort_by input:checked').data('sort-by');
@@ -383,7 +385,8 @@ $(function() {
     };
   });
 
-  $(document).on('click', '.all-filters-row .reset-btn', function(){
+  $(document).on('click', '.all-filters-row .reset-btn', function(event){
+    event.preventDefault();
     resetAptc();
     resetFilters();
     applyPlanFilters();
@@ -435,14 +438,107 @@ $(document).on("click", ".reference_plan_info h4 span", function() {
   $(this).parents(".reference_plan_info").find('.content').toggle();
 });
 
+$(document).on('click', '.waive-disable-selectric-btn', function() {
+  disableSelectricInModal()
+})
+
 function disableSelectricInModal() {
   $('#waive_confirm').on('shown.bs.modal', function (e) {
     $('select#waiver_reason_selection_dropdown').selectric('destroy');
   })
 }
 
+$("document").on("click", ".plan-metal-level-selection-filter", function(event) {
+  filterMetalLevel($(this));
+});
+
 // show the dependent table when the primary's name is clicked
 $(document).on("click", "#dependentList", function(event) {
   event.preventDefault();
   $("#dependentTable").toggleClass('hidden');
 });
+
+//// app/views/insured/plan_shoppings/_plan_details.html.erb
+function resetComparePlan() {
+
+  var compareBtn = document.getElementById('compareBtn')
+  compareBtn.classList.add('hidden')
+  checkboxes = document.querySelectorAll('.compare_plan_checkbox')
+  checkboxes.forEach(function(checkbox) {
+     checkbox.checked = false;
+  })
+}
+
+function comparePlan(element) {
+  plansToCompareArray = [];
+  checkboxes = document.querySelectorAll('.compare_plan_checkbox')
+  count = 0;
+  checkboxes.forEach(function(checkbox) {
+    //
+    if (checkbox.checked) {
+      count++;
+      hios = checkbox.dataset.hiosId;
+      planYear = checkbox.dataset.planYear;
+      hbxId = checkbox.dataset.hbxId;
+      enrollmentKind = checkbox.dataset.planEnrollmentKind;
+      changePlan = checkbox.dataset.planChangePlan;
+      uri = checkbox
+
+      var compareBtn = document.getElementById('compareBtn')
+
+      if (count > 1) {
+        compareBtn.classList.remove('hidden')
+      } else {
+        compareBtn.classList.add('hidden')
+      }
+
+      if (count > 3) {
+        checkbox.checked = false;
+        if (document.getElementById('planComparisonCountExceeded')) {
+          $('#planComparisonCountExceeded').modal('show');
+        } else {
+          swal({
+          title: "Plan count exceeded",
+          text: "You may only compare up to 3 plans at a time",
+          icon: "warning"
+          });
+        }
+      }
+      if (count <= 3) {
+        plansToCompareArray.push(hios)
+        plansToCompareArray = uniqueValues(plansToCompareArray)
+      }
+    }
+  })
+}
+
+function compareResults() {
+  uri = document.getElementById('compareBtn').dataset.uri;
+  $.ajax({
+    type: "GET",
+  url: uri,
+  dataType: 'script',
+  data: {
+    "standard_component_ids": plansToCompareArray,"hbx_enrollment_id": hbxId, "active_year": planYear, "enrollment_kind": enrollmentKind,
+    "change_plan": changePlan
+  }
+  });
+}
+
+function uniqueValues(array) {
+  let map = new Map();
+  array.forEach(value => map.set(value, value));
+  return [...map.values()];
+};
+
+
+$(document).on('click', '[id^=select-plan-]', function() {
+  event.preventDefault();
+  // Get the plan id from the button
+  const planId = $(this).data('plan-id');
+  const planCard = $(`.plan-card[data-plan-id=${planId}]`);
+  const planCardBtn = planCard.find('.btn-default.hidden');
+
+  planCardBtn.trigger('click');
+});
+

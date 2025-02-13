@@ -18,7 +18,7 @@ fieldset
 
     .col-md-4.mb-2
       label for="inputDOB"  #{l10n('date_of_birth')} *
-      = f.text_field :dob, placeholder: 'MM/DD/YYYY', required: 'true', id: 'inputStaffDOB', class:'form-control', onblur:'validDob(this)'
+      = f.text_field :dob, placeholder: 'MM/DD/YYYY', required: 'true', id: 'inputStaffDOB', class:'form-control'
       .invalid-feedback
 
         = l10n("invalid_dob")
@@ -29,21 +29,3 @@ fieldset
       .invalid-feedback
 
         = l10n("invalid_email")
-
-
-javascript:
-  var cleave = new Cleave('#inputDOB', {
-    date: true,
-    datePattern: ['m', 'd', 'Y']
-  });
-
-  function validDob(element) {
-    if (element.value && element.value.length < 10) {
-      swal({
-        title: "Invalid DOB Format",
-        text: "DOB must be entered as MM/DD/YYYY",
-        icon: "warning"
-      }),
-      element.value = ''
-    }
-  }

@@ -39,30 +39,32 @@
  </div>
 </div>
 
-    <script>
-      disableSelectric = true;
+<% unless @bs4 %>
+  <script>
+    disableSelectric = true;
 
-     $('.security-question-select').on('change', function(){
-       var questionId = $(this).val();
-       var selectedQuestions = [];
+    $('.security-question-select').on('change', function(){
+      var questionId = $(this).val();
+      var selectedQuestions = [];
 
-       $.each($('.selectric-scroll li.selected'), function(propertyName, propertyValue){
-         var elemIndex = $(this).data('index');
-         if(elemIndex != 0) {
-           selectedQuestions.push(elemIndex);
-         }
-       });
+      $.each($('.selectric-scroll li.selected'), function(propertyName, propertyValue){
+        var elemIndex = $(this).data('index');
+        if(elemIndex != 0) {
+          selectedQuestions.push(elemIndex);
+        }
+      });
 
-       $('.selectric-scroll li').show();
-       selectedQuestions.forEach(function(index){
-         $(".selectric-scroll li[data-index='" + index +"']").hide();
-       });
+      $('.selectric-scroll li').show();
+      selectedQuestions.forEach(function(index){
+        $(".selectric-scroll li[data-index='" + index +"']").hide();
+      });
 
-       //[attribute!='value']
-       $.each($('.security-question-select').not(this), function(propertyName, propertyValue){
-         $(this).children("option").show();
-         $(this).children("option[value='" + questionId + "']").hide();
-       });
+      //[attribute!='value']
+      $.each($('.security-question-select').not(this), function(propertyName, propertyValue){
+        $(this).children("option").show();
+        $(this).children("option[value='" + questionId + "']").hide();
+      });
 
-     });
-    </script>
+    });
+  </script>
+<% end %>

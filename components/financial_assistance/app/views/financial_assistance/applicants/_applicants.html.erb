@@ -1,4 +1,5 @@
 <% if @bs4 %>
+  <%= javascript_pack_tag 'benefit_sponsors', 'data-turbolinks-track': 'reload' %>
   <h1><%= l10n("family_information") %></h1>
   <h2><%= l10n("application_for_coverage", year: @application.assistance_year )%></h2>
   <p><%= l10n('insured.family_members.index.continue_to_get_insurance') %></p>

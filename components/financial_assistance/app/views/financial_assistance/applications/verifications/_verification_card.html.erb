@@ -28,7 +28,7 @@
         <% end %>
         <% if display_upload_for_evidence?(evidence) %>
           <%= form_tag financial_assistance.application_applicant_verification_documents_upload_path(application, applicant), multipart: true, method: :post do %>
-            <span tabindex="0" onkeydown="handleButtonKeyDown(event, 'upload_evidence_<%= evidence.id %>')" class="btn btn-default btn-file text-nowrap sm-space">
+            <span tabindex="0" data-keydown-id="upload_evidence_<%= evidence.id %>" class="btn btn-default btn-file text-nowrap sm-space">
               <i class="fa fa-upload" aria-hidden="true"></i>
               <label>
                 <%= l10n('upload_documents') %>

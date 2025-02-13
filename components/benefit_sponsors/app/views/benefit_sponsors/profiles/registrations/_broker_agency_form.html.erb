@@ -24,6 +24,7 @@
               </div>
               <div class="action-group">
                 <%= render partial: './ui-components/bs4/v1/forms/broker/contact_information/contact_info_fields', locals: { f: f, registration: false } %>
+              </div>
               <div class="row pl-3">
                 <span class="d-flex edit-buttons">
                   <%= link_to(profiles_broker_agencies_broker_agency_profile_path({id: @agency.profile_id}), class: 'btn outline mr-2 text-nowrap') do %>

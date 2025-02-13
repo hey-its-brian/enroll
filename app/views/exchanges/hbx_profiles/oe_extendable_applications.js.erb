@@ -8,9 +8,21 @@ if ( $('tr.child-row:visible').length > 0 ) {
 }
 
 if ( !($parent_row.next().hasClass('child-row'))) {
-  $parent_row.after('<tr class="child-row"><td colspan="100"><%= j render "oe_extendable_applications"%></td></tr>');
+  $parent_row.after('<tr class="child-row"><td colspan="100"><%= j render "oe_extendable_applications"%></td></tr>').ready(initExtendOE());
   $("li>a:contains('Collapse Form')").eq(containing_row.index()).removeClass('disabled');
   $('.dropdown.pull-right').removeClass('open');
 }
 
 applyJQDatePickers();
+
+function initExtendOE() {
+  initializeDataTables();
+  jQuery('.buttons-csv').hide()
+  jQuery('.buttons-excel').hide()
+  function printDoc(id){
+    var window_obj=window.open();
+    window_obj.document.write($('#print_'+id).html());
+    window_obj.print();
+    window_obj.close();
+  }
+}

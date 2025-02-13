@@ -103,7 +103,7 @@
         <%= text_area_tag :admin_comment, nil, rows: 8, class: "w-100", placeholder: l10n("hbx_profiles.send_message.write_here") %>
       </div>
       <div class="px-0">
-        <%= submit_tag "Submit",  class: "btn btn-primary", onclick: "PriorPySepModal()", id: "confirm_add_sep"%>
+        <%= submit_tag "Submit",  class: "btn btn-primary", id: "confirm_add_sep" %>
       </div>
     </div>
   <% else %>
@@ -190,7 +190,7 @@
               </div>
             </div>
             <div class="no-pd" style="margin-top:10px;">
-              <%= submit_tag "Submit",  class: "btn btn-primary", onclick: "PriorPySepModal()", id: "confirm_add_sep"%>
+              <%= submit_tag "Submit",  class: "btn btn-primary", id: "confirm_add_sep"%>
             </div>
 
           </div>
@@ -210,28 +210,8 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default btn-default" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary btn-confirmation" onclick='confirmSep(); return false;'>Confirm</button>
+        <button type="button" class="btn btn-primary btn-confirmation">Confirm</button>
       </div>
     </div>
   </div>
 </div>
-
-
-<script type="text/javascript">
-
-  function PriorPySepModal() {
-    var prior_sep = $('#prior_py_sep').val() == 'true'
-    if (prior_sep) {
-      event.preventDefault();
-      if ( $('#admin_sep_form')[0].checkValidity() ) {
-        $('#priorSepModal').modal('show')
-      }
-    }
-  }
-
-  function confirmSep() {
-    $('.modal-backdrop').removeClass('modal-backdrop');
-    $('.modal-open').removeClass('modal-open');
-    $("#admin_sep_form").submit();
-  }
-</script>

@@ -59,15 +59,30 @@ function startEditingIncome(income_kind) {
 }
 
 function checkDate(income_id) {
-  var startDate = $('#start_on_' + income_id).datepicker('getDate');
-  var endDate = $('#end_on_' + income_id).datepicker('getDate');
+  var startDate = $('#start_on_' + income_id);
+  var endDate = $('#end_on_' + income_id);
 
-  if (endDate != '' && endDate != null && endDate < startDate) {
+  if (endDate && new Date(endDate.val()) <= new Date(startDate.val())) {
     alert('The end date must be after the start date.');
-    $('#end_on_' + income_id)[0].value = '';
+    endDate.val('');
     window.event.preventDefault();
   }
 }
+
+$(document).on('submit', 'form[data-income-id]', function () {
+  checkDate($(this).data('income-id'));
+});
+
+$(document).on(
+  'change',
+  'form[data-income-id] input[type="date"]',
+  function () {
+    var form = $(this).parents('form');
+    if (form.data('income-and-deduction-date-warning-flag')) {
+      validateDateWarnings(form.data('income-id'));
+    }
+  }
+);
 
 function currentlyEditing() {
   return (
@@ -158,7 +173,7 @@ document.addEventListener('turbolinks:load', function () {
         var self = this;
 
         $('#unsavedIncomeChangesWarning').modal('show');
-        $('button#leave').on('click', function() {
+        $('button#leave').on('click', function () {
           // these two lines are necessary to prevent the modal from showing again
           $('.interaction-click-control-continue').removeClass('disabled');
           $('#nav-buttons a').removeClass('disabled');

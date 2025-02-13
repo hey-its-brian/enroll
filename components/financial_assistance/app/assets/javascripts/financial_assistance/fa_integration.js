@@ -46,6 +46,11 @@ function notifyUserPrompt(element) {
   $('#backModal').modal('show');
 }
 
+$(document).on('click', '.back-to-household-link', function(e) {
+  e.preventDefault()
+  notifyUserPrompt(this)
+})
+
 function backToHouseHolds() {
   $('#backModal').modal('hide');
   window.location = toLocation;

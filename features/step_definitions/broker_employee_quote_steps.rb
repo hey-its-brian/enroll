@@ -385,7 +385,7 @@ end
 And(/^Primary broker clicks Actions dropdown and clicks Assign General Agency$/) do
   find(BrokerEmployersPage.actions_dropdown).click
   expect(page).to have_css('.btn.btn-xs', text: 'Assign General Agency')
-  find(BrokerEmployersPage.assign_general_agency).click
+  find(BrokerEmployersPage.actions_dropdown_assign_general_agency).click
 end
 
 And(/^Broker HC4CC feature enabled$/) do

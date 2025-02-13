@@ -25,17 +25,17 @@
         ul.nav.nav-tabs role="tablist"
           input#ppKind type="hidden" name="benefit_package[sponsored_benefits_attributes][0][product_package_kind]"
           - if @benefit_package_form.health_package_kinds.include?(:single_issuer)
-            li.col-md-4.col-sm-4 role="presentation" onclick="radioSelected(this)"
+            li.col-md-4.col-sm-4.kind-radio role="presentation"
               a href="#carrier" aria-controls="carrier" role="tab" data-toggle="tab" data-name="single_issuer"
                 i.far.fa-circle.mr-2
                 = fetch_plan_title_for_single_carrier
           - if @benefit_package_form.health_package_kinds.include?(:metal_level)
-            li.col-md-4.col-sm-4 role="presentation" onclick="radioSelected(this)"
+            li.col-md-4.col-sm-4.kind-radio role="presentation"
               a href="#level" aria-controls="level" role="tab" data-toggle="tab" data-name="metal_level"
                 i.far.fa-circle.mr-2
                 = fetch_plan_title_for_metal_level
           - if @benefit_package_form.health_package_kinds.include?(:single_product)
-            li.col-md-4.col-sm-4 role="presentation" onclick="radioSelected(this)"
+            li.col-md-4.col-sm-4.kind-radio role="presentation"
               a href="#plan" aria-controls="plan" role="tab" data-toggle="tab" data-name="single_product"
                 i.far.fa-circle.mr-2
                 = fetch_plan_title_for_single_plan
@@ -50,7 +50,7 @@
                   label.container
                     = issuer_name
                     = f.hidden_field :kind, value: "health"
-                    = f.radio_button :product_option_choice, "#{issuer_id}", class: 'product_option_choice', onclick:"getPlanInfo(this)", data: {name: issuer_name}
+                    = f.radio_button :product_option_choice, "#{issuer_id}", class: 'product_option_choice', data: {name: issuer_name}
                     span.checkmark
 
           .tab-pane.fade#level role="tabpanel"
@@ -63,7 +63,7 @@
                   label.container
                     = kind.capitalize
                     = f.hidden_field :kind, value: "health"
-                    = f.radio_button :product_option_choice, kind, class: 'product_option_choice', onclick:"getPlanInfo(this)", data: {name: kind}
+                    = f.radio_button :product_option_choice, kind, class: 'product_option_choice', data: {name: kind}
                     span.checkmark
 
           .tab-pane.fade#plan role="tabpanel"
@@ -76,7 +76,7 @@
                   label.container
                     = carrier_name
                     = f.hidden_field :kind, value: "health"
-                    = f.radio_button :product_option_choice, carrier_id, class: 'product_option_choice', onclick:"getPlanInfo(this)", data: {name: carrier_name}
+                    = f.radio_button :product_option_choice, carrier_id, class: 'product_option_choice', data: {name: carrier_name}
                     span.checkmark
 
 
@@ -118,7 +118,7 @@
             i.far.fa-file-pdf.fa-2x.mr-1
             | Summary of Benefits and Coverage
         .pull-right
-          button.btn.btn-default.btn-sm#btnMoreDetails type="button" onclick="showMoreDetails()" More Details
+          button.btn.btn-default.btn-sm#btnMoreDetails type="button" More Details
           button.btn.btn-default.btn-sm#closeModal type="button" data-dismiss="modal" style="margin-top:-1px" Close
 
 
@@ -134,6 +134,16 @@ javascript:
   var sponsorContributions = #{@benefit_package_form.catalog.sponsor_contributions(@benefit_package_form.id).to_json.html_safe};
   var minContributions = #{f.object.sponsor_contribution.min_contributions_map.to_json.html_safe};
 	var productsTotal;
+
+  $(document).on('click', '.kind-radio a', function() { radioSelected(this.parentElement) })
+  $(document).on('click', '.product_option_choice', function() { getPlanInfo(this) })
+  $(document).on('click', '#btnMoreDetails', function() { showMoreDetails() })
+  $(document).on('click', '.ref-plan-radio', function() { newContributionAmounts() })
+  $(document).on('click', '.rp-view-summary', function() { viewSummary(this) })
+
+  $(document).on('change', '.contribution_handler', function() { newContributionAmounts(this) })
+  $(document).on('change', '.contribution-factor-slider', function() { setInputSliderValue(this) })
+  $(document).on('change', '.contribution-factor-number', function() { setNumberInputValue(this) })
 
   function radioSelected(element) {
     setCircle(element)
@@ -155,7 +165,7 @@ javascript:
 
   function setCircle(element) {
 		var items = document.querySelectorAll('#metal-level-select ul li')
-	
+
 		for (item of items) {
 			item.querySelector('i').classList.remove('fa-dot-circle');
 		}
@@ -165,7 +175,7 @@ javascript:
 				element.querySelector('i').classList.add('fa-dot-circle')
 			}
 		},200)
-		
+
     // Gets product option info
     productOptionKind = element.querySelector('a').dataset.name;
     // Sets kind to hidden input field for form submission
@@ -195,7 +205,7 @@ javascript:
 
     // Replace below statement with plain Javascript
     $('[data-toggle="tooltip"]').tooltip();
-    
+
     // Makes reference plans visible
     document.getElementById('referencePlans').classList.remove('hidden');
     // Removes reference plans if metal level changes
@@ -226,9 +236,8 @@ javascript:
               <span class="plan-label">Level:</span> <span class="rp-plan-info">${plan.metal_level_kind}</span><br>
               <span class="plan-label">Network:</span> <span class="rp-plan-info">${plan.network}</span><br>
               <span class="plan-label">#{l10n('standard_plan')}:</span> <span class="rp-plan-info">${displayStandardPlan(plan.is_standard_plan)}</span><br>
-              
-              <span class="plan-label mt-1 rp-view-summary" onclick="viewSummary(this)" data-plan-title="${plan.title}" data-plan-id="${plan.id}">View Summary</span><br>
-              <input type="radio" name="benefit_package[sponsored_benefits_attributes][0][reference_plan_id]" id="${plan.id}" onclick="newContributionAmounts()" value="${plan.id}" data-plan-title="${plan.title}" data-plan-standard-plan="${plan.is_standard_plan}" data-plan-carrier="${plan.carrier_name}" data-plan-id="${plan.id}" data-plan-metal-level="${plan.metal_level_kind}" data-plan-type="${plan.product_type}" data-network="${plan.network}">
+              <span class="plan-label mt-1 rp-view-summary" data-plan-title="${plan.title}" data-plan-id="${plan.id}">View Summary</span><br>
+              <input type="radio" name="benefit_package[sponsored_benefits_attributes][0][reference_plan_id]" id="${plan.id}" class="ref-plan-radio" value="${plan.id}" data-plan-title="${plan.title}" data-plan-standard-plan="${plan.is_standard_plan}" data-plan-carrier="${plan.carrier_name}" data-plan-id="${plan.id}" data-plan-metal-level="${plan.metal_level_kind}" data-plan-type="${plan.product_type}" data-network="${plan.network}">
               <span class="checkmark"></span>
             </label>
           </div>
@@ -262,7 +271,7 @@ javascript:
 			      <div class="row sc-container">\
 			        <div class="col-xs-12 ml-2 mt-2">\
 			          <label class="container ml-1">' +contribution.display_name+'\
-			            <input type="checkbox" checked="checked" id="' + attrPrefix + '[is_offered]" class="contribution_handler" name="' + attrPrefix +'[is_offered]" value="' + contribution["is_offered"] +'" data-displayname="'+contribution.display_name+'" onchange="newContributionAmounts(this)"/>\
+			            <input type="checkbox" checked="checked" id="' + attrPrefix + '[is_offered]" class="contribution_handler" name="' + attrPrefix +'[is_offered]" value="' + contribution["is_offered"] +'" data-displayname="'+contribution.display_name+'"/>\
 			            <span class="checkmark"></span>\
 			          </label>\
 			        </div>\
@@ -271,10 +280,10 @@ javascript:
 			    <div class="col-xs-6">\
 			      <div class="col-xs-3">\
 			        <input id="' + attrPrefix + '[display_name]" name="' + attrPrefix + '[display_name]" type="hidden" value="' + contribution["display_name"] + '" />\
-			        <input type="number" id="'+contribution.id+'" name="'+ attrPrefix +'[contribution_factor]" value="' + (contribution["contribution_factor"] * 100) + '" onchange="setInputSliderValue(this)" data-displayname="'+contribution.display_name+'" data-contribution-input="true">\
+			        <input type="number" id="'+contribution.id+'" class="contribution-factor-slider" name="'+ attrPrefix +'[contribution_factor]" value="' + (contribution["contribution_factor"] * 100) + '" data-displayname="'+contribution.display_name+'" data-contribution-input="true">\
 			      </div>\
 			      <div class="col-xs-9">\
-			        <input type="range" min="0" max="100" value="' + (contribution["contribution_factor"] * 100) + '" step="5" class="slider" id="'+contribution.id+'" onchange="setNumberInputValue(this)" data-id="'+contribution.id+'" data-displayname="'+contribution.display_name+'">\
+			        <input class="contribution-factor-number" type="range" min="0" max="100" value="' + (contribution["contribution_factor"] * 100) + '" step="5" class="slider" id="'+contribution.id+'" data-id="'+contribution.id+'" data-displayname="'+contribution.display_name+'">\
 			      </div>\
 			    </div>\
 			</div>'

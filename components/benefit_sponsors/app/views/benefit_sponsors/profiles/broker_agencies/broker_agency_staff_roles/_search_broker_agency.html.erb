@@ -18,7 +18,7 @@
               <td class="col-6">
                 <span class="d-flex align-items-center justify-content-between">
                   <span><%= agency.primary_broker_role&.person&.full_name %></span>
-                  <a href="javascript:void(0)" class='btn btn-primary select-broker-agency float-right' onclick="selectBrokereAgency(this);" data-broker_agency_profile_id="<%= agency._id %>"><%= l10n("select_this_broker_button") %></a>
+                  <a href="#" class='btn btn-primary select-broker-agency float-right' data-broker_agency_profile_id="<%= agency._id %>"><%= l10n("select_this_broker_button") %></a>
                 </span>
               </td>
             </tr>
@@ -28,10 +28,10 @@
     </div>
   <% else %>
     <h4>
-      <span class="alert-error"> <%= l10n("no_agencies_found") %> </span> 
+      <span class="alert-error"> <%= l10n("no_agencies_found") %> </span>
     </h4>
   <% end %>
-<% else %>  
+<% else %>
   <% if @broker_agency_profiles.present?  %>
     <br />
     <div class='table-responsive col-12'>
@@ -48,7 +48,7 @@
             <td><%= agency.legal_name %></td>
             <td><%= agency.primary_broker_role&.npn %></td>
             <td><%= agency.primary_broker_role&.person&.full_name %></td>
-            <td colspan="1"> <a href="javascript:void(0)" class='btn btn-primary select-broker-agency' style="color:#fff" onclick="selectBrokereAgency(this);" data-broker_agency_profile_id="<%= agency._id %>"><%= l10n("select_this_broker_button").upcase %></a>
+            <td colspan="1"> <a href="#" class='btn btn-primary select-broker-agency' style="color:#fff" data-broker_agency_profile_id="<%= agency._id %>"><%= l10n("select_this_broker_button").upcase %></a>
             </td>
           </tr>
           </tbody>
@@ -59,11 +59,3 @@
   <h4> <span class="alert-error"> <%= l10n("no_agencies_found") %> </span> </h4>
   <% end %>
 <% end %>
-
-<script>
-  $(document).ready(function() {
-    if ($('.table-responsive').length) {
-      $('.broker-agency-submit').removeClass('hidden');
-    }
-  });
-</script>

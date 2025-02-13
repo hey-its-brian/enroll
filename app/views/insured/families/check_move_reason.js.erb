@@ -1,7 +1,7 @@
 <% if @qualified_date %>
   $('#qle-date-chose').hide();
   $("#qle_reason").show();
-  $("#qle_reason").html("<%= escape_javascript(render 'moving_fields') %>");
+  $("#qle_reason").html("<%= escape_javascript(render 'moving_fields') %>").ready(init_moving_fields());
   $('#qle_reason .special_qle_reasons').removeClass('hidden');
   $("input:radio[name=reason]:first").click();
 <% else %>
@@ -11,3 +11,50 @@
       url: "/insured/families/check_qle_date.js"
   });
 <% end %>
+
+function init_moving_fields(event) {
+  $.inputMasks();
+
+  <% if EnrollRegistry[:enroll_app].setting(:sep_moved_out_zip_compare).item %>
+    $('#qle_submit_reason').on('click', function(event) {
+      if (event.type === 'click' || (event.type === 'keydown' && event.keyCode === 13)) {
+        if ($("input:radio[name=reason]:checked").hasClass('zip-check')) {
+          $('.special_qle_reasons').addClass('hidden');
+          $('.zip_compare').removeClass('hidden');
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+      }
+    })
+  <% end %>
+
+  $('#qle_zip_compare').on('click', function() {
+    function handleFailure() {
+      $('#qle_reason').hide();
+      var errorNoticeAction = "<%= l10n('insured.qle_detail.error_text_not_eligible', site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item, contact_center_phone_number: EnrollRegistry[:enroll_app].setting(:contact_center_short_number).item) %>";
+      $("#qle-details .error-text").html(errorNoticeAction);
+      $('#qle-details .error-info').removeClass('hidden');
+    }
+
+    $.ajax({
+      type: "GET",
+      data:{old_zip: $('.old_zip_code').val(), new_zip: $('.new_zip_code').val()},
+      url: "/insured/families/sep_zip_compare.json",
+      success: function(response){
+        if (response.is_approved) {
+          $.ajax({
+            type: "GET",
+            data:{date_val: $("#qle_date").val(), qle_id: $("#qle_id").val(), qle_reason_val: $("input:radio[name=reason]:checked").val(), bs4: $("#bs4").val()},
+            url: "/insured/families/check_qle_date.js"
+          });
+        } else {
+          handleFailure();
+        }
+      },
+      error: handleFailure
+    });
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  });
+}

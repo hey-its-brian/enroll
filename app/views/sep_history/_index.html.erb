@@ -35,22 +35,3 @@
   <%= render partial: 'sep_history/sep_history_display' %>
 </div>
 <% end %>
-<script>
-  function addStyleToPanel(id) {
-    var bs4 = document.documentElement.dataset.bs4;
-    var ele = $('#viewSepPanel_'+id)
-    var another = $('.add-default-class-'+id)
-    var heading_elem = $('.sep-heading-'+id)
-    if (ele.attr('aria-expanded') === 'false') {
-      another.addClass('panel panel-default')
-      ele.addClass('panel-heading')
-      if (!bs4) {
-        heading_elem.addClass('font-weight-bold')
-      }
-    }else {
-      ele.removeClass('panel-heading')
-      another.removeClass('panel panel-default')
-      heading_elem.removeClass('font-weight-bold')
-    }
-  }
-</script>

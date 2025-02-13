@@ -1063,10 +1063,103 @@ var submitInvisibleRecaptchaForm = function () {
     $(".npn_field").mask("9999999999");
     $(".address-state").mask("AA");
     $(".mask-ssn").mask("999-99-9999");
-    $("#jq_datepicker_ignore_census_employee_dob, #jq_datepicker_ignore_person_dob, #family_member_dob_, #jq_datepicker_ignore_organization_dob, [name='jq_datepicker_ignore_dependent[dob]'], .date-field").mask("99/99/9999");
+    $("#jq_datepicker_ignore_census_employee_dob, #jq_datepicker_ignore_person_dob, #family_member_dob_, #jq_datepicker_ignore_organization_dob,[name='jq_datepicker_ignore_dependent[dob]'], .date-field:not(#cancel-plan-date-picker)").mask("99/99/9999");
     $(".area_code").mask("999");
     $(".phone_number7").mask("999-9999");
     $("#tribal_id").mask("999999999");
     $(".mask-csl").mask("9999999999");
   };
   $.inputMasks();
+
+// Store initial nonce
+let currentNonce = (document.querySelector("meta[name='csp-nonce']") || {}).content;
+
+
+// Function to get current nonce
+function getCurrentNonce() {
+  const element = document.querySelector("meta[name='csp-nonce']");
+  return element ? element.content : currentNonce;
+}
+
+// Custom eval function that preserves nonce
+function safeEval(text) {
+  const script = document.createElement('script');
+  script.nonce = getCurrentNonce();
+  script.text = text;
+  document.head.appendChild(script);
+  document.head.removeChild(script);
+}
+
+// Override jQuery's globalEval
+jQuery.globalEval = function(code, options) {
+  code = String(code);
+  if (code) {
+    safeEval(code);
+  }
+};
+
+// Set up jQuery ajax converter
+jQuery.ajaxSetup({
+  converters: {
+    "text script": function(text) {
+      if (text) {
+        safeEval(text);
+      }
+      return text;
+    }
+  }
+});
+
+// Update nonce before Turbolinks renders new content
+document.addEventListener("turbolinks:before-render", function(event) {
+  const newNonce = getCurrentNonce();
+  if (newNonce) {
+    currentNonce = newNonce;
+    const newBody = event.data.newBody;
+    if (newBody) {
+      newBody.querySelectorAll('script[nonce]').forEach(script => {
+        script.setAttribute('nonce', currentNonce);
+      });
+    }
+  }
+});
+
+// Mutation observer setup
+const observer = new MutationObserver(function(mutations) {
+  const nonce = getCurrentNonce();
+  if (!nonce) return;
+
+  mutations.forEach(function(mutation) {
+    mutation.addedNodes.forEach(function(node) {
+      if (node.nodeType === 1) {
+        if (node.nodeName === 'SCRIPT' && node.hasAttribute('nonce')) {
+          node.setAttribute('nonce', nonce);
+        }
+        node.querySelectorAll('script[nonce]').forEach(script => {
+          script.setAttribute('nonce', nonce);
+        });
+      }
+    });
+  });
+});
+
+// Start observing when DOM is ready
+document.addEventListener("DOMContentLoaded", function() {
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: false,
+    characterData: false
+  });
+});
+
+// Update after Turbolinks load
+document.addEventListener("turbolinks:load", function() {
+  const nonce = getCurrentNonce();
+  if (nonce) {
+    currentNonce = nonce;
+    document.querySelectorAll('script[nonce]').forEach(script => {
+      script.setAttribute('nonce', nonce);
+    });
+  }
+});

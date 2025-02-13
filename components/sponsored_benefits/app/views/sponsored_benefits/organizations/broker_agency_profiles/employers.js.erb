@@ -1,2 +1,17 @@
 setTabContent("<%= escape_javascript render "employers" %>");
 set_active_ontab("#employers-tab");
+initializeDataTables();
+
+$("#bulk_action_assign").on('click', function(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  var ids = []
+  $(".individual_checkbox:checked").each(function(){
+    ids.push($(this).val());
+  })
+
+  $('form#assign_modal_form').prepend("<input type='hidden' id='ids' name='ids' />");
+  $("#ids").val(JSON.stringify(ids));
+
+  $("#assign_ga").modal("show");
+});

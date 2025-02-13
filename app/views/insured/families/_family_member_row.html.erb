@@ -14,7 +14,7 @@
             <%= l10n("cancel_edit") %>
           <% end %>
           <% confirm_id = "member-#{person_id}-confirm" %>
-          <span tabindex="0", onkeydown="handleButtonKeyDown(event, '<%= confirm_id %>')", id=<%= confirm_id %> class="confirm-member btn btn-primary text-nowrap">
+          <span tabindex="0" data-keydown-id="<%= confirm_id %>" id=<%= confirm_id %> class="confirm-member btn btn-primary text-nowrap">
             <%= l10n("save_changes") %>
           </span>
       </span>

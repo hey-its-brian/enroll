@@ -84,3 +84,42 @@ ready = function() {
 
 $(document).ready(ready);
 $(document).on('page:load', benefits_tab_js);
+
+/// components/benefit_sponsors/app/views/benefit_sponsors/shared/inboxes/_message_list.html.erb
+$(document).on('ajax:success', function() {
+  const msgs = $('#message_list_form').find('tr.msg-inbox');
+
+  msgs.each(function() {
+    // Add event listeners to each message for click
+    $(this).on('click', function() {
+      const url = $(this).data('url');
+      $.ajax({type: "GET", url: url, dataType: 'script'});
+    });
+
+    // Add event listeners to each message for enter / spacebar key
+    $(this).on('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const url = $(this).data('url');
+        $.ajax({type: "GET", url: url, dataType: 'script'});
+      }
+    });
+
+    // Add event listeners to each message delete icon for click of td with data-msg-delete
+    $(this).find('td[data-msg-delete]').on('click', function(e) {
+      e.stopPropagation();
+      const url = $(this).closest('tr').data('url');
+      $.ajax({type: "DELETE", url: url, dataType: 'script'});
+    });
+
+    // Add event listeners to each message delete icon for enter / spacebar key
+    $(this).find('td[data-msg-delete]').on('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        const url = $(this).closest('tr').data('url');
+        $.ajax({type: "DELETE", url: url, dataType: 'script'});
+      }
+    });
+  });
+
+})

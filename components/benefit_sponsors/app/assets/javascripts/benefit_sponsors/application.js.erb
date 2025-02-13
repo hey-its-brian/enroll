@@ -55,3 +55,12 @@ jQuery.inputMasks = () => {
   $(".phone_number").mask("(999) 999-9999");
 };
 $.inputMasks();
+
+jQuery.ajaxSetup( {
+	converters: {
+		"text script": function( text ) {
+			jQuery.globalEval( text, {nonce: $("meta[name='csp-nonce']").prop('content')} );
+			return text;
+		}
+	}
+} );

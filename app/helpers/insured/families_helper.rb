@@ -161,7 +161,7 @@ module Insured::FamiliesHelper
       current_date: TimeKeeper.date_of_record.strftime("%m/%d/%Y")
     }
     options.merge!(data: data)
-    link_to link_title.present? ? link_title : "Shop for Plans", "javascript:void(0)", options
+    link_to link_title.present? ? link_title : "Shop for Plans", "#", options
   end
 
   def generate_options_for_effective_on_kinds(qle, qle_date)

@@ -34,8 +34,8 @@
 
     <div class="py-2">
       <div class="col-md-12 px-0 col-sm-12 col-xs-12">
-        <%= button_tag 'Cancel', :class => 'btn btn-default', type: 'button', onclick: "$('tr.child-row-mthh:visible').remove();" %>
-        <%= button_tag 'Previous Page', :class => 'btn btn-default', type: 'button', onclick: "onPreviousPageClick()" %>
+        <%= button_tag 'Cancel', :class => 'btn btn-default', type: 'button', id: "cancel_click" %>
+        <%= button_tag 'Previous Page', :class => 'btn btn-default', type: 'button', id: "previous_click", data: {url: new_eligibility_exchanges_hbx_profiles_path(person_id: @person_id, family_actions_id: @element_to_replace_id, tax_household_group_data: @data.to_json)} %>
         <%= f.submit "Save Changes", :class => "btn btn-primary save_eligibility", id: 'save_eligibility', :size => '100px' %>
       </div>
     </div>
@@ -95,7 +95,6 @@
     </div>
     <% end %>
   </div>
-<% end %>
 
 <script type="text/javascript">
   var url = "<%= new_eligibility_exchanges_hbx_profiles_path(person_id: @person_id, family_actions_id: @element_to_replace_id, tax_household_group_data: @data.to_json) %>"
@@ -109,3 +108,4 @@
     });
   }
 </script>
+<% end %>

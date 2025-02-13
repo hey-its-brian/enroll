@@ -2,21 +2,23 @@
   class: "ssn-eye-off-#{presenter.person_id}",
   alt: "view ssn icon",
   tabindex: 0,
-  onkeydown: "if (event.key === 'Enter') { this.click(); }",
+  id: "eye-off-#{presenter.person_id}",
   data: {
     type: presenter.object_type,
     id: presenter.person_id,
     family_id: presenter.family_id,
-    action: "click->person#showSsn" 
+    action: "click->person#showSsn",
+    keydown_id: "eye-off-#{presenter.person_id}"
   }
 %>
 <%= image_pack_tag "icons/eye-on.svg",
   class: "hidden ssn-eye-on-#{presenter.person_id}",
   alt: "hide ssn icon",
   tabindex: 0,
-  onkeydown: "if (event.key === 'Enter') { this.click(); }",
+  id: "eye-on-#{presenter.person_id}",
   data: {
     id: presenter.person_id, 
-    action: "click->person#hideSsn" 
+    action: "click->person#hideSsn",
+    keydown_id: "eye-on-#{presenter.person_id}"
   }
 %>

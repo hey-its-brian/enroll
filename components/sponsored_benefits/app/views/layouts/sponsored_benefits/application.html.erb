@@ -16,6 +16,7 @@
     <% end %>
   <% end %>
   <%= csrf_meta_tags %>
+  <meta name="csp-nonce" content="<%= content_security_policy_nonce %>"/>
 </head>
 <body class="font">
     <%= render './ui-components/v1/navs/header' %>

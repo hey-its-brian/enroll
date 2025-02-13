@@ -8,16 +8,10 @@
       <%= l10n("broker_agencies.message_deleted") %>
     </div>
     <div class="d-flex pl-1">
-      <span id="close" class="close-icon icon icon-sm pr-1" alt='<%= l10n("close") %>' href="javascript;" tabindex="0" onkeydown="handleButtonKeyDown(event, 'close')"><span class="sr-only"><%= l10n("close") %></span></span>
+      <span id="close-delete-message" class="close-icon icon icon-sm pr-1" alt='<%= l10n("close") %>' href="#" tabindex="0" data-keydown-id="close-delete-message"><span class="sr-only"><%= l10n("close") %></span></span>
     </div>
   </div>
 </div>
-
-<script>
-  $("#close").on('click', function() {
-    $("#messageDeleted").addClass("hidden");
-  });
-</script>
 
 <% @folder = (params[:folder] || 'Inbox').capitalize %>
 <% sorted_inbox_messages = provider.inbox.messages.select{|m| @folder == (m.folder.try(:capitalize) || 'Inbox') }.sort_by(&:created_at).reverse %>
@@ -100,46 +94,6 @@
   <% end %>
 
   <div id="show_message_form"></div>
-
-<script>
-    $(document).ready(function() {
-      const msgs = $('#message_list_form').find('tr.msg-inbox');
-
-      msgs.each(function() {
-        // Add event listeners to each message for click
-        $(this).on('click', function() {
-          const url = $(this).data('url');
-          $.ajax({type: "GET", url: url, dataType: 'script'});
-        });
-
-        // Add event listeners to each message for enter / spacebar key
-        $(this).on('keydown', function(e) {
-          if (e.key === 'Enter' || e.key === ' ') {
-            const url = $(this).data('url');
-            $.ajax({type: "GET", url: url, dataType: 'script'});
-          }
-        });
-
-        // Add event listeners to each message delete icon for click of td with data-msg-delete
-        $(this).find('td[data-msg-delete]').on('click', function(e) {
-          e.stopPropagation();
-          const url = $(this).closest('tr').data('url');
-          $.ajax({type: "DELETE", url: url, dataType: 'script'});
-        });
-
-        // Add event listeners to each message delete icon for enter / spacebar key
-        $(this).find('td[data-msg-delete]').on('keydown', function(e) {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            e.stopPropagation();
-            const url = $(this).closest('tr').data('url');
-            $.ajax({type: "DELETE", url: url, dataType: 'script'});
-          }
-        });
-      });
-
-    })
-  </script>
 </div>
 <% else %>
 

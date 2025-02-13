@@ -12,7 +12,21 @@ if ( $('tr.child-row:visible').length > 0 ) {
 }
 if ( $parent_row.next().hasClass('child-row') ) {} 
 else {
-  $parent_row.after('<tr class="child-row"><%= j render "datatables/cancel_enrollment", f: @family, formats: [:html] %></td></tr>');
+  $parent_row.after('<tr class="child-row"><%= j render "datatables/cancel_enrollment", f: @family, formats: [:html] %></td></tr>').ready(function() {
+  jQuery('[id^="cancel_hbx_"]').click(function($) {
+    if (this.checked) {
+      jQuery(jQuery(this).closest('tr').find('[type=checkbox]')[1]).prop('disabled', false);
+    }
+    else {
+      jQuery(jQuery(this).closest('tr').find('[type=checkbox]')[1]).prop('disabled', true);
+      jQuery(jQuery(this).closest('tr').find('[type=checkbox]')[1]).prop('checked', false);
+    }
+  });
+
+  $('#cancel-btn').on('click', function() {
+    $('tr.child-row:visible').remove();
+  });
+});
   $("li>a:contains('Collapse Form')").eq(containing_row.index()).removeClass('disabled');
   $('.dropdown.pull-right').removeClass('open');
 }

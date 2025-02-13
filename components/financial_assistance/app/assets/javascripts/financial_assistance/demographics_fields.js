@@ -215,7 +215,7 @@ function applyFaaListeners() {
 var ApplicantValidations = (function(window, undefined) {
 
   function manageRequiredValidations(this_obj) {
-    hidden_requireds = $('[required]').not(":visible");
+    var hidden_requireds = $('[required]').not(":visible");
     $('[required]').not(":visible").removeAttr('required');
     this_obj.closest('div').find('button[type="submit"]').trigger('click');
   }
@@ -230,6 +230,7 @@ var ApplicantValidations = (function(window, undefined) {
 
   function restoreRequiredAttributes(e) {
     e.preventDefault && e.preventDefault();
+    var hidden_requireds = $('[required]').not(":visible");
     hidden_requireds.each(function(index) {
       $(this).prop('required', true);
     });

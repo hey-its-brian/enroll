@@ -20,7 +20,7 @@ $('#qle-details .initial-info').addClass('hidden');
     var mecNotice = "<%= l10n('insured.qle_detail.error_text_middle_of_month', immediate_month_date: @qle_date.beginning_of_month, following_month_date: (@qle_date + 1.month).beginning_of_month, contact_center_phone_number: contact_center_phone_number, call_date: @qle_date.beginning_of_month - 1.day) %>";
     toggleSuccess(mecNotice);
   <% elsif @qle.present? %>
-    $(".effective_on_kinds").html("<%= escape_javascript(render 'effective_on_kind_fields') %>");
+    $(".effective_on_kinds").html("<%= escape_javascript(render 'effective_on_kind_fields') %>").ready(initEffectiveOnKindFields());
     <% if @qle.effective_on_kinds.count > 1 %>
       $('#qle_success_submit').attr('disabled', 'disabled');
     <% end %>
@@ -35,3 +35,9 @@ $('#qle-details .initial-info').addClass('hidden');
   var errorNoticeAction = "<%= l10n('insured.qle_detail.error_text_future_date', contact_center_name: raw(contact_center_name), contact_center_phone_number: EnrollRegistry[:enroll_app].setting(:health_benefit_exchange_authority_phone_number)&.item) %>";
   toggleSuccess(errorNoticeAction);
 <% end %>
+
+function initEffectiveOnKindFields() {
+  if (!disableSelectric) {
+    $('select').selectric();
+  }
+}

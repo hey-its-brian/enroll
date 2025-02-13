@@ -7,7 +7,7 @@
             - if @just_a_warning == false
               h4 = pluralize(@benefit_application_form.errors.count, "error")
               | prohibited this benefit application from being saved:
-              <ul>
+              ul
                 - @benefit_application_form.errors.delete(:benefit_packages)
                 - @benefit_application_form.errors.full_messages.each do |msg|
                   li = msg

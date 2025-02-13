@@ -35,22 +35,6 @@
             <% end %>
           </div>
         </div>
-        <script>
-          $(document).ready(function() {
-            var typingTimer;
-
-            $('#person_dob').keyup(function(){
-              clearTimeout(typingTimer);
-              if ($('#person_dob').val()) {
-                typingTimer = setTimeout(submitDate, 600);
-              }
-            });
-
-            function submitDate () {
-              check_dob_change_implication('<%= @person.id %>', $('#person_dob').val(), '<%= @element_to_replace_id %>');
-            }
-          });
-        </script>
       <% else %>
         <div class="row no-buffer form-wrapper-buffer">
           <h3 class="title">Edit DOB / SSN</h3>
@@ -106,8 +90,3 @@
 <% end %>
 <%#= link_to "Back to Families Index", family_index_exchanges_hbx_profiles_path(q: params[:search_query], families_page: params[:pg_no]), remote: true, class: 'btn btn-default' %>
 
-<script>
-  $(document).ready(function() {
-    $.inputMasks();
-  });
-</script>

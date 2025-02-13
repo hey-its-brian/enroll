@@ -32,7 +32,7 @@
 - if step == 1 && search_page == true
   = link_to "Continue", exchanges_residents_path(person: @person_params), method: :post, class: 'btn btn-lg btn-primary  btn-block'
 - elsif step == 1
-  %span{class: 'btn btn-lg btn-primary btn-br btn-block', onclick: 'PersonValidations.manageRequiredValidations($(this));'} CONTINUE
+  %span{class: 'btn btn-lg btn-primary btn-br btn-block manage-person-validations-click'} CONTINUE
   %button.btn.btn-lg.btn-primary.btn-br.btn-block.interaction-click-control-continue.hidden{type: 'submit'}
     CONTINUE
 - elsif defined? url

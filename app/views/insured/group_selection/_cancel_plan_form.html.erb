@@ -31,6 +31,7 @@
           <%= label_tag :term_date, l10n("coverage_end_date"), class: "required"%>
           <%= date_field_tag :term_date, nil, {
             class: "date-field mt-2",
+            id: "cancel-plan-date-picker",
             min: TimeKeeper.date_of_record.strftime("%Y-%m-%d"),
             max: TimeKeeper.date_of_record.end_of_year.strftime("%Y-%m-%d"),
             required: true
@@ -44,7 +45,7 @@
         <% end %>
 
         <div class="mt-4">
-          <%= button_tag l10n("keep_plan"), class: "btn outline", id: "btn-keep-plan", onkeydown: "handleButtonKeyDown(event, 'btn-keep-plan')", disabled: false %>
+          <%= button_tag l10n("keep_plan"), class: "btn outline", id: "btn-keep-plan", disabled: false %>
           <%= submit_tag l10n("cancel_plan"), class: "btn btn-error", id: "btn-cancel-plan", disabled: true %>
         </div>
       <% end %>

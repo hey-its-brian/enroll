@@ -39,11 +39,11 @@ And(/^Identity verification is OUTSTANDING$/) do
 end
 
 Then(/^the CONTINUE button is functionally DISABLED$/) do
-  expect(['disabled', 'true']).to include(find('.interaction-click-control-continue')['disabled'])
+  expect(['disabled', 'true', '']).to include(find('.interaction-click-control-continue')['disabled'])
 end
 
 Then(/^visibly DISABLED$/) do
-  expect(['disabled', 'true']).to include(find('.interaction-click-control-continue')['disabled'])
+  expect(['disabled', 'true', '']).to include(find('.interaction-click-control-continue')['disabled'])
 end
 
 And(/^an uploaded application in REVIEW status is present$/) do
@@ -133,7 +133,7 @@ When(/^the Admin clicks “Continue” on the doc upload page$/) do
 end
 
 Then(/^the Admin is unable to complete the application for the consumer until ID is verified$/) do
-  expect(['disabled', 'true']).to include(find('.interaction-click-control-continue')['disabled'])
+  expect(['disabled', 'true', '']).to include(find('.interaction-click-control-continue')['disabled'])
 end
 
 

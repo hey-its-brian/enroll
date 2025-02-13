@@ -25,6 +25,8 @@
       <%= action_cable_meta_tag %>
       <%= csrf_meta_tags %>
 
+      <meta name="csp-nonce" content="<%= content_security_policy_nonce %>"/>
+
       <% if EnrollRegistry.feature_enabled?(:live_chat_widget) %>
         <%= render "shared/customer_support/live_chat_scripts" unless EnrollRegistry.feature_enabled?(:external_qna_bot) %>
       <% end %>
@@ -70,12 +72,12 @@
           <script src="https://code.jquery.com/jquery-migrate-3.4.1.min.js" integrity="sha384-ez4i72z0XhJqm0ZRoQkpPN0bDV8Kw8PK3n8kjEZsWhRDrfICLd0AGghHJB+vytx0" crossorigin="anonymous"></script>
         <% end %>
       <% end %>
+      <% if @bs4 %>
+        <script>
+          disableSelectric = true;
+        </script>
+      <% end %>
     </body>
-    <% if @bs4 %>
-      <script>
-        disableSelectric = true;
-      </script>
-    <% end %>
   </html>
 <% else %>
   <!DOCTYPE html>

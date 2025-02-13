@@ -16,6 +16,13 @@ function startEditingDeduction(deduction_kind) {
   $('.driver-question input, .instruction-row input, .deduction-kind:not(#' + deduction_kind + ') input:not(":input[type=submit]")').attr('disabled', true);
 };
 
+$(document).on('change', 'form[data-deduction-id] input[type="date"]', function () {
+  var form = $(this).parents('form');
+  if (form.data('income-and-deduction-date-warning-flag')) {
+    validateDateWarnings(form.data('deduction-id'))
+  }
+});
+
 function currentlyEditing() {
   return $('.interaction-click-control-continue').hasClass('disabled') || $('#nav-buttons a').hasClass('disabled');
 };

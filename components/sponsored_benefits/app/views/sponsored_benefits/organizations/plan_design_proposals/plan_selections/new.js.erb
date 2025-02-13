@@ -2,3 +2,26 @@ setTabContent("<%= escape_javascript render 'new' %>");
 set_active_ontab("#employers-tab");
 pageInit();
 window.history.pushState("", "Select a Plan", "<%=  sponsored_benefits.new_organizations_plan_design_proposal_plan_selection_path(@plan_design_proposal.id) %>");
+
+// components/sponsored_benefits/app/views/sponsored_benefits/organizations/plan_design_proposals/plan_selections/_plan_selection_form.html.erb
+$(document).on('click', '.employee-details-text', function() {
+  if ($(this).text() == "Show Details") {
+      $(this).text("Hide Details");
+  } else {
+      $(this).text("Show Details");
+  };
+});
+$(function() {
+  a = document.querySelectorAll('.fa-dot-circle');
+  a.forEach((icon)=> icon.classList.add('hidden'))
+  b = document.querySelectorAll('.fa-square');
+  b.forEach((icon)=> icon.classList.add('hidden'))
+})
+
+// components/sponsored_benefits/app/views/sponsored_benefits/organizations/plan_design_proposals/contributions/_relationship_benefit_fields.html.erb
+$(document).on('blur', '.premium-pct-input', function() {
+  updateSliderValue(this)
+})
+$(document).on('input', '.premium-pct-slider', function() {
+  updateSlider(this)
+})

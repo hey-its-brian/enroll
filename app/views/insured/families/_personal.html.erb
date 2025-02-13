@@ -3,9 +3,3 @@
 <% else %>
 	<%= render 'people/landing_pages/personal' %>
 <% end %>
-<script>
-	Freebies.floatlabels();
-	if (!disableSelectric) {
-		$("select[multiple!='multiple']").not('[name*="dataTable_length"], .chosen-select, .no-selectric').selectric();
-	}
-</script>

@@ -12,7 +12,7 @@ h1.heading-text Benefit Package - Set Up
   .plan-title#uic-wrapper
     .row.row-form-wrapper
       - title_value = f.object.title.present? ? f.object.title : "#{TimeKeeper.date_of_record.year} Employer Benefits"
-      = f.text_field :title, class: "form-control", placeholder:'My Benefit Package', onchange: 'validateTitle()', id: 'benefitPackageTitle', required: true
+      = f.text_field :title, class: "form-control", placeholder:'My Benefit Package', id: 'benefitPackageTitle', required: true
     .row.row-form-wrapper
       = f.text_field :description, class: "form-control", placeholder:'My Description'
     .row.row-form-wrapper
@@ -32,6 +32,10 @@ h1.heading-text Benefit Package - Set Up
 
 javascript:
   var disableSelectric = false;
+
+  $(document).on('change', '#benefitPackageTitle', function() {
+    validateTitle()
+  })
 
   function validateTitle() {
     var new_title = document.getElementById("benefitPackageTitle").value

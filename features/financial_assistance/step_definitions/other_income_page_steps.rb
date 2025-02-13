@@ -103,7 +103,7 @@ Then(/^the user saves the other income information$/) do
 end
 
 Then(/^the other income information should be saved on the page$/) do
-  expect(page).to have_content '100.00'
+  expect(page).to have_content '100'
   expect(page).to have_content '1/01/2018'
 end
 

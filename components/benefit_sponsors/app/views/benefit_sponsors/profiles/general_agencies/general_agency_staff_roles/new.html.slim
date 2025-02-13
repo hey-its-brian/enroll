@@ -21,7 +21,7 @@
               = f.hidden_field :is_general_agency_registration_page, value: true
               = f.text_field :agency_search, placeholder: 'General Agency Name/NPN', class: 'form-control'
               .input-group-btn
-                a.btn.btn-select.search[href="#" onclick="generalAgencySearch(); return false" data-loading-text="Loading..."]
+                a.btn.btn-select.search.ga-search-btn[href="#" data-loading-text="Loading..."]
                   i.fa.fa-search
                   = l10n("search").to_s.downcase
         .result
@@ -35,33 +35,3 @@
             br
             button.btn.btn-primary[type="submit" disabled='disabled' id= 'general-agency-staff-btn']
               = l10n("submit_application")
-
-javascript:
-  validateAjaxForm();
-
-  function generalAgencySearch() {
-    var general_agency_search = document.getElementById('staff_agency_search').value
-    var general_agency_registration_page = document.getElementById('staff_is_general_agency_registration_page').value
-    document.getElementById('general-agency-staff-btn').disabled = true;
-    if (generalAgencySearch != undefined) {
-        $.ajax({
-          url: '/benefit_sponsors/profiles/general_agencies/general_agency_staff_roles/search_general_agency.js',
-          type: "GET",
-          data: {'q': general_agency_search, "general_agency_registration_page": general_agency_registration_page}
-        });
-    };
-
-  }
-
-  function selectGeneralAgency(element) {
-    var result = document.querySelectorAll('.result');
-    result.forEach(function (result) {
-        var element = result.querySelectorAll('.select-ga')
-        element.forEach(function (ele) {
-            ele.classList.remove("agency-selected");
-        })
-    });
-    document.getElementById('staff_profile_id').value = element.dataset.general_agency_profile_id;
-    element.closest(".select-ga").classList.add('agency-selected')
-      document.getElementById('general-agency-staff-btn').disabled = false;
-  }

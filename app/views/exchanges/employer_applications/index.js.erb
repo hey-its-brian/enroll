@@ -20,9 +20,9 @@ var pyStartOn = ""
 
 if ( $parent_row.next().hasClass('child-row') ) {
 //
-} 
+}
 else {
-  $parent_row.after('<tr class="child-row"><td colspan="100"><%= j render "index"%></td></tr>');
+  $parent_row.after('<tr class="child-row"><td colspan="100"><%= j render "index"%></td></tr>').ready(initIndex());
   $("li>a:contains('Collapse Form')").eq(containing_row.index()).removeClass('disabled');
   $('.dropdown.pull-right').removeClass('open');
 }
@@ -203,6 +203,37 @@ function populateReinstateStartDate(pyStatus, pyStartDate, pyEndDate, applicatio
   }
 }
 
+function initIndex() {
+  initializeDataTables();
+  jQuery('.buttons-csv').hide()
+  jQuery('.buttons-excel').hide()
+  function printDoc(id){
+    var window_obj=window.open();
+    window_obj.document.write($('#print_'+id).html());
+    window_obj.print();
+    window_obj.close();
+  }
+}
+
+$(document).on('click', '.cancel-py.btn, .terminate-py.btn, .reinstate-py.btn', function() {
+  var appId = $(this).data('app-id')
+  var action = $(this).data('action')
+  pyAction(action, appId, $(this).data('app-status'), $(this).data('bs-id'), $(this).data('end-on'), $(this).data('start-on'))
+  $("#plan-year-submit-" + appId).attr('data-selected-action', action)
+})
+
+$(document).on('change', '.py-end-date', function() {
+  validateFormat($(this).data('app-id'), $(this).data('start-on'), $(this).data('end-on'))
+})
+
+$(document).on('click', '.plan-year-submit', function() {
+  if (!applicationId) {
+    applicationId = $(this).data('app-id')
+    actionSelected = $(this).data('selected-action')
+  }
+  submitPlanActions()
+})
+
 function pyAction(action, id, status, employer_id, end_on, start_on) {
   applicationId = id;
   employerId = employer_id
@@ -218,7 +249,7 @@ function pyAction(action, id, status, employer_id, end_on, start_on) {
     enableTransmitToCarrier(applicationId);
     enableSubmitButton()
   }
-  
+
   if (action == 'terminate') {
     showTerminationRadios();
     clearDatePickerValue();
@@ -226,7 +257,7 @@ function pyAction(action, id, status, employer_id, end_on, start_on) {
     updateDatePickerBasedOnTermReason('voluntary', id)
     disableTransmitToCarrier(applicationId);
   }
-  
+
   if (action == 'cancel') {
     hideEndDateField(pyStartDate, applicationId);
     hideTerminationRadios();
@@ -235,7 +266,7 @@ function pyAction(action, id, status, employer_id, end_on, start_on) {
   }
   // Clears all end dates from previous rows
   var endDates = document.querySelectorAll('.py-end-date');
-  
+
   for (date of endDates) {
     date.value = "";
   }

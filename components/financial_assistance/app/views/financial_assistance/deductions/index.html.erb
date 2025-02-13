@@ -56,7 +56,7 @@
           <%= render partial: 'financial_assistance/deductions/deduction_form', locals: { deduction: FinancialAssistance::Deduction.new, kind: deduction_kind, new_form: true} %>
         </div>
         <div class="add-more-link mt-4 <%= 'hidden' unless @applicant.deductions.of_kind(deduction_kind).present? %>" id="add-more-link-<%=deduction_kind%>">
-          <button tabindex="0" onkeydown="handleButtonKeyDown(event, 'add_new_deduction_kind')" class="button add_new_deduction_kind">
+          <button tabindex="0" data-keydown-id='add_new_deduction_kind' id='add_new_deduction_kind' class="button add_new_deduction_kind">
             <%= l10n("faa.other_incomes.add", kind: label).titleize %>
           </button>
         </div>
@@ -274,7 +274,7 @@
         <div class="col-xs-12">
           <div class="back-link">
             <i class="fa fa-caret-left fa-2x" aria-hidden="true"></i>
-            <a href="javascript:void(0);" onclick="notifyUserPrompt(this)" data-path="<%= edit_application_path(@application) %>"> <b>BACK TO ALL HOUSEHOLD MEMBERS</b> </a> <span>(Go back and work on another person)</span>
+            <a href="#" class="back-to-household-link" data-path="<%= edit_application_path(@application) %>"> <b>BACK TO ALL HOUSEHOLD MEMBERS</b> </a> <span>(Go back and work on another person)</span>
           </div>
         </div>
       </div>

@@ -1,49 +1,54 @@
-<%= render partial: "ui-components/v1/navs/primary_nav" %>
+<% if @bs4 %>
+  <%= render partial: "ui-components/v1/navs/primary_nav" %>
 
-<div class="container" data-controller="bulk-notice">
-  <% if @bs4 %>
+  <div class="container" data-controller="bulk-notice">
+
     <h1><%= l10n('new_message') %></h1>
     <p><%= l10n("admin_actions.bulk_upload.new.description_text") %></p>
     <strong><%= l10n('important') %>:</strong> <p><%= l10n("admin_actions.bulk_upload.new.description_sub_text") %></p>
 
     <%= form_for(@bulk_notice, url: exchanges_bulk_notices_path, html: { multipart: true }) do |f| %>
-        <%= f.label :audience_type, l10n('admin_actions.bulk_upload.audience_type') %>
-        <%= f.select :audience_type, Admin::BulkNotice::RECIPIENTS, { selected: @bulk_notice.audience_type }, class: 'form-control w-auto pr-4', data: { reflex: 'change->BulkNotice#audience_select' } %>
-        <table>
-          <tbody>
-          <tr>
-            <td><label class="weight-n" for="bulk-notice-audience-identifiers"><%= l10n('recipients') %>:</label></td>
-            <td>
-              <div id='recipient-list' class='collapsed float-left' data-target="bulk-notice.recipientList"></div>
-              <div id='more-recipients' class='float-right pr-1'>
-                <a href data-target="bulk-notice.moreRecipients" data-action='bulk-notice#expandRecipients' class='d-none'><%= l10n('admin_actions.bulk_upload.new.zero_more') %></a>
-                <a href data-target="bulk-notice.lessRecipients" data-action='bulk-notice#collapseRecipients' class='d-none'><%= l10n('admin_actions.bulk_upload.new.less') %></a>
-              </div>
+      <%= f.label :audience_type, l10n('admin_actions.bulk_upload.audience_type') %>
+      <%= f.select :audience_type, Admin::BulkNotice::RECIPIENTS, { selected: @bulk_notice.audience_type }, class: 'form-control w-auto pr-4', data: { reflex: 'change->BulkNotice#audience_select' } %>
+      <table>
+        <tbody>
+        <tr>
+          <td><label class="weight-n" for="bulk-notice-audience-identifiers"><%= l10n('recipients') %>:</label></td>
+          <td>
+            <div id='recipient-list' class='collapsed float-left' data-target="bulk-notice.recipientList"></div>
+            <div id='more-recipients' class='float-right pr-1'>
+              <a href data-target="bulk-notice.moreRecipients" data-action='bulk-notice#expandRecipients' class='d-none'><%= l10n('admin_actions.bulk_upload.new.zero_more') %></a>
+              <a href data-target="bulk-notice.lessRecipients" data-action='bulk-notice#collapseRecipients' class='d-none'><%= l10n('admin_actions.bulk_upload.new.less') %></a>
+            </div>
 
-              <%= f.text_area :audience_identifiers, rows: 1, data: { reflex: 'blur->BulkNotice#new_identifier' }, placeholder: l10n('admin_actions.bulk_upload.new.recipient_placeholder'), id: 'bulk-notice-audience-identifiers', class: 'w-100' %>
-            </td>
-          </tr>
-          <tr>
-            <th><label for="admin_bulk_notice_subject" class="weight-n required"><%= l10n('subject') %></label></th>
-            <td><%= f.text_field :subject, :size => "55", placeholder: l10n("subject"), include_blank: false, required: true, class: "w-100" %></td>
-          </tr>
-          <tr>
-            <th><label for="admin_bulk_notice_body" class="weight-n required"><%= l10n('content') %></label></th>
-            <td><%= f.text_area :body, rows: 5, placeholder: l10n('hbx_profiles.send_message.write_here'), required: true, class: "w-100"  %></td>
-          </tr>
-          <tr>
-            <th><label for="file" class="weight-n"><%= l10n('hbx_profiles.send_message.document') %></label></th>
-            <td><%= file_field_tag :file, accept: ::FileUploadValidator::VERIFICATION_DOC_TYPES.join(','), class: "doc-upload-file w-75"%></td>
-          </tr>
-          </tbody>
-        </table>
+            <%= f.text_area :audience_identifiers, rows: 1, data: { reflex: 'blur->BulkNotice#new_identifier' }, placeholder: l10n('admin_actions.bulk_upload.new.recipient_placeholder'), id: 'bulk-notice-audience-identifiers', class: 'w-100' %>
+          </td>
+        </tr>
+        <tr>
+          <th><label for="admin_bulk_notice_subject" class="weight-n required"><%= l10n('subject') %></label></th>
+          <td><%= f.text_field :subject, :size => "55", placeholder: l10n("subject"), include_blank: false, required: true, class: "w-100" %></td>
+        </tr>
+        <tr>
+          <th><label for="admin_bulk_notice_body" class="weight-n required"><%= l10n('content') %></label></th>
+          <td><%= f.text_area :body, rows: 5, placeholder: l10n('hbx_profiles.send_message.write_here'), required: true, class: "w-100"  %></td>
+        </tr>
+        <tr>
+          <th><label for="file" class="weight-n"><%= l10n('hbx_profiles.send_message.document') %></label></th>
+          <td><%= file_field_tag :file, accept: ::FileUploadValidator::VERIFICATION_DOC_TYPES.join(','), class: "doc-upload-file w-75"%></td>
+        </tr>
+        </tbody>
+      </table>
 
-        <div class="d-flex">
-          <%= link_to_with_noopener_noreferrer('Back', exchanges_bulk_notices_path, class: 'btn btn-secondary col-auto') %>
-          <%= f.submit "Preview", class: 'btn-primary d-flex ml-2 col-auto', onclick: "onSubmit();" %>
-        </div>
+      <div class="d-flex">
+        <%= link_to_with_noopener_noreferrer('Back', exchanges_bulk_notices_path, class: 'btn btn-secondary col-auto') %>
+        <%= f.submit "Preview", class: 'btn-primary d-flex ml-2 col-auto', id: "preview_submit" %>
+      </div>
     <% end %>
-  <% else %>
+  </div>
+<% else %>
+  <%= render partial: "ui-components/v1/navs/primary_nav" %>
+
+  <div class="container" data-controller="bulk-notice">
     <h4>New Message</h4>
     <p><%= l10n("admin_actions.bulk_upload.new.description_text") %></p>
     <strong>Important:</strong> <p><%= l10n("admin_actions.bulk_upload.new.description_sub_text") %></p>
@@ -83,26 +88,26 @@
       <%= f.submit "Preview", class: 'btn btn-alt-blue col-2 offset-10', onclick: "onSubmit();" %>
       </div>
     <% end %>
-  <% end %>
-</div>
+  </div>
 
-<script type="text/javascript">
-  function onSubmit() {
-    if (!document.getElementsByClassName('badge-alt-blue').length && !document.getElementsByClassName('badge-blue').length) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (document.getElementsByClassName('badge-danger').length) {
-        alert('Recipients is invalid. Please check red badges.')
-      } else {
-        alert('Recipients should not be blank')
+  <script type="text/javascript">
+    function onSubmit() {
+      if (!document.getElementsByClassName('badge-alt-blue').length && !document.getElementsByClassName('badge-blue').length) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (document.getElementsByClassName('badge-danger').length) {
+          alert('Recipients is invalid. Please check red badges.')
+        } else {
+          alert('Recipients should not be blank')
+        }
+        return
       }
-      return
-    }
 
-    if (document.getElementsByClassName('badge-danger').length) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      alert('Recipients is invalid. Please check red badges.')
+      if (document.getElementsByClassName('badge-danger').length) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        alert('Recipients is invalid. Please check red badges.')
+      }
     }
-  }
-</script>
+  </script>
+<% end %>

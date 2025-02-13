@@ -1,4 +1,3 @@
-<%= javascript_pack_tag 'benefit_sponsors' %>
 <% if @bs4 %>
   <div id="address_info" class="">
     <%= f.fields_for :addresses, f.object.addresses, errors: {}, fieldset: true do |address| %>
@@ -102,6 +101,7 @@
   <% end %>
   <button id="add_mailing_address" class="form-action btn-secondary <%= pundit_class Family, :updateable? %> <%= 'd-none' if has_mailing %> mb-1" type="button">Add Mailing Address</button>
 <% else %>
+  <%= javascript_pack_tag 'benefit_sponsors' %>
   <div id="address_info" class="row no-buffer focus_effect personal-info-row">
     <div class="col-md-12 no-pd col-sm-12 col-xs-12">
 
@@ -370,14 +370,3 @@
 
   </script>
 <% end %>
-
-<script>
-  function confirmChange(event){
-    $(".btn-confirmation").prop('disabled', true);
-    $('.modal-backdrop').removeClass('modal-backdrop');
-    $('.modal-open').removeClass('modal-open');
-
-    PersonValidations.manageRequiredValidations($('#confirm-dependent'));
-    $('#addressChangeConfirmation').modal('hide');
-  }
-</script>

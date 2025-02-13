@@ -30,7 +30,7 @@ And(/user selects no for applicant's naturalized_citizen status$/) do
 end
 
 And(/user clicks comfirm member$/) do
-  find(".btn", text: "CONFIRM MEMBER").click
+  find(".btn.applicant-confirm-member").click
 end
 
 Then(/form should not submit due to required relationship options popup$/) do

@@ -2,7 +2,7 @@
   <div class="special_qle_reasons hidden">
     <fieldset>
       <legend class="weight-n mb-2"><%= l10n("insured.indicate_following_circumstances_apply_to_you") %>: </legend>
-      <div class="focus" onkeydown="handleButtonKeyDown(event, 'qle_submit_reason')">
+      <div class="focus" data-keydown-id='qle_submit_reason'>
         <label class="weight-n" class="radio">
           <%= radio_button_tag :reason, "", true, id: "reason_accept", class: "zip-check"%>
           <span><%= l10n('insured.qle_detail.special_reason.move', qle_start_date: @qle_date_calc, qle_date: @qle_date) %></span>
@@ -28,13 +28,13 @@
   <div class="hidden zip_compare">
     <label class="weight-n mb-2"><%= l10n("insured.qle_detail.special_reason.move.enter_zip") %></label>
     <div class="flex-column col-6 px-0">
-      <div onkeydown="handleButtonKeyDown(event, 'qle_zip_compare')">
+      <div data-keydown-id='qle_zip_compare'>
         <label>
           <div><%= l10n("insured.qle_detail.special_reason.move.old_zip") %></div>
           <input class="old_zip_code required zip"/>
         </label>
       </div>
-      <div onkeydown="handleButtonKeyDown(event, 'qle_zip_compare')">
+      <div data-keydown-id='qle_zip_compare'>
         <label>
           <div><%= l10n("insured.qle_detail.special_reason.move.new_zip") %></div>
           <input class="new_zip_code required zip"/>
@@ -45,11 +45,6 @@
       </div>
     </div>
   </div>
-  <script>
-    $(document).ready(function() {
-      $.inputMasks();
-    });
-  </script>
 <% else %>
   <div class="special_qle_reasons hidden">
     <h4><%= l10n("insured.indicate_following_circumstances_apply_to_you") %>: </h4> <br/>
@@ -110,48 +105,3 @@
     </div>
   </div>
 <% end %>
-
-<script type="text/javascript">
-  <% if EnrollRegistry[:enroll_app].setting(:sep_moved_out_zip_compare).item %>
-    $('#qle_submit_reason').on('click', function(event) {
-      if (event.type === 'click' || (event.type === 'keydown' && event.keyCode === 13)) {
-        if ($("input:radio[name=reason]:checked").hasClass('zip-check')) {
-          $('.special_qle_reasons').addClass('hidden');
-          $('.zip_compare').removeClass('hidden');
-          event.preventDefault();
-          event.stopImmediatePropagation();
-        }
-      }
-    })
-  <% end %>
-
-  $('#qle_zip_compare').on('click', function() {
-    function handleFailure() {
-      $('#qle_reason').hide();
-      var errorNoticeAction = "<%= l10n('insured.qle_detail.error_text_not_eligible', site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item, contact_center_phone_number: EnrollRegistry[:enroll_app].setting(:contact_center_short_number).item) %>";
-      $("#qle-details .error-text").html(errorNoticeAction);
-      $('#qle-details .error-info').removeClass('hidden');
-    }
-
-    $.ajax({
-      type: "GET",
-      data:{old_zip: $('.old_zip_code').val(), new_zip: $('.new_zip_code').val()},
-      url: "/insured/families/sep_zip_compare.json",
-      success: function(response){
-        if (response.is_approved) {
-          $.ajax({
-            type: "GET",
-            data:{date_val: $("#qle_date").val(), qle_id: $("#qle_id").val(), qle_reason_val: $("input:radio[name=reason]:checked").val(), bs4: $("#bs4").val()},
-            url: "/insured/families/check_qle_date.js"
-          });
-        } else {
-          handleFailure();
-        }
-      },
-      error: handleFailure
-    });
-
-    event.preventDefault();
-    event.stopImmediatePropagation();
-  });
-</script>

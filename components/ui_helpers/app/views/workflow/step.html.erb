@@ -41,7 +41,7 @@
         <div class="col-xs-12">
           <div class="back-link">
             <i class="fa fa-caret-left fa-2x" aria-hidden="true"></i>
-            <a href="javascript:void(0);" onclick="notifyUserPrompt(this)" data-path="<%= financial_assistance.edit_application_path(@application) %>"> <b>BACK TO ALL HOUSEHOLD MEMBERS</b> </a> <span>(Go back and work on another person)</span>
+            <a href="#" class="back-to-household-link" data-path="<%= financial_assistance.edit_application_path(@application) %>"> <b>BACK TO ALL HOUSEHOLD MEMBERS</b> </a> <span>(Go back and work on another person)</span>
           </div>
         </div>
       </div>
@@ -65,19 +65,19 @@
           <li>
             <% if @current_step.to_i == 1 %>
               <%= link_to find_previous_from_step_one do %>
-                <%# <%= image_tag 'icons/list.png' %> 
+                <%# <%= image_tag 'icons/list.png' %>
                 PREVIOUS
               <% end %>
             <% else %>
               <%= link_to previous_step_for do %>
-                <%# <%= image_tag 'icons/list.png' %> 
+                <%# <%= image_tag 'icons/list.png' %>
                 PREVIOUS
               <% end %>
             <% end %>
           </li>
           <li>
             <a href="#">
-              <%# <%= image_tag 'icons/list.png' %> 
+              <%# <%= image_tag 'icons/list.png' %>
               SAVE &amp; EXIT
             </a>
             <br>

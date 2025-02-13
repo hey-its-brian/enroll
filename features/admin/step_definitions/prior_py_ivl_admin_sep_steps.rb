@@ -109,6 +109,7 @@ end
 
 Then(/^Admin clicks confirm on popup$/) do
   find(AddSepAction.popup_confirmation).click
+  wait_for_ajax
 end
 
 And(/^I see a SEP success message for (.*)$/) do |named_person|

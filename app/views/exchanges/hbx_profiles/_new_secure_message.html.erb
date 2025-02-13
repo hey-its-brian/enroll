@@ -51,7 +51,7 @@
             <%= hidden_field_tag :resource_name, resource.class %>
             <%= hidden_field_tag :actions_id, @element_to_replace_id %>
             <%= button_tag 'Send', class: "btn btn-primary interaction-control-send", id: "send_secure_message"%>
-            <button type="button" class="btn btn-default" id="secureMessageFormClose" onclick="closeRow(this)"><%= l10n('cancel') %></button>
+            <button type="button" class="btn btn-default" id="secureMessageFormClose"><%= l10n('cancel') %></button>
           </div>
         </div>
       </div>
@@ -63,7 +63,7 @@
             <p><%= l10n('hbx_profiles.send_message.modal.body') %></p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary btn-confirmation"><%= l10n('confirm_selection') %></button>
+            <button type="button" class="btn btn-primary btn-confirmation send-secure-msg-confirm"><%= l10n('confirm_selection') %></button>
             <button type="button" class="btn btn-default pull-left" data-dismiss="modal"><%= l10n('cancel') %></button>
           </div>
         </div>
@@ -71,7 +71,7 @@
     </div>
   </form>
 <% else %>
-  <form id="secure_message_form" onsubmit="return false;" >
+  <form id="secure_message_form" >
     <div>
       <div class="bottom-pd">
         <div class="row no-buffer">
@@ -102,7 +102,7 @@
             <%= hidden_field_tag :resource_name, resource.class %>
             <%= hidden_field_tag :actions_id, @element_to_replace_id %>
             <%= button_tag 'Send', class: "btn btn-primary interaction-control-send", id: "send_secure_message"%>
-            <button type="button" class="btn btn-default" id="secureMessageFormClose" onclick="closeRow(this)">Cancel</button>
+            <button type="button" class="btn btn-default" id="secureMessageFormClose">Cancel</button>
           </div>
         </div>
       </div>
@@ -114,7 +114,7 @@
             <p>Are you sure you want to <b>Send/Upload</b> this message?</p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary btn-confirmation" onclick='confirmSecureMsg(event); return false;'>Confirm</button>
+            <button type="button" class="btn btn-primary btn-confirmation send-secure-msg-confirm">Confirm</button>
             <button type="button" class="btn btn-default pull-left" data-dismiss="modal">Cancel</button>
           </div>
         </div>
@@ -122,57 +122,3 @@
     </div>
   </form>
 <% end %>
-
-
-<script type="text/javascript">
-
-  $(document).on('click', '#send_secure_message', function(e) {
-
-    var file_value = $('#file')[0].value;
-
-    $(".btn-confirmation").removeAttr('disabled');
-
-    if (file_value != "") {
-      $('#body').attr('required', false)
-    }
-
-    if ( $('#secure_message_form')[0].checkValidity() ) {
-      $('#sendSecure').modal('show')
-    }
-  });
-
-  function confirmSecureMsg(event){
-    $(".btn-confirmation").prop('disabled', true);
-
-    event.preventDefault();
-    event.stopImmediatePropagation();
-
-    $('.modal-backdrop').removeClass('modal-backdrop');
-    $('.modal-open').removeClass('modal-open');
-
-    var formData = new FormData($('#secure_message_form')[0]);
-
-    $.ajax({
-      url: '/exchanges/hbx_profiles/create_send_secure_message.js',
-      type: "POST",
-      data : formData,
-      contentType: false,
-      processData: false,
-    });
-  }
-  <% if @bs4 %>
-    $('.btn-confirmation').on('click', function() {
-        confirmSecureMsg(event);
-        return false;
-    });
-
-    $('#secure_message_form').on('submit', function(e) {
-        return false;
-    });
-  <% end %>
-
-  function closeRow(element) {
-    element.closest('tr').remove();
-  }
-
-</script>

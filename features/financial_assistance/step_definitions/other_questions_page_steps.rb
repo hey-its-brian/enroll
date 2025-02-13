@@ -52,6 +52,7 @@ Given(/^all applicants fill all pages except other questions$/) do
     find(IvlIapOtherIncomePage.interest_select_yearly).click
     find(IvlIapOtherIncomePage.has_other_income_save_btn).click
     find(IvlIapOtherIncomePage.continue_btn).click
+
     find(IvlIapIncomeAdjustmentsPage.income_adjustments_yes_radiobtn).click
     find(:css, IvlIapIncomeAdjustmentsPage.moving_expenses_checkbox).set(true)
     fill_in IvlIapIncomeAdjustmentsPage.amount, with: '50'

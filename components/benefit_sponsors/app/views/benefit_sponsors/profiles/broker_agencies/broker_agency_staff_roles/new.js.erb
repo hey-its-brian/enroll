@@ -4,3 +4,11 @@ if (bs4 == "true") {
 }
 $('#add_staff').hide().after('<%= j render("form") %>');
 if (bs4 == "true") indicateRequiredFields();
+
+$(document).on('mouseover', '.ba-staff-dob', function() {
+  showDatepicker(this)
+})
+
+function showDatepicker(element) {
+  initDatepicker(element.id,new Date('<%= Date.today.beginning_of_month-100.years %>'),new Date('<%= Date.today.beginning_of_month-16.years %>'))
+}

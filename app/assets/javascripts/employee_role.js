@@ -101,10 +101,14 @@ $(function () {
 	});
 });
 
+$(document).on('selectric-change', "#terminate-reason-select", function() {
+	EmployeeRole.disableTerminateSubmit($(this).data('enrollment-id'))
+})
+
 var EmployeeRole = ( function( window, undefined ) {
   function disableTerminateSubmit(hbx_id) {
-    var target = $('#terminate_confirm_' + hbx_id);
-    var terminate_reason = target.find('select.interaction-choice-control-terminate-reason').val();
+    var target = $("#terminate_confirm_" + hbx_id);
+    var terminate_reason = target.find('#terminate-reason-select').val();
     if(terminate_reason == undefined || terminate_reason == ""){
       target.find('.terminate_reason_submit').attr("disabled",true);
     }else{
@@ -116,4 +120,3 @@ var EmployeeRole = ( function( window, undefined ) {
     disableTerminateSubmit : disableTerminateSubmit,
   };
 })( window );
-

@@ -174,4 +174,8 @@ class EmployeeFamilyInformation
   def self.lives_with_primary
     '[data-cuke="lives_with_primary_checkbox"]'
   end
+
+  def self.save_personal_btn
+    "#save_personal"
+  end
 end

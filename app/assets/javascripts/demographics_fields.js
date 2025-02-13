@@ -299,6 +299,7 @@ var PersonValidations = (function (window, undefined) {
 
   function restoreRequiredAttributes(e) {
     e.preventDefault && e.preventDefault();
+    var hidden_requireds = $('[required]').not(":visible");
     hidden_requireds.each(function (index) {
       $(this).prop('required', true);
     });

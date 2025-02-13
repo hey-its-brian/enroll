@@ -15,11 +15,11 @@
 
 <div class="d-flex align-items-center">
   <% if @application && show_back_to_household_button %>
-    <%= h(link_to_with_noopener_noreferrer("Back to All Household Members", financial_assistance.edit_application_path(@application), class: 'button outline mr-2')) %>
+    <%= h(link_to_with_noopener_noreferrer(l10n('faa.tax_info.back'), financial_assistance.edit_application_path(@application), class: 'button outline mr-2', :'data-turbolinks' => false)) %>
   <% end %>
 
   <% unless dont_show_prev_button || @no_previous_button %>
-    <a class="button <%= previous_class %> mr-2" href=<%= previous_link %>><%= l10n("previous_step") %></a>
+    <a class="button <%= previous_class %> mr-2" href=<%= previous_link %> data-turbolinks="false"><%= l10n("previous_step") %></a>
   <% end %>
 
   <% unless dont_show_next_button %>

@@ -5,7 +5,7 @@
     <div>
       <div class="col px-0">
         <div id='qle-date-chose'>
-          <div class="mb-2" onkeydown="handleButtonKeyDown(event, 'qle_submit')">
+          <div class="mb-2" data-keydown-id='qle_submit'>
             <label for="qle_date" class='weight-n required'><span class="qle-label"><%= l10n("insured.qle_detail.event_date") %></span></label>
             <%= date_field_tag "qle_date", nil, placeholder: "MM/DD/YYYY", min: 110.years.ago, max:"9999-12-31", required: true %>
           </div>
@@ -104,7 +104,7 @@
                 <div class="spec_reasons">
                 </div>
                 <div class="text-center <%= pundit_class Family,:updateable? %>">
-                  <%= submit_tag l10n('.continue'), id: 'sep_continue', class: 'btn btn-primary', data: { disable_with: false }, onkeydown: "handleButtonKeyDown(event, 'sep_continue')"  %>
+                  <%= submit_tag l10n('.continue'), id: 'sep_continue', class: 'btn btn-primary', data: { disable_with: false } %>
                   <br/>
                   <br/>
                 </div>
@@ -130,4 +130,6 @@
 $(document).on('turbolinks:load', function () {
   QLE.initialize();
 });
+
+$(document).on('keydown', '#sep_continue', function(event) { handleButtonKeyDown(event, 'sep_continue') })
 </script>

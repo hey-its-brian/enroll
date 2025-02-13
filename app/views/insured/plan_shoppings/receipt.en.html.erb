@@ -15,7 +15,7 @@
     <% end %>
     <div class="mt-2 mb-4">
       <% unless @enrollment.employee_role.present? %>
-        <span tabindex="0" onkeydown="handleButtonKeyDown(event, 'how_to_pay_button')" id="how_to_pay_button" class="btn outline mr-2" data-target="#how_to_pay" data-toggle="modal"><%= l10n("plans.plan_shopping.receipt.how_to_pay.title") %></span>
+        <span tabindex="0" data-keydown-id="how_to_pay_button" id="how_to_pay_button" class="btn outline mr-2" data-target="#how_to_pay" data-toggle="modal"><%= l10n("plans.plan_shopping.receipt.how_to_pay.title") %></span>
       <% end %>
       <%= render partial: "insured/plan_shoppings/pay_now", locals: { source: "Plan Shopping", hbx_enrollment: @enrollment }%>
     </div>

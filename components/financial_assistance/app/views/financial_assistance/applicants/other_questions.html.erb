@@ -12,7 +12,7 @@
         </div>
       </div>
       <label class="weight-n mb-3"><%= l10n('faa.other_ques.answer_questions', applicant_name: applicant_name) %></label>
-      <div class="memo"><div>
+      <div class="memo"></div>
 
       <% def applicant_prompt(key) other_questions_prompt(key, use_applicant_name: true) end %>
       <% if @applicant.present? && @applicant.no_ssn == "1" && @applicant.is_applying_coverage %>

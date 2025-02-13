@@ -24,6 +24,7 @@
 
     <%= action_cable_meta_tag %>
     <%= csrf_meta_tags %>
+    <meta name="csp-nonce" content="<%= content_security_policy_nonce %>"/>
 
     <% if EnrollRegistry.feature_enabled?(:live_chat_widget) %>
       <%= render "shared/customer_support/live_chat_scripts" unless EnrollRegistry.feature_enabled?(:external_qna_bot) %>
@@ -83,10 +84,10 @@
     </main>
 
     <%= render partial: './ui-components/bs4/v1/footers/footer' %>
+    <% if @bs4 %>
+      <script>
+        disableSelectric = true;
+      </script>
+    <% end %>
   </body>
-  <% if @bs4 %>
-    <script>
-      disableSelectric = true;
-    </script>
-  <% end %>
  </html>

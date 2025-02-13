@@ -32,8 +32,8 @@
       </div>
 
       <div class="mt-3 pb-2">
-        <a tabindex="0" onkeydown="handleButtonKeyDown(event, 'self-employed-income-delete-<%= dom_id income %>')" id="self-employed-income-delete-<%= dom_id income %>" class="button outline error mr-1 mb-2 self-employed-income-delete"><%= l10n("faa.other_incomes.remove") %></a>
-        <a tabindex="0" onkeydown="handleButtonKeyDown(event, 'self-employed-income-edit-<%= dom_id income %>')" id="self-employed-income-edit-<%= dom_id income %>" class="button mb-2 income-edit"><%=l10n("edit")%></a>
+        <a tabindex="0" data-keydown-id="self-employed-income-delete-<%= dom_id income %>" id="self-employed-income-delete-<%= dom_id income %>" class="button outline error mr-1 mb-2 self-employed-income-delete"><%= l10n("faa.other_incomes.remove") %></a>
+        <a tabindex="0" data-keydown-id="self-employed-income-edit-<%= dom_id income %>" id="self-employed-income-edit-<%= dom_id income %>" class="button mb-2 income-edit"><%=l10n("edit")%></a>
       </div>
     </div>
       <div class="income-edit-form hidden">

@@ -16,3 +16,13 @@ $('.tab-container').hide();
 $('.carrier-custom-plan-tab').show();
 $('#CustomCarrierList').html("<%= escape_javascript(render partial: 'carriers_list', locals: { carrier_names: @carrier_names, search_level: selected_carrier_level, active_year: active_year, kind: kind }) %>");
 <% end %>
+
+$(document).on('click', '.sole_source_link, .single_carrier_link, .single_plan_link, .metal-level-radio', function() {
+  $($(this).data('link-id')).click()
+})
+$(document).on('click', '.dental-plan-select', function() {
+   handleReferencePlanSelection(this)
+})
+$(document).on('click', '.fetch-dental-custom', function() {
+   fetchDentalCustom()
+})

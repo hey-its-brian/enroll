@@ -1,1 +1,8 @@
 $('#add_staff').hide().after('<%= j render("form") %>');
+
+validateAjaxForm();
+
+// components/benefit_sponsors/app/views/benefit_sponsors/profiles/general_agencies/general_agency_staff_roles/_form.html.erb
+function showDatepicker(element) {
+  initDatepicker(element.id,new Date('<%= Date.today.beginning_of_month-100.years %>'),new Date('<%= Date.today.beginning_of_month-16.years %>'))
+}

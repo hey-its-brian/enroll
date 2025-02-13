@@ -1,1 +1,11 @@
 $('.col-md-10').html("<%= escape_javascript(render partial: "new") %>");
+
+$(document).on('click', '#benefitContinueBtn', function(e) {
+  console.log('benefitContinueBtn clicked')
+  e.preventDefault()
+  showProgress()
+})
+
+function showProgress() {
+  swal({title: "Please Hold!", text: "Retrieving Plan Options !", icon:"success", buttons:false, closeOnClickOutside:false});
+}

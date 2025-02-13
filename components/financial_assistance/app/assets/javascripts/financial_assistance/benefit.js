@@ -113,7 +113,7 @@ function makeInputIdsUnique(formId, clonedForm) {
     if (currentFor === null) {
       return;
     }
-    var newFor = currentFor.split("|")[0] + "|"+ newFormId;
+    var newFor = currentFor.split("-uniqId-")[0] + "-uniqId-"+ newFormId;
     label.setAttribute('for', newFor);
   });
   clonedForm.querySelectorAll('input, select').forEach(function(input) {
@@ -121,7 +121,7 @@ function makeInputIdsUnique(formId, clonedForm) {
     if (currentId === null) {
       return;
     }
-    var newId = currentId.split("|")[0] + "|"+ newFormId;
+    var newId = currentId.split("-uniqId-")[0] + "-uniqId-"+ newFormId;
     input.setAttribute('id', newId);
   });
 }
@@ -289,7 +289,7 @@ document.addEventListener("turbolinks:load", function() {
     if (event.type === 'keydown' && event.key !== 'Enter') {
       return;
     }
-    
+
     event.preventDefault();
     var self = this;
     $("#destroyBenefit").modal();
@@ -302,7 +302,7 @@ document.addEventListener("turbolinks:load", function() {
     $("#destroyBenefit .modal-continue-button").off('click');
     $("#destroyBenefit .modal-continue-button").on('click', function() {
       $("#destroyBenefit").modal('hide');
-      
+
       var benefit = $(self).parents('.benefit');
       var url = $(benefit).attr('id').replace('benefit_', 'benefits/');
       $.ajax({
@@ -311,7 +311,7 @@ document.addEventListener("turbolinks:load", function() {
         success: function() {
           var benefitList = benefit.parents('.benefits-list')[0];
           var kind = $(self).data('kind')
-      
+
           $(benefit).remove();
 
           if (benefitList.querySelectorAll('.benefit').length == 0) {

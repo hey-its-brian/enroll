@@ -8,7 +8,7 @@
 
       <%= render partial: 'financial_assistance/shared/end_date_warning_alert', locals: { applicant: @applicant, kind: "note_self_employment_income_field" } %>
 
-      <% onchange_date = FinancialAssistanceRegistry[:income_and_deduction_date_warning].enabled? ? (raw "validateDateWarnings('#{income_id}', true)") : "" %>
+      <% onchange_income_id = FinancialAssistanceRegistry[:income_and_deduction_date_warning].enabled? ? income_id : "" %>
       <%= f.hidden_field :kind, value: 'net_self_employment' %>
       <div class="d-flex col-sm income-form-row p-0 mb-2">
         <div class="w-100 col px-0 pr-4">
@@ -21,18 +21,18 @@
         </div>
         <div class="w-100 col px-0 pr-4">
           <%= f.label :start_on, l10n("faa.other_incomes.start_date"), class: "required", for: "start_on_#{dummy_income_id}" %>
-          <%= f.date_field :start_on, min: 110.years.ago, max:"9999-12-31", required: true, id: "start_on_#{dummy_income_id}", onchange: onchange_date, class: "w-100" %>
+          <%= f.date_field :start_on, min: 110.years.ago, max:"9999-12-31", required: true, id: "start_on_#{dummy_income_id}", data: {validate_date_id: "#{onchange_income_id}", use_bs4: true}, class: "w-100" %>
         </div>
         <div class="w-100 col px-0">
           <%= f.label :end_on, l10n("faa.other_incomes.end_date"), for: "end_on_#{dummy_income_id}" %>
-          <%= f.date_field :end_on, min: 110.years.ago, max:"9999-12-31", id: "end_on_#{dummy_income_id}", onchange: onchange_date, class: "w-100 end-on-field" %>
+          <%= f.date_field :end_on, min: 110.years.ago, max:"9999-12-31", id: "end_on_#{dummy_income_id}", data: {validate_date_id: "#{onchange_income_id}", use_bs4: true}, class: "w-100 end-on-field" %>
         </div>
       </div>
 
       <div class="row mb-2">
         <div class="pull-right mt-1 mb-2 pl-3">
-          <a tabindex="0" onkeydown="handleButtonKeyDown(event, 'self-employed-income-cancel-<%= income_id %>')" id="self-employed-income-cancel-<%= income_id %>" class="button btn-default outline income-cancel"><%= l10n("cancel") %></a>
-          <%= f.submit l10n("faa.other_incomes.save"), class: "button btn-save ml-1", :data => { :cuke => "self-employed-income-save-button" }, onclick: "checkDate('#{income_id}')" %>
+          <a tabindex="0" data-keydown-id='self-employed-income-cancel-<%= income_id %>' id="self-employed-income-cancel-<%= income_id %>" class="button btn-default outline income-cancel"><%= l10n("cancel") %></a>
+          <%= f.submit l10n("faa.other_incomes.save"), class: "button btn-save ml-1", :data => { :cuke => "self-employed-income-save-button" } %>
         </div>
       </div>
     </div>
@@ -43,7 +43,7 @@
 <% else %>
   <%= income_form_for @application, @applicant, income do |f| %>
     <% income_id = income.id %>
-    <% onchange_date = FinancialAssistanceRegistry[:income_and_deduction_date_warning].enabled? ? (raw "validateDateWarnings('#{income_id}')") : "" %>
+    <% onchange_income_id = FinancialAssistanceRegistry[:income_and_deduction_date_warning].enabled? ? income_id : "" %>
     <%= f.hidden_field :kind, value: 'net_self_employment' %>
     <div class="row row-form-wrapper no-buffer row-height">
       <div class="col-md-3">
@@ -60,17 +60,17 @@
       </div>
 
       <div class="col-md-3">
-        <%= f.text_field :start_on, placeholder: 'FROM *', required: true, id: "start_on_#{income_id}", class: "datepicker-js floatlabel", onchange: onchange_date %>
+        <%= f.text_field :start_on, placeholder: 'FROM *', required: true, id: "start_on_#{income_id}", class: "datepicker-js floatlabel", data: {validate_date_id: "#{onchange_income_id}", use_bs4: false} %>
       </div>
 
       <div class="col-md-3 overflow-hidden">
-        <%= f.text_field :end_on, placeholder: 'TO', id: "end_on_#{income_id}", class: "datepicker-js floatlabel", onchange: onchange_date %>
+        <%= f.text_field :end_on, placeholder: 'TO', id: "end_on_#{income_id}", class: "datepicker-js floatlabel", data: {validate_date_id: "#{onchange_income_id}", use_bs4: false} %>
       </div>
     </div>
 
     <div class="row">
       <div class="col-md-3 pull-right mt-1 mb-1">
-        <a tabindex="0" onkeydown="handleCancelButtonKeyDown(event, 'self-employed-income-cancel-<%= income_id %>', 'hidden-self-income-form')" id="self-employed-income-cancel-<%= income_id %>" class="btn btn-default income-cancel">Cancel</a>
+        <a tabindex="0" data-keydown-id="self-employed-income-cancel-<%= income_id %>" id="self-employed-income-cancel-<%= income_id %>" class="btn btn-default income-cancel">Cancel</a>
         <%= f.submit 'Save', class: 'btn btn-save ml-1', :data => { :cuke => "self-employed-income-save-button" } %>
       </div>
     </div>

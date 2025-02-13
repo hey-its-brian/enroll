@@ -9,9 +9,8 @@
       class: 'form-control phone_number',
       minlength: '14',
       maxlength: '14',
-      onkeypress: 'return isNumberKey(event)',
       value: determine_phone_number(f.object),
-      data: { :"error-message" => phone_error }
+      data: { :"error-message" => phone_error, phone_number: true }
     %>
     <div class="invalid-feedback">
       <%= phone_error %>

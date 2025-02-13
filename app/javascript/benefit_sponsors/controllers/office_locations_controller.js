@@ -89,7 +89,7 @@ export default class extends Controller {
         removeButton.classList.remove('hidden');
         var removeButtonId = "remove-button-" + totalLocationsCount;
         removeButton.id = removeButtonId;
-        removeButton.setAttribute('onkeydown', `handleButtonKeyDown(event, '${removeButtonId}')`);
+        removeButton.setAttribute('data-keydown-id', `${removeButtonId}`);
         newLocation.querySelector('input[placeholder="00000"]').setAttribute('data-action', "");
 
         // need to explicitly add event listeners for onInput and onInvalid for phone number fields:

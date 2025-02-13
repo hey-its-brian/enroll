@@ -62,36 +62,6 @@
         input.dataset.input += event.key;
       }
     }
-
-    function validDob(element) {
-      event.preventDefault();
-      let dob = element.value;
-      let input = element.dataset.input;
-      let warningTitle = element.dataset.invalidDobTitle;
-      let warningText;
-
-      if ((dob || input.length > 0) && (dob.length < 10 || isNaN(Date.parse(dob)))) {
-        warningText = element.dataset.invalidDobBody;
-      } else if (Date.parse(dob) > Date.parse(element.max)) {
-        warningText = element.dataset.invalidDobAfter;
-      } else if (Date.parse(dob) < Date.parse(element.min)) {
-        warningText = element.dataset.invalidDobBefore;
-      }
-
-      showDobErrorMessage(element, warningTitle, warningText);
-    }
-
-    function showDobErrorMessage(element, warningTitle, warningText) {
-      if (!warningText) return;
-
-      swal({
-        title: warningTitle,
-        text: warningText,
-        icon: 'warning'
-      });
-      element.value = '';
-      element.dataset.input = "";
-    }
   </script>
 <% else %>
 <head>

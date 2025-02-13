@@ -145,14 +145,14 @@
         <% else %>
           <% if (@tax_household || @aptc_grants) && params[:market_kind]=='individual' && params[:coverage_kind] == 'health' %>
             <% if @csr_available && plan.metal_level != "silver" %>
-              <%= link_to l10n("select_plan"), "javascript:void(0)", class: 'btn btn-default btn-right', data: {'toggle': 'modal', 'target': "#csrEligibleReminder-#{plan.id}"} %>
-              <%= link_to(l10n("select_plan"), "javascript:void(0)", {class: 'hidden btn btn-default btn-right plan-select select', data: {url: thankyou_insured_plan_shopping_path(@hbx_enrollment, plan_id: plan.id, change_plan: @change_plan, market_kind: @market_kind, coverage_kind: @coverage_kind, enrollment_kind: @enrollment_kind)}}) %>
+              <%= link_to l10n("select_plan"), "#", class: 'btn btn-default btn-right', data: {'toggle': 'modal', 'target': "#csrEligibleReminder-#{plan.id}"} %>
+              <%= link_to(l10n("select_plan"), "#", {class: 'hidden btn btn-default btn-right plan-select select', data: {url: thankyou_insured_plan_shopping_path(@hbx_enrollment, plan_id: plan.id, change_plan: @change_plan, market_kind: @market_kind, coverage_kind: @coverage_kind, enrollment_kind: @enrollment_kind)}}) %>
               <%= render partial: "shared/csr_eligible_reminder_modal", locals: { plan: plan } %>
             <% else %>
-              <%= link_to(l10n("select_plan"), "javascript:void(0)", {class: 'btn btn-default btn-right plan-select select', data: {url: thankyou_insured_plan_shopping_path(@hbx_enrollment, plan_id: plan.id, change_plan: @change_plan, market_kind: @market_kind, coverage_kind: @coverage_kind, enrollment_kind: @enrollment_kind)}}) %>
+              <%= link_to(l10n("select_plan"), "#", {class: 'btn btn-default btn-right plan-select select', data: {url: thankyou_insured_plan_shopping_path(@hbx_enrollment, plan_id: plan.id, change_plan: @change_plan, market_kind: @market_kind, coverage_kind: @coverage_kind, enrollment_kind: @enrollment_kind)}}) %>
             <% end %>
           <% else %>
-            <%= link_to(l10n("select_plan"), "javascript:void(0)", {class: 'btn btn-default btn-right plan-select select', data: {url: thankyou_insured_plan_shopping_path(@hbx_enrollment, plan_id: plan.id, change_plan: @change_plan, market_kind: @market_kind, coverage_kind: @coverage_kind, enrollment_kind: @enrollment_kind)}}) %>
+            <%= link_to(l10n("select_plan"), "#", {class: 'btn btn-default btn-right plan-select select', data: {url: thankyou_insured_plan_shopping_path(@hbx_enrollment, plan_id: plan.id, change_plan: @change_plan, market_kind: @market_kind, coverage_kind: @coverage_kind, enrollment_kind: @enrollment_kind)}}) %>
           <% end %>
         <% end %>
       </div>
@@ -184,16 +184,6 @@
       </div>
     </div>
   </div>
-
-
-
-
-
-
-
-
-
-
 <% else %>
   <div class="module plan-row panel panel-default" data-plan-id="<%= plan.id %>" data-plan-category="<%= plan.product_type ? plan.product_type.downcase : '' %>" data-plan-metal-level="<%= plan.metal_level.downcase %>" data-plan-metal-network="<%= plan.network&.downcase %>" data-plan-metal-premium="<%= plan.total_employee_cost %>" data-plan-metal-ehb-premium="<%= plan.total_ehb_premium %>" data-plan-childcare-subsidy-eligible="<%= plan_childcare_subsidy_eligible(plan) %>" data-plan-metal-deductible="<%= plan.deductible == 'Not Applicable' ? '$0' : plan.deductible %>" data-plan-name="<%= plan.name %>" data-plan-carrier="<%= plan_carrier.try(:legal_name) %>" data-plan-hsa-eligibility="<%= ivl_hsa_status(@plan_hsa_status, plan) %>" data-plan-osse-eligibility="<%= osse_status(plan) %>" data-plan-ehb="<%= plan.ehb %>" data-can-use-aptc="<%= plan.can_use_aptc? %>">
     <div class="panel-body">
@@ -308,81 +298,3 @@
       }
   </style>
 <% end %>
-<script>
-  var compareChecks = document.querySelectorAll(".compare_plan_checkbox");
-  compareChecks.forEach(check => check.addEventListener('click', event => {
-    comparePlan(check);
-  }));
-
-  function resetComparePlan() {
-
-    var compareBtn = document.getElementById('compareBtn')
-    compareBtn.classList.add('hidden')
-    checkboxes = document.querySelectorAll('.compare_plan_checkbox')
-    checkboxes.forEach(function(checkbox) {
-       checkbox.checked = false;
-    })
-  }
-
-	function comparePlan(element) {
-    plansToCompareArray = [];
-		checkboxes = document.querySelectorAll('.compare_plan_checkbox')
-		count = 0;
-		checkboxes.forEach(function(checkbox) {
-			//
-			if (checkbox.checked) {
-				count++;
-				hios = checkbox.dataset.hiosId;
-				planYear = checkbox.dataset.planYear;
-        hbxId = checkbox.dataset.hbxId;
-        enrollmentKind = checkbox.dataset.planEnrollmentKind;
-        changePlan = checkbox.dataset.planChangePlan;
-        uri = checkbox
-
-				var compareBtn = document.getElementById('compareBtn')
-
-				if (count > 1) {
-					compareBtn.classList.remove('hidden')
-				} else {
-          compareBtn.classList.add('hidden')
-        }
-
-				if (count > 3) {
-					checkbox.checked = false;
-          if (document.getElementById('planComparisonCountExceeded')) {
-            $('#planComparisonCountExceeded').modal('show');
-          } else {
-            swal({
-						title: "Plan count exceeded",
-						text: "You may only compare up to 3 plans at a time",
-						icon: "warning"
-					  });
-          }
-				}
-				if (count <= 3) {
-          plansToCompareArray.push(hios)
-          plansToCompareArray = uniqueValues(plansToCompareArray)
-				}
-			}
-		})
-	}
-
-  function compareResults() {
-    uri = document.getElementById('compareBtn').dataset.uri;
-  	$.ajax({
-  		type: "GET",
-  	url: uri,
-  	dataType: 'script',
-  	data: {
-  		"standard_component_ids": plansToCompareArray,"hbx_enrollment_id": hbxId, "active_year": planYear, "enrollment_kind": enrollmentKind,
-      "change_plan": changePlan
-  	}
-  	});
-  }
-
-  function uniqueValues(array) {
-    let map = new Map();
-    array.forEach(value => map.set(value, value));
-    return [...map.values()];
-  };
-</script>

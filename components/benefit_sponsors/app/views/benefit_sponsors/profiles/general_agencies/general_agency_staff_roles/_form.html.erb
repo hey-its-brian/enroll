@@ -18,9 +18,3 @@
   <button type="submit" class="btn btn-primary pull-left mtz sm_full_width">Save</button>
   <%= link_to l10n("cancel"), profiles_general_agencies_general_agency_profile_path(id:params[:profile_id]), class:'btn btn-default pull-left' %>
 <% end %>
-
-<script type="text/javascript">
-    function showDatepicker(element) {
-      initDatepicker(element.id,new Date('<%= Date.today.beginning_of_month-100.years %>'),new Date('<%= Date.today.beginning_of_month-16.years %>'))
-    }
-</script>

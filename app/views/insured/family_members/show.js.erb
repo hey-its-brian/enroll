@@ -1,6 +1,6 @@
 if (!$(".my-household-page").length) {
   if ($("#add_member_list_<%= @dependent.id %>").length) {
-    $("#add_member_list_<%= @dependent.id %>").replaceWith("<%= escape_javascript(render 'dependent', dependent: @dependent, person: @person) %>");
+    $("#add_member_list_<%= @dependent.id %>").replaceWith("<%= escape_javascript(render 'dependent', dependent: @dependent, person: @person) %>").ready(init_partials_js());
   } else {
     $("#new_employee_dependent_form").replaceWith("<%= escape_javascript(render 'dependent', dependent: @dependent, person: @person) %>");
   }
@@ -33,3 +33,13 @@ if (!$(".my-household-page").length) {
     $("#qle_flow_info").get(0).scrollIntoView({behavior: 'smooth'});
   }
 <% end %>
+
+
+
+function init_partials_js() {
+  init_dependent()
+}
+
+function init_dependent() {
+  Freebies.floatlabels();
+}

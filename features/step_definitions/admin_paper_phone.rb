@@ -3,5 +3,5 @@ When(/^I see the (.*?) link$/) do |method|
 end
 
 Then(/^the Paper action should not be actionable$/) do
-  find(:xpath, "//*[@id='myTab']/li[2]/ul/li[6]")['class'].split(' ')[1] == 'blocking'
+  find("#dc-resident-application")['class'].split[1] == 'blocking'
 end

@@ -17,7 +17,7 @@
         </div>
       </div>
       <%= hidden_field_tag :profile_id, params[:profile_id] %>
-    </div>
+    </section>
     <div class="mt-4">
       <%= link_to l10n("broker_agencies.cancel_new_staff"), profiles_broker_agencies_broker_agency_profile_path(id:params[:profile_id]), class:'btn-error outline' %>
       <button type="submit" class="primary" id="addStaff"><%= l10n("broker_agencies.create_new_staff") %></button>
@@ -36,7 +36,7 @@
         <%= f.text_field :last_name, class: "floatlabel form-control", required: true, placeholder: l10n("broker_agencies.last_name") %>
       </div>
       <div class="col-md-4 col-sm-4 col-xs-12 form-group form-group-lg no-pd">
-        <%= f.text_field :dob, :class => "floatlabel form-control interaction-field-control-person-dob", :placeholder => l10n("broker_agencies.dob") , required: true, readonly: defined?(readonly), onmouseover:"showDatepicker(this)" %>
+        <%= f.text_field :dob, :class => "floatlabel form-control interaction-field-control-person-dob ba-staff-dob", :placeholder => l10n("broker_agencies.dob") , required: true, readonly: defined?(readonly) %>
       </div>
     </div>
     <%= hidden_field_tag :profile_id, params[:profile_id] %>
@@ -46,9 +46,4 @@
   <%= link_to l10n("cancel"), profiles_broker_agencies_broker_agency_profile_path(id:params[:profile_id]), class:'btn btn-default pull-left' %>
 <% end %>
 
-<script type="text/javascript">
-    function showDatepicker(element) {
-      initDatepicker(element.id,new Date('<%= Date.today.beginning_of_month-100.years %>'),new Date('<%= Date.today.beginning_of_month-16.years %>'))
-    }
-</script>
 <% end %>

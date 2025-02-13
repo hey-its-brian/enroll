@@ -1178,4 +1178,16 @@ module ApplicationHelper
     date = Date.current if date.nil? || date.to_s == "0"
     date.strftime("%Y-%m-%d")
   end
+
+  def ssn_field_validation_attributes(is_enabled:, admin_can_enable: false)
+    attrs = {
+      pattern: "(?!666|000|9\\d{2})\\d{3}[\\- ]{0,1}(?!00)\\d{2}[\\- ]{0,1}(?!0{4})\\d{4}",
+      data: {
+        :"ssn-ui-validation" => is_enabled,
+        :"ssn-ui-validation-message" => l10n('insured.consumer_roles.invalid_ssn_error')
+      }
+    }
+    attrs[:data][:"admin-can-enable"] = true if admin_can_enable
+    attrs
+  end
 end

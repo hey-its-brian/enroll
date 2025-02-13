@@ -14,12 +14,11 @@ function handleEnrollments() {
   const enrollmentToggleCheckbox = document.getElementById(
     'display_all_enrollments'
   );
-  const enrollmentToggleButton = document.getElementById(
-    'display_all_enrollments_btn'
-  );
+  const enrollmentToggleCheckboxes = document.querySelectorAll('[id=display_all_enrollments]')
+  const enrollmentToggleButtons = document.querySelectorAll('[id=display_all_enrollments_btn]')
 
-  enrollmentToggleButton.addEventListener('click', toggleDisplayEnrollments);
-  enrollmentToggleCheckbox.addEventListener('click', toggleDisplayEnrollments);
+  enrollmentToggleButtons.forEach( (button) => button.addEventListener('click', toggleDisplayEnrollments) )
+  enrollmentToggleCheckboxes.forEach( (button) => button.addEventListener('click', toggleDisplayEnrollments) )
 
   function toggleDisplayEnrollments(event) {
     for (const panel of initiallyHiddenEnrollmentPanels) {

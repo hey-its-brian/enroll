@@ -167,7 +167,8 @@ $(function () {
   });
 
 
-  $(document).on('click', 'a.existing-sep-item', function() {
+  $(document).on('click', 'a.existing-sep-item', function(event) {
+    event.preventDefault();
     $('#choose_flow').modal('hide');
     $('.modal-backdrop').remove();
     //window.scrollTo(0, 0);

@@ -12,4 +12,6 @@ return {
   };
 } )( window );
 
-
+$(document).on('ajax:success', function() {
+  $.inputMasks();
+});

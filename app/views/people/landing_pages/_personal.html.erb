@@ -38,7 +38,7 @@
           <%= f.label :ssn, l10n("social_security") %>
           <% if EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields) %>
             <%= render partial: 'shared/person/ssn/consumer_ssn_field',
-              locals: { f: f, presenter: organize_ssn_params(f.object) } 
+              locals: { f: f, presenter: organize_ssn_params(f.object) }
             %>
           <% else %>
             <% if EnrollRegistry.feature_enabled?(:ssn_ui_validation) %>
@@ -72,7 +72,7 @@
     <% if current_user.does_not_have_any_staff_role? && !current_user.has_insured_role? %>
       <%= render 'shared/age_off_excluded', f: f %>
     <% end %>
-    
+
     <section class="mb-4">
       <% if @person.is_consumer_role_active? %>
         <div id="consumer_fields_sets ">
@@ -123,30 +123,11 @@
       <%= link_to l10n("discard_changes"), '#', class: "btn button outline remove-personal-form mr-2" %>
 
       <button type="submit" class="btn btn-primary btn-br hidden"><%= l10n("confirm_member") %></button>
-      <span tabindex="0" onkeydown="handleButtonKeyDown(event, 'save_personal')" id="save_personal" class='btn btn-primary btn-br' onclick='PersonValidations.manageRequiredValidations($(this));' data-cuke="personal-save">
+      <span tabindex="0" id="save_personal" class='btn btn-primary btn-br manage-person-validations-click' data-cuke="personal-save">
         <%= l10n("save_changes") %>
       </span>
     </div>
   <% end %>
-  <script>
-    $('.remove-personal-form').off('click');
-    $('.remove-personal-form').on('click', function (e) {
-      $(".append_consumer_info").empty();
-      if ($(".my-household-page")) {
-        $("#person-<%= @person.id %>").addClass('hidden');
-        $("a[id^=edit-member]").removeClass('disabled');
-        $("a[id^=edit-member]").removeAttr('disabled');
-        // primary_family
-        var family_table = $("<%= escape_javascript(render 'insured/families/manage_family_table', members: @person.primary_family.active_family_members) %>");
-        $('#manage_family_content').html(family_table);
-      }
-    });
-
-    $(document).off('click', '.confirm-member');
-    $(document).on('click', '.confirm-member', function(e) {
-      $("#save_personal").click();
-    });
-  </script>
 
 <% else %>
   <%= form_for @person do |f|%>
@@ -217,6 +198,7 @@
       </div>
       <% end %>
     <br />
+
     <% if @person.is_consumer_role_active? %>
     <div id="consumer_fields_sets">
       <%= render 'shared/consumer_fields', f: f %><br>
@@ -278,15 +260,16 @@
 
     <div class="row no-buffer <%= pundit_class Family, :updateable? %> ">
       <button type="submit" class="btn btn-primary btn-br hidden"><i class="fa fa-user-plus white"></i> Save</button>
-      <span tabindex="0" onkeydown="handleButtonKeyDown(event, 'save_personal')" id="save_personal" class='btn btn-lg btn-primary btn-br' onclick='PersonValidations.manageRequiredValidations($(this));' data-cuke="personal-save"><i class="fa fa-user-plus white"></i> Save</span>
+      <span tabindex="0" id="save_personal" class='btn btn-lg btn-primary btn-br manage-person-validations-click' data-cuke="personal-save"><i class="fa fa-user-plus white"></i> Save</span>
     </div>
   <% end %>
+
+  <script>
+    $(document).ready(function() {
+      $.inputMasks();
+    });
+    init_tribe_fields()
+  </script>
 <% end %>
 
 <%= render 'users/security_question_responses/edit_modal', action: 'replace', method: 'POST', edit_mode: true %>
-
-<script>
-  $(document).ready(function() {
-    $.inputMasks();
-  });
-</script>
