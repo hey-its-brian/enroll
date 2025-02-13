@@ -24,17 +24,33 @@
   		</div>
 	<% else %>
 		<div class="alert alert-danger">
-			<h4>You need to correct the following errors:</h4>
-			<ul>
-				<% object.errors.each do |attr, msg| %>
-					<% if attr == :base %>
-						<li><%= "#{msg}" %></li>
-					<% else %>
-						<% attr = (attr == :gender && EnrollRegistry.feature_enabled?(:gender_to_sex)) ? "sex" : attr %>
-						<li><%= attr.to_s.titleize %>: <%= raw(msg) %></li>
-					<% end %>
-				<% end %>
-			</ul>
+			<h4><%= l10n("error_header_text") %></h4>
+      <ul>
+        <% email_error_present = false %>
+        <% phone_error_present = false %>
+
+        <% object.errors.each do |attr, msg| %>
+          <% if attr == :base %>
+            <li><%= msg %></li>
+          <% elsif attr == :emails %>
+            <% email_error_present = true %> <!-- Flag for email error -->
+          <% elsif attr == :phones %>
+            <% phone_error_present = true %> <!-- Flag for phone error -->
+          <% else %>
+            <!-- Default message for other attributes -->
+            <% attr = (attr == :gender && EnrollRegistry.feature_enabled?(:gender_to_sex)) ? "sex" : attr %>
+            <li><%= attr.to_s.titleize %>: <%= raw(msg) %></li>
+          <% end %>
+        <% end %>
+
+        <% if email_error_present %>
+          <li><%= l10n("invalid_email_error_message") %></li>
+        <% end %>
+
+        <% if phone_error_present %>
+          <li><%= l10n("invalid_phone_error_message") %></li>
+        <% end %>
+      </ul>
 		</div>
 	<% end %>
 <% end %>
