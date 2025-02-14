@@ -1,43 +1,54 @@
-<% if object.errors.any? %>
-	<% if @bs4 %>
-		<% is_only_warning = object.errors.details.values.all? {|error_type| error_type.all? {|details| details[:level] == :warning}} %>
-		<% type = is_only_warning ? "warning" : "error" %>
-		<div class="mt-2 mb-0 px-0">
-   			<div class="alert alert-<%= type %> d-flex flash" role="alert">
-          <div class="pl-1">
-            <div class="<%= type %>-icon icon" alt=<%= type %>>&nbsp;</div>
-          </div>
-				<div class="mt-2 p-0 align-self-center">
-					<p><%= l10n('insured.consumer_roles.error_prompt') %></p>
-					<ul class="list-unstyled">
-						<% object.errors.each do |attr, msg| %>
-							<% if attr == :base %>
-								<li><%= "#{msg}" %></li>
-							<% else %>
-								<% attr = (attr == :gender && EnrollRegistry.feature_enabled?(:gender_to_sex)) ? "sex" : attr %>
-								<li><%= attr.to_s.titleize %>: <%= h(msg) %></li>
-							<% end %>
-						<% end %>
-					</ul>
-				</div>
-    		</div>
-  		</div>
-	<% else %>
-		<div class="alert alert-danger">
-			<h4><%= l10n("error_header_text") %></h4>
-      <ul>
-        <% email_error_present = false %>
-        <% phone_error_present = false %>
+<% if object && object.errors.any? %>
+  <% email_error_present = false %>
+  <% phone_error_present = false %>
 
+  <% if @bs4 %>
+    <% is_only_warning = object.errors.details.values.all? { |error_type| error_type.all? { |details| details[:level] == :warning } } %>
+    <% type = is_only_warning ? "warning" : "error" %>
+    <div class="mt-2 mb-0 px-0">
+      <div class="alert alert-<%= type %> d-flex flash" role="alert">
+        <div class="pl-1">
+          <div class="<%= type %>-icon icon" alt=<%= type %>>&nbsp;</div>
+        </div>
+        <div class="mt-2 p-0 align-self-center">
+          <p><%= l10n('insured.consumer_roles.error_prompt') %></p>
+          <ul class="list-unstyled">
+            <% object.errors.each do |attr, msg| %>
+              <% if attr == :base %>
+                <li><%= "#{msg}" %></li>
+              <% elsif attr == :emails %>
+                <% email_error_present = true %>
+              <% elsif attr == :phones %>
+                <% phone_error_present = true %>
+              <% else %>
+                <% attr = (attr == :gender && EnrollRegistry.feature_enabled?(:gender_to_sex)) ? "sex" : attr %>
+                <li><%= attr.to_s.titleize %>: <%= h(msg) %></li>
+              <% end %>
+            <% end %>
+
+            <% if email_error_present %>
+              <li><%= l10n("invalid_email_error_message") %></li>
+            <% end %>
+
+            <% if phone_error_present %>
+              <li><%= l10n("invalid_phone_error_message") %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <div class="alert alert-danger">
+      <h4><%= l10n('insured.consumer_roles.error_prompt') %></h4>
+      <ul>
         <% object.errors.each do |attr, msg| %>
           <% if attr == :base %>
-            <li><%= msg %></li>
+            <li><%= "#{msg}" %></li>
           <% elsif attr == :emails %>
-            <% email_error_present = true %> <!-- Flag for email error -->
+            <% email_error_present = true %>
           <% elsif attr == :phones %>
-            <% phone_error_present = true %> <!-- Flag for phone error -->
+            <% phone_error_present = true %>
           <% else %>
-            <!-- Default message for other attributes -->
             <% attr = (attr == :gender && EnrollRegistry.feature_enabled?(:gender_to_sex)) ? "sex" : attr %>
             <li><%= attr.to_s.titleize %>: <%= raw(msg) %></li>
           <% end %>
@@ -51,6 +62,6 @@
           <li><%= l10n("invalid_phone_error_message") %></li>
         <% end %>
       </ul>
-		</div>
-	<% end %>
+    </div>
+  <% end %>
 <% end %>
