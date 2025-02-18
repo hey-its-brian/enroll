@@ -450,22 +450,20 @@ class Insured::PlanShoppingsController < ApplicationController
   def generate_eligibility_data
     if EnrollRegistry.feature_enabled?(:temporary_configuration_enable_multi_tax_household_feature)
       @grants = aptc_grants(@person.primary_family, @hbx_enrollment.effective_on.year)
-      @max_aptc = ::Operations::PremiumCredits::FindAptc.new.call({hbx_enrollment: @hbx_enrollment, effective_on: @hbx_enrollment.effective_on}).value!
+      @max_aptc = fetch_max_aptc(@hbx_enrollment)
       @hbx_enrollment.update_attributes(aggregate_aptc_amount: @max_aptc)
       session[:max_aptc] = @max_aptc
-      default_aptc_percentage = EnrollRegistry[:enroll_app].setting(:default_aptc_percentage).item
-      @elected_aptc = session[:elected_aptc] = (@max_aptc * default_aptc_percentage) / 100
+      @elected_aptc = session[:elected_aptc] = fetch_elected_aptc(@max_aptc)
       @tax_household = @grants
     else
       shopping_tax_household = get_shopping_tax_household_from_person(@person, @hbx_enrollment.effective_on.year)
 
       if shopping_tax_household.present? && @hbx_enrollment.coverage_kind == 'health' && @hbx_enrollment.kind == 'individual'
         @tax_household = shopping_tax_household
-        @max_aptc = @tax_household.total_aptc_available_amount_for_enrollment(@hbx_enrollment, @hbx_enrollment.effective_on)
+        @max_aptc = fetch_max_aptc(@hbx_enrollment, @tax_household)
         @hbx_enrollment.update_attributes(aggregate_aptc_amount: @max_aptc)
         session[:max_aptc] = @max_aptc
-        default_aptc_percentage = EnrollRegistry[:enroll_app].setting(:default_aptc_percentage).item
-        @elected_aptc = session[:elected_aptc] = (@max_aptc * default_aptc_percentage) / 100
+        @elected_aptc = session[:elected_aptc] = fetch_elected_aptc(@max_aptc)
       else
         session[:max_aptc] = 0
         session[:elected_aptc] = 0
@@ -696,8 +694,8 @@ class Insured::PlanShoppingsController < ApplicationController
       @shopping_tax_household = get_shopping_tax_household_from_person(@person, hbx_enrollment.effective_on.year) if @person.present?
     end
     if @shopping_tax_household.present? || @aptc_grants.present?
-      @max_aptc = session[:max_aptc].to_f
-      @elected_aptc = session[:elected_aptc].to_f
+      @max_aptc = session[:max_aptc].nil? ? fetch_max_aptc(hbx_enrollment, @shopping_tax_household) : session[:max_aptc].to_f
+      @elected_aptc = session[:elected_aptc].nil? ? fetch_elected_aptc(@max_aptc) : session[:elected_aptc].to_f
     else
       @max_aptc = 0
       @elected_aptc = 0

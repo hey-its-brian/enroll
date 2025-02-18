@@ -368,7 +368,7 @@ RSpec.describe Insured::PlanShoppingsController, :type => :controller, dbclean: 
 
     let(:session_variables) { { elected_aptc: aptc_value1, max_aptc: aptc_value1, aptc_grants: double } }
 
-    context 'with continuous coverage' do
+    context 'with continuous coverage when session is set' do
       before do
         controller.instance_variable_set(:@elected_aptc, aptc_value1)
         controller.instance_variable_set(:@max_aptc, aptc_value1)
@@ -428,6 +428,34 @@ RSpec.describe Insured::PlanShoppingsController, :type => :controller, dbclean: 
       it 'does not change session variables elected_aptc and max_aptc' do
         expect(request.session[:elected_aptc]).to eq(aptc_value1)
         expect(request.session[:max_aptc]).to eq(aptc_value1)
+      end
+    end
+
+    context 'when max_aptc and elected_aptc does not exist in session' do
+      let(:product11) { FactoryBot.create(:benefit_markets_products_health_products_health_product, metal_level_kind: :silver) }
+
+      before do
+        allow(::Operations::PremiumCredits::FindAptc).to receive(:new).and_return(
+          double(
+            call: double(
+              success?: true,
+              value!: aptc_value1
+            )
+          )
+        )
+        EnrollRegistry[:enroll_app].settings(:default_aptc_percentage).stub(:item).and_return(100)
+        controller.instance_variable_set(:@elected_aptc, aptc_value1)
+        controller.instance_variable_set(:@max_aptc, aptc_value1)
+        controller.instance_variable_set(:@aptc_grants, double)
+        hbx_enrollment11.update_attributes!(product_id: product11.id)
+        sign_in(user)
+        get :thankyou, params: input_params.except(:elected_aptc)
+      end
+
+      it 'should recalculate max_aptc and elected aptc if session values are nil' do
+        expect(response).to have_http_status(:success)
+        expect(assigns(:elected_aptc)).to eq(aptc_value1)
+        expect(assigns(:max_aptc)).to eq(aptc_value1)
       end
     end
   end
