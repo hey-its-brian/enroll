@@ -961,16 +961,47 @@ describe Person, :dbclean => :after_each do
 
     context "notify change event" do
       let(:person){FactoryBot.build(:person)}
-      it "when new record" do
-        #      expect(person).to receive(:notify_change_event).exactly(1).times
+
+      before do
+        allow(::Operations::SendGenericNoticeAlert).to receive(:new).and_return(double(call: true))
+      end
+
+      it "calls notify_created when new record is saved" do
+        expect(person).to receive(:notify_created)
+
         person.save
       end
 
-      it "when change record" do
-        #      expect(person).to receive(:notify_change_event).exactly(1).times
-        first_name = person.first_name
+      it "calls notify_updated when existing record is changed" do
+        person.save
+        allow(person).to receive(:notify_updated)
+
         person.first_name = "Test"
         person.save
+
+        expect(person).to have_received(:notify_updated)
+      end
+
+      it "does not call notify_updated when notice is generated" do
+        allow(person).to receive(:notify_updated)
+        params = {
+          :title => "test.pdf",
+          :creator => "dchl",
+          :language => "en",
+          :format => "application/pdf",
+          :source => "polypress",
+          :document_type => "notice",
+          :subjects => [{:id => person.hbx_id, :type => "Person"}],
+          :id => "60d5468287bfe40001f5cc33",
+          :extension => "pdf",
+          :file_name => "test.pdf",
+          :file_content_type => "application/pdf"
+        }
+        # using the actual operation that gets called in Subscribers::DocumentMetaDataSubscriber
+        # this makes sure that none of the actions in the operation will trigger the notify_updated callback
+        Operations::CreateDocumentAndNotifyRecipient.new.call(params)
+
+        expect(person).not_to have_received(:notify_updated)
       end
     end
   end
