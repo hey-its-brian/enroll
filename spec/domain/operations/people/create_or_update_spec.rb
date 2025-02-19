@@ -238,6 +238,31 @@ RSpec.describe Operations::People::CreateOrUpdate, type: :model, dbclean: :after
         end
       end
     end
+
+    context "Updating No SSN Attribute if SSN is present" do
+
+      before do
+        person.update_attributes!(ssn: '555555555', no_ssn: '0')
+        subject.call(params: person_params)
+      end
+
+      it "Does not update no_ssn attribute" do
+        person.reload
+        expect(person.no_ssn).to eql("0")
+      end
+    end
+
+    context "Updating No SSN Attribute if SSN is not present" do
+
+      before do
+        subject.call(params: person_params)
+      end
+
+      it "Updates no_ssn attribute" do
+        person.reload
+        expect(person.no_ssn).to eq "1"
+      end
+    end
   end
 
   context "update person with applicant's updates" do

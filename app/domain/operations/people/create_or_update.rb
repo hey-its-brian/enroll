@@ -68,6 +68,7 @@ module Operations
       def update_existing_person(person, person_entity)
         person_params = person_entity.to_h
         attributes_to_exclude = %i[addresses phones emails hbx_id]
+        attributes_to_exclude << :no_ssn if person.encrypted_ssn.present? && person.no_ssn.present?
         if person.is_incarcerated && person_params[:is_incarcerated].nil?
           attributes_to_exclude << :is_incarcerated
         else
