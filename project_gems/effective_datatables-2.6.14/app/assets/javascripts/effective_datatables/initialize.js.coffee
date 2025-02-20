@@ -37,9 +37,11 @@
               header: (str) -> $("<div>#{str}</div>").children('.filter-label').first().text()
               body: (data, row, column, node) ->
                 data = data.toString()
+                broker_agency_dt_pattern = /<a\s+href="\/benefit_sponsors\/profiles\/broker_agencies\/broker_agency_profiles\//
                 family_dt_pattern = /<a\s+rel="noopener noreferrer"\s+href="\/exchanges\/agents\/resume_enrollment\?person_id/
                 containsFamilyDtPattern = family_dt_pattern.test(data)
-                if containsFamilyDtPattern
+                containsBrokerAgencyDtPattern = broker_agency_dt_pattern.test(data)
+                if containsFamilyDtPattern or containsBrokerAgencyDtPattern
                   node.innerText
                 else
                   data
@@ -52,9 +54,11 @@
               header: (str) -> $("<div>#{str}</div>").children('.filter-label').first().text()
               body: (data, row, column, node) ->
                 data = data.toString()
+                broker_agency_dt_pattern = /<a\s+href="\/benefit_sponsors\/profiles\/broker_agencies\/broker_agency_profiles\//
                 family_dt_pattern = /<a\s+rel="noopener noreferrer"\s+href="\/exchanges\/agents\/resume_enrollment\?person_id/
                 containsFamilyDtPattern = family_dt_pattern.test(data)
-                if containsFamilyDtPattern
+                containsBrokerAgencyDtPattern = broker_agency_dt_pattern.test(data)
+                if containsFamilyDtPattern or containsBrokerAgencyDtPattern
                   node.innerText
                 else
                   data
