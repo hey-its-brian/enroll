@@ -59,7 +59,8 @@
                     href: "/financial_assistance/applications/#{application.id}/applicants/#{applicant.id}/verification_documents/download?key=#{key}&evidence_kind=#{evidence_kind}",
                     target: '_blank',
                     rel: 'noopener noreferrer',
-                    data: {"toggle": "tooltip"}) do %>
+                    data: {"toggle": "tooltip"},
+                    class: "btn outline text-nowrap") do %>
                     <span>
                       <i class='fa fa-download' aria-hidden='true'></i> <%= l10n("download") %>
                     </span>
