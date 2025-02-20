@@ -85,7 +85,7 @@ export default class extends Controller {
       })
 
       if (bs4 == "true") {
-        var removeButton = newLocation.querySelector('a.remove_fields');
+        var removeButton = newLocation.querySelector('.remove_fields');
         removeButton.classList.remove('hidden');
         var removeButtonId = "remove-button-" + totalLocationsCount;
         removeButton.id = removeButtonId;
