@@ -120,21 +120,20 @@ module Forms
     def save
       assign_citizen_status
       return false unless valid?
+
       existing_inactive_family_member = family.find_matching_inactive_member(self)
       if existing_inactive_family_member
         self.id = existing_inactive_family_member.id
         existing_inactive_family_member.reactivate!(self.relationship)
         return true if family.save && existing_inactive_family_member.save
       end
+
       existing_person = Person.match_existing_person(self)
       if existing_person
         family_member = family.relate_new_member(existing_person, self.relationship)
-        if self.is_consumer_role == "true"
-          family_member.family.build_consumer_role(family_member, {skip_consumer_role_callbacks: @skip_consumer_role_callbacks})
-        elsif self.is_resident_role == "true"
-          family_member.build_resident_role(family_member)
-        end
+        build_individual_market_roles(existing_person)
         assign_person_address(existing_person)
+        existing_person.save
         self.id = family_member.id
         # RE exception: Updating the path 'households.0.coverage_households' would create a conflict at 'households.0.coverage_households'
         # This will cover the use case of attempting to save a family member which has duplicate family members
@@ -154,23 +153,42 @@ module Forms
         end
         return true if family_member.save && family.save
       end
+
       person = Person.new(extract_person_params)
-      return false unless try_create_person(person)
-      family_member = family.relate_new_member(person, self.relationship)
-      if self.is_consumer_role == "true"
-
-        # DO NOT change the order of the key value pairs
-        additional_params = { skip_consumer_role_callbacks: @skip_consumer_role_callbacks }.merge(extract_consumer_role_params)
-
-        family_member.family.build_consumer_role(family_member, additional_params)
-      elsif self.is_resident_role == "true"
-        family_member.family.build_resident_role(family_member)
-      end
       assign_person_address(person)
+      build_individual_market_roles(person)
+      return false unless try_create_person(person)
+
+      family_member = family.relate_new_member(person, self.relationship)
       family.save_relevant_coverage_households
       family_member.save
       self.id = family_member.id
       return true if family.save
+    end
+
+    def build_individual_market_roles(person)
+      if self.is_consumer_role == "true"
+        # DO NOT change the order of the key value pairs
+        additional_params = { skip_consumer_role_callbacks: @skip_consumer_role_callbacks }
+        additional_params.merge!(extract_consumer_role_params) unless person.persisted?
+        build_consumer_role(person, additional_params)
+      elsif self.is_resident_role == "true"
+        build_resident_role(person)
+      end
+    end
+
+    def build_consumer_role(person, opts = {})
+      return if person.consumer_role.present?
+
+      person.build_consumer_role({:is_applicant => false}.merge(opts))
+      # all persons with a consumer_role are required to have a demographics_group
+      person.build_demographics_group
+    end
+
+    def build_resident_role(person, opts = {})
+      return if person.resident_role.present?
+
+      person.build_resident_role({:is_applicant => false}.merge(opts))
     end
 
     def try_create_person(person)
@@ -182,13 +200,12 @@ module Forms
     def assign_person_address(person)
       if same_with_primary == 'true'
         primary_person = family.primary_family_member.person
-        person.update(is_homeless: primary_person.is_homeless?, is_temporarily_out_of_state: primary_person.is_temporarily_out_of_state?)
+        person.assign_attributes(is_homeless: primary_person.is_homeless?, is_temporarily_out_of_state: primary_person.is_temporarily_out_of_state?)
         address = primary_person.home_address
         if address.present?
           person.home_address.try(:destroy)
           attrs = address.attributes.slice('address_1', 'address_2', 'address_3', 'county', 'country_name', 'kind', 'city', 'state', 'zip')
           person.addresses << ::Address.new(attrs)
-          person.save
         end
       else
         home_address = person.home_address rescue nil
@@ -208,11 +225,11 @@ module Forms
             current_address.destroy if current_address.present?
             next
           end
+
           if current_address.present?
-            current_address.update(sanitized_address)
-            person.save! # to trigger address change events
+            current_address.assign_attributes(sanitized_address)
           else
-            person.addresses.create(sanitized_address)
+            person.addresses.build(sanitized_address)
           end
         end
       end
@@ -376,9 +393,10 @@ module Forms
     end
 
     def try_update_person(person)
-      person&.consumer_role&.update_attributes(skip_consumer_role_callbacks: @skip_consumer_role_callbacks, :is_applying_coverage => is_applying_coverage)
+      person&.consumer_role&.assign_attributes(skip_consumer_role_callbacks: @skip_consumer_role_callbacks, :is_applying_coverage => is_applying_coverage)
+      person.assign_attributes(extract_person_params)
 
-      person.update_attributes(extract_person_params).tap do
+      person.save.tap do
         bubble_person_errors(person)
       end
     end
@@ -390,12 +408,12 @@ module Forms
       person = family_member.person
       person.skip_person_updated_event_callback = @skip_person_updated_event_callback
       assign_person_address(person)
-      return false unless try_update_person(person)
       if attr["is_consumer_role"] == "true"
-        family_member.family.build_consumer_role(family_member, {skip_consumer_role_callbacks: @skip_consumer_role_callbacks})
+        build_consumer_role(person, {skip_consumer_role_callbacks: @skip_consumer_role_callbacks})
       elsif attr["is_resident_role"] == "true"
-        family_member.family.build_resident_role(family_member)
+        build_resident_role(person)
       end
+      return false unless try_update_person(person)
       family_member.update_relationship(relationship)
       family_member.save
     end

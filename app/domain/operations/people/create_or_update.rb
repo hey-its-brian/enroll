@@ -75,12 +75,12 @@ module Operations
           person_params[:is_incarcerated] = person_params[:is_incarcerated].nil? ? false : person_params[:is_incarcerated]
         end
         person.assign_attributes(person_params.except(*attributes_to_exclude))
-        person.save!
 
         %i[addresses emails phones].each do |association|
           create_or_update_associations(person, person_entity.to_h, association)
         end
 
+        person.save! if person.changed? || person_associations_changed?(person)
         person
       end
 
@@ -90,19 +90,22 @@ module Operations
 
         if assoc == :addresses
           person.addresses.each do |address|
-            address.destroy! if records.map { |record| record[:kind] }.exclude?(address.kind)
+            address.destroy! if records.none? { |record| record[:kind] == address.kind }
           end
         end
 
         records.each do |attrs|
-          address_matched = person.send(assoc).detect {|adr| adr.kind == attrs[:kind]}
-          if address_matched
-            address_matched.update(attrs)
-            person.save!
+          existing_record = person.send(assoc).detect { |record| record.kind == attrs[:kind] }
+          if existing_record
+            existing_record.assign_attributes(attrs) # Assign attributes without saving
           else
-            person.send(assoc).create(attrs)
+            person.send(assoc).build(attrs) # Use build to avoid immediate saving
           end
         end
+      end
+
+      def person_associations_changed?(person)
+        person.addresses.any?(&:changed?) || person.emails.any?(&:changed?) || person.phones.any?(&:changed?)
       end
 
       def no_infomation_changed?(params:)

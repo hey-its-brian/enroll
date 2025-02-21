@@ -16,6 +16,7 @@ class FindOrCreateInsuredPerson
         person.ssn = context.ssn
         person.gender = context.gender
       end
+      set_person_emails(person, user)
       person.save
       user = person.user if context.role_type == User::ROLES[:consumer]
       person, is_new = person, false
@@ -25,12 +26,14 @@ class FindOrCreateInsuredPerson
         if user.person.first_name.downcase == context.first_name.downcase and
           user.person.last_name.downcase == context.last_name.downcase # if user enters lowercase during matching.
           person = user.person
-          person.update(name_sfx: context.name_sfx,
+          person.assign_attributes(name_sfx: context.name_sfx,
                         middle_name: context.middle_name,
                         name_pfx: context.name_pfx,
                         ssn: context.ssn,
                         dob: context.dob,
                         gender: context.gender)
+          set_person_emails(person, user)
+          person.save
           is_new = false
         else
           context.person = nil
@@ -38,7 +41,7 @@ class FindOrCreateInsuredPerson
           return
         end
       else
-        person = Person.create(
+        person = Person.new(
           user: user,
           name_pfx: context.name_pfx,
           first_name: context.first_name,
@@ -50,7 +53,8 @@ class FindOrCreateInsuredPerson
           dob: context.dob,
           gender: context.gender
         )
-
+        set_person_emails(person, user)
+        person.save
         if person.persisted?
           is_new = true
         else
@@ -65,21 +69,23 @@ class FindOrCreateInsuredPerson
       context.is_new = nil
       return
     end
+
     if user.present?
       user.roles << context.role_type unless user.roles.include?(context.role_type)
       user.save
-      unless person.emails.any?
-        if user.email.present?
-          person.emails.build(kind: "home", address: user.email)
-          person.save
-        end
-      end
     end
     context.person = person
     context.is_new = is_new
   end
 
   private
+
+  def set_person_emails(person, user)
+    return unless user
+    return if person.emails.any? || user.email.blank?
+
+    person.emails.build(kind: "home", address: user.email)
+  end
 
   def match_person
     raise ArgumentError, "must provide an ssn or first_name/last_name/dob or both" if context.ssn.blank? && (context.dob.blank? || context.last_name.blank? || context.first_name.blank?)

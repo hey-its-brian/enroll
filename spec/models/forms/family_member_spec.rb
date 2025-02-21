@@ -241,7 +241,7 @@ RSpec.describe Forms::FamilyMember, dbclean: :after_each, type: :form do
             end
             it "should successfully create an address" do
               new_dependent.assign_person_address(person_1)
-              expect(person_1.reload.home_address.address_1).to eq('new-home-address')
+              expect(person_1.home_address.address_1).to eq('new-home-address')
             end
           end
         end
@@ -260,8 +260,7 @@ RSpec.describe Forms::FamilyMember, dbclean: :after_each, type: :form do
           end
 
           it "call update when current address present " do
-
-            expect(addr3).to receive(:update).and_return true
+            expect(addr3).to receive(:assign_attributes).and_return true
             employee_dependent.assign_person_address(person)
           end
 
@@ -270,7 +269,7 @@ RSpec.describe Forms::FamilyMember, dbclean: :after_each, type: :form do
 
             addresses1 = double(new: {})
             allow(person).to receive(:addresses).and_return addresses1
-            expect(addresses1).to receive(:create).and_return true
+            expect(addresses1).to receive(:build).and_return true
             employee_dependent.assign_person_address(person)
           end
         end
@@ -289,8 +288,8 @@ RSpec.describe Forms::FamilyMember, dbclean: :after_each, type: :form do
           context 'when updating addresses' do
             it "should not delete any address" do
               employee_dependent.assign_person_address(person)
-              expect(person.reload.home_address.address_1).to eq('new-home-address')
-              expect(person.reload.mailing_address.address_1).to eq('new-mailing-address')
+              expect(person.home_address.address_1).to eq('new-home-address')
+              expect(person.mailing_address.address_1).to eq('new-mailing-address')
             end
           end
         end
@@ -313,8 +312,8 @@ RSpec.describe Forms::FamilyMember, dbclean: :after_each, type: :form do
 
             it "should delete mailing address" do
               employee_dependent.assign_person_address(person)
-              expect(person.reload.home_address.address_1).to eq('new-home-address')
-              expect(person.reload.addresses.where(kind: "mailing")).to be_empty
+              expect(person.home_address.address_1).to eq('new-home-address')
+              expect(person.addresses.where(kind: "mailing")).to be_empty
             end
           end
 
@@ -329,8 +328,8 @@ RSpec.describe Forms::FamilyMember, dbclean: :after_each, type: :form do
 
             it "should add mailing address" do
               employee_dependent.assign_person_address(person)
-              expect(person.reload.home_address.address_1).to eq home_address["address_1"]
-              expect(person.reload.addresses.where(kind: "mailing")).not_to be_empty
+              expect(person.home_address.address_1).to eq home_address["address_1"]
+              expect(person.addresses.where(kind: "mailing")).not_to be_empty
             end
           end
         end
@@ -353,8 +352,8 @@ RSpec.describe Forms::FamilyMember, dbclean: :after_each, type: :form do
 
             it "should delete mailing address" do
               employee_dependent.assign_person_address(person)
-              expect(person.reload.home_address.address_1).to eq('new-home-address')
-              expect(person.reload.addresses.where(kind: "mailing")).to be_empty
+              expect(person.home_address.address_1).to eq('new-home-address')
+              expect(person.addresses.where(kind: "mailing")).to be_empty
             end
           end
 
@@ -369,8 +368,8 @@ RSpec.describe Forms::FamilyMember, dbclean: :after_each, type: :form do
 
             it "should add mailing address" do
               employee_dependent.assign_person_address(person)
-              expect(person.reload.home_address.address_1).to eq home_address["address_1"]
-              expect(person.reload.addresses.where(kind: "mailing")).not_to be_empty
+              expect(person.home_address.address_1).to eq home_address["address_1"]
+              expect(person.addresses.where(kind: "mailing")).not_to be_empty
             end
           end
         end
@@ -506,6 +505,7 @@ RSpec.describe Forms::FamilyMember, dbclean: :after_each, type: :form do
 
       it "should create a family member for that person" do
         expect(family).to receive(:relate_new_member).with(existing_person, relationship).and_return(new_family_member)
+        allow(existing_person).to receive(:save).and_return(true)
         subject.save
         expect(subject.id).to eq new_family_member_id
       end
@@ -735,10 +735,11 @@ RSpec.describe Forms::FamilyMember, dbclean: :after_each, type: :form do
     describe "when updated" do
       before do
         allow(person).to receive(:skip_person_updated_event_callback=).and_return(true)
+        allow(person).to receive(:save).and_return(true)
       end
 
       it "should update the relationship of the dependent" do
-        allow(person).to receive(:update_attributes).with(person_properties.merge(
+        allow(person).to receive(:assign_attributes).with(person_properties.merge(
                                                             {:citizen_status => nil, :no_ssn => "0", :is_homeless => nil, :is_temporarily_out_of_state => nil,
                                                              :is_moving_to_state => nil, :age_off_excluded => nil, :is_tobacco_user => nil}
                                                           )).and_return(true)
@@ -750,7 +751,7 @@ RSpec.describe Forms::FamilyMember, dbclean: :after_each, type: :form do
 
       it "should update the attributes of the person" do
         allow(subject).to receive(:assign_person_address).and_return true
-        expect(person).to receive(:update_attributes).with(person_properties.merge({:citizen_status => nil, :no_ssn => "0",
+        expect(person).to receive(:assign_attributes).with(person_properties.merge({:citizen_status => nil, :no_ssn => "0",
                                                                                     :is_homeless => nil, :is_temporarily_out_of_state => nil, :is_moving_to_state => nil, :age_off_excluded => nil, :is_tobacco_user => nil}))
         allow(family_member).to receive(:update_relationship).with(relationship)
         allow(person).to receive(:consumer_role).and_return FactoryBot.build(:consumer_role)
