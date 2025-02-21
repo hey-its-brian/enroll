@@ -200,6 +200,12 @@ class UnassistedPlanCostDecorator < SimpleDelegator
     end
   end
 
+  def total_ehb_premium_all_members
+    members.reduce(0.00) do |sum, member|
+      sum + round_down_float_two_decimals(member_ehb_premium(member))
+    end
+  end
+
   def member_ehb_premium(member)
     mem_premium = premium_for(member)
     return mem_premium if mem_premium.to_d == 0.00.to_d

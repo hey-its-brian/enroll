@@ -39,7 +39,7 @@
 
           <% if display_tax_household_enrollment_summary?(@hbx_enrollment) && @hbx_enrollment&.is_health_enrollment? %>
             <dt><%= l10n('enrollment.health_plan.ehb_premium') %></dt>
-            <dd><%= @hbx_enrollment&.total_ehb_premium %></dd>
+            <dd><%= @hbx_enrollment&.total_ehb_premium_all_members %></dd>
           <% end %>
 
           <dt><%= l10n('rating_area.exchange_provided_code') %></dt>

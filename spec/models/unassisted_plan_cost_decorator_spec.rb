@@ -535,6 +535,12 @@ RSpec.describe UnassistedPlanCostDecorator, dbclean: :after_each do
       end
     end
 
+    context 'total_ehb_premium_all_members' do
+      it 'returns sum of ehb premiums of all enrolled members' do
+        expect(@upcd_1.total_ehb_premium_all_members).to eq 1668.2
+      end
+    end
+
     context 'for member_ehb_premium' do
       it 'should return 0.00 when invalid information is given' do
         expect(@upcd_1.member_ehb_premium(hbx_enrollment_member1)).to eq 866.07512

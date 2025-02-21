@@ -408,6 +408,10 @@ RSpec.describe "_summary.html.slim.rb", :type => :view, dbclean: :after_each  do
       expect(rendered).to have_content(l10n('application.submitted_at'))
     end
 
+    it 'should include enrollment ehb premium of all members' do
+      expect(rendered).to have_content(number_to_currency(hbx_enrollment.total_ehb_premium_all_members))
+    end
+
     it 'should include tax household members text' do
       expect(rendered).to have_content(l10n('tax_household_enrollment.members'))
     end

@@ -223,7 +223,7 @@ class HbxEnrollment
   associated_with_one :resident_role, :resident_role_id, "ResidentRole"
   associated_with_one :broker, :writing_agent_id, "BrokerRole"
 
-  delegate :total_premium, :total_employer_contribution, :total_employee_cost, :total_ehb_premium, to: :decorated_hbx_enrollment, allow_nil: true
+  delegate :total_premium, :total_employer_contribution, :total_employee_cost, :total_ehb_premium, :total_ehb_premium_all_members, to: :decorated_hbx_enrollment, allow_nil: true
   delegate :premium_for, :premium_for_non_tobacco_use, to: :decorated_hbx_enrollment, allow_nil: true
 
   #indexes
