@@ -67,10 +67,11 @@
         <%= f.hidden_field :dob, :value => params[:new_dob].present? ? Date.strptime(params[:new_dob], '%m/%d/%Y').to_formatted_s(:db) : @person.dob.to_formatted_s(:db) %>
       <% end %>
       <%= f.hidden_field :pid, :value => @person.id  %>
-      <%= f.hidden_field :family_actions_id, :value => "family_actions_#{@person.primary_family.id.to_s}" %>
+      <% row_actions_id = EnrollRegistry.feature_enabled?(:people_tab) ? "person_actions_#{@person.id.to_s}" : "family_actions_#{@person.primary_family.id.to_s}" %>
+      <%= f.hidden_field :row_actions_id, :value => row_actions_id %>
       <div class="row no-buffer child-row">
         <div class="col-md-12 <%= @bs4 ? 'px-0' : 'no-pd' %> col-sm-12 col-xs-12">
-          <%= link_to "Reset", edit_dob_ssn_path(id: @person.id, family_actions_id: "family_actions_#{@person.primary_family.id.to_s}"), class: "btn btn-info", remote: true %>
+          <%= link_to "Reset", edit_dob_ssn_path(id: @person.id, row_actions_id: row_actions_id), class: "btn btn-info", remote: true %>
           <%= f.submit "Update", 'data-disable-with' => l10n("please_wait"), data: { confirm: 'Are you sure?' }, :class => "btn btn-primary", :size => '100px'%>
         </div>
       </div>

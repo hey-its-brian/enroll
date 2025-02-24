@@ -46,7 +46,6 @@ module Effective
             update_terminated_enrollment_type(row, pundit_allow(Family, :change_enrollment_end_date?))],
            ['Reinstate', view_terminated_hbx_enrollments_exchanges_hbx_profiles_path(family: row.id, person_id: row.primary_applicant.person.id, family_actions_id: "family_actions_#{row.id}"),
             reinstate_enrollment_type(row, pundit_allow(Family, :can_reinstate_enrollment?))],
-           [sanitize_html("<div class='#{pundit_class(Family, :can_update_ssn?)}'> Edit DOB / SSN </div>"), edit_dob_ssn_path(id: row.primary_applicant.person.id, family_actions_id: "family_actions_#{row.id}"), 'ajax'],
            ['View Username and Email', get_user_info_exchanges_hbx_profiles_path(person_id: row.primary_applicant.person.id, family_actions_id: "family_actions_#{row.id}"),
             (individual_market_is_enabled? && pundit_allow(Family, :can_view_username_and_email?)) ? 'ajax' : 'disabled'],
            ['Collapse Form', hide_form_exchanges_hbx_profiles_path(family_id: row.id, person_id: row.primary_applicant.person.id, family_actions_id: "family_actions_#{row.id}"), no_transition_families_is_enabled? ? 'ajax' : '']
@@ -70,6 +69,12 @@ module Effective
                                                        #{row.primary_applicant.person.first_name}",
                                                        family_actions_id: "family_actions_#{row.id}"),
                                 secure_message_link_type(row, current_user)])
+          end
+
+          unless ::EnrollRegistry.feature_enabled?(:people_tab)
+            dropdown.insert(9,
+                            [sanitize_html("<div class='#{pundit_class(Family, :can_update_ssn?)}'> Edit DOB / SSN </div>"),
+                             edit_dob_ssn_path(id: row.primary_applicant.person.id, row_actions_id: "family_actions_#{row.id}"), 'ajax'])
           end
 
           dropdown += if individual_market_is_enabled?
@@ -146,7 +151,7 @@ module Effective
         terminate_eligibles ? 'ajax' : 'disabled'
       end
 
-      def drop_enrollment_member_type(family, allow)
+      def drop_enrollment_member_type(family, _allow)
         # Don't return disabled for permission check, all admins can see this tool
         # return 'disabled' unless allow
         ivl_enrollments = family.hbx_enrollments.individual_market.select{ |enr| enr.is_admin_terminate_eligible? && enr.hbx_enrollment_members.count > 1 }

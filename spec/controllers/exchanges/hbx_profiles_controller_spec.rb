@@ -530,11 +530,12 @@ RSpec.describe Exchanges::HbxProfilesController, dbclean: :around_each do
     let(:permission_no) { FactoryBot.create(:permission, :can_update_ssn => false)}
 
     it "should return authorization error for Non-Admin users" do
-      allow(hbx_staff_role).to receive(:permission).and_return permission_yes
+      allow(hbx_staff_role).to receive(:permission).and_return permission_no
       sign_in(user)
       @params = {:id => person.id, :format => 'js'}
       get :edit_dob_ssn, params: @params,xhr: true
-      expect(response).to have_http_status(:success)
+      expect(response).not_to have_http_status(:success)
+      expect(response).not_to render_template('edit_enrollment')
     end
 
     it "should render the edit_dob_ssn partial for logged in users with an admin role" do
@@ -543,6 +544,7 @@ RSpec.describe Exchanges::HbxProfilesController, dbclean: :around_each do
       @params = {:id => person.id, :format => 'js'}
       get :edit_dob_ssn, params: @params, xhr: true
       expect(response).to have_http_status(:success)
+      expect(response).to render_template('edit_enrollment')
     end
 
   end
@@ -1027,6 +1029,60 @@ RSpec.describe Exchanges::HbxProfilesController, dbclean: :around_each do
       expect(response.body).to have_content(("DOB / SSN Update Successful"))
     end
 
+    context "Dependent person" do
+      let!(:dependent_person) { FactoryBot.create(:person, :with_consumer_role) }
+      let!(:dependent_family_member) do
+        FactoryBot.create(:family_member, family: family, person: dependent_person)
+      end
+
+      it 'can update ssn for dependent person' do
+        allow(hbx_staff_role).to receive(:permission).and_return permission_yes
+        sign_in(user)
+        expect(response).to have_http_status(:success)
+        @params = {:person => {:pid => dependent_person.id, :ssn => valid_ssn, :dob => valid_dob2}, :jq_datepicker_ignore_person => {:dob => valid_dob}, :format => 'js'}
+        post :update_dob_ssn, xhr:  true, params:  @params
+        expect(response).to render_template("update_enrollment")
+      end
+    end
+  end
+
+  describe "GET people_index" do
+    let(:user) { FactoryBot.create(:user, roles: ["hbx_staff"]) }
+    let(:staff_person) { double('Person', hbx_staff_role: hbx_staff_role, agent?: true) }
+    let(:hbx_staff_role) { double('HbxStaffRole', permission: permission)}
+    let(:permission) { double('Permission', modify_family: true)}
+
+    before :each do
+      allow(EnrollRegistry[:people_tab].feature).to receive(:is_enabled).and_return(true)
+      allow(user).to receive(:has_hbx_staff_role?).and_return(true)
+      allow(user).to receive(:person).and_return staff_person
+      sign_in user
+    end
+
+    it "should returns http success" do
+      get :people_index, format: :html, xhr: true
+      expect(response).to have_http_status(:success)
+    end
+
+    context 'when people index is disabled' do
+      before do
+        allow(EnrollRegistry[:people_tab].feature).to receive(:is_enabled).and_return(false)
+        Enroll::Application.reload_routes!
+      end
+      it "should returns http success" do
+        expect(:get => :people_index).not_to be_routable
+      end
+
+      it "redirects to exchanges root path" do
+        get :people_index, format: :html, xhr: true
+        expect(response).to redirect_to exchanges_hbx_profiles_root_path
+      end
+
+      it "has flash message" do
+        get :people_index, format: :html, xhr: true
+        expect(flash[:alert]).to eql(l10n('hbx_profiles.people_index_disabled_warning'))
+      end
+    end
   end
 
   describe "GET general_agency_index" do

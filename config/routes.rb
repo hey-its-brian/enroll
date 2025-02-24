@@ -171,6 +171,7 @@ Rails.application.routes.draw do
         post :update_enrollment_terminated_on_date
         get :calendar_index
         get :user_account_index
+        get :people_index
         get :get_user_info
         get :oe_extendable_applications
         get :oe_extended_applications

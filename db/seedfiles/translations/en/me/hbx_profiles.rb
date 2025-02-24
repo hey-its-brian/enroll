@@ -112,6 +112,13 @@ HBX_PROFILES_TRANSLATIONS = {
 	"en.hbx_profiles.user_info.person_roles" => "Person Roles",
 	"en.hbx_profiles.user_info.requested_by" => "Requested by @%{name}",
 	"en.hbx_profiles.user_info.nil" => "Nil",
+  # People Index Tab
+  "en.hbx_profiles.people.table.title" => "People",
+  "en.hbx_profiles.people.table.name" => "Name",
+  "en.hbx_profiles.people.table.dob" => "DOB",
+  "en.hbx_profiles.people.table.hbx_id" => "HBX ID",
+  "en.hbx_profiles.people.active_roles" => "Active Roles",
+  "en.hbx_profiles.people_index_disabled_warning" => "The People Index is Disabled",
 	# User Accounts Tab Actions
 	"en.hbx_profiles.user_accounts.table.username" => "Username",
 	"en.hbx_profiles.user_accounts.table.user_email" => "User Email",

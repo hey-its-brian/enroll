@@ -1,0 +1,10 @@
+<%= render "ui-components/v1/navs/primary_nav" %>
+<div class="container">
+  <h1><%= l10n('hbx_profiles.people.table.title') %></h1>
+
+  <%= raw render_datatable(@datatable, buttons: []) %>
+</div>
+
+<script>
+  initializeDataTables();
+</script>

@@ -53,7 +53,7 @@ module Presenters
     def sanitize_person
       obscure_ssn
       @person_id = @form_object.id.to_s
-      @family_id ||= @form_object.primary_family.id.to_s
+      @family_id ||= @form_object.primary_family.present? ? @form_object.primary_family.id.to_s : @form_object.families&.first&.id&.to_s
       @disabled = true
     end
 

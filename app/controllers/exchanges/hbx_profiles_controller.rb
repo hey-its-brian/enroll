@@ -16,6 +16,7 @@ class Exchanges::HbxProfilesController < ApplicationController
   before_action :set_cache_headers, only: [:show, :family_index_dt, :user_account_index, :identity_verification, :broker_agency_index, :outstanding_verification_dt, :configuration, :inbox]
   before_action :redirect_if_general_agency_is_disabled, only: [:general_agency_index]
   before_action :redirect_if_employer_datatable_is_disabled, only: [:employer_datatable]
+  before_action :redirect_if_people_datatable_is_disabled, only: [:people_index]
   before_action :enable_bs4_layout if EnrollRegistry.feature_enabled?(:bs4_admin_flow)
   # GET /exchanges/hbx_profiles
   # GET /exchanges/hbx_profiles.json
@@ -404,6 +405,15 @@ class Exchanges::HbxProfilesController < ApplicationController
     end
   end
 
+  def people_index
+    authorize HbxProfile, :people_index?
+
+    @datatable = Effective::Datatables::PeopleDataTable.new
+    respond_to do |format|
+      format.html { render '/exchanges/hbx_profiles/people_index_datatable' }
+    end
+  end
+
   def outstanding_verification_dt
     authorize HbxProfile, :outstanding_verification_dt?
 
@@ -671,9 +681,9 @@ class Exchanges::HbxProfilesController < ApplicationController
     authorize HbxProfile, :edit_dob_ssn?
 
     @person = Person.find(params[:id])
-    @element_to_replace_id = params[:family_actions_id]
+    @element_to_replace_id = params[:row_actions_id]
     respond_to do |format|
-      format.js { render "edit_enrollment", person: @person, person_has_active_enrollment: @person_has_active_enrollment}
+      format.js { render "edit_enrollment", person: @person }
     end
   end
 
@@ -692,7 +702,7 @@ class Exchanges::HbxProfilesController < ApplicationController
   def update_dob_ssn
     authorize HbxProfile, :update_dob_ssn?
 
-    @element_to_replace_id = params[:person][:family_actions_id]
+    @element_to_replace_id = params[:person][:row_actions_id]
     @person = Person.find(params[:person][:pid]) if !params[:person].blank? && !params[:person][:pid].blank?
     @ssn_match = Person.find_by_ssn(params[:person][:ssn]) unless params[:person][:ssn].blank?
     @ssn_fields = @person.employee_roles.map{|e| e.census_employee.is_no_ssn_allowed?} if @person.active_employee_roles.present?
@@ -705,8 +715,8 @@ class Exchanges::HbxProfilesController < ApplicationController
       @error_on_save, @dont_update_ssn = result.failure? ? result.failure : result.success
     end
     respond_to do |format|
-      format.js { render "edit_enrollment", person: @person, :family_actions_id => params[:person][:family_actions_id]  } if @error_on_save
-      format.js { render "update_enrollment", person: @person, :family_actions_id => params[:person][:family_actions_id] }
+      format.js { render "edit_enrollment", person: @person, :row_actions_id => params[:person][:row_actions_id]  } if @error_on_save
+      format.js { render "update_enrollment", person: @person, :row_actions_id => params[:person][:row_actions_id] }
     end
   end
 
@@ -891,6 +901,10 @@ class Exchanges::HbxProfilesController < ApplicationController
 
   def redirect_if_general_agency_is_disabled
     redirect_to(exchanges_hbx_profiles_root_path, alert: l10n('insured.general_agency_index_disabled_warning')) unless EnrollRegistry.feature_enabled?(:general_agency)
+  end
+
+  def redirect_if_people_datatable_is_disabled
+    redirect_to(exchanges_hbx_profiles_root_path, alert: l10n('hbx_profiles.people_index_disabled_warning')) unless EnrollRegistry.feature_enabled?(:people_tab)
   end
 
   def redirect_if_staff_tab_is_disabled

@@ -129,6 +129,10 @@ class HbxProfilePolicy < ApplicationPolicy
     index?
   end
 
+  def people_index?
+    index?
+  end
+
   def identity_verification?
     index?
   end

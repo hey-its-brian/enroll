@@ -41,6 +41,9 @@
               </a>
             </li>
           <% end %>
+          <% if EnrollRegistry.feature_enabled?(:people_tab) %>
+            <%= render partial: 'exchanges/hbx_profiles/shared/nav_link', locals: {tab_name: 'people', link_path: main_app.people_index_exchanges_hbx_profiles_path, display_name: 'People', active_tab: "people", remote: false, pundit_object: nil, pundit_method: nil} %>
+          <% end %>
           <% if aca_user_accounts_enabled %>
             <%= render partial: 'exchanges/hbx_profiles/shared/nav_link', locals: {tab_name: 'user-account', link_path: main_app.user_account_index_exchanges_hbx_profiles_path, display_name: 'User Accounts', active_tab: "user-account", remote: false, pundit_object: HbxProfile, pundit_method: :can_access_user_account_tab?} %>
             <% if EnrollRegistry.feature_enabled?(:issuers_tab) %>
