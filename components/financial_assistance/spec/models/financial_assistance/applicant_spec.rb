@@ -75,6 +75,40 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
     end
   end
 
+  describe "generate_hbx_id" do
+    let!(:person) { FactoryBot.create(:person) }
+    context "existing person" do
+
+      let!(:applicant) do
+        FactoryBot.create(:financial_assistance_applicant,
+                          application: application,
+                          dob: person.dob,
+                          first_name: person.first_name,
+                          last_name: person.last_name,
+                          ssn: person.ssn,
+                          is_primary_applicant: true,
+                          family_member_id: BSON::ObjectId.new)
+      end
+
+      it "sets hbx id to match existing person record" do
+        expect(person.hbx_id).to eq(applicant.person_hbx_id)
+      end
+    end
+
+    context "new person" do
+      let!(:applicant) do
+        FactoryBot.create(:financial_assistance_applicant,
+                          application: application,
+                          is_primary_applicant: true,
+                          family_member_id: BSON::ObjectId.new)
+      end
+
+      it "generates new hbx id" do
+        expect(applicant.person_hbx_id).to_not eq(person.hbx_id)
+      end
+    end
+  end
+
   describe 'after_update' do
     context 'callbacks' do
 

@@ -387,7 +387,9 @@ module FinancialAssistance
     scope :applying_coverage,             -> { where(is_applying_coverage: true) }
 
     def generate_hbx_id
-      write_attribute(:person_hbx_id, FinancialAssistance::HbxIdGenerator.generate_member_id) if person_hbx_id.blank?
+      return unless person_hbx_id.blank?
+      person = find_person
+      write_attribute(:person_hbx_id, person.present? ? person.hbx_id : FinancialAssistance::HbxIdGenerator.generate_member_id)
     end
 
     def set_default_tobacco_use
@@ -1544,6 +1546,18 @@ module FinancialAssistance
     end
 
     private
+
+    def find_person
+      match_criteria, records = ::Operations::People::Match.new.call({:dob => dob,
+                                                                      :last_name => last_name,
+                                                                      :first_name => first_name,
+                                                                      :ssn => ssn})
+      return unless records.present?
+      return unless [:ssn_present, :dob_present].include?(match_criteria)
+      return if match_criteria == :dob_present && ssn.present? && records.first.ssn != ssn
+
+      records.first
+    end
 
     def fetch_evidence_params(evidence)
       evidence.attributes.deep_symbolize_keys.slice(:key, :title, :description, :received_at, :is_satisfied, :verification_outstanding, :aasm_state, :update_reason, :due_on, :external_service, :updated_by)
