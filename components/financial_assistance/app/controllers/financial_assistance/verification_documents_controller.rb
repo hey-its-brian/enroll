@@ -17,15 +17,21 @@ module FinancialAssistance
 
     before_action :find_type, only: [:upload, :update_evidence, :download]
     before_action :set_document, only: [:destroy]
+    after_action :build_determination, only: [:upload, :destroy]
 
     def upload
       authorize @applicant
 
       @doc_errors = []
+      redirect_location = if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+                            main_app.verification_detail_insured_families_path(person_id: params['person_id'], eligibility_kind: params['eligibility_kind'], evidence_key: params['evidence_key'])
+                          else
+                            main_app.verification_insured_families_path
+                          end
       if params[:file].blank?
         flash[:error] = "File not uploaded. Please select the file to upload."
       elsif !valid_file_uploads?(params[:file], FileUploadValidator::VERIFICATION_DOC_TYPES)
-        redirect_to main_app.verification_insured_families_path
+        redirect_to redirect_location
         return
       else
         params[:file].each do |file|
@@ -34,9 +40,10 @@ module FinancialAssistance
             if update_documents(file_name(file), doc_uri)
               add_verification_history(file)
               flash[:notice] = "File Saved"
+              @success = true
             else
               flash[:error] = "Could not save file. #{@doc_errors.join('. ')}"
-              redirect_back(fallback_location: main_app.verification_insured_families_path)
+              redirect_back(fallback_location: redirect_location)
               break
             end
           else
@@ -44,7 +51,7 @@ module FinancialAssistance
           end
         end
       end
-      redirect_to main_app.verification_insured_families_path
+      redirect_to redirect_location
     end
 
     def download
@@ -78,17 +85,29 @@ module FinancialAssistance
           flash[:danger] = "All documents were deleted. Action needed"
         else
           flash[:success] = "Document deleted."
+          @success = true
         end
       else
         flash[:danger] = "Document can not be deleted because type is verified."
       end
       respond_to do |format|
-        format.html { redirect_to main_app.verification_insured_families_path }
+        if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+          format.html { redirect_to main_app.verification_detail_insured_families_path(person_id: params['person_id'], eligibility_kind: params['eligibility_kind'], evidence_key: params['evidence_key']) }
+        else
+          format.html { redirect_to main_app.verification_insured_families_path }
+        end
         format.js
       end
     end
 
     private
+
+    def build_determination
+      family = @applicant.application.family
+      return unless @success && family.present? && EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+
+      ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
+    end
 
     def record
       @evidence

@@ -6,12 +6,23 @@ module Eligibilities
     include Mongoid::Document
     include Mongoid::Timestamps
 
-    EVIDENCE_ITEM_KEYS = %i[
-      income_evidence
-      esi_evidence
-      non_esi_evidence
-      aces_evidence
+    SOCIAL_SECURITY_NUMBER = :social_secruity_number
+    AMERICAN_INDIAN_STATUS = :american_indian_status
+    CITIZENSHIP = :citizenship
+    IMMIGRATION_STATUS = :immigration_status
+    ALIVE_STATUS = :alive_status
+    LOCATION_RESIDENCY = :residency
+
+    ALL_VERIFICATION_TYPES = [
+      SOCIAL_SECURITY_NUMBER,
+      AMERICAN_INDIAN_STATUS,
+      CITIZENSHIP,
+      IMMIGRATION_STATUS,
+      ALIVE_STATUS
     ].freeze
+
+    ALL_VERIFICATION_TYPES += [LOCATION_RESIDENCY] if EnrollRegistry.feature_enabled?(:location_residency_verification_type)
+    ADMIN_CALL_HUB_VERIFICATION_TYPES = ALL_VERIFICATION_TYPES - [ALIVE_STATUS, AMERICAN_INDIAN_STATUS].freeze
 
     embedded_in :eligibility_state, class_name: '::Eligibilities::EligibilityState'
 
@@ -24,6 +35,13 @@ module Eligibilities
     field :due_on, type: Date
     field :visited_at, type: DateTime
     field :meta, type: Hash
+
+    scope :where_action_needed, -> { where(verification_outstanding: true).where.not(status: 'review') }
+    scope :by_key, ->(key) { where(evidence_item_key: key.to_sym) }
+
+    def is_action_needed?
+      verification_outstanding && status.to_s.downcase != 'review'
+    end
 
     # seliarizable_cv_hash for evidence states
     # @return [Hash] hash of evidence states

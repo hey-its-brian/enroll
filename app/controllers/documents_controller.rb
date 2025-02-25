@@ -7,6 +7,7 @@ class DocumentsController < ApplicationController
   before_action :set_person, only: [:enrollment_docs_state, :fed_hub_request, :enrollment_verification, :update_verification_type, :extend_due_date, :update_ridp_verification_type]
   before_action :add_type_history_element, only: [:update_verification_type, :fed_hub_request, :destroy]
   before_action :cartafact_download_params, only: [:cartafact_download]
+  after_action :build_determination, only: [:update_verification_type, :fed_hub_request, :extend_due_date, :destroy]
   respond_to :html, :js
 
   def authorized_download
@@ -218,7 +219,11 @@ class DocumentsController < ApplicationController
       flash[:danger] = "Document can not be deleted because type is verified."
     end
     respond_to do |format|
-      format.html { redirect_to verification_insured_families_path }
+      if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+        format.html { redirect_to verification_detail_insured_families_path(person_id: params['person_id'], eligibility_kind: params['eligibility_kind'], evidence_key: params['evidence_key']) }
+      else
+        format.html { redirect_to verification_insured_families_path }
+      end
       format.js
     end
   end
@@ -331,5 +336,12 @@ class DocumentsController < ApplicationController
   #permitting required params for cartafact downloads
   def cartafact_download_params
     params.permit(:relation, :relation_id, :model, :model_id, :content_type, :disposition, :file_name, :user)
+  end
+
+  def build_determination
+    family = Family.where(id: params[:family]).first
+    return unless family.present? && EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+
+    ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
   end
 end

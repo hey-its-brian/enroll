@@ -608,6 +608,9 @@ RSpec.describe VerificationHelper, :type => :helper do
         else
           allow(EnrollRegistry[:ai_an_self_attestation].feature).to receive(:is_enabled).and_return(false)
         end
+        Object.send(:remove_const, :VlpDocument) if Module.const_defined?(:VlpDocument)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(false)
+        load 'app/models/vlp_document.rb'
       end
       it "returns admin actions array" do
         person.consumer_role.update_attributes(aasm_state: "#{state}")
@@ -776,6 +779,7 @@ RSpec.describe VerificationHelper, :type => :helper do
         allow(helper).to receive(:had_outstanding_status?).with(verif_type).and_return(true)
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:alive_status).and_return(true)
         verif_type.stub(:type_name).and_return(VerificationType::ALIVE_STATUS)
+        verif_type.stub(:is_a?).with(EvidenceStateDecorator).and_return(false)
         expect(helper.can_display_type?(verif_type)).to be true
       end
     end
@@ -786,6 +790,7 @@ RSpec.describe VerificationHelper, :type => :helper do
         allow(helper).to receive(:had_outstanding_status?).with(verif_type).and_return(true)
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:alive_status).and_return(false)
         verif_type.stub(:type_name).and_return(VerificationType::ALIVE_STATUS)
+        verif_type.stub(:is_a?).with(EvidenceStateDecorator).and_return(false)
         expect(helper.can_display_type?(verif_type)).to be false
       end
     end
@@ -796,6 +801,7 @@ RSpec.describe VerificationHelper, :type => :helper do
         allow(helper).to receive(:had_outstanding_status?).with(verif_type).and_return(false)
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:alive_status).and_return(false)
         verif_type.stub(:type_name).and_return(VerificationType::ALIVE_STATUS)
+        verif_type.stub(:is_a?).with(EvidenceStateDecorator).and_return(false)
         expect(helper.can_display_type?(verif_type)).to be false
       end
     end
@@ -806,6 +812,7 @@ RSpec.describe VerificationHelper, :type => :helper do
         allow(helper).to receive(:had_outstanding_status?).with(verif_type).and_return(false)
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:ai_an_self_attestation).and_return(true)
         verif_type.stub(:type_name).and_return(VerificationType::AMERICAN_INDIAN_STATUS)
+        verif_type.stub(:is_a?).with(EvidenceStateDecorator).and_return(false)
         expect(helper.can_display_type?(verif_type)).to be false
       end
     end
@@ -816,6 +823,7 @@ RSpec.describe VerificationHelper, :type => :helper do
         allow(helper).to receive(:had_outstanding_status?).with(verif_type).and_return(false)
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:ai_an_self_attestation).and_return(false)
         verif_type.stub(:type_name).and_return(VerificationType::AMERICAN_INDIAN_STATUS)
+        verif_type.stub(:is_a?).with(EvidenceStateDecorator).and_return(false)
         expect(helper.can_display_type?(verif_type)).to be true
       end
     end
@@ -825,6 +833,7 @@ RSpec.describe VerificationHelper, :type => :helper do
         allow(current_user).to receive(:has_hbx_staff_role?).and_return(false)
         allow(helper).to receive(:had_outstanding_status?).with(verif_type).and_return(false)
         verif_type.stub(:type_name).and_return(VerificationType::CITIZENSHIP)
+        verif_type.stub(:is_a?).with(EvidenceStateDecorator).and_return(false)
         expect(helper.can_display_type?(verif_type)).to be true
       end
     end
@@ -841,6 +850,7 @@ RSpec.describe VerificationHelper, :type => :helper do
       allow(verif_type).to receive_message_chain(:type_history_elements, :pluck, :flatten, :compact).and_return(['outstanding'])
       allow(verif_type).to receive(:history_tracks).and_return([])
       allow(verif_type).to receive(:validation_status).and_return('verified')
+      verif_type.stub(:is_a?).with(EvidenceStateDecorator).and_return(false)
       expect(helper.had_outstanding_status?(verif_type)).to be_truthy
     end
 
@@ -848,6 +858,7 @@ RSpec.describe VerificationHelper, :type => :helper do
       allow(verif_type).to receive_message_chain(:type_history_elements, :pluck, :flatten, :compact).and_return(nil)
       allow(verif_type).to receive_message_chain(:history_tracks, :any?).and_return(true)
       allow(verif_type).to receive(:validation_status).and_return('verified')
+      verif_type.stub(:is_a?).with(EvidenceStateDecorator).and_return(false)
       expect(helper.had_outstanding_status?(verif_type)).to be_truthy
     end
 
@@ -855,6 +866,7 @@ RSpec.describe VerificationHelper, :type => :helper do
       allow(verif_type).to receive_message_chain(:type_history_elements, :pluck, :flatten, :compact).and_return(nil)
       allow(verif_type).to receive_message_chain(:history_tracks, :any?).and_return(false)
       allow(verif_type).to receive(:validation_status).and_return('outstanding')
+      verif_type.stub(:is_a?).with(EvidenceStateDecorator).and_return(false)
       expect(helper.had_outstanding_status?(verif_type)).to be_truthy
     end
 
@@ -862,6 +874,7 @@ RSpec.describe VerificationHelper, :type => :helper do
       allow(verif_type).to receive_message_chain(:type_history_elements, :pluck, :flatten, :compact).and_return(nil)
       allow(verif_type).to receive_message_chain(:history_tracks, :any?).and_return(false)
       allow(verif_type).to receive(:validation_status).and_return('verified')
+      verif_type.stub(:is_a?).with(EvidenceStateDecorator).and_return(false)
       expect(helper.had_outstanding_status?(verif_type)).to be_falsey
     end
   end

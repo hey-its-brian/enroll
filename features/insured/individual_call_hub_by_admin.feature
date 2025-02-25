@@ -3,6 +3,7 @@ Feature: Consumer verification process
   Scenario: Failed consumer esi evidence determination request
     Given the FAA feature configuration is enabled
     And FAA display_medicaid_question feature is enabled
+    And show_new_verifications_household_summary feature is disabled
     And FAA mec_check feature is enabled
     And validate_and_record_publish_application_errors feature is enabled
     And a family with financial application and applicants in determined state exists with unverified evidences

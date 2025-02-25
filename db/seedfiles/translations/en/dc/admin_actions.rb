@@ -59,5 +59,6 @@ ADMIN_ACTIONS_TRANSLATIONS = {
   'en.admin_actions.dry_run.enrollments.category' => "Category",
   'en.admin_actions.dry_run.enrollments.auto_renewing' => "Auto Renewing",
   'en.admin_actions.dry_run.enrollments.coverage_selected' => "Coverage Selected",
-  'en.admin_actions.dry_run.enrollments.renewing_coverage_selected' => "Renewing Coverage Selected"
+  'en.admin_actions.dry_run.enrollments.renewing_coverage_selected' => "Renewing Coverage Selected",
+  'en.admin.admin_designation_descriptor' => "Indicates data only visible to Administrators",
 }

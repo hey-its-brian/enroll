@@ -20,6 +20,9 @@ module Eligibilities
     field :earliest_due_date, type: Date
     field :determined_at, type: DateTime
 
+    scope :by_type_uploadable, -> { where(:eligibility_item_key.in => ['aca_individual_market_eligibility', 'aptc_csr_credit']) }
+    scope :by_type, ->(type) { where(:eligibility_item_key => type.to_s) }
+
     accepts_nested_attributes_for :evidence_states, :grants
 
     # seliarizable_cv_hash for eligibility states including evidence states

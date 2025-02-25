@@ -210,6 +210,11 @@ Given(/^bs4_admin_flow feature is disable$/) do
   disable_feature :bs4_admin_flow
 end
 
+Given(/^show_new_verifications_household_summary feature is (.*)$/) do |feature|
+  enable_feature :show_new_verifications_household_summary if feature == 'enabled'
+  disable_feature :show_new_verifications_household_summary if feature == 'disabled'
+end
+
 When(/^choose_shopping_method feature is disabled$/) do
   disable_feature :choose_shopping_method
 end

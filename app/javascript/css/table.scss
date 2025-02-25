@@ -28,6 +28,10 @@ table {
       background: var(--grey-000);
     }
 
+    tr.no-hover:hover {
+      background: none;
+    }
+
     td {
       border: none;
       border-bottom: 1px solid var(--grey-030);
@@ -76,6 +80,41 @@ table {
     text-align: left;
     margin: 1em 0;
     color: var(--text-secondary);
+  }
+}
+
+table[data-controller="navigateable-table"] {
+  tbody {
+    tr[data-href] {
+      cursor: pointer;
+    }
+  }
+}
+
+table[data-controller="expandable-table"] {
+  tbody {
+    tr[data-target="expandable-table.row"] {
+      &[data-action="click->expandable-table#toggle"] {
+        cursor: pointer;
+      }
+
+      &.expanded {
+        .caret-icon {
+          transform: rotate(90deg);
+        }
+      }
+
+      td {
+        .caret-icon {
+          background-repeat: no-repeat;
+          background-position: center;
+          height: 20px;
+          width: 20px;
+          background-image: url('data:image/svg+xml,<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 5L12.2929 9.29289C12.6834 9.68342 12.6834 10.3166 12.2929 10.7071L8 15" stroke="%23323130" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+          color: var(--default-font-color);
+        }
+      }
+    }
   }
 }
 

@@ -16,6 +16,8 @@ module FinancialAssistance
     # @private
     before_action :check_for_uneditable_application
 
+    after_action :build_determination
+
     def update_evidence
       authorize @applicant, :edit?
       update_reason = params[:verification_reason]
@@ -25,11 +27,12 @@ module FinancialAssistance
         verification_result = admin_verification_action(admin_action, @evidence, update_reason)
         message = (verification_result.is_a? String) ? verification_result : "Verification successfully approved."
         flash[:success] = message
+        @success = true
       else
         flash[:error] = "Please provide a verification reason."
       end
 
-      redirect_to main_app.verification_insured_families_path
+      redirect_to redirect_location
     end
 
     def fdsh_hub_request
@@ -39,6 +42,7 @@ module FinancialAssistance
       if result
         key = :success
         message = "request submitted successfully"
+        @success = true
       else
         key = :error
         message = "unable to submit request"
@@ -47,7 +51,7 @@ module FinancialAssistance
       respond_to do |format|
         format.html do
           flash[key] = message
-          redirect_back(fallback_location: main_app.verification_insured_families_path)
+          redirect_back(fallback_location: redirect_location)
         end
         format.js
       end
@@ -60,13 +64,14 @@ module FinancialAssistance
       if enrollment.present? && @evidence.type_unverified?
         if @evidence.extend_due_on(30.days, current_user.oim_id)
           flash[:success] = "#{@evidence.title} verification due date was extended for 30 days."
+          @success = true
         else
           flash[:danger] = "Unable to extend due date"
         end
       else
         flash[:danger] = "Applicant doesn't have active Enrollment to extend verification due date."
       end
-      redirect_back(fallback_location: main_app.verification_insured_families_path)
+      redirect_back(fallback_location: redirect_location)
     end
 
     private
@@ -114,6 +119,22 @@ module FinancialAssistance
       @application = @applicant&.application if @application.blank?
 
       redirect_to main_app.logout_saml_index_path unless fetch_applicant_succeeded?
+    end
+
+    def build_determination
+      family = @applicant.application.family
+      return unless @success && family.present? && EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+
+      ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
+    end
+
+    def redirect_location
+      if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+        person = FamilyMember.find(@applicant.family_member_id).person
+        main_app.verification_detail_insured_families_path(person_id: person.id, eligibility_kind: 'aptc_csr_credit', evidence_key: params['evidence_kind'])
+      else
+        main_app.verification_insured_families_path
+      end
     end
   end
 end

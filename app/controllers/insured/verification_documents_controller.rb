@@ -7,34 +7,37 @@ class Insured::VerificationDocumentsController < ApplicationController
   before_action :set_current_person
   before_action :find_type, :find_docs_owner, :alive_status_authorization?, only: [:upload]
   before_action :check_for_consumer_role
+  after_action :build_determination, only: [:upload]
 
   def upload
     authorize @consumer_role, :verification_document_upload?
 
     @doc_errors = []
+    redirect_location = if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+                          verification_detail_insured_families_path(person_id: params['person_id'], eligibility_kind: params['eligibility_kind'], evidence_key: params['evidence_key'])
+                        else
+                          verification_insured_families_path
+                        end
     if params[:file].blank?
       flash[:error] = "File not uploaded. Please select the file to upload."
     elsif !valid_file_uploads?(params[:file], FileUploadValidator::VERIFICATION_DOC_TYPES)
-      redirect_to verification_insured_families_path
+      redirect_to redirect_location
       return
     else
       params[:file].each do |file|
         doc_uri = Aws::S3Storage.save(file_path(file), 'id-verification')
-        if doc_uri.present?
-          if update_vlp_documents(file_name(file), doc_uri)
-            add_type_history_element(file)
-            flash[:notice] = "File Saved"
-          else
-            flash[:error] = "Could not save file. #{@doc_errors.join('. ')}"
-            redirect_back(fallback_location: verification_insured_families_path)
-            return
-          end
+        if doc_uri.present? && update_vlp_documents(file_name(file), doc_uri)
+          add_type_history_element(file)
+          flash_type, flash_message = EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) ? [:success, "Document successfully Submitted"] : [:notice, "File Saved"]
+          flash[flash_type] = flash_message
+          @success = true
         else
-          flash[:error] = "Could not save file"
+          flash[:error] = "Could not save file.#{" #{@doc_errors.join('. ')}" if @doc_errors.present?}"
+          redirect_back(fallback_location: redirect_location)
         end
       end
     end
-    redirect_to verification_insured_families_path
+    redirect_to redirect_location
   end
 
   def download
@@ -142,4 +145,10 @@ class Insured::VerificationDocumentsController < ApplicationController
     person_consumer_role.save
   end
 
+  def build_determination
+    family = Family.where(id: params[:family]).first
+    return unless @success && family.present? && EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+
+    ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
+  end
 end

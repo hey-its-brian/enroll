@@ -52,6 +52,7 @@ $(document).on('page:load turbolinks:load', function () {
   Freebies.fadeElement($("body"));
   Freebies.allFreebies();
   indicateRequiredFields();
+  indicateAdminDesignatedElements();
   Responsive.setSizeListeners();
   if (controllerName() === 'families' && actionName() === 'verification'){
     $('.verification-update-reason .selectric').removeEventListener('turbolinks:load', Freebies.selectric())
@@ -63,6 +64,14 @@ function indicateRequiredFields() {
   $('label.required, legend.required').each(function() {
     if ($(this).find('.sr-only').length == 0) {
       $(this).append('<span class="sr-only sr-required-indicator">*</span>');
+    }
+  });
+}
+
+function indicateAdminDesignatedElements() {
+  $('.admin-designation').each(function() {
+    if ($(this).find('.sr-only').length == 0) {
+      $(this).append('<span class="sr-only">⚙</span>');
     }
   });
 }

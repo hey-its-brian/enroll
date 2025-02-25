@@ -24,6 +24,10 @@ class FileUploadValidator
   end
 
   def human_readable_file_types
+    self.class.human_readable_file_types(content_types: @allowed_content_types)
+  end
+
+  def self.human_readable_file_types(content_types: VERIFICATION_DOC_TYPES, formatter: [:join, ', '], pluralize: false)
     mime_type_to_readable_name = {
       'application/pdf' => 'PDF',
       'image/jpeg' => 'JPEG',
@@ -35,6 +39,8 @@ class FileUploadValidator
       # Additional mappings as needed...
     }.freeze
 
-    @allowed_content_types.map { |type| mime_type_to_readable_name[type] || type.split('/').last.upcase }.join(', ')
+    formatted_types = content_types.map { |type| mime_type_to_readable_name[type] || type.split('/').last.upcase }
+    formatted_types = formatted_types.map(&:pluralize) if pluralize
+    formatted_types.send(*formatter)
   end
 end

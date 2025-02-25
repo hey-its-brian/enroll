@@ -1,5 +1,5 @@
 <% if @bs4 %>
-  <h2><%= l10n('verification_documents') %></h2>
+  <h2><%= l10n('insured.families.verification_documents') %></h2>
   <% if can_show_due_date?(@person) %>
     <% due_date = @person.primary_family&.eligibility_determination&.outstanding_verification_earliest_due_date || default_verification_due_date %>
     <dl class="d-flex">
@@ -12,12 +12,7 @@
     <section class="card">
       <h3 class="mb-0"><%= person.full_name %></h3>
       <hr>
-      <% verification_filter = if EnrollRegistry.feature_enabled?(:location_residency_verification_type) %>
-        <% person.verification_types.active.all %>
-      <% else %>
-        <% person.verification_types.active.all.select {|v_type| v_type.type_name != EnrollRegistry[:enroll_app].setting(:state_residency).item} %>
-      <% end %>
-      <% verification_filter.each do |verif_type| %>
+      <% person.verification_types.active.all.each do |verif_type| %>
         <% v_type = verif_type.type_name %>
         <% v_type_display = display_verification_type_name(v_type) %>
         <% can_show_actions_button = current_user.has_hbx_staff_role? %>
@@ -94,7 +89,7 @@
             <% end %>
           </div>
           <% if current_user.has_hbx_staff_role? %>
-            <%= render :partial => "insured/families/verification/admin_verification_actions", locals: { person: person, type: verif_type, v_type: v_type, f_member: family_member} %>
+            <%= render :partial => "insured/families/verification/admin_verification_actions", locals: { person: person, type_id: verif_type.id, history: verif_type.type_history_elements, v_type: v_type, f_member: family_member} %>
           <% end %>
           <hr class="subcard-divider">
         <% end %>
@@ -177,7 +172,7 @@
                   </div>
                 <% end %>
                 <% if current_user.has_hbx_staff_role? %>
-                  <%= render :partial => "insured/families/verification/admin_verification_actions", locals: { person: person, type: verif_type, v_type: v_type, f_member: f_member} %>
+                  <%= render :partial => "insured/families/verification/admin_verification_actions", locals: { person: person, type_id: verif_type.id, history: verif_type.type_history_elements, v_type: v_type, f_member: f_member} %>
                 <% end %>
 
                 <div class="row">

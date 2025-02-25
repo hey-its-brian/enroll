@@ -39,14 +39,35 @@ module VerificationHelper
     end
   end
 
-  def display_verification_type_name(v_type)
-    case v_type
-    when 'ME Residency'
-      'Income'
-    when 'Alive Status'
-      'Deceased'
+  def display_verification_type_name(type)
+    if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+      case type
+      # Financial Assistance Evidences
+      when :esi_evidence
+        l10n("faa.evidence_type_esi")
+      when :local_mec_evidence
+        l10n("faa.evidence_type_aces")
+      when :non_esi_evidence
+        l10n("faa.evidence_type_non_esi")
+      when :income_evidence
+        l10n("faa.evidence_type_income")
+      # Market Eligibility Verifications
+      when :residency
+        l10n("insured.families.verifications.types.evidence_type_residency")
+      when :alive_status
+        l10n("insured.families.verifications.types.evidence_type_alive_status")
+      else
+        type.to_s.titleize
+      end
     else
-      v_type
+      case type
+      when 'ME Residency'
+        'Income'
+      when 'Alive Status'
+        'Deceased'
+      else
+        type
+      end
     end
   end
 
@@ -55,19 +76,30 @@ module VerificationHelper
   # If the verification type has ever been in 'outstanding' status, whether historically or currently, it will return true.
   # @param verif_type [Object] The verification type object to check.
   # @return [Boolean] Returns true if the verification type has ever been in 'outstanding' status, false otherwise.
-  def had_outstanding_status?(verif_type)
-    previous_states = fetch_previous_states(verif_type)
-    previous_states_history = has_outstanding_history?(verif_type, previous_states)
-    outstanding_status?(previous_states, previous_states_history, verif_type)
+  def had_outstanding_status?(obj)
+    previous_states = fetch_previous_states(obj)
+    previous_states_history = has_outstanding_history?(obj, previous_states)
+    outstanding_status?(previous_states, previous_states_history, obj)
   end
 
-  # Determines if a verification type can be displayed based on the user's role, verification type status, and feature settings.
-  #
-  # @param verif_type [Object, nil] The verification type object to check. Can be nil.
-  # @return [Boolean] Returns true if the verification type should be displayed, false otherwise.
-  def can_display_type?(verif_type)
-    return true if current_user.has_hbx_staff_role?
+  def can_display_evidence_state?(evidence_state)
+    if is_evidence_market_eligibility?(evidence_state)
+      case evidence_state.evidence_item_key
+      when Eligibilities::EvidenceState::ALIVE_STATUS
+        EnrollRegistry.feature_enabled?(:alive_status) && had_outstanding_status?(evidence_state)
+      when Eligibilities::EvidenceState::AMERICAN_INDIAN_STATUS
+        !EnrollRegistry.feature_enabled?(:ai_an_self_attestation) || had_outstanding_status?(evidence_state)
+      when Eligibilities::EvidenceState::LOCATION_RESIDENCY
+        EnrollRegistry.feature_enabled?(:location_residency_verification_type)
+      else
+        true
+      end
+    else
+      !(evidence_state.evidence_item_key == :local_mec_evidence && !FinancialAssistanceRegistry.feature_enabled?(:mec_check))
+    end
+  end
 
+  def can_display_v_type?(verif_type)
     case verif_type&.type_name
     when VerificationType::ALIVE_STATUS
       EnrollRegistry.feature_enabled?(:alive_status) && had_outstanding_status?(verif_type)
@@ -76,6 +108,16 @@ module VerificationHelper
     else
       true
     end
+  end
+
+  # Determines if a verification type can be displayed based on the user's role, verification type status, and feature settings.
+  #
+  # @param verif_type [Object, nil] The verification type object to check. Can be nil.
+  # @return [Boolean] Returns true if the verification type should be displayed, false otherwise.
+  def can_display_type?(obj, is_admin: current_user.has_hbx_staff_role?)
+    return true if is_admin
+
+    EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) ? can_display_evidence_state?(obj) : can_display_v_type?(obj)
   end
 
   def ridp_status_translated(type, person)
@@ -243,7 +285,19 @@ module VerificationHelper
     ["verified", "rejected"].include?(status)
   end
 
-  def show_v_type(status, admin = nil)
+  def evidence_status(evidence)
+    status = evidence.status.to_s
+    case status
+    when "curam"
+      current_user.has_hbx_staff_role? ? l10n('insured.families.verifications.statuses.external_source') : l10n('insured.families.verifications.statuses.verified')
+    when "valid"
+      l10n('insured.families.verifications.statuses.verified')
+    else
+      status&.to_s&.titleize
+    end
+  end
+
+  def v_type_status(status, admin = nil)
     if status == "curam"
       admin ? "External Source".center(12) : sanitize_html("verified".capitalize.center(12).gsub(' ', '&nbsp;'))
     elsif status
@@ -251,6 +305,10 @@ module VerificationHelper
       status = l10n('verification_type.validation_status') if status == 'rejected'
       sanitize_html(status.titleize.center(12).gsub(' ', '&nbsp;'))
     end
+  end
+
+  def show_v_type(obj, admin = nil)
+    EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) ? evidence_status(obj) : v_type_status(obj, admin)
   end
 
   def show_ridp_type(ridp_type, person)
@@ -276,12 +334,16 @@ module VerificationHelper
     person.consumer_role.ridp_documents.select{|doc| doc.identifier && doc.ridp_verification_type == ridp_type } if person.consumer_role
   end
 
-  def admin_actions(v_type, f_member)
-    options_for_select(build_admin_actions_list(v_type, f_member))
+  def admin_actions(obj, f_member)
+    options_for_select(build_admin_actions_list(obj, f_member))
   end
 
-  def display_upload_for_verification?(verification_type)
-    verification_type.type_unverified?
+  def display_upload_for_verification?(obj)
+    if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+      %w[verified attested valid curam].exclude?(obj.status.to_s)
+    else
+      obj.type_unverified?
+    end
   end
 
   def mod_attr(attr, val)
@@ -292,7 +354,7 @@ module VerificationHelper
     options_for_select(build_ridp_admin_actions_list(ridp_type, person))
   end
 
-  def build_admin_actions_list(v_type, f_member)
+  def build_v_type_admin_actions_list(v_type, f_member)
     if EnrollRegistry.feature_enabled?(:ai_an_self_attestation) && v_type.type_name == VerificationType::AMERICAN_INDIAN_STATUS
       [::VlpDocument::VIEW_HISTORY]
     elsif f_member.consumer_role.aasm_state == 'unverified' || VerificationType::ADMIN_CALL_HUB_VERIFICATION_TYPES.exclude?(v_type.type_name)
@@ -304,16 +366,40 @@ module VerificationHelper
     end
   end
 
+  def build_evidence_admin_actions_list(evidence, f_member)
+    if is_evidence_market_eligibility?(evidence)
+      return [] if EnrollRegistry.feature_enabled?(:ai_an_self_attestation) && evidence.evidence_item_key == Eligibilities::EvidenceState::AMERICAN_INDIAN_STATUS
+
+      rejections = []
+      rejections << ::VlpDocument::CALL_HUB if f_member.consumer_role.aasm_state == 'unverified' || Eligibilities::EvidenceState::ADMIN_CALL_HUB_VERIFICATION_TYPES.exclude?(evidence.evidence_item_key)
+      rejections << ::VlpDocument::REJECT if verification_type_status(evidence, f_member) == :outstanding
+      ::VlpDocument::ADMIN_VERIFICATION_ACTIONS - rejections
+    else
+      Eligibilities::Evidence::ADMIN_VERIFICATION_ACTIONS - (evidence.status == :outstanding ? ["Reject"] : [])
+    end
+  end
+
+  def build_admin_actions_list(obj, f_member)
+    EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) ? build_evidence_admin_actions_list(obj, f_member) : build_v_type_admin_actions_list(obj, f_member)
+  end
+
   def build_reject_reason_list(v_type)
-    case v_type
-      when "Citizenship"
+    if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+      case v_type
+      when :citizenship, :immigration_status
         ::VlpDocument::CITIZEN_IMMIGR_TYPE_ADD_REASONS + ::VlpDocument::ALL_TYPES_REJECT_REASONS
-      when "Immigration status"
+      else
+        ::VlpDocument::ALL_TYPES_REJECT_REASONS
+      end
+    else
+      case v_type
+      when "Citizenship", "Immigration status"
         ::VlpDocument::CITIZEN_IMMIGR_TYPE_ADD_REASONS + ::VlpDocument::ALL_TYPES_REJECT_REASONS
       when "Income" #will be implemented later
         ::VlpDocument::INCOME_TYPE_ADD_REASONS + ::VlpDocument::ALL_TYPES_REJECT_REASONS
       else
         ::VlpDocument::ALL_TYPES_REJECT_REASONS
+      end
     end
   end
 
@@ -408,8 +494,9 @@ module VerificationHelper
 
   private
 
-  def fetch_previous_states(verif_type)
-    verif_type&.type_history_elements&.pluck(:from_validation_status, :to_validation_status)&.flatten&.compact
+  def fetch_previous_states(obj)
+    history_elements = obj.is_a?(EvidenceStateDecorator) ? obj.history : obj&.type_history_elements
+    history_elements&.pluck(:from_validation_status, :to_validation_status)&.flatten&.compact
   end
 
   def has_outstanding_history?(verif_type, previous_states)
@@ -417,7 +504,83 @@ module VerificationHelper
     verif_type&.history_tracks&.any? { |ht| ht.modified["validation_status"] == 'outstanding' }
   end
 
-  def outstanding_status?(previous_states, previous_states_history, verif_type)
-    previous_states&.include?('outstanding') || previous_states_history || verif_type&.validation_status == 'outstanding'
+  def outstanding_status?(previous_states, previous_states_history, obj)
+    status = obj.is_a?(EvidenceStateDecorator) ? obj.status : obj&.validation_status
+    previous_states&.include?('outstanding') || previous_states_history || status == 'outstanding'
+  end
+
+  def strong_if(is_strong:, &block)
+    is_strong ? content_tag(:strong, &block) : yield
+  end
+
+  def is_evidence_market_eligibility?(evidence)
+    return false unless evidence.is_a?(EvidenceStateDecorator)
+
+    evidence.eligibility_state.eligibility_item_key == 'aca_individual_market_eligibility'
+  end
+
+  def verification_upload_query
+    person = @evidence.eligibility_state.subject.person
+    gid = GlobalID.parse(@evidence.evidence_gid).model_id
+    if is_evidence_market_eligibility?(@evidence)
+      query = {
+        url: insured_verification_documents_upload_path,
+        params: {
+          :docs_owner => person.id,
+          :verification_type => gid
+        }
+      }
+    else
+      application = fetch_latest_determined_application(@family.id)
+      member = @family.find_family_member_by_person(person)
+      applicant = application.applicants.detect { |appl| appl.family_member_id == member.id }
+      return nil unless applicant.present? && application.present?
+
+      query = {
+        url: financial_assistance.application_applicant_verification_documents_upload_path(application, applicant),
+        params: {
+          applicant_id: applicant.id,
+          evidence: gid,
+          evidence_kind: @evidence.evidence_item_key
+        }
+      }
+    end
+    query[:params][:person_id] = @evidence.eligibility_state.subject.person_id
+    query[:params][:eligibility_kind] = @evidence.eligibility_state.eligibility_item_key
+    query[:params][:evidence_key] = @evidence.evidence_item_key
+    query[:params][:family] = @family.id
+    query
+  end
+
+  def verification_admin_actions
+    person = @evidence.eligibility_state.subject.person
+    if is_evidence_market_eligibility?(@evidence)
+      type = @evidence.evidence_item_key.to_s
+      gid = GlobalID.parse(@evidence.evidence_gid).model_id
+      {
+        id: "#{person.id}-#{type.split.join('-')}",
+        partial: {
+          :partial => "insured/families/verification/admin_verification_actions",
+          locals: {
+            person: person,
+            type_id: gid,
+            v_type: type,
+            f_member: @family.find_family_member_by_person(person)
+          }
+        }
+      }
+    else
+      application = fetch_latest_determined_application(@family.id)
+      member = @family.find_family_member_by_person(person)
+      applicant = application.applicants.detect { |appl| appl.family_member_id == member.id }
+      evidence_kind = @evidence.evidence_item_key.to_s.downcase
+      {
+        id: "#{applicant.id}-#{evidence_kind.split.join('-')}",
+        partial: {
+          :partial => "financial_assistance/applications/verifications/admin_verification_actions",
+          locals: { application: application, applicant: applicant, evidence_kind: evidence_kind}
+        }
+      }
+    end
   end
 end

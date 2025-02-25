@@ -22,6 +22,8 @@ module Eligibilities
 
     accepts_nested_attributes_for :eligibility_states
 
+    scope :by_person, ->(id) { where(person_id: id) }
+
     before_save :add_full_name
 
     def add_full_name
@@ -37,6 +39,16 @@ module Eligibilities
 
     def person
       ::Person.find(person_id)
+    end
+
+    def earliest_due_date
+      eligibility_states.by_type_uploadable.collect(&:earliest_due_date).compact.min
+    end
+
+    def documents_outstanding?
+      eligibility_states.by_type_uploadable.any? do |eligibility_state|
+        eligibility_state.evidence_states.where_action_needed.any?
+      end
     end
 
     # seliarizable_cv_hash for subject including eligibility states

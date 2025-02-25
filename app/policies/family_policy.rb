@@ -129,6 +129,14 @@ class FamilyPolicy < ApplicationPolicy
     show?
   end
 
+  def verification_detail?
+    show?
+  end
+
+  def verification_individual?
+    show?
+  end
+
   def find_sep?
     show?
   end

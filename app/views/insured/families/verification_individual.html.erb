@@ -1,0 +1,77 @@
+<%# Left Nav %>
+<%= render partial: 'shared/family_side_nav' %>
+
+<%# Main Content (right) %>
+<ul class="breadcrumbs">
+  <li><a href=<%= main_app.verification_insured_families_path(tab: 'verification') %>><%= l10n("insured.families.verifications") %></a></li>
+  <li><a href='#'><%= l10n('insured.families.verifications.individual') %></a></li> <%# TODO: add breadcrumb for individual page %>
+</ul>
+
+<h1><%= @member.full_name %></h1>
+
+<% if current_user.has_hbx_staff_role? %>
+  <aside class="mb-2">
+    <span class="admin-designation"></span> 
+    <%= l10n('admin.admin_designation_descriptor') %>
+  </aside>
+<% end %>
+
+<dl>
+  <% if current_user.has_hbx_staff_role? %>
+    <div class="d-flex">
+      <dt class="px-0 col-2"><%= l10n('insured.families.verifications.detail.summary.member_status') %>:</dt>
+      <dd class='admin-designation'><%= @member.is_active? ? l10n('active') : l10n('inactive') %></dd>
+    </div>
+  <% end %>
+</dl>
+
+<div class='my-4'>
+  <a id="previous_button" class="outline button mr-2" href=<%= main_app.verification_insured_families_path(tab: 'verification') %>>Back to Verifications</a>
+</div>
+
+<p><%= l10n('insured.families.verifications.individual.disclaimer') %></p>
+
+<% evidences = @evidences.select { |item| can_display_type?(item) } %>
+
+<section data-cuke="individual-verifications">
+  <div class="d-flex flex-row align-items-center">
+    <h2 class="mb-0"><%= l10n("verifications") %></h2>
+    <%= render partial: "action_items_banner", locals: {item_count: evidences.select { |evidence| evidence.is_action_needed? }.count } %>
+  </div>
+
+  <div class="table-responsive mb-4">
+    <table data-controller='navigateable-table' class="col-sm-12 col-md-8">
+      <thead>
+        <tr>
+          <th><%= l10n('document_name') %></th>
+          <th><%= l10n('status') %></th>
+          <th><%= l10n('due_date') %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% evidences.each do |evidence| %>
+          <% is_action_needed = evidence.is_action_needed? %>
+          <tr data-href=<%= verification_detail_insured_families_path(person_id: @member.person_id, eligibility_kind: evidence.eligibility_state.eligibility_item_key, evidence_key: evidence.evidence_item_key) %>>
+            <td class="<%= 'admin-designation' if current_user.has_hbx_staff_role? && !can_display_type?(evidence, is_admin: false) %>">
+              <%= strong_if(is_strong: is_action_needed) do display_verification_type_name(evidence.evidence_item_key) end %>
+            </td>
+            <td>
+              <% status = show_v_type(evidence) %>
+              <% if is_action_needed %>
+                <div class="d-flex align-items-center">
+                  <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
+                  <div class="my-1 pl-0 pr-2">
+                    <strong><%= status %></strong>
+                  </div>
+                </div>
+              <% else %>
+                <%= status %>
+              <% end %>
+            </td>
+            <td><%= strong_if(is_strong: is_action_needed) do evidence.due_on&.to_s || l10n('not_applicable') end %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</section>

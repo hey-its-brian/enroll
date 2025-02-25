@@ -1,0 +1,172 @@
+<%# Left Nav %>
+<%= render partial: 'shared/family_side_nav' %>
+
+<%# Main Content (right) %>
+<ul class="breadcrumbs">
+  <li><a href=<%= main_app.verification_insured_families_path(tab: 'verification') %>><%= l10n("insured.families.verifications") %></a></li>
+  <li><a href=<%= main_app.verification_individual_insured_families_path(person_id: @member.person_id) %>><%= l10n('insured.families.verifications.individual') %></a></li> <%# TODO: add breadcrumb for individual page %>
+  <li><a href='#'><%= l10n('insured.families.verifications.detail') %></a></li>
+</ul>
+
+<% type_name = display_verification_type_name(@evidence.evidence_item_key) %>
+<h1><%= type_name %></h1>
+
+<% if current_user.has_hbx_staff_role? %>
+  <aside class="mb-2">
+    <span class="admin-designation"></span> 
+    <%= l10n('admin.admin_designation_descriptor') %>
+  </aside>
+<% end %>
+
+<dl data-cuke="summary-header">
+  <div class="d-flex">
+    <dt class="px-0 col-4 col-lg-3 col-xl-2"><%= l10n('member') %>:</dt>
+    <dd><%= @member.full_name %></dd>
+  </div>
+  <% if current_user.has_hbx_staff_role? %>
+    <div class="d-flex">
+      <dt class="px-0 col-4 col-lg-3 col-xl-2"><%= l10n('insured.families.verifications.detail.summary.member_status') %>:</dt>
+      <dd class='admin-designation'><%= @member.is_active? ? l10n('active') : l10n('inactive') %></dd>
+    </div>
+  <% end %>
+  <div class='d-flex'>
+    <dt class='px-0 col-4 col-lg-3 col-xl-2'><%= "#{l10n("insured.families.verifications.detail.summary.status")}:" %></dt>
+    <dd class='d-flex'>
+      <%= strong_if(is_strong: @evidence.is_action_needed?) do %>
+        <% show_v_type(@evidence) %>
+      <% end %>
+      <% if @evidence.is_action_needed? %>
+        <div class="pl-2">
+          <div class="warning-icon icon pl-2" alt="warning" aria-hidden="true" data-cuke="actionable-status-icon">&nbsp;</div>
+        </div>
+      <% end %>
+    </dd>
+  </div>
+  <% if @evidence.update_reason && @evidence.is_action_needed? %>
+    <div class='d-flex'>
+      <dt class='px-0 col-4 col-lg-3 col-xl-2'><%= "#{l10n("insured.families.verifications.detail.summary.status_reason")}:" %></dt>
+      <dd><strong><%= @evidence.update_reason %></strong></dd>
+    </div>
+  <% end %>
+  <div class='d-flex'>
+    <dt class='px-0 col-4 col-lg-3 col-xl-2'><%= "#{l10n("insured.families.verifications.detail.summary.due_on")}:" %></dt>
+    <%= strong_if(is_strong: @evidence.is_action_needed?) do %>
+      <% @evidence.due_on&.to_s || l10n('not_applicable') %>
+    <% end %>
+  </div>
+</dl>
+
+<div class='my-4'>
+  <a id="previous_button" class="button mr-2 outline" href=<%= verification_individual_insured_families_path(person_id: @member.person_id) %>><%= l10n("insured.families.verifications.detail.back_to_individual") %></a>
+</div>
+
+<% if display_upload_for_verification?(@evidence) %>
+  <section class="my-4" data-cuke='upload-documents'>
+    <h2><%= l10n('insured.families.verifications.detail.verification_details') %></h2>
+    <p><%= l10n(EnrollRegistry.feature_enabled?(:show_new_documents_tab_text) ? 'insured.verification_information' : 'insured.verification_information_old') %></p>
+
+    <div class="mb-4">
+      <% disable_list_flag = EnrollRegistry.feature_enabled?(:disable_documents_we_accept_list) %>
+      <a aria-controls="docs-verification-faq" aria-expanded="false" data-toggle=<%= disable_list_flag ? "none" : "collapse" %>  href=<%= disable_list_flag ? ::EnrollRegistry[:enroll_app].setting(:submit_docs_url).item : "#docs-verification-faq" %> role="button" rel="noopener noreferrer" target=<%= "_blank" if disable_list_flag  %>>
+        <%= l10n("insured.families.verification.documents_FAQ") %>
+      </a>
+      <div class="mt-2 collapse" id="docs-verification-faq">
+        <%= render partial: "insured/families/verification/documents_verification_list" %>
+      </div>
+    </div>
+  </section>
+
+  <% query = verification_upload_query %>
+  <% attachable = false %>
+  <%= form_tag query[:url], multipart: true, method: :post, :'data-controller' => ("file-manager" if attachable), :'data-action' => 'file-manager#submitForm' do %>
+    <% query[:params].each do |name, value| %>
+      <%= hidden_field_tag name, value %>
+    <% end %>
+
+    <section class="mb-4">
+      <h2><%= l10n('insured.families.verifications.detail.document_upload') %></h2>
+      
+      <% accepted_file_types = ::FileUploadValidator::VERIFICATION_DOC_TYPES %>
+      <% human_readable_file_types = ::FileUploadValidator.human_readable_file_types(content_types: accepted_file_types, formatter: :to_sentence, pluralize: true) %>
+      
+      <p><%= l10n("insured.families.verifications.detail.document_upload.disclaimer", file_types: human_readable_file_types, max_size: ::FileUploadValidator::MAX_FILE_SIZE_MB) %></p>
+      <div class='d-flex'>
+        <span tabindex="0" onkeydown="handleButtonKeyDown(event, 'file-input')" class="btn btn-secondary btn-file text-nowrap mr-2">
+          <i class="fa fa-upload" aria-hidden="true"></i>
+          <label>
+            <%= l10n('upload_documents') %>
+            <%= file_field_tag "file[]", type: :file, accept: accepted_file_types.join(','), tabindex:"-1", :multiple => true, value: "Upload Documents", class: 'doc-upload-file', :'data-target' => "file-manager.fileInput", :'data-action' => "change->file-manager#accumulateAttachments" %>
+          </label>
+        </span>
+        <% if attachable %>
+          <button class="primary" disabled="disabled" data-target="file-manager.uploadButton"><%= l10n('insured.families.verifications.detail.submit_document') %></button>
+        <% end %>
+      </div>
+      
+      <% if attachable %>
+        <section class="d-flex mt-3">
+          <dt class="col-auto px-0 mr-2"><%= l10n('insured.families.verifications.detail.uploaded_document')%>:</dt>
+          <div class="col-auto px-0">
+            <ul class="list-unstyled" data-target="file-manager.fileList">
+              <li><%= l10n('none').downcase %></li>
+            </ul>
+          </div>
+        </section>
+      <% end %>
+    </section>
+  <% end %>
+<% end %>
+
+<% unless @evidence.documents&.empty? %>
+  <section class="mb-4">
+    <h2><%= l10n('insured.families.verifications.detail.upload_history', verification_type: type_name) %></h2>
+
+    <div class="mb-4">
+      <table class="col-sm-12 col-md-8">
+        <thead>
+          <tr>
+            <th class='col-7'><%= l10n('insured.families.verifications.detail.document.name') %></th>
+            <th class='col-3'><%= l10n('insured.families.verifications.detail.document.submitted_on') %></th>
+            <th class='col-2'><%= l10n('actions') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @evidence.documents&.each do |document| %>
+            <tr>
+              <td class='col-7'><%= document.title.titleize %></td>
+              <td class='col-3'><%= document.created_at %></td>
+              <td class='col-2'>
+                <%= render partial: 'datatables/shared/dropdown', locals: {dropdowns: verification_dropdowns(@evidence, document)} %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+<% end %>
+
+<% if current_user.has_hbx_staff_role? %>
+  <section>
+    <h2 class="admin-designation"><%= l10n('insured.families.verifications.detail.admin_tools') %></h2>
+    <section class="mb-3">
+      <h3><%= l10n('actions') %></h3>
+      <% actions_hash = verification_admin_actions %>
+      <label class="v-type-actions">
+        <%= l10n('action') %>
+        <div><%= select_tag :verification_actions, admin_actions(@evidence, @member.person), {id: "v-action-#{actions_hash[:id]}", class: 'col-4', prompt: l10n("insured.consumer_roles.upload_ridp_documents.select_action")} %></div>
+      </label>            
+      <%= render actions_hash[:partial] %>
+    </section>
+    <section>
+      <h3><%= l10n('view_history') %></h3>
+      <a href='#'>View verification history</a> <%# TODO: implement verification history %>
+    </section>
+  </section>
+<% end %>
+
+<script>
+  $(document).ready(function() {
+    Insured.custom_upload_init();
+  });
+</script>

@@ -1,0 +1,31 @@
+Feature: Individual Verification Details Page
+  Background:
+    Given bs4_consumer_flow feature is enabled
+    And show_new_verifications_household_summary feature is enabled
+    And a consumer exists
+    And the consumer is logged in
+    And consumer has successful ridp
+
+  Scenario Outline: Consumer vists the Verification Details Page for a status 
+    When the consumer vists the verification detail page for a verification with <status> status
+    Then the consumer should the summary header with the <user_facing_status> status
+    And the consumer should see the summary header <with_or_without_reason> the status reason
+    And the consumer should <see_or_not_see_actionable_status> a actionable status
+    And the consumer should <see_or_not_see_upload_section> the upload section
+
+    Examples:
+      | status       | user_facing_status | with_or_without_reason | see_or_not_see_actionable_status | see_or_not_see_upload_section |
+      | outstanding  | outstanding        | with                   | see                              | see                           |
+      | rejected     | rejected           | with                   | see                              | see                           |
+      | review       | review             | without                | not see                          | see                           |
+      | pending      | pending            | without                | not see                          | see                           |
+      | verified     | verified           | without                | not see                          | not see                       |
+      | attested     | attested           | without                | not see                          | not see                       |
+      | curam        | verified           | without                | not see                          | not see                       |
+
+  Scenario: Consumer presses the Back to Individual button
+    When the consumer vists the verification detail page
+    And the consumer presses the Back to Individual button
+    Then the consumer should see the individual detail page
+
+    

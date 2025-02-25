@@ -4,9 +4,9 @@
 
   <%# Main Content (right) %>
   <ul class="breadcrumbs">
-    <li><%= l10n('layout.header.home') %></li>
-    <li><%= l10n('faa.applications') %></li>
-    <li><%= l10n('faa.applications.detail') %></li>
+    <li><a href=<%= main_app.family_account_path(tab: 'home') %>><%= l10n('layout.header.home') %></a></li>
+    <li><a href=<%= financial_assistance.applications_path(tab: 'cost_savings') %>><%= l10n('faa.applications') %></a></li>
+    <li><a href='#'><%= l10n('faa.applications.detail') %></a></li>
   </ul>
 
   <h1><%= l10n('faa.applications.detail') %></h1>

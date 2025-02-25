@@ -14,6 +14,46 @@ module DropdownHelper
     construct_options(option_args)
   end
 
+  def verification_dropdowns(verification, document)
+    parsed = GlobalID.parse(verification.evidence_gid)
+    gid = parsed.model_id
+    doc_key = document.identifier.split('#').last
+    if parsed.model_class == VerificationType
+      option_args = [
+        [l10n('download'), "/insured/verification_documents/download/#{doc_key}", :blank_target],
+        [l10n('remove'), document_path(
+          document,
+          :verification_type => gid,
+          :doc_title => document.title&.titleize,
+          :person_id => verification.eligibility_state.subject.person_id,
+          :eligibility_kind => verification.eligibility_state.eligibility_item_key,
+          :evidence_key => verification.evidence_item_key
+        ), :delete]
+      ]
+    else
+      application = fetch_latest_determined_application(@family.id)
+      applicant = application.applicants.detect { |appl| appl.family_member_id == GlobalID::Locator.locate(verification.eligibility_state.subject.gid)&.id }
+      kind = verification.evidence_item_key
+      option_args = [
+        [l10n('download'), "/financial_assistance/applications/#{application.id}/applicants/#{applicant.id}/verification_documents/download?key=#{doc_key}&evidence_kind=#{kind}}", :blank_target],
+        [l10n('remove'),
+         financial_assistance.application_applicant_verification_documents_destroy_path(
+           document,
+           :applicant_id => applicant.id,
+           :evidence => gid,
+           :doc_key => doc_key,
+           :doc_title => document.title&.titleize,
+           :evidence_kind => kind,
+           :person_id => verification.eligibility_state.subject.person_id,
+           :eligibility_kind => verification.eligibility_state.eligibility_item_key,
+           :evidence_key => verification.evidence_item_key
+         ), :delete]
+      ]
+    end
+
+    construct_options(option_args)
+  end
+
   # map legacy dropdowns to BS4 dropdowns
   # NOTE: should remove & refactor dropdowns from callers once BS4 is turned on
   def map_legacy_dropdown(options)
@@ -26,6 +66,8 @@ module DropdownHelper
 
   # dropdown type link attributes
   DEFAULT = {data: {turbolinks: false}}.freeze
+  DELETE = {data: {method: 'delete'}}.freeze
+  BLANK_TARGET = {target: '_blank'}.freeze
   REMOTE = {remote: true}.freeze
   REMOTE_EDIT_APTC_CSR = {class: "edit-aptc-csr-enabled", remote: true}.freeze
 
@@ -42,6 +84,10 @@ module DropdownHelper
     case option_type
     when :default
       ::DropdownHelper::DEFAULT.dup
+    when :delete
+      ::DropdownHelper::DELETE.dup
+    when :blank_target
+      ::DropdownHelper::BLANK_TARGET.dup
     when :remote
       ::DropdownHelper::REMOTE.dup
     when :remote_edit_aptc_csr

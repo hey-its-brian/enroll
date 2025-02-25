@@ -54,4 +54,5 @@ registry:
         is_enabled: <%= ENV['SEND_CLOSE_CASE_REQUEST_IS_ENABLED'] || false %>
       - key: :show_new_documents_tab_text
         is_enabled: <%= ENV['SHOW_NEW_DOCUMENTS_TAB_TEXT'] || false %>
-      
+      - key: :show_new_verifications_household_summary
+        is_enabled: <%= ENV['SHOW_NEW_VERIFICATIONS_HOUSEHOLD_SUMMARY_IS_ENABLED'] || false %>

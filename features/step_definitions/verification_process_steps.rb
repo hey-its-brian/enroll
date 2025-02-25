@@ -44,6 +44,11 @@ And(/^the user is RIDP verified$/) do
   user.person.consumer_role.move_identity_documents_to_verified
 end
 
+Given(/the consumer has a verification with (\w+) status/) do |status|
+  FactoryBot.create(:verification_type, type_name: "Citizenship", validation_status: status, update_reason: "Mock Reason", due_date: TimeKeeper.date_of_record, person: user.person)
+  ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: user.person.primary_family.reload, effective_date: TimeKeeper.date_of_record)
+end
+
 Given(/the alive_status feature is enabled/) do
   allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
 end
@@ -66,6 +71,127 @@ Then(/^the consumer visits verification page$/) do
   # after refactoring turbolinks and selectric, return interaction through class
   find_all("a", text: "Documents", exact: true, wait: 5)[0].click
   # find(".interaction-click-control-documents", wait: 5).click
+end
+
+Then(/^the consumer visits the verification tab$/) do
+  visit verification_insured_families_path(tab: 'verification')
+end
+
+Then(/^the consumer should see the verifications household summary page$/) do
+  expect(page).to have_content(l10n('insured.consumer_roles.upload_ridp_documents.outstanding_header'))
+end
+
+Then(/^the consumer should see the old verifications documents page$/) do
+  expect(page).not_to have_content(l10n('insured.consumer_roles.upload_ridp_documents.action_items'))
+  expect(page).to have_content(l10n('verification_documents'))
+end
+
+Then(/the consumer should (.*)see a (.*) item in the Action Items table/) do |negation, status|
+  is_visible = !negation.present?
+  if is_visible
+    within IvlDocumentsPage.action_items_section do
+      expect(page).to have_content "Action Items"
+      expect(page).to have_content "1 Outstanding Document"
+      within('table tbody tr') do
+        expect(find('td:nth-child(1)')).to have_content('John Smith')
+        expect(find('td:nth-child(2)')).to have_content('Citizenship')
+        expect(find('td:nth-child(3)')).to have_content(status.capitalize)
+        expect(find('td:nth-child(4)')).to have_content(TimeKeeper.date_of_record)
+      end
+    end
+  else
+    expect(page).not_to have_selector(IvlDocumentsPage.action_items_section)
+  end
+end
+
+Then(/the consumer should (.*)see an outstanding member in the Household Members table (.*) date/) do |member_negation, date_negation|
+  is_member_outstanding = !member_negation.include?('not')
+  is_date_relevant = !date_negation.include?('out')
+  within IvlDocumentsPage.household_members_section do
+    expect(page).to have_content "Household Members"
+    within('table tbody tr') do
+      expect(page).send(is_member_outstanding ? :to : :not_to, have_selector(IvlDocumentsPage.unverified_member_icon))
+      expect(find('td:nth-child(1)')).to have_content('John Smith')
+      expect(find('td:nth-child(3)')).to have_content(is_member_outstanding ? 'Unverified' : 'Verified')
+      expect(find('td:nth-child(4)')).to have_content(is_date_relevant ? TimeKeeper.date_of_record : 'Not Applicable')
+    end
+  end
+end
+
+When(/the consumer selects the action item for the actionable verification/) do
+  find("#{IvlDocumentsPage.action_items_section} tbody tr").click
+end
+
+Then(/the consumer should see the verification detail page/) do
+  expect(page).to have_content("Verification Details")
+  expect(page).to have_content("We verify the information you give us using electronic data sources. If the data sources do not match the information you gave us, we need you to provide documents to prove what you told us.")
+end
+
+When(/the consumer vists the verification detail page for a verification with (.*) status/) do |status|
+  steps %(
+    Given the consumer has a verification with #{status} status
+    And the consumer visits the verification tab
+    And the consumer selects a household member
+    And the consumer selects the verification for the member
+  )
+end
+
+When(/the consumer presses the Back to Individual button/) do
+  find('a', text: "Back to Individual").click
+end
+
+When(/the consumer presses the Back to Verifications button/) do
+  find('a', text: "Back to Verifications").click
+end
+
+Given(/the consumer selects the verification for the member/) do
+  find("#{IvlDocumentsPage.individual_verifications_section} tbody tr", text: "Citizenship").click
+end
+
+When(/^the consumer vists the verification detail page$/) do
+  step "the consumer vists the verification detail page for a verification with verified status"
+end
+
+Then(/the consumer should see the summary header (.*) the status reason/) do |negation|
+  is_visible = !negation.include?('out')
+  within IvlDocumentsPage.summary_header do
+    ["Status Reasoning:", "Mock Reason"].each do |text|
+      expect(page).send(is_visible ? :to : :not_to, have_content(text))
+    end
+  end
+end
+
+Then(/the consumer should the summary header with the (.*) status/) do |status|
+  within IvlDocumentsPage.summary_header do
+    expect(page).to have_content status.capitalize
+  end
+end
+
+Then(/the consumer should (.*) a actionable status/) do |negation|
+  is_visible = !negation.include?('not')
+  within IvlDocumentsPage.summary_header do
+    expect(page).send(is_visible ? :to : :not_to, have_selector(IvlDocumentsPage.actionable_status_icon))
+  end
+end
+
+Then(/the consumer should (.*) the upload section/) do |negation|
+  is_visible = !negation.include?('not')
+  expect(page).send(is_visible ? :to : :not_to, have_selector(IvlDocumentsPage.upload_documents_section))
+end
+
+When(/the consumer selects a household member/) do
+  find("#{IvlDocumentsPage.household_members_section} tbody tr").click
+end
+
+Then(/the consumer should see the individual detail page/) do
+  expect(page).to have_selector('h1', text: 'John Smith1')
+  expect(page).to have_content(
+    "We verify the information you provide us " \
+    "using electronic data sources. " \
+    "The data sources we check for each person depend on the information you provided on the application, " \
+    "such as whether or not this person need health coverage. " \
+    "Select a type of information we verify to view details and take any action needed."
+  )
 end
 
 Then(/^the selectric class is visible$/) do

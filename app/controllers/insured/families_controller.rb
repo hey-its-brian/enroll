@@ -4,10 +4,11 @@ class Insured::FamiliesController < FamiliesController
   include ::ApplicationHelper
   include Config::SiteConcern
   include Insured::FamiliesHelper
+  include ::VerificationHelper
 
   layout :resolve_layout
   before_action :enable_bs4_layout, only: [:home, :find_sep, :record_sep, :check_qle_date, :check_move_reason, :check_marriage_reason,
-                                           :check_insurance_reason, :verification, :personal, :inbox, :manage_family, :brokers, :enrollment_history]
+                                           :check_insurance_reason, :verification, :verification_detail, :verification_individual, :personal, :inbox, :manage_family, :brokers, :enrollment_history]
   before_action :updateable?, only: [:delete_consumer_broker, :record_sep, :purchase, :upload_notice]
   before_action :init_qualifying_life_events, only: [:home, :manage_family, :find_sep]
   before_action :check_for_address_info, only: [:find_sep, :home]
@@ -234,7 +235,38 @@ class Insured::FamiliesController < FamiliesController
   def verification
     authorize @family, :verification?
 
-    @family_members = @person.primary_family.has_active_consumer_family_members
+    if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+      @action_items = @family.eligibility_determination.subjects.map { |subject| subject.eligibility_states.by_type_uploadable }.flatten.map { |state| state.evidence_states.where_action_needed }.flatten.sort_by(&:due_on)
+      @action_items = @action_items.map { |evidence| EvidenceStateDecorator.new(evidence) }
+      @subjects = @family.eligibility_determination.subjects.sort_by { |subject| subject.earliest_due_date || Date::Infinity.new }
+    else
+      @family_members = @person.primary_family.has_active_consumer_family_members
+    end
+
+    respond_to :html
+  end
+
+  def verification_individual
+    authorize @family, :verification_individual?
+
+    subject = @family.eligibility_determination.subjects.by_person(params[:person_id]).first
+    @member = @family.find_family_member_by_person(subject.person)
+    evidences = subject.eligibility_states.by_type_uploadable.map(&:evidence_states).flatten
+    action_needed, no_action_needed = evidences.partition(&:is_action_needed?)
+    sorted_evidences = action_needed.sort_by(&:due_on) + no_action_needed.sort_by { |evidence| evidence.due_on || Float::INFINITY }
+    @evidences = sorted_evidences.map { |evidence| EvidenceStateDecorator.new(evidence) }
+
+    respond_to :html
+  end
+
+  def verification_detail
+    authorize @family, :verification_detail?
+
+    subject = @family.eligibility_determination.subjects.by_person(params[:person_id]).first
+    @member = @family.find_family_member_by_person(subject.person)
+    @evidence = subject.eligibility_states.by_type(params[:eligibility_kind]).first.evidence_states.by_key(params[:evidence_key]).first
+    @evidence = ::EvidenceStateDecorator.new(@evidence)
+
     respond_to :html
   end
 
