@@ -3,6 +3,8 @@
 require 'dry/monads'
 require 'dry/monads/do'
 
+# Syntax:
+# Operations::People::BulkHubCallsForVerificationTypes.new.call({hbx_ids: [], verification_type_names: ["Social Security Number"]})
 module Operations
   module People
     # Bulk FedHubCalls for verification types
@@ -38,7 +40,7 @@ module Operations
       def validate(params)
         return Failure('No hbx_ids provided') if params[:hbx_ids].empty?
         return Failure('No verification_type_names provided') if params[:verification_type_names].empty?
-        return Failure('Invalid verification_type_names provided') if params[:verification_type_names].any?{|v_type_name| RESTRICTED_VERIFICATION_TYPES.include?(v_type_name)}
+        return Failure('Invalid verification_type_names provided') if params[:verification_type_names].any? { |v_type_name| RESTRICTED_VERIFICATION_TYPES.include?(v_type_name) }
 
         Success(params)
       end
@@ -50,34 +52,51 @@ module Operations
         people = Person.where(:hbx_id.in => hbx_ids)
 
         status = people.collect do |person|
-          verification_types = person.verification_types.where(:type_name.in => verification_type_names)
-          next [person.hbx_id, '','no verification types'] if verification_types.empty?
-
-          result = verification_types.collect do |verification_type|
-            next [person.hbx_id, verification_type.type_name, 'not eligible for hub call'] unless ELIGIBLE_FOR_HUB_CALL[verification_type.type_name][self, verification_type, person.consumer_role]
-
-            result = ::Operations::CallFedHub.new.call(
-              person_id: person.id,
-              verification_type: verification_type.type_name
-            )
-
-            _key, message = result.failure? ? result.failure : result.success
-            if result.failure?
-              verification_type.fail_type
-              verification_type.add_type_history_element(action: "Hub Request Failed",
-                                                         modifier: "System",
-                                                         update_reason: "#{verification_type.type_name} Request Failed due to #{message}")
-              person.families.each do |family|
-                ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
-              end
-            end
-
-            [person.hbx_id, verification_type.type_name, message]
-          end
-          result.flatten.compact
+          process_person(person, verification_type_names)
         end
 
         Success(status)
+      end
+
+      def process_person(person, verification_type_names)
+        verification_types = person.verification_types.where(:type_name.in => verification_type_names)
+        return [person.hbx_id, '', 'no verification types'] if verification_types.empty?
+
+        verification_types.collect do |verification_type|
+          process_verification_type(person, verification_type)
+        end.flatten.compact
+      end
+
+      def process_verification_type(person, verification_type)
+        return [person.hbx_id, verification_type.type_name, 'not eligible for hub call'] unless eligible_for_hub_call?(verification_type, person.consumer_role)
+
+        result = ::Operations::CallFedHub.new.call(
+          person_id: person.id,
+          verification_type: verification_type.type_name
+        )
+
+        handle_result(person, verification_type, result)
+      end
+
+      def eligible_for_hub_call?(verification_type, consumer_role)
+        ELIGIBLE_FOR_HUB_CALL[verification_type.type_name][self, verification_type, consumer_role]
+      end
+
+      def handle_result(person, verification_type, result)
+        _key, message = result.failure? ? result.failure : result.success
+        if result.failure?
+          verification_type.fail_type
+          verification_type.add_type_history_element(
+            action: "Hub Request Failed",
+            modifier: "System",
+            update_reason: "#{verification_type.type_name} Request Failed due to #{message}"
+          )
+          person.families.each do |family|
+            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
+          end
+        end
+
+        [person.hbx_id, verification_type.type_name, message]
       end
 
       # Checks if the verification type is eligible for SSA
@@ -88,7 +107,7 @@ module Operations
       def is_ssa_eligible?(verification_type, consumer_role)
         type_history_elements = verification_type.type_history_elements
         return false if type_history_elements.empty?
-        event_response_record_id = type_history_elements.order(created_at: :desc).first&.event_response_record_id
+        event_response_record_id = type_history_elements.where(update_reason: "Hub response").order(created_at: :desc).first&.event_response_record_id
         return false unless event_response_record_id
 
         response = consumer_role.lawful_presence_determination.ssa_responses.where(id: BSON::ObjectId.from_string(event_response_record_id))
