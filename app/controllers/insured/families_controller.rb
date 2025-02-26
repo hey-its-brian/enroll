@@ -238,7 +238,11 @@ class Insured::FamiliesController < FamiliesController
     if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
       @action_items = @family.eligibility_determination.subjects.map { |subject| subject.eligibility_states.by_type_uploadable }.flatten.map { |state| state.evidence_states.where_action_needed }.flatten.sort_by(&:due_on)
       @action_items = @action_items.map { |evidence| EvidenceStateDecorator.new(evidence) }
-      @subjects = @family.eligibility_determination.subjects.sort_by { |subject| subject.earliest_due_date || Date::Infinity.new }
+
+      # sort subjects first by `documents_outstanding?`, then by `earliest_due_date`, then by nil `earliest_due_date``
+      subjects_with_dates, subjects_without_dates = @family.eligibility_determination.subjects.partition(&:earliest_due_date)
+      subjects_needing_action, subjects_not_needing_action = subjects_with_dates.partition(&:documents_outstanding?)
+      @subjects = subjects_needing_action.sort_by(&:earliest_due_date) + subjects_not_needing_action.sort_by(&:earliest_due_date) + subjects_without_dates
     else
       @family_members = @person.primary_family.has_active_consumer_family_members
     end
@@ -251,10 +255,13 @@ class Insured::FamiliesController < FamiliesController
 
     subject = @family.eligibility_determination.subjects.by_person(params[:person_id]).first
     @member = @family.find_family_member_by_person(subject.person)
+
+    # sort evidences first by `is_action_needed?`, then by `due_on`, then by nil `due_on``
     evidences = subject.eligibility_states.by_type_uploadable.map(&:evidence_states).flatten
-    action_needed, no_action_needed = evidences.partition(&:is_action_needed?)
-    sorted_evidences = action_needed.sort_by(&:due_on) + no_action_needed.sort_by { |evidence| evidence.due_on || Float::INFINITY }
-    @evidences = sorted_evidences.map { |evidence| EvidenceStateDecorator.new(evidence) }
+    valid_dates, nil_dates = evidences.partition(&:due_on)
+    action_needed, no_action_needed = valid_dates.partition(&:is_action_needed?)
+    sorted_evidence_states = action_needed.sort_by(&:due_on) + no_action_needed.sort_by(&:due_on) + nil_dates
+    @evidences = sorted_evidence_states.map { |evidence| EvidenceStateDecorator.new(evidence) }
 
     respond_to :html
   end
