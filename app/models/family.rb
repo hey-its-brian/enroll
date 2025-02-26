@@ -68,6 +68,7 @@ class Family
   embeds_many :tax_household_groups, cascade_callbacks: true
   # embeds_many :broker_agency_accounts #depricated
   embeds_many :broker_agency_accounts, class_name: "BenefitSponsors::Accounts::BrokerAgencyAccount", cascade_callbacks: true
+  embeds_many :assister_agency_accounts, class_name: "::BenefitSponsors::Accounts::AssisterAgencyAccount", cascade_callbacks: true
   embeds_many :general_agency_accounts
   embeds_many :documents, as: :documentable
   has_many :payment_transactions
@@ -81,7 +82,7 @@ class Family
   before_save :generate_hbx_assigned_id
 
   accepts_nested_attributes_for :special_enrollment_periods, :family_members, :irs_groups,
-                                :households, :broker_agency_accounts, :general_agency_accounts
+                                :households, :broker_agency_accounts, :assister_agency_accounts, :general_agency_accounts
 
   index({hbx_assigned_id: 1}, {sparse: true, unique: true})
   index({e_case_id: 1}, { sparse: true })
@@ -94,6 +95,7 @@ class Family
   index({"family_members._id" => 1})
   index({"family_members.person_id" => 1, hbx_assigned_id: 1})
   index({"family_members.broker_role_id" => 1})
+  index({"family_members.assister_role_id" => 1})
   index({"family_members.is_primary_applicant" => 1})
   index({"family_members.hbx_enrollment_exemption.certificate_number" => 1})
   index({"households.tax_households.hbx_assigned_id" => 1})
@@ -116,6 +118,7 @@ class Family
   index({"family_members.person_id" => 1, hbx_assigned_id: 1})
 
   index({"broker_agency_accounts.benefit_sponsors_broker_agency_profile_id" => 1, "broker_agency_accounts.is_active" => 1}, {name: "broker_families_search_index"})
+  index({"assister_agency_accounts.benefit_sponsors_assister_agency_profile_id" => 1, "assister_agency_accounts.is_active" => 1}, {name: "assister_families_search_index"})
 
   index({'eligibility_determination.outstanding_verification_status': 1,
          'eligibility_determination.outstanding_verification_earliest_due_date': 1},
@@ -171,9 +174,20 @@ class Family
   scope :all_tax_households,                ->{ exists(:"households.tax_households" => true) }
 
   scope :by_writing_agent_id,               ->(broker_id){ where(broker_agency_accounts: {:$elemMatch => {writing_agent_id: broker_id, is_active: true}})}
+  scope :by_assister_writing_agent_id,               ->(assister_id){ where(assister_agency_accounts: {:$elemMatch => {writing_agent_id: assister_id, is_active: true}})}
   scope :by_broker_agency_profile_id,       lambda { |broker_agency_profile_id|
                                               where(broker_agency_accounts: {:$elemMatch => {is_active: true, "$or": [{benefit_sponsors_broker_agency_profile_id: broker_agency_profile_id}, {broker_agency_profile_id: broker_agency_profile_id}]}})
                                             }
+  scope :by_assister_agency_profile_id,       lambda { |assister_agency_profile_id|
+                                                where(
+                                                  assister_agency_accounts: {
+                                                    :$elemMatch => {
+                                                      is_active: true,
+                                                      "$or": [{benefit_sponsors_assister_agency_profile_id: assister_agency_profile_id}, {assister_agency_profile_id: assister_agency_profile_id}]
+                                                    }
+                                                  }
+                                                )
+                                              }
   scope :by_general_agency_profile_id,      ->(general_agency_profile_id) { where(general_agency_accounts: {:$elemMatch => {general_agency_profile_id: general_agency_profile_id, aasm_state: "active"}})}
 
   scope :all_assistance_applying,           lambda {
@@ -287,7 +301,7 @@ class Family
       :_id.in => HbxEnrollment.individual_market.enrolled_and_renewing.by_unverified.distinct(:family_id)
     )
   }
-  # rubocop:disable Style/Lambda, Layout/SpaceInLambdaLiteral, Layout/BlockAlignment
+  # rubocop:disable Style/Lambda, Layout/BlockAlignment
   scope :outstanding_verifications_including_faa_datatable, ->{
     where(
       :_id.in => (HbxEnrollment.individual_market.enrolled_and_renewing.by_unverified.distinct(:family_id) +
@@ -308,7 +322,7 @@ class Family
   scope :eligibility_due_date_in_range, ->(start_date = Timekeeper.date_of_record, end_date = Timekeeper.date_of_record){
         where(:'eligibility_determination.outstanding_verification_earliest_due_date' => {:'$gte' => start_date, :'$lte' => end_date})
       }
-  # rubocop:enable Style/Lambda, Layout/SpaceInLambdaLiteral, Layout/BlockAlignment
+  # rubocop:enable Style/Lambda, Layout/BlockAlignment
   scope :eligibility_determination_fully_uploaded, -> { where(:'eligibility_determination.outstanding_verification_document_status' => 'Fully Uploaded') }
   scope :eligibility_determination_partially_uploaded, -> { where(:'eligibility_determination.outstanding_verification_document_status' => 'Partially Uploaded') }
   scope :eligibility_determination_none_uploaded, -> { where(:'eligibility_determination.outstanding_verification_document_status'.in => ['None', nil]) }
@@ -422,6 +436,10 @@ class Family
 
   def active_broker_agency_account
     broker_agency_accounts.detect { |baa| baa.is_active? }
+  end
+
+  def active_assister_agency_account
+    assister_agency_accounts.detect(&:is_active?)
   end
 
   def coverage_waived?
@@ -1108,6 +1126,53 @@ class Family
     Rails.logger.error { "Couldn't publish broker fired event due to #{e.backtrace}" }
   end
 
+  def hire_assister_agency(assister_role_id)
+    return unless assister_role_id
+    hire_params = { family_id: id,
+                    terminate_date: TimeKeeper.date_of_record,
+                    assister_role_id: assister_role_id,
+                    start_date: TimeKeeper.datetime_local,
+                    current_assister_account_id: current_assister_agency&.id }
+    ::Operations::Families::HireAssisterAgency.new.call(hire_params)
+    # publish_assister_hired_event(hire_params)
+  end
+
+  def publish_assister_hired_event(hire_params)
+    event = event('events.family.assisters.assister_hired', attributes: hire_params)
+    event.success.publish if event.success?
+  rescue StandardError => e
+    Rails.logger.error { "Couldn't publish assister hired event due to #{e.backtrace}" }
+  end
+
+  def notify_assister_update_on_impacted_enrollments_to_edi(opts = {})
+    return false unless EnrollRegistry.feature_enabled?(:send_broker_hired_event_to_edi) ||
+                        EnrollRegistry.feature_enabled?(:send_broker_fired_event_to_edi)
+
+    enrollments.each do |enr|
+      enr.notify_of_broker_update(opts)
+    end
+
+    true
+  end
+
+  # Terminate the active Broker agency for this family
+  #
+  # @param terminate_on [ Date ] Date to end broker engagement
+  def terminate_assister_agency(terminate_on = TimeKeeper.date_of_record)
+    terminate_params = { family_id: id,
+                         terminate_date: terminate_on,
+                         assister_account_id: current_assister_agency&.id }
+    publish_assister_fired_event(terminate_params)
+  end
+
+  def publish_assister_fired_event(terminate_params)
+    ::Operations::Families::TerminateAssisterAgency.new.call(terminate_params)
+    # event = event('events.family.assisters.assister_fired', attributes: terminate_params)
+    # event.success.publish if event.success?
+  rescue StandardError => e
+    Rails.logger.error { "Couldn't publish assister fired event due to #{e.backtrace}" }
+  end
+
   def current_general_agency
     general_agency_accounts.detect(&:is_active?)
   end
@@ -1140,6 +1205,36 @@ class Family
   # @return [ Array<BrokerRole> ] The {BrokerRole BrokerRoles} on this family's active enrollments
   def active_broker_roles
     active_household.hbx_enrollments.reduce([]) { |b, e| b << e.broker_role if e.is_active? && !e.broker_role.blank? } || []
+  end
+
+  # Get the active {BrokerAgencyAccount} account for this family. New Individual market enrollments will include this
+  # assister in the enrollment transaction.  If this family has employer-sponsored benefits, transactions for those enrollments
+  # will include the employer's assister choice rater than the family-designated assister.
+  #
+  # @example Get the active {BrokerAgencyAccount}
+  #   model.current_assister_agency
+  #
+  # @see active_assister_roles
+  # @see hire_assister_agency
+  # @see terminate_assister_agency
+  #
+  # @return [ BrokerAgencyAccount ] The active assister agency account for this family
+  def current_assister_agency
+    assister_agency_accounts.detect(&:is_active?)
+  end
+
+  # Get the {BrokerRole BrokerRoles} on active enrollments. This method queries enrollment transactions, thus may return
+  # a assister who the family has since terminated.  Compare this to the active assister returned by {#current_assister_agency}.
+  # If this family has employer-sponsored benefits, the employer's assister choice will appear in transactions for those enrollments.
+  #
+  # @example Get the active {BrokerRole BrokerRoles}
+  #   model.active_assister_roles
+  #
+  # @see current_assister_agency
+  #
+  # @return [ Array<BrokerRole> ] The {BrokerRole BrokerRoles} on this family's active enrollments
+  def active_assister_roles
+    active_household.hbx_enrollments.reduce([]) { |b, e| b << e.assister_role if e.is_active? && !e.assister_role.blank? } || []
   end
 
   def any_unverified_enrollments?
@@ -1259,6 +1354,24 @@ class Family
         {"$unwind" => "$broker_agency_accounts"},
         {"$match" => {"broker_agency_accounts.is_active" => true}},
         {"$group" => {"_id" => "$broker_agency_accounts.benefit_sponsors_broker_agency_profile_id", "count" => {"$sum" => 1}}},
+        {
+          "$lookup" => {
+            "from" => "benefit_sponsors_organizations_organizations",
+            "localField" => "_id",
+            "foreignField" => "profiles._id",
+            "as" => "organization"
+          }
+        },
+        {"$unwind" => "$organization"},
+        {"$project" => {"_id" => "$organization._id", "count" => 1}}
+      ]
+    end
+
+    def assister_agency_profile_counts
+      [
+        {"$unwind" => "$assister_agency_accounts"},
+        {"$match" => {"assister_agency_accounts.is_active" => true}},
+        {"$group" => {"_id" => "$assister_agency_accounts.benefit_sponsors_assister_agency_profile_id", "count" => {"$sum" => 1}}},
         {
           "$lookup" => {
             "from" => "benefit_sponsors_organizations_organizations",

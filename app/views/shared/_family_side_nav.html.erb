@@ -10,13 +10,27 @@
           <%= h(link_to l10n("enrollment_history_nav_label"), main_app.enrollment_history_insured_families_path, class: "#{'active' if action_name == 'enrollment_history'}") %>
         </li>
       <% end %>
-      <% if display_my_broker?(@person, @employee_role) && display_broker_info_for_consumer %>
+      <% if (display_my_broker?(@person, @employee_role) && display_broker_info_for_consumer) && display_my_assister?(@person, @employee_role) %>
+        <li>
+          <%= h(link_to(main_app.brokers_insured_families_path(tab: l10n("brokers_assisters_tab")), class: "#{'active' if action_name == 'brokers'}") do %>
+            <% page_title = has_assister_and_broker_roles?(@person) ? l10n('my_experts') : l10n('my_expert')%>
+            <%= page_title %>
+          <% end) %>
+        </li>
+        <% elsif  display_my_broker?(@person, @employee_role) && display_broker_info_for_consumer %>
+        <li>
+          <%= h(link_to(main_app.brokers_insured_families_path(tab: l10n("brokers_tab")), class: "#{'active' if action_name == 'brokers'}") do %>
+            <%= l10n("my_broker") %>
+          <% end) %>
+        </li>
+        <% elsif  display_my_assister?(@person, @employee_role) %>
         <li>
           <%= h(link_to(main_app.brokers_insured_families_path(tab: l10n("brokers_tab")), class: "#{'active' if action_name == 'brokers'}") do %>
             <%= l10n("my_broker") %>
           <% end) %>
         </li>
       <% end %>
+
       <% if display_documents_tab?(@family_members, @person) %>
         <li>
           <div class="d-flex">

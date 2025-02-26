@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'active_support/concern'
 
 module BenefitSponsors
@@ -7,7 +9,7 @@ module BenefitSponsors
       # include StateMachines::EmployerProfileStateMachine
       include Config::AcaModelConcern
 
-      attr_accessor :broker_role_id
+      attr_accessor :broker_role_id, :assister_role_id
 
       included do
         # ACTIVE_STATES   ||= ["applicant", "registered", "eligible", "binder_paid", "enrolled"]
@@ -132,6 +134,14 @@ module BenefitSponsors
         active_broker_agency_account.ba_name if active_broker_agency_account
       end
 
+      def active_assister_agency_account
+        active_benefit_sponsorship&.active_assister_agency_account
+      end
+
+      def assister_agency_profile
+        active_assister_agency_account&.assister_agency_profile
+      end
+
       def active_ga_legal_name
         active_general_agency_account&.ga_name
       end
@@ -161,6 +171,14 @@ module BenefitSponsors
       def today
         return @today if defined? @today
         @today = TimeKeeper.date_of_record
+      end
+
+      def hire_assister_agency(new_assister_agency, start_on = today)
+        # TODO
+      end
+
+      def fire_assister_agency(terminate_on = today)
+        # TODO
       end
 
       def hire_broker_agency(new_broker_agency, start_on = today)
@@ -405,8 +423,16 @@ module BenefitSponsors
         end
 
         def find_by_broker_agency_profile(broker_agency_profile)
-          raise ArgumentError.new("expected BenefitSponsors::Organizations::BrokerAgencyProfile") unless broker_agency_profile.is_a?(BenefitSponsors::Organizations::BrokerAgencyProfile)
+          raise ArgumentError, "expected BenefitSponsors::Organizations::BrokerAgencyProfile" unless broker_agency_profile.is_a?(BenefitSponsors::Organizations::BrokerAgencyProfile)
+
           orgs = BenefitSponsors::BenefitSponsorships::BenefitSponsorship.by_broker_agency_profile(broker_agency_profile.id).map(&:organization)
+          orgs.collect(&:employer_profile)
+        end
+
+        def find_by_assister_agency_profile(assister_agency_profile)
+          raise ArgumentError, "expected BenefitSponsors::Organizations::AssisterAgencyProfile" unless assister_agency_profile.is_a?(BenefitSponsors::Organizations::AssisterAgencyProfile)
+
+          orgs = BenefitSponsors::BenefitSponsorships::BenefitSponsorship.by_assister_agency_profile(assister_agency_profile.id).map(&:organization)
           orgs.collect(&:employer_profile)
         end
       end

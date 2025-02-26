@@ -200,12 +200,20 @@ describe PersonPolicy, "given a user who is a different person, with no special 
       primary_family: nil,
       broker_agency_staff_roles: broker_agency_staff_roles_scope,
       broker_role: nil,
+      assister_agency_staff_roles: assister_agency_staff_roles_scope,
+      assister_role: nil,
       hbx_staff_role: nil,
       consumer_role: user_consumer_role
     )
   end
 
   let(:broker_agency_staff_roles_scope) do
+    double(
+      active: []
+    )
+  end
+
+  let(:assister_agency_staff_roles_scope) do
     double(
       active: []
     )
@@ -297,6 +305,8 @@ describe PersonPolicy, "given a user who is an admin, and may modify families" d
     instance_double(
       Person,
       primary_family: nil,
+      assister_agency_staff_roles: assister_agency_staff_roles_scope,
+      assister_role: nil,
       broker_agency_staff_roles: broker_agency_staff_roles_scope,
       broker_role: nil,
       hbx_staff_role: hbx_staff_role
@@ -304,6 +314,12 @@ describe PersonPolicy, "given a user who is an admin, and may modify families" d
   end
 
   let(:broker_agency_staff_roles_scope) do
+    double(
+      active: []
+    )
+  end
+
+  let(:assister_agency_staff_roles_scope) do
     double(
       active: []
     )

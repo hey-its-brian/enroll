@@ -141,6 +141,7 @@ Rails.application.routes.draw do
         get :edit_force_publish
         post :force_publish
         get :broker_agency_index
+        get :assister_agency_index
         get :general_agency_index
         get :configuration
         post :set_date
@@ -225,6 +226,8 @@ Rails.application.routes.draw do
     end
 
     resources :broker_applicants
+    resources :assister_applicants
+
     resources :security_questions, only: [:index, :new, :create, :edit, :update, :destroy]
 
     # get 'hbx_profiles', to: 'hbx_profiles#welcome'
@@ -289,6 +292,7 @@ Rails.application.routes.draw do
     resources :families, only: [:new] do
       member do
         delete 'delete_consumer_broker'
+        delete 'delete_consumer_assister'
         get 'generate_out_of_pocket_url'
       end
 
@@ -489,11 +493,22 @@ Rails.application.routes.draw do
   # match 'thank_you', to: 'broker_roles#thank_you', via: [:get]
 
   match 'broker_registration', to: redirect('benefit_sponsors/profiles/registrations/new?profile_type=broker_agency'), via: [:get]
+  match 'assister_registration', to: redirect('benefit_sponsors/profiles/registrations/new?profile_type=assister_agency'), via: [:get]
   # match 'general_agency_registration', to: redirect('benefit_sponsors/profiles/registrations/new?profile_type=general_agency'), via: [:get]
 
   namespace :carriers do
     resources :carrier_profiles do
     end
+  end
+
+  namespace :assister_agencies do
+    root 'profiles#new'
+
+    resources :profiles, except: [:new, :create, :show, :index, :edit, :update, :destory] do
+      resources :applicants
+    end
+
+    resources :assister_roles
   end
 
   namespace :broker_agencies do

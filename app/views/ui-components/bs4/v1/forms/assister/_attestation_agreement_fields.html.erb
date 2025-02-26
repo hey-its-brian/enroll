@@ -1,0 +1,8 @@
+<h2 class='mb-3'><%= l10n("agreements") %></h2>
+
+<div class="form-group mt-0 d-flex align-items-center">
+  <%= check_box_tag :all_marketplace_required_trainings, nil, false, class: "assister-attestation-field" %>
+  <label for="<%= :all_marketplace_required_trainings %>" class="mt-0 ml-1 font-weight-normal text-body">
+    <%= h(l10n("assister_attestation.required_trainings", trainings_link: 'https://coverme.inquisiqlms.com/', site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item)) %>
+  </label>
+</div>

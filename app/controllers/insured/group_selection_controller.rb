@@ -362,7 +362,7 @@ class Insured::GroupSelectionController < ApplicationController
     family = params[:hbx_enrollment_id].present? ? HbxEnrollment.where(id: params[:hbx_enrollment_id]).first&.family : @family
     redirect_to root_path if family.blank?
 
-    return if current_user.has_hbx_staff_role? || is_family_authorized?(current_user, family) || is_broker_authorized?(current_user, family) || is_general_agency_authorized?(current_user, family)
+    return if current_user.has_hbx_staff_role? || is_family_authorized?(current_user, family) || is_broker_authorized?(current_user, family) || is_assister_authorized?(current_user, family) || is_general_agency_authorized?(current_user, family)
 
     error_message = 'User not authorized to perform this operation'
     flash[:error] = error_message

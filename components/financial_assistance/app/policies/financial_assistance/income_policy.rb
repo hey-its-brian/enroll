@@ -29,13 +29,15 @@ module FinancialAssistance
 
     # Determines if the current user has permission to proceed to the next step in the income process.
     # The user can proceed if they are a primary family member,
-    # an active associated broker staff, an active associated broker, or an admin in the individual market.
+    # an active associated broker or assister staff, an active associated broker, or an admin in the individual market.
     #
     # @return [Boolean] Returns true if the user has permission to proceed to the next step, false otherwise.
     def step?
       return true if individual_market_primary_family_member?
       return true if active_associated_individual_market_family_broker_staff?
+      return true if active_associated_individual_market_family_assister_staff?
       return true if active_associated_individual_market_family_broker?
+      return true if active_associated_individual_market_family_assister?
       return true if individual_market_admin?
 
       false

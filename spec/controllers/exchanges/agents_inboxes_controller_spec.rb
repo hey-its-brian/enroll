@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe Exchanges::AgentsInboxesController, dbclean: :after_each do
   let(:hbx_profile) { FactoryBot.create(:hbx_profile) }
-  let(:assister_person) { FactoryBot.create(:person, :with_assister_role)}
+  let(:assister_person) { FactoryBot.create(:person, :with_csr_role)}
   let(:assister_user) { FactoryBot.create(:user, person: assister_person) }
   let(:message) do
     FactoryBot.create(

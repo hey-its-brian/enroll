@@ -11,40 +11,49 @@ module Queries
       @custom_attributes = attributes
     end
 
-    def build_scope()
+    def build_scope # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
       user = klass
       users = case @custom_attributes[:users]
               when "all_consumer_roles"
                 if @custom_attributes[:lock_unlock] == "locked"
-                  user.where(:'roles'.in => ["consumer"], :locked_at.ne => nil)
+                  user.where(:roles.in => ["consumer"], :locked_at.ne => nil)
                 elsif @custom_attributes[:lock_unlock] == "unlocked"
-                  user.where(:'roles'.in => ["consumer"], locked_at: nil)
+                  user.where(:roles.in => ["consumer"], locked_at: nil)
                 else
-                  user.where(:'roles'.in => ["consumer"])
+                  user.where(:roles.in => ["consumer"])
                 end
               when "all_employer_staff_roles"
                 if @custom_attributes[:lock_unlock] == "locked"
-                  user.where(:'roles'.in => ["employer_staff"], :locked_at.ne => nil)
+                  user.where(:roles.in => ["employer_staff"], :locked_at.ne => nil)
                 elsif @custom_attributes[:lock_unlock] == "unlocked"
-                  user.where(:'roles'.in => ["employer_staff"], locked_at: nil)
+                  user.where(:roles.in => ["employer_staff"], locked_at: nil)
                 else
-                  user.where(:'roles'.in => ["employer_staff"])
+                  user.where(:roles.in => ["employer_staff"])
                 end
               when "all_employee_roles"
                 if @custom_attributes[:lock_unlock] == "locked"
-                  user.where(:'roles'.in => ["employee"], :locked_at.ne => nil)
+                  user.where(:roles.in => ["employee"], :locked_at.ne => nil)
                 elsif @custom_attributes[:lock_unlock] == "unlocked"
-                  user.where(:'roles'.in => ["employee"], locked_at: nil)
+                  user.where(:roles.in => ["employee"], locked_at: nil)
                 else
-                  user.where(:'roles'.in => ["employee"])
+                  user.where(:roles.in => ["employee"])
                 end
               when "all_broker_roles"
                 if @custom_attributes[:lock_unlock] == "locked"
-                  user.where(:'roles'.in => ["broker"], :locked_at.ne => nil)
+                  user.where(:roles.in => ["broker"], :locked_at.ne => nil)
                 elsif @custom_attributes[:lock_unlock] == "unlocked"
-                  user.where(:'roles'.in => ["broker"], locked_at: nil)
+                  user.where(:roles.in => ["broker"], locked_at: nil)
                 else
-                  user.where(:'roles'.in => ["broker"])
+                  user.where(:roles.in => ["broker"])
+                end
+              when "all_assister_roles"
+                case @custom_attributes[:lock_unlock]
+                when "locked"
+                  user.where(:roles.in => ["assister", "assister_agency_staff"], :locked_at.ne => nil)
+                when "unlocked"
+                  user.where(:roles.in => ["assister", "assister_agency_staff"], locked_at: nil)
+                else
+                  user.where(:roles.in => ["assister", "assister_agency_staff"])
                 end
               when "all"
                 if @custom_attributes[:lock_unlock] == "locked"
@@ -84,7 +93,6 @@ module Queries
                      {:id => {"$in" => people_user_ids} }
                  ])
     end
-
 
     def skip(num)
       build_scope.skip(num)

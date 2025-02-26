@@ -202,7 +202,7 @@ module Insured::FamiliesHelper
       end
     elsif employee_role_or_person.is_a?(Person)
       begin
-        employee_role_or_person.primary_family.current_broker_agency.writing_agent.present?
+        employee_role_or_person.primary_family.current_broker_agency.writing_agent.present? || employee_role_or_person.primary_family.current_assister_agency.writing_agent.present?
       rescue StandardError
         false
       end
@@ -493,13 +493,25 @@ module Insured::FamiliesHelper
     broker_profile_ids(family).include?(logged_user_broker_role.benefit_sponsors_broker_agency_profile_id) || logged_user_staff_roles.map(&:benefit_sponsors_broker_agency_profile_id).include?(ivl_broker_agency_id(family))
   end
 
+  def is_assister_authorized?(current_user, family)
+    person = current_user.person
+    return false if person.blank?
+
+    logged_user_assister_role = person.assister_role
+    logged_user_staff_roles = person.assister_agency_staff_roles.where(aasm_state: 'active')
+    return false if logged_user_assister_role.blank? && logged_user_staff_roles.blank? # logged in user is not a assister
+    return false if assister_profile_ids(family).blank? # family has no assister
+
+    assister_profile_ids(family).include?(logged_user_assister_role.benefit_sponsors_assister_agency_profile_id) || logged_user_staff_roles.map(&:benefit_sponsors_assister_agency_profile_id).include?(ivl_assister_agency_id(family))
+  end
+
   def is_general_agency_authorized?(current_user, family)
     logged_user_ga_roles = current_user.person&.active_general_agency_staff_roles
     return false if logged_user_ga_roles.blank? # logged in user is not a ga
-    return false if broker_profile_ids(family).blank? # family has no broker, hence no ga
+    return false if broker_profile_ids(family).blank? && assister_profile_ids(family).blank? # family has no broker and assister, hence no ga
 
     ::SponsoredBenefits::Organizations::PlanDesignOrganization.where(
-      :owner_profile_id.in => broker_profile_ids(family),
+      :owner_profile_id.in => broker_profile_ids(family) + assister_profile_ids(family),
       :general_agency_accounts => {:"$elemMatch" => {aasm_state: :active, :benefit_sponsrship_general_agency_profile_id.in => logged_user_ga_roles.map(&:benefit_sponsors_general_agency_profile_id)}}
     ).present?
   end
@@ -509,16 +521,30 @@ module Insured::FamiliesHelper
   end
 
   def broker_profile_ids(family)
-    @broker_profile_ids ||= ([ivl_broker_agency_id(family)] + shop_broker_agency_ids(family)).compact
+    @broker_profile_ids ||= ([ivl_broker_agency_id(family)] + shop_broker_agency_ids(family) + shop_assister_agency_ids(family)).compact
+  end
+
+  def assister_profile_ids(family)
+    @assister_profile_ids ||= ([ivl_assister_agency_id(family)] + shop_broker_agency_ids(family) + shop_assister_agency_ids(family)).compact
   end
 
   def ivl_broker_agency_id(family)
     @ivl_broker_agency_id ||= family.current_broker_agency&.benefit_sponsors_broker_agency_profile_id
   end
 
+  def ivl_assister_agency_id(family)
+    @ivl_assister_agency_id ||= family.current_assister_agency&.benefit_sponsors_assister_agency_profile_id
+  end
+
   def shop_broker_agency_ids(family)
     @shop_broker_agency_ids ||= family.primary_person.active_employee_roles.map do |er|
       er.employer_profile&.active_broker_agency_account&.benefit_sponsors_broker_agency_profile_id
+    end.compact
+  end
+
+  def shop_assister_agency_ids(family)
+    @shop_assister_agency_ids ||= family.primary_person.active_employee_roles.map do |er|
+      er.employer_profile&.active_assister_agency_account&.benefit_sponsors_assister_agency_profile_id
     end.compact
   end
 end

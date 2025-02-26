@@ -123,8 +123,7 @@ $(document).on('turbolinks:load ajax:success', function () {
   $('#broker_agency_form').tabs({
     activate: function (event, ui) {
       if (ui.newPanel.attr('id') == 'broker_agency_staff') {
-        var url =
-          '/benefit_sponsors/profiles/broker_agencies/broker_agency_staff_roles/new?profile_type';
+        var url = '/benefit_sponsors/profiles/broker_agencies/broker_agency_staff_roles/new?profile_type';
         if (!$('#loaded').length) {
           $.ajax({
             url: url,
@@ -132,6 +131,27 @@ $(document).on('turbolinks:load ajax:success', function () {
             data: { profile_type: 'broker_agency_staff' },
             success: function (data) {
               $('#broker_agency_staff').html(data);
+              const dobInput = document.querySelector('#staff_dob');
+              checkDate();
+              indicateRequiredFields();
+            },
+          });
+        }
+      }
+    },
+  });
+
+  $('#assister_agency_form').tabs({
+    activate: function (event, ui) {
+      if (ui.newPanel.attr('id') == 'assister_agency_staff') {
+        var url = '/benefit_sponsors/profiles/assister_agencies/assister_agency_staff_roles/new?profile_type';
+        if (!$('#loaded').length) {
+          $.ajax({
+            url: url,
+            type: 'GET',
+            data: { profile_type: 'assister_agency_staff' },
+            success: function (data) {
+              $('#assister_agency_staff').html(data);
               const dobInput = document.querySelector('#staff_dob');
               checkDate();
               indicateRequiredFields();

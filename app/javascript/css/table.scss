@@ -253,6 +253,45 @@ table[data-controller="expandable-table"] {
   }
 }
 
+#assister_agency_staff {
+  .table-responsive {
+    table.assister-staff {
+      width: 100%;
+      border-collapse: collapse;
+
+      thead {
+        height: 40px;
+
+        tr {
+          color: var(--text-secondary);
+          border-bottom: 1px solid var(--silver-border);
+          border-radius: 1px 0 0 1px;
+        }
+      }
+
+      tbody.staff-select-assister {
+        &.agency-selected {
+          border: 2px solid var(--button-tertiary-color);
+
+          tr {
+            background-color: var(--tertiary-tint);
+          }
+        }
+
+        tr {
+          border-bottom: 1px solid var(--silver-border);
+
+          td {
+            .select-assister-agency {
+              color: var(--primary-white);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 // these styles are all for tha datatables, which is why they live in this file.
 .custom_filter {
   .custom_level_1, .custom_level_2 {

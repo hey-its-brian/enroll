@@ -26,4 +26,8 @@ module Config::AcaConcern
   def general_agency_is_enabled?
     EnrollRegistry.feature_enabled?(:general_agency)
   end
+
+  def assister_agency_is_enabled?
+    EnrollRegistry.feature_enabled?(:assister_agency)
+  end
 end

@@ -262,6 +262,166 @@ RSpec.describe PortalHeaderHelper, :type => :helper, dbclean: :after_each do
     end
   end
 
+  describe '#display_i_am_assister_for_consumer?' do
+    let(:site) do
+      FactoryBot.create(
+        :benefit_sponsors_site,
+        :with_benefit_market,
+        :as_hbx_profile,
+        site_key: ::EnrollRegistry[:enroll_app].settings(:site_key).item
+      )
+    end
+
+    let(:assister_agency_organization) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+    let(:assister_agency_profile) { assister_agency_organization.assister_agency_profile }
+    let(:assister_agency_id) { assister_agency_profile.id }
+
+    let(:assister_agency_organization2) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+    let(:assister_agency_profile2) { assister_agency_organization2.assister_agency_profile }
+
+    let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, :with_assister_role) }
+    let(:assister_role) { person.assister_role }
+
+    let(:assister_agency_staff_role) do
+      person.create_assister_agency_staff_role(
+        benefit_sponsors_assister_agency_profile_id: assister_agency_id
+      )
+    end
+
+    before :each do
+      allow(EnrollRegistry).to receive(:feature_enabled?).and_call_original
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:broker_role_consumer_enhancement).and_return(true)
+    end
+
+    context 'resource registry feature is enabled and person has an active consumer role' do
+      context 'when:
+    - person has an active consumer role
+    - person does not have a assister role' do
+
+        let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+
+        it 'returns false' do
+          expect(helper.display_i_am_assister_for_consumer?(person)).to eq(false)
+        end
+      end
+
+      context 'when:
+    - person has an active consumer role
+    - person has a assister role
+    - person does not have an active assister role' do
+
+        it 'returns false' do
+          expect(helper.display_i_am_assister_for_consumer?(person)).to eq(false)
+        end
+      end
+
+      context 'when:
+    - person has an active consumer role
+    - person has a assister role
+    - assister_role is a primary assister for an agency
+    - person has an active assister role
+    - person does not have assister_agency_staff_role' do
+
+        before do
+          assister_role.update_attributes!(benefit_sponsors_assister_agency_profile_id: assister_agency_id)
+          assister_agency_profile.update_attributes!(primary_assister_role_id: assister_role.id)
+          assister_role.approve!
+        end
+
+        it 'returns false' do
+          expect(helper.display_i_am_assister_for_consumer?(person)).to eq(false)
+        end
+      end
+
+      context 'when:
+    - person has an active consumer role
+    - person has a assister role
+    - assister_role is a primary assister for an agency
+    - person has an active assister role
+    - person has a assister_agency_staff_role
+    - person does not have an active assister_agency_staff_role' do
+
+        let(:assister_agency_id) { assister_agency_profile2.id }
+
+        before do
+          assister_agency_staff_role
+          assister_role.update_attributes!(benefit_sponsors_assister_agency_profile_id: assister_agency_id)
+          assister_agency_profile.update_attributes!(primary_assister_role_id: assister_role.id)
+          assister_role.approve!
+        end
+
+        it 'returns false' do
+          expect(helper.display_i_am_assister_for_consumer?(person)).to eq(false)
+        end
+      end
+
+      context 'when:
+    - person has an active consumer role
+    - person has a assister role
+    - assister_role is a primary assister for an agency
+    - person has an active assister role
+    - person has a assister_agency_staff_role
+    - person has an active assister_agency_staff_role
+    - both assister_agency_staff_role and assister_role are not linked to the same Assister Agency Profile' do
+
+        let(:assister_agency_id) { assister_agency_profile.id }
+
+        before do
+          assister_agency_staff_role.assister_agency_accept!
+          assister_role.update_attributes!(benefit_sponsors_assister_agency_profile_id: assister_agency_profile2.id)
+          assister_agency_profile2.update_attributes!(primary_assister_role_id: assister_role.id)
+          assister_role.approve!
+        end
+
+        it 'returns false' do
+          expect(helper.display_i_am_assister_for_consumer?(person)).to eq(false)
+        end
+      end
+
+      context 'when:
+    - person has an active consumer role
+    - person has a assister role
+    - assister_role is a primary assister for an agency
+    - person has an active assister role
+    - person has a assister_agency_staff_role
+    - person does not have a matching active assister_agency_staff_role
+    - both assister_agency_staff_role and assister_role are linked to the same Assister Agency Profile' do
+
+        before do
+          assister_agency_staff_role
+          assister_role.update_attributes!(benefit_sponsors_assister_agency_profile_id: assister_agency_id)
+          assister_agency_profile.update_attributes!(primary_assister_role_id: assister_role.id)
+          assister_role.approve!
+        end
+
+        it 'returns false' do
+          expect(helper.display_i_am_assister_for_consumer?(person)).to eq(false)
+        end
+      end
+
+      context 'when:
+    - person has an active consumer role
+    - person has a assister role
+    - assister_role is a primary assister for an agency
+    - person has an active assister role
+    - person has a assister_agency_staff_role
+    - person has an active assister_agency_staff_role
+    - both assister_agency_staff_role and assister_role are linked to the same Assister Agency Profile' do
+
+        before do
+          assister_agency_staff_role.assister_agency_accept!
+          assister_role.update_attributes!(benefit_sponsors_assister_agency_profile_id: assister_agency_id)
+          assister_agency_profile.update_attributes!(primary_assister_role_id: assister_role.id)
+          assister_role.approve!
+        end
+
+        it 'returns true' do
+          expect(helper.display_i_am_assister_for_consumer?(person)).to eq(true)
+        end
+      end
+    end
+  end
+
   describe "#get_broker_profile_path" do
     let(:user) { FactoryBot.create(:user) }
     let(:person) { FactoryBot.create(:person, user: user) }

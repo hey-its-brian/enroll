@@ -17,7 +17,8 @@ class Exchanges::HbxProfilesController < ApplicationController
   before_action :redirect_if_general_agency_is_disabled, only: [:general_agency_index]
   before_action :redirect_if_employer_datatable_is_disabled, only: [:employer_datatable]
   before_action :redirect_if_people_datatable_is_disabled, only: [:people_index]
-  before_action :enable_bs4_layout if EnrollRegistry.feature_enabled?(:bs4_admin_flow)
+  before_action :enable_bs4_layout
+
   # GET /exchanges/hbx_profiles
   # GET /exchanges/hbx_profiles.json
   layout :resolve_layout
@@ -314,7 +315,6 @@ class Exchanges::HbxProfilesController < ApplicationController
 
   def request_help
     raise ActionController::UnknownFormat unless request.format.html?
-
     insured = Person.where(_id: params[:person]).first
     authorize insured.primary_family, :request_help?
 
@@ -335,26 +335,32 @@ class Exchanges::HbxProfilesController < ApplicationController
       authorize family, :hire_broker_agency?
       family.hire_broker_agency(broker_role_id)
       role = l10n("broker")
-    else
+    elsif params[:assister].present?
       agent = Person.find(params[:assister])
-      role = 'In-Person Assister'
+      assister_role_id = agent.assister_role.id
+      consumer = Person.find(params[:person])
+      family = consumer.primary_family
+      authorize family, :hire_broker_agency?
+      family.hire_assister_agency(assister_role_id)
+      role = l10n("assister")
     end
     if role
-      status_text = 'Message sent to ' + role + ' ' + agent.full_name + ' <br>'
+      status_text = "Message sent to #{role} #{agent.full_name}."
       if find_email(agent, role)
         params.merge!(consumer_person_id: consumer.id.to_s) if consumer.present?
         agent_assistance_messages(params,agent,role)
       else
-
-        status_text = "Agent has no email.   Please select another"
+        status_text = "Agent has no email. Please select another"
       end
     else
       status_text = call_customer_service params[:firstname].strip, params[:lastname].strip
     end
-    status_text = l10n("broker_agencies.successfully_assigned") if params[:broker].present?
+    status_text = l10n("broker_agencies.successfully_assigned") if params[:broker].present? || params[:assister].present?
     @person = Person.find(params[:person])
     broker_view = render_to_string 'insured/families/_consumer_brokers_widget', :layout => false
-    render :plain => {broker: broker_view, status: status_text, broker_id: broker_role_id}.to_json, layout: false
+    flash[:success] = status_text
+    broker_id = broker_role_id.present? ? broker_role_id : assister_role_id
+    render :plain => {broker: broker_view, status: status_text, broker_id: broker_id}.to_json, layout: false
   end
 
   def family_index
@@ -614,6 +620,16 @@ class Exchanges::HbxProfilesController < ApplicationController
 
     respond_to do |format|
       format.html { render 'exchanges/hbx_profiles/broker_agency_index_datatable' }
+    end
+  end
+
+  def assister_agency_index
+    authorize HbxProfile, :assister_agency_index?
+
+    @datatable = Effective::Datatables::AssisterAgencyDatatable.new
+
+    respond_to do |format|
+      format.html { render 'exchanges/hbx_profiles/assister_agency_index_datatable' }
     end
   end
 
@@ -890,6 +906,8 @@ class Exchanges::HbxProfilesController < ApplicationController
   def find_email(agent, role)
     if role == l10n("broker")
       agent.try(:broker_role).try(:email).try(:address)
+    elsif role == l10n("assister")
+      agent.try(:assister_role).try(:email).try(:address)
     else
       agent.try(:user).try(:email)
     end
@@ -1136,7 +1154,7 @@ class Exchanges::HbxProfilesController < ApplicationController
   end
 
   def enable_bs4_layout
-    @bs4 = true
+    @bs4 = true if EnrollRegistry.feature_enabled?(:bs4_admin_flow)
   end
 
   def resolve_layout

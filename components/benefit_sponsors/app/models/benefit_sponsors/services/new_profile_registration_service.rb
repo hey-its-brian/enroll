@@ -5,9 +5,9 @@ module BenefitSponsors
       attr_reader :organization, :profile, :representative
       attr_accessor :profile_type, :profile_id, :factory_class
 
-      VALID_PROFILE_TYPES = ["benefit_sponsor", "broker_agency", "general_agency"].freeze
+      VALID_PROFILE_TYPES = ["benefit_sponsor", "broker_agency", "general_agency", "assister_agency"].freeze
 
-      def initialize(attrs={})
+      def initialize(attrs = {})
         @profile_id = attrs[:profile_id]
         @factory_class = BenefitSponsors::Organizations::Factories::ProfileFactory
         @profile_type = attrs[:profile_type] || pluck_profile_type(@profile_id)
@@ -52,11 +52,11 @@ module BenefitSponsors
       def form_attributes_to_params(form)
         return {} unless VALID_PROFILE_TYPES.include?(form.profile_type) || VALID_PROFILE_TYPES.include?(profile_type)
         {
-          :"current_user_id" => form.current_user_id,
-          :"profile_type" => (form.profile_type || profile_type),
-          :"profile_id" => form.profile_id,
-          :"staff_roles_attributes" => staff_roles_form_to_params(form.staff_roles),
-          :"organization" => organization_form_to_params(form.organization)
+          :current_user_id => form.current_user_id,
+          :profile_type => (form.profile_type || profile_type),
+          :profile_id => form.profile_id,
+          :staff_roles_attributes => staff_roles_form_to_params(form.staff_roles),
+          :organization => organization_form_to_params(form.organization)
         }
       end
 
@@ -88,14 +88,14 @@ module BenefitSponsors
 
       def organization_form_to_params(form)
         organization_attributes(form).merge({
-          :profiles_attributes => profiles_form_to_params(form.profile)
-        })
+                                              :profiles_attributes => profiles_form_to_params(form.profile)
+                                            })
       end
 
       def profiles_form_to_params(profile)
         [profile].each_with_index.inject({}) do |result, (form, index_val)|
           result[index_val] = sanitize_params(profile_attributes(form)).merge({
-                                                                                :office_locations_attributes => office_locations_form_to_params(form.office_locations),
+                                                                                :office_locations_attributes => office_locations_form_to_params(form.office_locations)
                                                                               })
           result
         end
@@ -104,10 +104,12 @@ module BenefitSponsors
       def office_locations_form_to_params(locations)
         locations.each_with_index.inject({}) do |result, (form, index_val)|
           attributes = sanitize_params(form.attributes.slice(:is_primary, :id, :_destroy))
-          attributes.merge!({
-            :phone_attributes =>  phone_form_to_params(form.phone),
-            :address_attributes =>  address_form_to_params(form.address)
-          }) unless (attributes[:_destroy] == "true")
+          unless attributes[:_destroy] == "true"
+            attributes.merge!({
+                                :phone_attributes => phone_form_to_params(form.phone),
+                                :address_attributes => address_form_to_params(form.address)
+                              })
+          end
           result[index_val] = attributes
           result
         end
@@ -123,7 +125,7 @@ module BenefitSponsors
         sanitize_params attrs
       end
 
-      def sanitize_params attrs
+      def sanitize_params(attrs)
         (profile_id.blank? || attrs[:id].blank?) ? attrs.except(:id) : attrs
       end
 
@@ -132,10 +134,10 @@ module BenefitSponsors
       end
 
       def profile_attributes(form)
-        if is_broker_profile?
+        if is_broker_profile? || is_assister_profile?
           form.attributes.slice(:id, :market_kind, :home_page, :accept_new_clients, :languages_spoken, :working_hours, :ach_routing_number, :ach_account_number)
         elsif is_general_agency_profile?
-        form.attributes.slice(:id, :market_kind, :home_page, :accept_new_clients, :languages_spoken)
+          form.attributes.slice(:id, :market_kind, :home_page, :accept_new_clients, :languages_spoken)
         elsif is_sponsor_profile?
           if is_cca_sponsor_profile?
             form.attributes.slice(:contact_method, :id, :sic_code, :referred_by, :referred_reason)
@@ -148,13 +150,17 @@ module BenefitSponsors
       def staff_role_params(staff_roles)
         return [{}] if staff_roles.blank?
         [staff_roles].flatten.inject([]) do |result, role|
-          result << Serializers::StaffRoleSerializer.new(role, profile_id:profile_id, profile_type: profile_type).to_hash
+          result << Serializers::StaffRoleSerializer.new(role, profile_id: profile_id, profile_type: profile_type).to_hash
           result
         end
       end
 
       def is_broker_profile?
         profile_type == "broker_agency"
+      end
+
+      def is_assister_profile?
+        profile_type == "assister_agency"
       end
 
       def is_general_agency_profile?
@@ -171,7 +177,7 @@ module BenefitSponsors
 
       def site
         return @site if defined? @site
-        @site = BenefitSponsors::ApplicationController::current_site
+        @site = BenefitSponsors::ApplicationController.current_site
       end
 
       def site_key
@@ -185,8 +191,7 @@ module BenefitSponsors
           return_type = form.profile_id.present? ? [false, factory_obj.redirection_url_on_update] : [false, factory_obj.redirection_url(factory_obj.pending, false)]
           return return_type
         end
-        return_type = form.profile_id.present? ? [true, factory_obj.redirection_url_on_update] : [true, factory_obj.redirection_url(factory_obj.pending, true)]
-        return return_type
+        form.profile_id.present? ? [true, factory_obj.redirection_url_on_update] : [true, factory_obj.redirection_url(factory_obj.pending, true)]
       end
 
       def map_errors_for(factory_obj, onto:)
@@ -202,8 +207,10 @@ module BenefitSponsors
       def pluck_profile(organization)
         if is_broker_profile?
           organization.profiles.where(_type: /BrokerAgencyProfile/).first
+        elsif is_assister_profile?
+          organization.profiles.where(_type: /AssisterAgencyProfile/).first
         elsif is_general_agency_profile?
-        organization.profiles.where(_type: /GeneralAgencyProfile/).first
+          organization.profiles.where(_type: /GeneralAgencyProfile/).first
         elsif is_sponsor_profile?
           organization.profiles.where(_type: /EmployerProfile/).first
         end
@@ -231,17 +238,27 @@ module BenefitSponsors
         true
       end
 
-      def is_general_agency_registered?(user, form)
+      def is_assister_agency_registered?(user, form)
         if user.present? && user.person.present?
-          if general_agency_staff_role = user.person.general_agency_staff_roles.where(aasm_state: 'active').first
-            form.profile_id = general_agency_staff_role.benefit_sponsors_general_agency_profile_id.to_s
+          assister_agency_staff_role = user.person.assister_agency_staff_roles.where(aasm_state: "active").first
+          assister_role = user.person.assister_role
+          if assister_agency_staff_role || assister_role
+            form.profile_id = assister_agency_staff_role.present? ? assister_agency_staff_role.benefit_sponsors_assister_agency_profile_id : assister_role.benefit_sponsors_assister_agency_profile_id.to_s
             return false
           end
         end
         true
       end
 
-      def is_broker_for_employer?(user, form)
+      def is_general_agency_registered?(user, form)
+        if user.present? && user.person.present? && (general_agency_staff_role = user.person.general_agency_staff_roles.where(aasm_state: 'active').first)
+          form.profile_id = general_agency_staff_role.benefit_sponsors_general_agency_profile_id.to_s
+          return false
+        end
+        true
+      end
+
+      def is_broker_for_employer?(user, _form)
         person = user.person
         profile = load_profile
         broker_role_for_employer?(person, profile) || broker_staff_for_employer?(person, profile)
@@ -259,7 +276,7 @@ module BenefitSponsors
         profile.broker_agency_accounts.any? {|acc|  broker_profiles.include?(acc.benefit_sponsors_broker_agency_profile_id)}
       end
 
-      def is_general_agency_staff_for_employer?(user, form)
+      def is_general_agency_staff_for_employer?(user, _form)
         person = user.person
         staff_roles = person.active_general_agency_staff_roles
         return false unless staff_roles.present?
@@ -273,13 +290,22 @@ module BenefitSponsors
         end
       end
 
-      def has_broker_role_for_profile?(user, profile) # When profile is broker agency
+# When profile is broker agency
+      def has_broker_role_for_profile?(user, profile)
         broker_role = user.person.broker_role
         return false unless broker_role
         profile.primary_broker_role_id == broker_role.id if is_broker_profile?
       end
 
-      def has_general_agency_staff_role_for_profile?(user, profile) # When profile is general agency
+# When profile is assister agency
+      def has_assister_role_for_profile?(user, profile)
+        assister_role = user.person.assister_role
+        return false unless assister_role
+        profile.primary_assister_role_id == assister_role.id if is_assister_profile?
+      end
+
+# When profile is general agency
+      def has_general_agency_staff_role_for_profile?(user, profile)
         ga_staff_roles = user.person.general_agency_staff_roles.active
         ga_staff_roles.any? {|role| role.benefit_sponsors_general_agency_profile_id == profile.id }
       end
@@ -289,14 +315,25 @@ module BenefitSponsors
         broker_agency_staff_roles.any? {|role| role.benefit_sponsors_broker_agency_profile_id == profile.id }
       end
 
-      def has_employer_staff_role_for_profile?(user, profile) # When profile is benefit sponsor
+      def has_assister_agency_staff_role_for_profile(user, profile)
+        assister_agency_staff_roles = user.person.assister_agency_staff_roles
+        assister_agency_staff_roles.any? {|role| role.benefit_sponsors_assister_agency_profile_id == profile.id }
+      end
+
+# When profile is benefit sponsor
+      def has_employer_staff_role_for_profile?(user, profile)
         staff_roles = user.person.employer_staff_roles.active
         staff_roles.any? {|role| role.benefit_sponsor_employer_profile_id == profile.id }
       end
 
-      def is_staff_for_agency?(user, form)
+      def is_staff_for_agency?(user, _form)
         profile = load_profile
-        has_employer_staff_role_for_profile?(user, profile) || has_broker_role_for_profile?(user, profile) || has_broker_agency_staff_role_for_profile(user, profile) || has_general_agency_staff_role_for_profile?(user, profile)
+        has_employer_staff_role_for_profile?(user, profile) ||
+          has_broker_role_for_profile?(user, profile) ||
+          has_broker_agency_staff_role_for_profile(user, profile) ||
+          has_assister_role_for_profile?(user, profile) ||
+          has_assister_agency_staff_role_for_profile(user, profile) ||
+          has_general_agency_staff_role_for_profile?(user, profile)
       end
 
       def load_profile

@@ -1,0 +1,31 @@
+<%= form_for @staff,{as: :staff,  url: {action: "create"}, method: :post } do |f| %>
+  <section class="my-4">
+    <h3><%= l10n("assister_agencies.add_assister_staff_member") %></h3>
+    <div class="d-flex mb-2">
+      <div class="col-md-4 col-sm-4 col-xs-12 pl-0">
+        <%= f.label :first_name, l10n("assister_agencies.first_name"), class:"required" %>
+        <%= f.text_field :first_name, required: true, placeholder: l10n("assister_agencies.first_name"), class: "w-100" %>
+      </div>
+      <div class="col-md-4 col-sm-4 col-xs-12">
+        <%= f.label :last_name, l10n("assister_agencies.last_name"), class:"required" %>
+        <%= f.text_field :last_name, required: true, placeholder: l10n("assister_agencies.last_name"), class: "w-100" %>
+      </div>
+      <div class="col-md-4 col-sm-4 col-xs-12 pr-0">
+        <%= f.label :dob, l10n("assister_agencies.dob"), class: "required" %>
+        <%= f.date_field :dob, placeholder: ("MM/DD/YYYY").upcase, min: 110.years.ago, max: 16.years.ago.beginning_of_month, required: true, readonly: defined?(readonly), class: "w-100" %>
+      </div>
+    </div>
+    <%= hidden_field_tag :profile_id, params[:profile_id] %>
+    </div>
+    <div class="mt-4">
+      <%= link_to l10n("assister_agencies.cancel_new_staff"), profiles_assister_agencies_assister_agency_profile_path(id:params[:profile_id]), class:'btn-error outline' %>
+      <button type="submit" class="primary" id="addStaff"><%= l10n("assister_agencies.create_new_staff") %></button>
+    </div>
+  </section>
+<% end %>
+
+<script type="text/javascript">
+  function showDatepicker(element) {
+    initDatepicker(element.id,new Date('<%= Date.today.beginning_of_month-100.years %>'),new Date('<%= Date.today.beginning_of_month-16.years %>'))
+  }
+</script>

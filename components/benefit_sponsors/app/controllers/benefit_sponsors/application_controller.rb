@@ -133,6 +133,9 @@ module BenefitSponsors
       if controller_name == "broker_agency_profiles" && action_name == "show"
         return if current_user.blank? || (current_user.person.present? && !current_user.person.broker_role.present?) || current_user.last_portal_visited == request.referrer
         current_user.update_attributes(last_portal_visited: request.path)
+      elsif controller_name == "assister_agency_profiles" && action_name == "show"
+        return if current_user.blank? || (current_user.person.present? && !current_user.person.assister_role.present?) || current_user.last_portal_visited == request.referrer
+        current_user.update_attributes(last_portal_visited: request.path)
       elsif controller_name == "general_agency_profiles" && action_name == "show"
         return if current_user.blank? || (current_user.person.present? && !current_user.person.general_agency_staff_roles.present?) || current_user.last_portal_visited == request.referrer
         current_user.update_attributes(last_portal_visited: request.path)
@@ -142,13 +145,17 @@ module BenefitSponsors
     private
 
     def broker_agency_or_general_agency?
-      @profile_type == "broker_agency" || @profile_type == "general_agency"
+      @profile_type == "broker_agency" || @profile_type == "general_agency" || @profile_type == "assister_agency"
+    end
+
+    def broker_agency_or_general_agency_or_assister_agency?
+      broker_agency_or_general_agency? || @profile_type == "assister_agency"
     end
 
     def user_not_authorized(exception)
       error_type = exception&.class == Pundit::NotDefinedError ? exception&.class : exception&.query
 
-      flash[:error] = "Access not allowed for #{error_type}, (Pundit policy)" unless broker_agency_or_general_agency?
+      flash[:error] = "Access not allowed for #{error_type}, (Pundit policy)" unless broker_agency_or_general_agency_or_assister_agency?
       respond_to do |format|
         format.json { render nothing: true, status: :forbidden }
         format.html { redirect_to(session[:custom_url] || request.referrer || main_app.root_path)}

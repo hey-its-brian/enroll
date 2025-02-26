@@ -26,6 +26,8 @@ module BenefitSponsors
       def show
         if is_broker?
           authorize @inbox_provider, :show_inbox_message?, policy_class: BenefitSponsors::PersonPolicy
+        elsif is_assister?
+          authorize @inbox_provider, :show_assister_inbox_message?, policy_class: BenefitSponsors::PersonPolicy
         elsif @inbox_provider.instance_of?(Person)
           authorize @inbox_provider, :can_read_inbox?, policy_class: BenefitSponsors::PersonPolicy
         else
@@ -52,6 +54,8 @@ module BenefitSponsors
       def destroy
         if is_broker?
           authorize @inbox_provider, :destroy_inbox_message?, policy_class: BenefitSponsors::PersonPolicy
+        elsif is_assister?
+          authorize @inbox_provider, :show_assister_inbox_message?, policy_class: BenefitSponsors::PersonPolicy
         elsif @inbox_provider.instance_of?(Person)
           authorize @inbox_provider, :can_read_inbox?, policy_class: BenefitSponsors::PersonPolicy
         else
@@ -76,10 +80,14 @@ module BenefitSponsors
         (@inbox_provider.class.to_s == "Person") && /.*BrokerAgencyProfile$/.match(@inbox_provider&.broker_role&.broker_agency_profile&._type)
       end
 
+      def is_assister?
+        (@inbox_provider.class.to_s == "Person") && /.*AssisterAgencyProfile$/.match(@inbox_provider&.assister_role&.assister_agency_profile&._type)
+      end
+
       def find_inbox_provider
         person = Person.where(id: params["id"])
 
-        if person.present? && person.first.broker_role.present?
+        if (person.present? && person.first.broker_role.present?) || (person.present? && person.first.assister_role.present?)
           @inbox_provider = person.first
         elsif find_profile.present?
           @inbox_provider = find_profile

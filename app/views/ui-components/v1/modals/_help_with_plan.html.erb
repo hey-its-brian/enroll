@@ -4,16 +4,48 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title d-flex align-items-center" id="help_sign_up_title"><div class="info-icon icon" alt="info" aria-hidden="true">&nbsp;</div> <span><%= l10n("insured.plan_shoppings.find_a_broker_or_assister").titlecase %></span></h3>
-          <h4 class="modal-title broker-search-title hide" id="help_from_expert_title"><%= l10n("insured.plan_shoppings.help_from_a_broker").titlecase %></h4>
+            <h4 class="modal-title broker-search-title hide" id="help_from_expert_title"><%= l10n("help_from_expert_title").titlecase %></h4>
           <button type="button" class="close unstyled" data-dismiss="modal" aria-label=<%= l10n("close") %>>
             <span aria-hidden="true">×</span>
           </button>
         </div>
         <div class="modal-body">
           <div id="help_list">
+          <% if assister_agency_is_enabled? %>
+            <p><%= l10n("insured.plan_shoppings.desc1") %> <b><%= l10n("insured.plan_shoppings.desc2") %></b>.
+            <p><%= l10n("insured.plan_shoppings.desc3") %> <%= h(link_to l10n("insured.plan_shoppings.help_url"), "http://#{l10n('insured.plan_shoppings.help_url')}", target: "_blank", rel: 'noopener noreferrer') %> <%= l10n("insured.plan_shoppings.assister1") %></p>
+            <p><%= l10n("insured.plan_shoppings.assister2") %></p>
+            <div id="broker-accordion">
+              <div class="card">
+                <div id="brokerAccordionHeading">
+                  <button class="accordion-action" data-toggle="collapse" data-target="#brokerDetails" aria-controls="brokerDetails" aria-expanded="false">
+                    <%= l10n("insured.plan_shoppings.what_a_broker") %>
+                  </button>
+                </div>
+
+                <div id="brokerDetails" class="collapse" aria-labelledby="brokerAccordionHeading" data-parent="#broker-accordion">
+                  <p class="px-2"><%= l10n("insured.answer_for_broker", site_short_name: site_short_name) %></p>
+                </div>
+              </div>
+            </div>
+            <div id="assister-accordion">
+              <div class="card">
+                <div id="assisterAccordionHeading">
+                  <button class="accordion-action" data-toggle="collapse" data-target="#assisterDetails" aria-controls="assisterDetails" aria-expanded="false">
+                    <%= l10n("insured.plan_shoppings.what_aa_assister") %>
+                  </button>
+                </div>
+
+                <div id="assisterDetails" class="collapse" aria-labelledby="assisterAccordionHeading" data-parent="#assister-accordion">
+                  <p class="px-2"><%= l10n("insured.plan_shoppings.assister_description") %></p>
+                </div>
+              </div>
+            </div>
+          <% else %>
             <p><%= l10n("insured.plan_shoppings.desc1") %> <b><%= l10n("insured.plan_shoppings.desc2") %></b>.
             <p><%= l10n("insured.plan_shoppings.desc3") %> <%= h(link_to l10n("insured.plan_shoppings.help_url"), "http://#{l10n('insured.plan_shoppings.help_url')}", target: "_blank", rel: 'noopener noreferrer') %> <%= l10n("insured.plan_shoppings.desc4") %></p>
             <p><%= l10n("insured.plan_shoppings.desc5") %></p>
+          <% end %>
           </div>
           <div id="help_search" class="help_reset">
             <h4><%= l10n("search_by_name") %></h4>
@@ -32,7 +64,10 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="outline mr-2" data-dismiss="modal" id="close_help_modal"><%= l10n("close") %></button>
-          <%= h(link_to l10n("insured.assign_an_expert"), benefit_sponsors.staff_index_profiles_broker_agencies_broker_agency_profiles_path(bs4: @bs4), remote: true, class: "expert_link button", id: "bottom_expert_link") %>
+          <% if assister_agency_is_enabled? %>
+            <%= h(link_to l10n("assister_agencies.assister"), benefit_sponsors.staff_index_profiles_assister_agencies_assister_agency_profiles_path(bs4: @bs4), remote: true, class: "expert_link button", id: "bottom_expert_assister_link") %>
+          <% end %>
+          <%= h(link_to l10n("broker_agencies.select_a_broker"), benefit_sponsors.staff_index_profiles_broker_agencies_broker_agency_profiles_path(bs4: @bs4), remote: true, class: "expert_link button", id: "bottom_expert_link") %>
         </div>
       </div>
     </div>

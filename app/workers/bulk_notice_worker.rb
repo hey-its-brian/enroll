@@ -67,6 +67,6 @@ class BulkNoticeWorker
   end
 
   def fetch_resource(org, profile_type)
-    org.send("#{profile_type}_profile") if org && ['employer', 'broker_agency', 'general_agency'].include?(profile_type)
+    org.send("#{profile_type}_profile") if org && ['employer', 'broker_agency', 'assister_agency', 'general_agency'].include?(profile_type)
   end
 end

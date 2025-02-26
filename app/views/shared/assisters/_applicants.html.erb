@@ -1,0 +1,44 @@
+<div class="table-border table-responsive">
+  <table class="table">
+    <thead>
+      <tr>
+        <th><%= l10n("admin.applicant_hbx_id") %></th>
+        <th><%= l10n("applicant_name") %></th>
+        <% if controller_name == 'applicants' %>
+          <th><%= l10n("hbx_profiles.application_type") %></th>
+        <% end %>
+        <th><%= l10n("assister_org_id") %></th>
+        <th><%= l10n("agency_name") %></th>
+        <th><%= l10n("status") %></th>
+        <% if date_col_name_for_assister_roaster.present? %>
+          <th>
+            <%= date_col_name_for_assister_roaster %>
+          </th>
+        <% end %>
+        <% if @status != 'applicant' %>
+          <th>
+            <%= l10n("admin.comments") %>
+          </th>
+        <% end %>
+      </tr>
+    </thead>
+    <tbody>
+      <% if @assister_applicants.any? %>
+        <%= render partial: "shared/assisters/applicant_row", :collection => @assister_applicants, :as => :applicant %>
+      <% else %>
+      <tr><td><%= l10n("admin.no_applicants_found") %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+<div class="row">
+  <div class="col-md-10">
+    <% unless @assister_applicants.count == 0 %>
+      <%= render 'shared/alph_paginate', url: url, full_index_url: index_url, alphs: @page_alphabets, remote: true, status: @status, bs4: @bs4 %>
+      <%= l10n("admin.alph_pagination_helper") %>
+    <% end %>
+  </div>
+  <div class="col-md-2 text-right">
+    <h4><%= "#{@assister_applicants.count} #{l10n('admin.out_of')} #{@people.count}" %></h4>
+  </div>
+</div>

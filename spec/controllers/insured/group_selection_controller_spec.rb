@@ -825,6 +825,8 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
                           rating_area_id: rating_area.id,
                           broker_agency_profile_id: broker_agency_profile.id)
       end
+      let(:invalid_user) { FactoryBot.create(:user, person: FactoryBot.create(:person)) }
+
 
       it "should be able to terminate coverage if user is valid and has broker role" do
         # broker_role = broker_person.broker_role
@@ -841,12 +843,53 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
       end
 
       it "should not be able to view page if user does not have active staff role" do
-        sign_in broker_user
+        sign_in invalid_user
 
         post :term_or_cancel, params: {hbx_enrollment_id: hbx_enrollment_with_broker.id, term_date: TimeKeeper.date_of_record + 1, term_or_cancel: 'terminate'}
         hbx_enrollment_with_broker.reload
 
         expect(hbx_enrollment_with_broker.aasm_state).to eq 'coverage_selected'
+        expect(response).to redirect_to(root_path)
+      end
+    end
+
+    context "person has a assister role" do
+      let(:assister_agency_profile) { FactoryBot.create(:benefit_sponsors_organizations_assister_agency_profile) }
+      let(:assister_person) { assister_agency_profile.primary_assister_role.person }
+      let(:site)                      { create(:benefit_sponsors_site, :with_benefit_market, :as_hbx_profile, :cca) }
+      let(:assister_organization)      { FactoryBot.build(:benefit_sponsors_organizations_general_organization, site: site)}
+      let(:assister_user) { FactoryBot.create(:user, person: assister_person) }
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member) }
+      let(:assister_agency_account) { FactoryBot.build(:benefit_sponsors_accounts_assister_agency_account, assister_agency_profile: assister_agency_profile, is_active: true) }
+      let(:rating_area) { FactoryBot.create_default(:benefit_markets_locations_rating_area) }
+      let(:hbx_enrollment_with_assister) do
+        FactoryBot.create(:hbx_enrollment,
+                          product_id: product.id,
+                          kind: 'individual',
+                          family: family,
+                          rating_area_id: rating_area.id,
+                          broker_agency_profile_id: assister_agency_profile.id)
+      end
+      let(:invalid_user) { FactoryBot.create(:user, person: FactoryBot.create(:person)) }
+
+      it "should be able to terminate coverage if user is valid and has assister role" do
+        family.assister_agency_accounts << assister_agency_account
+        family.save
+        sign_in assister_user
+
+        post :term_or_cancel, params: {hbx_enrollment_id: hbx_enrollment_with_assister.id, term_date: TimeKeeper.date_of_record + 1, term_or_cancel: 'terminate'}
+        hbx_enrollment_with_assister.reload
+        expect(hbx_enrollment_with_assister.aasm_state).to eq 'coverage_terminated'
+        expect(response).to redirect_to(family_account_path)
+      end
+
+      it "should not be able to view page if user does not have active staff role" do
+        sign_in invalid_user
+
+        post :term_or_cancel, params: {hbx_enrollment_id: hbx_enrollment_with_assister.id, term_date: TimeKeeper.date_of_record + 1, term_or_cancel: 'terminate'}
+        hbx_enrollment_with_assister.reload
+
+        expect(hbx_enrollment_with_assister.aasm_state).to eq 'coverage_selected'
         expect(response).to redirect_to(root_path)
       end
     end

@@ -11,7 +11,7 @@ class ApplicationController < ActionController::Base
   after_action :update_url, :unless => :format_js?
   helper BenefitSponsors::Engine.helpers
 
-  NON_AUTHENTICATE_KINDS = %w[welcome saml broker_roles office_locations invitations security_question_responses].freeze
+  NON_AUTHENTICATE_KINDS = %w[welcome saml broker_roles assister_roles office_locations invitations security_question_responses].freeze
 
   def format_js?
     request.format.js?
@@ -211,6 +211,7 @@ class ApplicationController < ActionController::Base
     action_name == 'unsupported_browser' ||
       devise_controller? ||
       (controller_name == "broker_roles") ||
+      (controller_name == "assister_roles") ||
       (controller_name == "office_locations") ||
       (controller_name == "invitations") ||
       (controller_name == "saml") ||

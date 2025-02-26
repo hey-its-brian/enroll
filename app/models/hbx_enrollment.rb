@@ -582,7 +582,7 @@ class HbxEnrollment
     if self.subscriber
       self.enrollment_signature = Digest::MD5.hexdigest(self.subscriber.applicant_id.to_s)
     elsif self.subscriber.nil?
-      self.enrollment_signature =  Digest::MD5.hexdigest(applicant_ids.sort.map(&:to_s).join)
+      self.enrollment_signature = Digest::MD5.hexdigest(applicant_ids.map(&:to_s).join)
     end
   end
 

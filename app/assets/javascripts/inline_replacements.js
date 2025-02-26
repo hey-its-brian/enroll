@@ -78,6 +78,22 @@ $(document).on('click', '.select-broker-agency', function (event) {
 });
 // components/benefit_sponsors/app/views/benefit_sponsors/profiles/broker_agencies/broker_agency_staff_roles/_search_broker_agency.html.erb:
 
+$(document).on(
+  'click',
+  '.assister-staff-registration-container span.search',
+  function () {
+    // components/benefit_sponsors/app/views/benefit_sponsors/profiles/assister_agencies/assister_agency_staff_roles/_new_staff_applicant.html.erb
+    assisterSearch();
+    return false;
+  }
+);
+
+$(document).on('click', '.select-assister-agency', function (event) {
+  event.preventDefault();
+  selectAssisterAgency(this);
+});
+// components/benefit_sponsors/app/views/benefit_sponsors/profiles/assister_agencies/assister_agency_staff_roles/_search_assister_agency.html.erb:
+
 function init_dependent_address_fields() {
   // app/views/shared/_address_fields_for_dependent.html.erb
   $(document).ready(function () {

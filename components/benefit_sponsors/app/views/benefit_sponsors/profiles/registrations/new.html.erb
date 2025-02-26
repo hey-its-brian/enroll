@@ -1,7 +1,7 @@
 <% if @bs4 %>
   <% if @profile_type == "broker_agency" %>
-    <div id="broker_agency_form" class="bs4-active">
-      <ul class="broker-registration-tabs list-inline list-unstyled">
+    <div id="broker_agency_form" class="bs4-active agency_form">
+      <ul class="registration-tabs list-inline list-unstyled">
         <li class="d-inline-block mx-0">
           <a class='weight-n default-text text-decoration-none' href="#broker_agency_staff" tabindex="0"><%= l10n("broker_agency_staff") %></a>
         </li>
@@ -12,6 +12,21 @@
       <div id="broker_agency_staff" class="tab-content tab-container mt-0"></div>
       <div id="broker_registration" class="tab-content tab-container mt-0">
         <%= render partial: "benefit_sponsors/profiles/registrations/broker_registration_form" %>
+      </div>
+    </div>
+  <% elsif @profile_type == "assister_agency" %>
+    <div id="assister_agency_form" class="bs4-active agency_form">
+      <ul class="registration-tabs list-inline list-unstyled">
+        <li class="d-inline-block mx-0">
+          <a class='weight-n default-text text-decoration-none' href="#assister_agency_staff" tabindex="0"><%= l10n("assister_agency_staff") %></a>
+        </li>
+        <li class="d-inline-block mx-0 ui-tabs-active ui-state-active">
+          <a class='weight-n default-text text-decoration-none' href="#assister_registration" tabindex="0"><%= l10n("assister_agency") %></a>
+        </li>
+      </ul>
+      <div id="assister_agency_staff" class="tab-content tab-container mt-0"></div>
+      <div id="assister_registration" class="tab-content tab-container mt-0">
+        <%= render partial: "benefit_sponsors/profiles/registrations/assister_registration_form" %>
       </div>
     </div>
   <% elsif @profile_type == "general_agency" %>

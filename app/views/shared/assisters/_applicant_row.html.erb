@@ -1,0 +1,39 @@
+<% assister_role = applicant.assister_role %>
+<% edit_path = edit_exchanges_assister_applicant_path(applicant) %>
+
+<% if @assister_agency_profile.present? %>
+  <% assister_role = applicant.assister_agency_staff_roles[0] if assister_role.nil? %>
+  <% edit_path = edit_assister_agencies_profile_applicant_path(@assister_agency_profile, applicant) %>
+<% end %>
+
+<% if assister_role.assister_agency_profile %>
+<tr>
+  <td><%= applicant.hbx_id %></td>
+  <td>
+    <%= link_to applicant.full_name, edit_path, class: "interaction-click-control-assister-show", method: :get,
+    remote: false %>
+  </td>
+
+  <% if controller_name == 'applicants' %>
+    <td>
+      <% if assister_role.class.to_s == 'BrokerRole' %>
+        <%= assister_role.is_primary_assister? ? 'Primary Broker' : 'Broker' %>
+      <% else %>
+          Broker Agency Staff
+      <% end %>
+    </td>
+  <% end %>
+
+  <td><%= assister_role.assister_org_id if assister_role.respond_to?(:assister_org_id) %></td>
+  <td><%= assister_role.assister_agency_profile.legal_name %></td>
+  <td><%= assister_role.current_state %></td>
+  <% if date_col_name_for_assister_roaster.present? %>
+    <td><%= format_datetime assister_role.latest_transition_time %></td>
+  <% end %>
+  <% if @status != 'applicant' %>
+    <td>
+      <%= truncate(assister_role.reason) { link_to "Continue", "#", :data => { toggle: "popover", placement: "bottom", content: assister_role.reason, trigger: 'focus' }, "role" => "button", "id" => "assister_application_comments" } %>
+    </td>
+  <% end %>
+</tr>
+<% end %>

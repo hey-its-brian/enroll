@@ -18,6 +18,7 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
     let(:update_user) { edit_user }
     let(:benefit_sponsor_user) { user }
     let(:broker_agency_user) { nil }
+    let(:assister_agency_user) { nil }
     let(:general_agency_user) { nil }
 
     let(:phone_attributes) do
@@ -70,6 +71,18 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
       }
     end
 
+    let(:assister_profile_attributes) do
+      {
+        :ach_account_number => "1234567890",
+        :ach_routing_number => "011000015",
+        :ach_routing_number_confirmation => "011000015",
+        :market_kind => :shop,
+        :office_locations_attributes => office_locations_attributes,
+        :contact_method => :paper_and_electronic,
+        :languages_spoken => ['en']
+      }
+    end
+
     let(:general_agency_profile_attributes) do
       {
         :market_kind => :shop,
@@ -97,6 +110,16 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
       }
     end
 
+    let(:assister_organization) do
+      {
+        :entity_kind => :s_corporation,
+        :legal_name => "uweyrtuo",
+        :dba => "uweyruoy",
+        :fein => "222222222",
+        :profile_attributes => assister_profile_attributes
+      }
+    end
+
     let(:general_agency_organization) do
       {
         :entity_kind => :s_corporation,
@@ -117,7 +140,8 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
           :area_code => "786",
           :number => "8768766",
           :extension => "",
-          :npn => "234234123"
+          :npn => "234234123",
+          :assister_org_id => "123123123"
         }}
     end
 
@@ -191,6 +215,7 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
 
       it_behaves_like "initialize profile for new", "benefit_sponsor"
       it_behaves_like "initialize profile for new", "broker_agency"
+      it_behaves_like "initialize profile for new", "assister_agency"
       it_behaves_like "initialize profile for new", "general_agency"
       # it_behaves_like "initialize profile for new", "issuer"
       # it_behaves_like "initialize profile for new", "contact_center"
@@ -198,6 +223,7 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
 
       it_behaves_like "initialize registration form", :new, {profile_type: "benefit_sponsor"}, "benefit_sponsor"
       it_behaves_like "initialize registration form", :new, {profile_type: "broker_agency"}, "broker_agency"
+      it_behaves_like "initialize registration form", :new, {profile_type: "assister_agency"}, "assister_agency"
       it_behaves_like "initialize registration form", :new, { profile_type: "general_agency" }, "general_agency"
       # it_behaves_like "initialize registration form", :new, { profile_type: "issuer" }
       # it_behaves_like "initialize registration form, :new, { profile_type:  "contact_center" }
@@ -273,6 +299,52 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
           end
         end
       end
+
+      describe "for new on assister_agency_portal", dbclean: :after_each do
+        context "for new on assister_agency_portal click without user" do
+
+          before :each do
+            allow(EnrollRegistry).to receive(:feature_enabled?).and_return(false)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:crm_publish_primary_subscriber).and_return(false)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:general_agency).and_return(true)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:fehb_market).and_return(true)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:aca_individual_market).and_return(true)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:employer_attestation).and_return(true)
+            get :new, params: {profile_type: "assister_agency", portal: true}
+          end
+
+          it "should redirect to sign_up page if current user doesn't exist" do
+            expect(response.location.include?("users/sign_in")).to eq true
+          end
+
+          it "should set the value of portal on form instance to true" do
+            expect(assigns(:agency).portal).to eq true
+          end
+        end
+
+        context "for new on assister_agency_portal click without user" do
+          let(:assister_person) { FactoryBot.create(:person, :with_assister_role) }
+          let(:assister_user) { FactoryBot.create(:user, person: assister_person) }
+          let(:assister_agency_organization) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+          let(:assister_agency_id) { assister_agency_organization.assister_agency_profile.id }
+
+          before :each do
+            allow(EnrollRegistry).to receive(:feature_enabled?).and_return(false)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:crm_publish_primary_subscriber).and_return(false)
+            assister_person.assister_role.update_attributes!(benefit_sponsors_assister_agency_profile_id: assister_agency_id)
+            sign_in assister_user
+            get :new, params: {profile_type: "assister_agency", portal: true}
+          end
+
+          it "should redirect to show page if current user exists and passes the pundit" do
+            expect(response).to redirect_to(profiles_assister_agencies_assister_agency_profile_path(:id => assister_agency_id))
+          end
+
+          it "should set the value of portal on form instance to true" do
+            expect(assigns(:agency).portal).to eq true
+          end
+        end
+      end
     end
 
     describe "POST create", dbclean: :after_each do
@@ -295,6 +367,14 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
           }
         end
 
+        let(:assister_agency_params) do
+          {
+            :profile_type => "assister_agency",
+            :staff_roles_attributes => staff_roles_attributes,
+            :organization => assister_organization
+          }
+        end
+
         let(:general_agency_params) do
           {
             :profile_type => "general_agency",
@@ -303,7 +383,7 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
           }
         end
 
-        context 'with valid params' do
+        context 'with valid params for broker' do
           before :each do
             allow(EnrollRegistry).to receive(:feature_enabled?).and_return(false)
             allow(EnrollRegistry).to receive(:feature_enabled?).with(:fehb_market).and_return(true)
@@ -400,6 +480,105 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
           end
         end
 
+        context 'with valid params for assister' do
+          before :each do
+            allow(EnrollRegistry).to receive(:feature_enabled?).and_return(false)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:fehb_market).and_return(true)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:aca_individual_market).and_return(true)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:employer_attestation).and_return(true)
+            # allow(EnrollRegistry).to receive(:feature_enabled?).with(:redirect_to_requirements_page_after_confirmation).and_return(true)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:crm_publish_primary_subscriber).and_return(false)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:check_for_crm_updates).and_return(false)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:assister_approval_period).and_return(true)
+            site.benefit_markets.first.save!
+            # Stubbing the controller method (which has two conditions, one of which is a Resource Registry check) is easier
+            allow(controller).to receive(:verify_recaptcha_if_needed).and_return(true)
+          end
+
+          shared_examples_for "store profile for create" do |profile_type|
+            before :each do
+              allow(EnrollRegistry).to receive(:feature_enabled?).with(:general_agency).and_return(true) if profile_type == 'general_agency'
+              BenefitSponsors::Organizations::AssisterAgencyProfile::MARKET_KINDS << :shop if profile_type == 'assister_agency'
+              BenefitSponsors::Organizations::GeneralAgencyProfile::MARKET_KINDS << :shop if profile_type == 'general_agency'
+              allow(controller).to receive(:is_assister_profile?).and_return(true) if profile_type == 'assister_agency'
+              allow(EnrollRegistry).to receive(:feature_enabled?).with(:allow_alphanumeric_npn).and_return(false) if profile_type == 'assister_agency'
+              allow(controller).to receive(:redirect_to_requirements_after_confirmation?).and_return(true) if profile_type == 'assister_agency'
+              allow(EnrollRegistry).to receive(:feature_enabled?).with(:broker_approval_period).and_return(true)
+
+              user = self.send("#{profile_type}_user")
+              sign_in user if user
+              post :create, params: {:agency => self.send("#{profile_type}_params")}
+            end
+
+            # it "should redirect for benefit_sponsor and general agency" do
+            #   expect(response).to have_http_status(:redirect) if profile_type != 'assister_agency'
+            # end
+
+            it "should render confirmation template for assister agency" do
+              expect(response).to render_template('assister_agencies/assister_roles/confirmation') if profile_type == 'assister_agency'
+            end
+
+            # it "should redirect to home page of benefit_sponsor" do
+            #   expect(response.location.include?("tab=home")).to eq true if profile_type == "benefit_sponsor"
+            # end
+
+            # it "should redirect to new for general agency" do
+            #   expect(response.location.include?("new?profile_type=general_agency")).to eq true if profile_type == "general_agency"
+            # end
+
+            # it "should create staff person with no ssn" do
+            #   person = Person.where(
+            #     first_name: staff_roles_attributes[0][:first_name],
+            #     last_name: staff_roles_attributes[0][:last_name],
+            #     dob: staff_roles_attributes[0][:dob]
+            #   ).first
+            #   expect("1").to eq person.no_ssn
+            # end
+          end
+
+          it_behaves_like "store profile for create", "benefit_sponsor"
+          it_behaves_like "store profile for create", "assister_agency"
+          it_behaves_like "store profile for create", "general_agency"
+
+          it_behaves_like "initialize registration form", :create, {}, "benefit_sponsor"
+          it_behaves_like "initialize registration form", :create, {}, "assister_agency"
+          it_behaves_like "initialize registration form", :create, {}, "general_agency"
+
+          context 'requests with correct params but valid/invalid format' do
+            before :each do
+              BenefitSponsors::Organizations::AssisterAgencyProfile::MARKET_KINDS << :shop
+              allow(controller).to receive(:is_assister_profile?).and_return(true)
+              allow(EnrollRegistry).to receive(:feature_enabled?).with(:broker_approval_period).and_return(true)
+              allow(EnrollRegistry).to receive(:feature_enabled?).with(:allow_alphanumeric_npn).and_return(false)
+              allow(controller).to receive(:redirect_to_requirements_after_confirmation?).and_return(true)
+
+              user = self.send("assister_agency_user")
+              sign_in user if user
+            end
+
+            it "should return a success" do
+              post :create, params: {:agency => self.send("assister_agency_params")}
+              expect(response.status).to eq(200)
+              expect(response).to render_template('confirmation')
+            end
+
+            it "should not render the confirmation template" do
+              post :create, params: {:agency => self.send("assister_agency_params")}, format: :js
+              expect(response).to have_http_status(:not_acceptable)
+            end
+
+            it "should not return a success" do
+              post :create, params: {:agency => self.send("assister_agency_params")}, format: :json
+              expect(response).to have_http_status(:not_acceptable)
+            end
+
+            it "should not return a success" do
+              post :create, params: {:agency => self.send("assister_agency_params")}, format: :xml
+              expect(response).to have_http_status(:not_acceptable)
+            end
+          end
+        end
+
         shared_examples_for "fail store profile for create if params invalid" do |profile_type|
 
           before do
@@ -421,12 +600,14 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
           it "should have profile_type in params" do
             expect(controller.params[:agency][:profile_type] == "benefit_sponsor").to eq true if profile_type == "benefit_sponsor"
             expect(controller.params[:agency][:profile_type] == "broker_agency").to eq true if profile_type == "broker_agency"
+            expect(controller.params[:agency][:profile_type] == "assister_agency").to eq true if profile_type == "assister_agency"
             expect(controller.params[:agency][:profile_type] == "general_agency").to eq true if profile_type == "general_agency"
           end
         end
 
         it_behaves_like "fail store profile for create if params invalid", "benefit_sponsor"
         it_behaves_like "fail store profile for create if params invalid", "broker_agency"
+        it_behaves_like "fail store profile for create if params invalid", "assister_agency"
         it_behaves_like "fail store profile for create if params invalid", "general_agency"
       end
 
@@ -462,9 +643,12 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
       let(:broker_agency)   { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_broker_agency_profile, site: site) }
       let!(:staff_role) {FactoryBot.build(:benefit_sponsor_employer_staff_role, aasm_state: 'is_active', benefit_sponsor_employer_profile_id: benefit_sponsor.profiles.first.id)}
       let!(:employer_staff_roles) { person.employer_staff_roles << staff_role }
-      let!(:broker_role) {FactoryBot.build(:broker_role, benefit_sponsors_broker_agency_profile_id: broker_agency.profiles.first.id,person: person)}
-      let!(:update_profile) { broker_agency.profiles.first.update_attributes(primary_broker_role_id: broker_role.id)}
+      let!(:broker_role) { FactoryBot.create(:broker_role, benefit_sponsors_broker_agency_profile_id: broker_agency.profiles.first.id, person: person)}
+      let!(:update_broker_profile) { broker_agency.profiles.first.update!(primary_broker_role_id: broker_role.id)}
 
+      let(:assister_agency)   { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+      let!(:assister_role) {FactoryBot.create(:assister_role, benefit_sponsors_assister_agency_profile_id: assister_agency.profiles.first.id, person: person)}
+      let!(:update_assister_profile) { assister_agency.profiles.first.update!(primary_assister_role_id: assister_role.id)}
       let(:general_agency) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_general_agency_profile, site: site) }
       let!(:general_agency_staff_role) { FactoryBot.create(:general_agency_staff_role, benefit_sponsors_general_agency_profile_id: general_agency.profiles.first.id, person: person, aasm_state: 'active', is_primary: true)}
 
@@ -499,13 +683,15 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
 
       it_behaves_like "initialize profile for edit", "benefit_sponsor"
       it_behaves_like "initialize profile for edit", "broker_agency"
+      it_behaves_like "initialize profile for edit", "assister_agency"
       it_behaves_like "initialize profile for edit", "general_agency"
 
       it_behaves_like "initialize registration form", :edit, { id: "id"}, "benefit_sponsor"
       it_behaves_like "initialize registration form", :edit, { id: "id" }, "broker_agency"
+      it_behaves_like "initialize registration form", :edit, { id: "id" }, "assister_agency"
       it_behaves_like "initialize registration form", :edit, { id: "id" }, "general_agency"
 
-      context 'with valid params but valid/invalid format' do
+      context 'with valid params but valid/invalid format for broker' do
         before do
           sign_in edit_user
           @id = self.send('broker_agency').profiles.first.id.to_s
@@ -535,6 +721,38 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
           end
         end
       end
+
+      context 'with valid params but valid/invalid format for assister' do
+        before do
+          sign_in edit_user
+          @id = self.send('assister_agency').profiles.first.id.to_s
+        end
+
+        it "html should return a success" do
+          get :edit, params: {id: @id}
+          expect(response).to have_http_status(:success)
+          expect(response).to render_template('edit')
+        end
+
+        it "js should raise an error" do
+          expect do
+            (get :edit, params: {id: @id}, format: :js).to raise_error(ActionView::MissingTemplate)
+          end
+        end
+
+        it "json should raise an error" do
+          expect do
+            (get :edit, params: {id: @id}, format: :json).to raise_error(ActionView::MissingTemplate)
+          end
+        end
+
+        it "xml should raise an error" do
+          expect do
+            (get :edit, params: {id: @id}, format: :xml).to raise_error(ActionView::MissingTemplate)
+          end
+        end
+      end
+
     end
 
     describe "PUT update", dbclean: :after_each do
@@ -551,6 +769,7 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
 
         let(:benefit_sponsor) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_aca_shop_cca_employer_profile, site: site) }
         let(:broker_agency)   { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_broker_agency_profile, site: site) }
+        let(:assister_agency)   { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
         let(:general_agency) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_general_agency_profile, site: site) }
 
         let(:benefit_sponsor_params) do
@@ -566,6 +785,14 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
             :id => broker_agency.profiles.first.id,
             :staff_roles_attributes => staff_roles_attributes,
             :organization => broker_organization
+          }
+        end
+
+        let(:assister_agency_params) do
+          {
+            :id => assister_agency.profiles.first.id,
+            :staff_roles_attributes => staff_roles_attributes,
+            :organization => assister_organization
           }
         end
 
@@ -585,6 +812,10 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
           broker_profile_attributes.merge!({
                                              id: self.send(profile_type).profiles.first.id.to_s
                                            })
+
+          assister_profile_attributes.merge!({
+                                               id: self.send(profile_type).profiles.first.id.to_s
+                                             })
 
           general_agency_profile_attributes.merge!({
                                                      id: self.send(profile_type).profiles.first.id.to_s
@@ -619,10 +850,16 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
             expect(response.location.include?("/broker_agency_profiles/")).to eq true if profile_type == "broker_agency"
             expect(response.location.include?("/general_agency_profiles/")).to eq true if profile_type == "general_agency"
           end
+
+          it "should redirect to show for assister_agency or general agency" do
+            expect(response.location.include?("/assister_agency_profiles/")).to eq true if profile_type == "assister_agency"
+            expect(response.location.include?("/general_agency_profiles/")).to eq true if profile_type == "general_agency"
+          end
         end
 
         it_behaves_like "store profile for update", "benefit_sponsor"
         it_behaves_like "store profile for update", "broker_agency"
+        it_behaves_like "store profile for update", "assister_agency"
         it_behaves_like "store profile for update", "general_agency"
         # it_behaves_like "store profile for update", "issuer"
         # it_behaves_like "store profile for update", "contact_center"
@@ -650,6 +887,7 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
 
         it_behaves_like "fail store profile for update if params invalid", "benefit_sponsor"
         it_behaves_like "fail store profile for update if params invalid", "broker_agency"
+        it_behaves_like "fail store profile for update if params invalid", "assister_agency"
         it_behaves_like "fail store profile for update if params invalid", "general_agency"
         # it_behaves_like "fail store profile for update if params invalid", "issuer"
         # it_behaves_like "fail store profile for update if params invalid", "contact_center"

@@ -205,4 +205,8 @@ class Invitation
       return true if matching_invitation.present?
     end
   end
+
+  def self.invite_assister_agency_staff!(assister_role)
+    true
+  end
 end

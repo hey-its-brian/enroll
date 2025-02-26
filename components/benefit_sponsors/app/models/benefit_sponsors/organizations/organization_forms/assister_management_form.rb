@@ -1,0 +1,74 @@
+# frozen_string_literal: true
+
+module BenefitSponsors
+  module Organizations
+    module OrganizationForms
+      # form object to manage assisters.
+      class AssisterManagementForm
+        include ActiveModel::Validations
+        include Virtus.model
+
+        attribute :employer_profile_id, String
+        attribute :assister_agency_profile_id, String
+        attribute :assister_role_id, String
+        attribute :termination_date, String
+        attribute :direct_terminate, Boolean
+
+        def assister_agency_id=(val)
+          @assister_agency_profile_id = val
+        end
+
+        def self.for_create(attrs)
+          new(attrs)
+        end
+
+        def save
+          persist!
+        end
+
+        def persist!
+          service.assign_agencies(self)
+        end
+
+        def self.for_terminate(attrs)
+          new(attrs)
+        end
+
+        def termination_date=(val)
+          @termination_date = Date.strptime(val,"%m/%d/%Y")
+          @termination_date
+        rescue StandardError
+          Rails.logger.warn("AssisterManagementForm: termination_date setter failed due to #{e}")
+          nil
+        end
+
+        def direct_terminate=(val)
+          @direct_terminate = true if val.downcase == 'true'
+          @direct_terminate = false if val.downcase == 'false'
+        rescue StandardError => e
+          Rails.logger.warn("AssisterManagementForm: Direct terminate setter failed due to #{e}")
+          nil
+        end
+
+        def terminate
+          terminate!
+        end
+
+        def terminate!
+          service.terminate_agencies(self)
+        end
+
+        def self.resolve_service
+          BenefitSponsors::Services::AssisterManagementService.new
+        end
+
+        protected
+
+        def service
+          return @service if defined?(@service)
+          @service = self.class.resolve_service
+        end
+      end
+    end
+  end
+end

@@ -25,9 +25,14 @@ RSpec.describe BenefitSponsors::ApplicationHelper, type: :helper, dbclean: :afte
       let(:site) { FactoryBot.create(:benefit_sponsors_site, :with_benefit_market, :as_hbx_profile, EnrollRegistry[:enroll_app].setting(:site_key).item) }
       let(:broker_organization) { FactoryBot.build(:benefit_sponsors_organizations_general_organization, site: site) }
       let(:broker_agency_profile) { FactoryBot.create(:benefit_sponsors_organizations_broker_agency_profile, organization: broker_organization, legal_name: 'Legal Name1') }
+      let(:assister_organization) { FactoryBot.build(:benefit_sponsors_organizations_general_organization, site: site) }
+      let(:assister_agency_profile) { FactoryBot.create(:benefit_sponsors_organizations_assister_agency_profile, organization: assister_organization, legal_name: 'Legal Name1') }
 
       it "has the correct number of unread messages" do
         expect(profile_unread_messages_count(broker_agency_profile)).to eq(0)
+      end
+      it "has the correct number of unread messages for assister" do
+        expect(profile_unread_messages_count(assister_agency_profile)).to eq(0)
       end
     end
   end

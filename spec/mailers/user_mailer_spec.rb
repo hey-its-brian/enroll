@@ -122,6 +122,31 @@ RSpec.describe UserMailer do
     end
   end
 
+  context "#assister_application_confirmation" do
+    let(:assister_confirmation_email) do
+      UserMailer.assister_application_confirmation(person_with_work_email)
+    end
+    let(:assister_application_confirmation_translation) do
+      l10n(
+        EnrollRegistry.feature_enabled?(:assister_approval_period) ? "user_mailer.assister_application_confirmation.full_text" : "user_mailer.assister_invitation.assister_app_submission",
+        site_noreply_email_address: site_noreply_email_address,
+        site_short_name: site_short_name,
+        site_assister_registration_guide: site_assister_registration_guide,
+        site_producer_email_address: site_producer_email_address,
+        contact_center_phone_number: EnrollRegistry[:enroll_app].settings(:contact_center_short_number).item.to_s,
+        first_name: person_with_work_email.first_name,
+        contact_center_short_name: EnrollRegistry[:enroll_app].setting(:contact_center_name).item,
+        state_name: state_name,
+        training_link: EnrollRegistry[:assister_training_link].item,
+        contact_center_tty_number: EnrollRegistry[:enroll_app].setting(:contact_center_tty_number).item
+      ).html_safe
+
+    end
+    it "should render the email with the proper text" do
+      expect(assister_confirmation_email.body.raw_source).to include(person_with_work_email.first_name)
+    end
+  end
+
   context "#identity_verification_denial" do
     let(:hbx_id) { rand(10_000)}
     let(:identity_verification_denial) do
@@ -173,6 +198,48 @@ RSpec.describe UserMailer, "sending an approval linked notification email for br
   let(:name) { "Broker Name"}
 
   subject { UserMailer.broker_staff_linked_invitation_email(email, name) }
+
+  it "has the login link" do
+    expect(subject.body.raw_source.include?("href=\"#{site_broker_linked_invitation_email_login_url}\"")).to be_truthy
+  end
+
+  it "has the greeting" do
+    expect(subject.body.raw_source.include?("Hi #{name},")).to be_truthy
+  end
+end
+
+RSpec.describe UserMailer, "sending an approval linked notification email for a assister" do
+  include Config::SiteHelper
+
+  before do
+    allow(EnrollRegistry[:enroll_app].setting(:login_url)).to receive(:item).and_return('https://www.dchealthlink.com/')
+  end
+
+  let(:email) { "some-assister@adomain.com"}
+  let(:name) { "Assister Name"}
+
+  subject { UserMailer.assister_linked_invitation_email(email, name) }
+
+  it "has the login link" do
+    expect(subject.body.raw_source.include?("href=\"#{site_broker_linked_invitation_email_login_url}\"")).to be_truthy
+  end
+
+  it "has the greeting" do
+    expect(subject.body.raw_source.include?("Hi #{name},")).to be_truthy
+  end
+end
+
+RSpec.describe UserMailer, "sending an approval linked notification email for assister staff" do
+  include Config::SiteHelper
+
+  before do
+    allow(EnrollRegistry[:enroll_app].setting(:login_url)).to receive(:item).and_return('https://www.dchealthlink.com/')
+  end
+
+  let(:email) { "some-assister@adomain.com"}
+  let(:name) { "Assister Name"}
+
+  subject { UserMailer.assister_staff_linked_invitation_email(email, name) }
 
   it "has the login link" do
     expect(subject.body.raw_source.include?("href=\"#{site_broker_linked_invitation_email_login_url}\"")).to be_truthy

@@ -40,15 +40,17 @@ module BenefitSponsors
           elsif saved && is_general_agency_profile?
             flash[:notice] = "Your registration has been submitted. A response will be sent to the email address you provided once your application is reviewed."
           end
-          template_filename = if redirect_to_requirements_after_confirmation?
-                                "confirmation"
-                              else
-                                "broker_agencies/broker_roles/extended_confirmation"
-                              end
+
           if is_broker_profile? && saved
             flash[:success] = l10n("broker_agencies.broker_staff_role_success")
             respond_to do |format|
-              format.html { render template_filename, :layout => resolve_layout }
+              format.html { render broker_registration_template_filename, :layout => resolve_layout }
+            end
+            return
+          elsif is_assister_agency_profile? && saved
+            flash[:success] = l10n("assister_agencies.assister_staff_role_success")
+            respond_to do |format|
+              format.html { render "assister_agencies/assister_roles/confirmation", :layout => resolve_layout }
             end
             return
           elsif saved
@@ -69,7 +71,7 @@ module BenefitSponsors
         @agency = BenefitSponsors::Organizations::OrganizationForms::RegistrationForm.for_edit(profile_id: params[:id])
         authorize @agency
 
-        render layout: resolve_layout if @agency.organization.is_broker_profile? || @agency.organization.is_general_agency_profile?
+        render layout: resolve_layout if @agency.organization.is_broker_profile? || @agency.organization.is_general_agency_profile? || @agency.organization.is_assister_profile?
       end
 
       def update
@@ -81,6 +83,7 @@ module BenefitSponsors
           flash[:notice] = 'Employer successfully Updated.' if is_employer_profile?
           flash[:notice] = 'Broker Agency Profile successfully Updated.' if is_broker_profile?
           flash[:notice] = 'General Agency Profile successfully Updated.' if is_general_agency_profile?
+          flash[:notice] = 'Assister Agency Profile successfully Updated.' if is_assister_profile?
         else
           org_error_msg = @agency.errors.full_messages.join(",").humanize if @agency.errors.present?
 
@@ -103,12 +106,20 @@ module BenefitSponsors
 
       private
 
+      def broker_registration_template_filename
+        if redirect_to_requirements_after_confirmation?
+          "confirmation"
+        else
+          "broker_agencies/broker_roles/extended_confirmation"
+        end
+      end
+
       def redirect_if_general_agency_disabled
         redirect_to(main_app.root_path, notice: l10n("general_agency_not_enabled")) if !EnrollRegistry.feature_enabled?(:general_agency) && is_general_profile?
       end
 
       def profile_type
-        valid_profile_types = %w[benefit_sponsor broker_agency general_agency].freeze
+        valid_profile_types = %w[benefit_sponsor broker_agency general_agency assister_agency].freeze
         profile_type_constant_name = params[:profile_type] || params.dig(:agency, :profile_type) || @agency&.profile_type
         @profile_type = (profile_type_constant_name if valid_profile_types.include?(profile_type_constant_name))
       end
@@ -123,6 +134,14 @@ module BenefitSponsors
 
       def is_broker_profile?
         profile_type == "broker_agency"
+      end
+
+      def is_assister_profile?
+        profile_type == "assister_agency"
+      end
+
+      def is_assister_agency_profile?
+        profile_type == "assister_agency"
       end
 
       def is_general_profile?

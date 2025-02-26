@@ -31,6 +31,10 @@ module Config::SiteConcern
     EnrollRegistry.feature_enabled?(:general_agency)
   end
 
+  def is_assister_agency_enabled?
+    EnrollRegistry.feature_enabled?(:assister_agency)
+  end
+
   def is_shop_market_enabled?
     EnrollRegistry.feature_enabled?(:aca_shop_market)
   end

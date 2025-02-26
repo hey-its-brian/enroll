@@ -4,7 +4,7 @@ module BenefitSponsors
 
       attr_accessor :profile_id, :profile_type, :person
 
-      def initialize(attrs={})
+      def initialize(attrs = {})
         @attrs = attrs
         @profile_id = attrs[:profile_id]
       end
@@ -15,6 +15,8 @@ module BenefitSponsors
 
         if form.is_broker_agency_staff_profile?
           organization.broker_agency_profile
+        elsif form.is_assister_agency_staff_profile?
+          organization.assister_agency_profile
         elsif form.is_general_agency_staff_profile?
           organization.general_agency_profile
         else
@@ -29,6 +31,11 @@ module BenefitSponsors
           persist_broker_agency_staff_role!(profile)
         elsif form[:is_broker_agency_staff_profile?]
           add_broker_agency_staff_role(form[:first_name], form[:last_name], form[:dob], form[:email], profile)
+        elsif form.is_assister_agency_staff_profile? && form.email.present?
+          match_or_create_person(form)
+          persist_assister_agency_staff_role!(profile)
+        elsif form[:is_assister_agency_staff_profile?]
+          add_assister_agency_staff_role(form[:first_name], form[:last_name], form[:dob], form[:email], profile)
         elsif form.is_general_agency_staff_profile? && form.email.present?
           match_or_create_person(form)
           persist_general_agency_staff_role!(profile)
@@ -45,6 +52,10 @@ module BenefitSponsors
           person_ids = Person.staff_for_broker(profile).map(&:id)
           return false, 'Please add another staff role before deleting this role' if invalid_person_count?(person_ids, form)
           deactivate_broker_agency_staff_role(form[:person_id], form[:profile_id])
+        elsif form[:is_assister_agency_staff_profile?]
+          person_ids = Person.staff_for_assister(profile).map(&:id)
+          return false, 'Please add another staff role before deleting this role' if invalid_person_count?(person_ids, form)
+          deactivate_assister_agency_staff_role(form[:person_id], form[:profile_id])
         elsif form[:is_general_agency_staff_profile?]
           person_ids = Person.staff_for_ga(profile).map(&:id)
           return false, 'Please add another staff role before deleting this role' if invalid_person_count?(person_ids, form)
@@ -60,17 +71,18 @@ module BenefitSponsors
         person = Person.find(form[:person_id])
         role = if form[:is_broker_agency_staff_profile?]
                  person.broker_agency_staff_roles.detect{|staff| staff.agency_pending? && staff.benefit_sponsors_broker_agency_profile_id.to_s == form[:profile_id]}
+               elsif form[:is_assister_agency_staff_profile?]
+                 person.assister_agency_staff_roles.detect{|staff| staff.agency_pending? && staff.benefit_sponsors_assister_agency_profile_id.to_s == form[:profile_id]}
                elsif form[:is_general_agency_staff_profile?]
                  person.general_agency_staff_roles.detect{|staff| staff.agency_pending? && staff.benefit_sponsors_general_agency_profile_id.to_s == form[:profile_id]}
                else
                  person.employer_staff_roles.detect{|staff| staff.is_applicant? && staff.benefit_sponsor_employer_profile_id.to_s == form[:profile_id]}
                end
         if role && role.approve && role.save!
-          return true, 'Role is approved'
+          [true, 'Role is approved']
         else
-          return false, 'Please contact HBX Admin to report this error'
+          [false, 'Please contact HBX Admin to report this error']
         end
-
       end
 
       def match_or_create_person(form)
@@ -116,6 +128,25 @@ module BenefitSponsors
         end
       end
 
+      def persist_assister_agency_staff_role!(profile)
+        terminated_assisters_with_same_profile = person.assister_agency_staff_roles.detect{|role| role.benefit_sponsors_assister_agency_profile_id == profile.id && role.aasm_state == "assister_agency_terminated"}
+        active_assisters_with_same_profile =  person.assister_agency_staff_roles.detect{|role| role.benefit_sponsors_assister_agency_profile_id == profile.id && role.aasm_state == "active"}
+        pending_assisters_with_same_profile = person.assister_agency_staff_roles.detect{|role| role.benefit_sponsors_assister_agency_profile_id == profile.id && role.aasm_state == "assister_agency_pending"}
+
+        if terminated_assisters_with_same_profile.present?
+          terminated_assisters_with_same_profile.assister_agency_pending!
+          [true, person]
+        elsif pending_assisters_with_same_profile.present?
+          [false,  "your application status was in pending with this Assister Agency"]
+        elsif active_assisters_with_same_profile.present?
+          [false,  "you are already associated with this Assister Agency"]
+        else
+          person.assister_agency_staff_roles << ::AssisterAgencyStaffRole.new({assister_agency_profile: profile})
+          person.save!
+          [true, person]
+        end
+      end
+
       def persist_general_agency_staff_role!(profile)
         terminated_general_agencies_with_same_profile = person.general_agency_staff_roles.detect{|role| role if role.benefit_sponsors_general_agency_profile_id == profile.id && role.aasm_state == "general_agency_terminated"}
         active_general_agencies_with_same_profile =  person.general_agency_staff_roles.detect{|role| role if role.benefit_sponsors_general_agency_profile_id == profile.id && role.aasm_state == "active"}
@@ -150,14 +181,23 @@ module BenefitSponsors
         end
       end
 
+      def assister_agency_search!(form)
+        results = BenefitSponsors::Organizations::Organization.assister_agencies_with_matching_agency_or_assister(form[:filter_criteria].symbolize_keys!, form.is_assister_registration_page)
+        if results.first.is_a?(Person)
+          @filtered_assister_roles  = results.map(&:assister_role)
+          @assister_agency_profiles = results.map{|assister| assister.assister_role.assister_agency_profile}.uniq
+        else
+          @assister_agency_profiles = results.map(&:assister_agency_profile).reject{|agency| agency.primary_assister_role.aasm_state == 'decertified'}.uniq
+        end
+      end
+
       def general_agency_search!(form)
         results = BenefitSponsors::Organizations::Organization.general_agencies_with_matching_ga(form[:filter_criteria].symbolize_keys!, form.is_general_agency_registration_page)
-        if results.first.is_a?(Person)
-          # @filtered_broker_roles  = results.map(&:broker_role)
-          @general_agency_profiles = results.map{|ga| ga.general_agency_primary_staff.general_agency_profile}.uniq
-        else
-          @general_agency_profiles = results.map(&:general_agency_profile).uniq
-        end
+        @general_agency_profiles = if results.first.is_a?(Person)
+                                     results.map{|ga| ga.general_agency_primary_staff.general_agency_profile}.uniq
+                                   else
+                                     results.map(&:general_agency_profile).uniq
+                                   end
       end
 
       def add_broker_agency_staff_role(first_name, last_name, dob, _email, broker_agency_profile)
@@ -178,6 +218,28 @@ module BenefitSponsors
             }
           )
           broker_agency_staff_role.broker_agency_accept!
+        end
+        [true, person.first]
+      end
+
+      def add_assister_agency_staff_role(first_name, last_name, dob, _email, assister_agency_profile)
+        person = Person.where(first_name: /^#{first_name}$/i, last_name: /^#{last_name}$/i, dob: dob)
+
+        return false, 'Person does not exist on the Exchange' if person.count == 0
+        return false, 'Person count too high, please contact HBX Admin' if person.count > 1
+        return false, 'Person already has a staff role for this assister' if Person.staff_for_assister_including_pending(assister_agency_profile).include?(person.first)
+
+        terminated_assisters_with_same_profile =  person.first.assister_agency_staff_roles.detect{|role| role if role.benefit_sponsors_assister_agency_profile_id == assister_agency_profile.id && role.aasm_state == "assister_agency_terminated"}
+
+        if terminated_assisters_with_same_profile.present?
+          terminated_assisters_with_same_profile.assister_agency_active!
+        else
+          assister_agency_staff_role = person.first.create_assister_agency_staff_role(
+            {
+              benefit_sponsors_assister_agency_profile_id: assister_agency_profile.id
+            }
+          )
+          assister_agency_staff_role.assister_agency_accept!
         end
         [true, person.first]
       end
@@ -216,6 +278,23 @@ module BenefitSponsors
         [true, 'Broker Agency Staff Role is inactive']
       end
 
+      def deactivate_assister_agency_staff_role(person_id, assister_agency_profile_id)
+        begin
+          person = Person.find(person_id)
+        rescue StandardError
+          return false, 'Person not found'
+        end
+
+        assister_agency_staff_role = person.assister_agency_staff_roles.detect do |role|
+          (role.benefit_sponsors_assister_agency_profile_id.to_s || role.assister_agency_profile_id.to_s) == assister_agency_profile_id.to_s && role.is_open?
+        end
+
+        return false, 'No matching Assister Agency Staff role' if assister_agency_staff_role.blank?
+
+        assister_agency_staff_role.assister_agency_terminate!
+        [true, 'Assister Agency Staff Role is inactive']
+      end
+
       def deactivate_general_agency_staff_role(person_id, general_agency_profile_id)
         begin
           person = Person.find(person_id)
@@ -248,6 +327,7 @@ module BenefitSponsors
                      :dob => form[:dob]
                    })
       end
+
       def regex_for(str)
         clean_string = ::Regexp.escape(str.strip)
         /^#{clean_string}$/i

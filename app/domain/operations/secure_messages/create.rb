@@ -23,7 +23,14 @@ module Operations
       private
 
       def fetch_recipient(resource)
-        recipient = resource.is_a?(::BenefitSponsors::Organizations::BrokerAgencyProfile) ? resource&.primary_broker_role&.person : resource
+        recipient = case resource
+                    when ::BenefitSponsors::Organizations::BrokerAgencyProfile
+                      resource&.primary_broker_role&.person
+                    when ::BenefitSponsors::Organizations::AssisterAgencyProfile
+                      resource&.primary_assister_role&.person
+                    else
+                      resource
+                    end
         return Failure({:message => ['Please find valid resource to send the message']}) if recipient.blank?
 
         Success(recipient)

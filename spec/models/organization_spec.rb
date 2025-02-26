@@ -135,7 +135,7 @@ RSpec.describe Organization, dbclean: :after_each do
       carrier_names[carrier_profile_1.id.to_s] = carrier_profile_1.legal_name
       carrier_names[carrier_profile_2.id.to_s] = carrier_profile_2.legal_name
       carrier_names[sole_source_participater.id.to_s] = sole_source_participater.legal_name
-      carrier_names.sort
+      carrier_names
     end
 
     before :each do

@@ -62,6 +62,14 @@ module BenefitSponsors
           expect(new_form).to be_valid
           expect(new_form.errors.messages.has_key?(:fein)).to eq false
         end
+
+        it "new form should be valid when fein is nil for assister_agency" do
+          params[:fein] = nil
+          new_form = subject.new params.merge({profile: {profile_type: 'assister_agency'} })
+          new_form.validate
+          expect(new_form).to be_valid
+          expect(new_form.errors.messages.key?(:fein)).to eq false
+        end
       end
     end
   end

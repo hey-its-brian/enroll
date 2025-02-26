@@ -1,0 +1,12 @@
+<%= form_for @assister_applicant, url: {action: "update"} do |f| %>
+<div class="container top-pd">
+  <div class="row">
+    <div class="col-lg-7 col-md-7 col-sm-8 col-xs-12">
+
+      <% assister_or_staff_role = @assister_applicant.assister_role.nil? ? @assister_applicant.assister_agency_staff_roles[0] : @assister_applicant.assister_role %>
+
+      <%= render partial: "shared/assisters/assister_fields", :locals => {f: f, assister_or_staff_role: assister_or_staff_role} %>
+    </div>
+  </div>
+</div>
+<% end %>

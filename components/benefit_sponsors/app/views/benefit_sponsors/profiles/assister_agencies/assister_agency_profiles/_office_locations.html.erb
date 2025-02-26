@@ -1,0 +1,18 @@
+<% if office_locations.present? %>
+  <h2><%= l10n("office_locations")%></h2>
+  <% addresses_by_kind(office_locations).each do |kind, addresses| %>
+    <section class="mb-2">
+      <% address_count = addresses.length %>
+      <h3 class="mb-0"><%= kind.pluralize(address_count).titleize %></h3>
+      <% if address_count == 1 %>
+        <%= addresses.first %>
+      <% else %>
+        <ol class="pl-4">
+          <% addresses.each do |address| %>
+            <li><%= address %></li>
+          <% end %>
+        </ol>
+      <% end %>
+    </section>
+  <% end %>
+<% end %>

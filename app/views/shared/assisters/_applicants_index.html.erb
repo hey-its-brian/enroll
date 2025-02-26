@@ -1,0 +1,56 @@
+<div id="assister_applicants_list">
+  <div id="assister_applicants_roster">
+    <h1><%= l10n("admin.applicants") %></h1>
+    <div class="form-inline my-3">
+      <fieldset class="mb-4" id="applicantsFilters">
+        <% if @assister_agency_profile %>
+        <label class="active">
+          <input type="radio" name="options" autocomplete="off" value="assister_agency_pending" checked><%= l10n("admin.applicant") %>
+        </label>
+        <label>
+          <input type="radio" name="options" autocomplete="off" value="active"><%= l10n("admin.accepted") %>
+        </label>
+        <label>
+          <input type="radio" name="options" autocomplete="off" value="assister_agency_declined"><%= l10n("admin.declined") %>
+        </label>
+        <label>
+          <input type="radio" name="options" autocomplete="off" value="assister_agency_terminated"><%= l10n("admin.terminated") %>
+        </label>
+        <label>
+          <input type="radio" name="options" autocomplete="off" value="all"><%= l10n("all") %>
+        </label>
+        <% else %>
+          <label class="active">
+            <input type="radio" name="options" autocomplete="off" value="applicant" checked><%= l10n("admin.applicant") %>
+          </label>
+          <label>
+            <input type="radio" name="options" autocomplete="off" value="certified"><%= l10n("admin.certified") %>
+          </label>
+          <label>
+            <input type="radio" name="options" autocomplete="off" value="pending"><%= l10n("admin.pending") %>
+          </label>
+          <label>
+            <input type="radio" name="options" autocomplete="off" value="decertified"><%= l10n("admin.decertified") %>
+          </label>
+          <label>
+            <input type="radio" name="options" autocomplete="off" value="denied"><%= l10n("admin.denied") %>
+          </label>
+          <label>
+            <input type="radio" name="options" autocomplete="off" value="extended"><%= l10n("admin.extended") %>
+          </label>
+          <label>
+            <input type="radio" name="options" autocomplete="off" value="imported"><%= l10n("admin.imported") %>
+          </label>
+          <label>
+            <input type="radio" name="options" autocomplete="off" value="all"><%= l10n("all") %>
+          </label>
+        <% end %>
+      </fieldset>
+    </div>
+  </div>
+
+  <%= link_to("assister_agencies_path", assister_agencies_profile_applicants_path(@assister_agency_profile), id: "assister_agency_profile_id", class: "hidden") if @assister_agency_profile %>
+  <div id="assister_applicants">
+    <%= render "shared/assisters/applicants", url: url, index_url: index_url %>
+  </div>
+</div>

@@ -12,6 +12,7 @@ module BenefitSponsors
     let!(:super_admin_permission) { FactoryBot.create(:permission, :super_admin) }
     let!(:read_only_permission) { FactoryBot.create(:permission, :hbx_read_only) }
     let!(:profile_type) {'broker_agency'}
+    let!(:assister_profile_type) {'assister_agency'}
     let!(:site) { create(:benefit_sponsors_site, :with_benefit_market, :as_hbx_profile, :cca) }
     let!(:organization_with_hbx_profile)  { site.owner_organization }
 
@@ -36,6 +37,34 @@ module BenefitSponsors
     end
 
     context "broker_agency_profile with an hbx_admin without edit_broker_agency_profile permissions" do
+
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:edit_broker_agency_profile).and_return(true)
+        allow(subject).to receive(:profile_type).and_return(profile_type)
+        user.person.build_hbx_staff_role(hbx_profile_id: organization_with_hbx_profile.hbx_profile.id)
+        user.person.hbx_staff_role.permission_id = read_only_permission.id
+        user.person.hbx_staff_role.save!
+      end
+
+      it "should not be updatable" do
+        expect(subject.update?).to be_falsey
+      end
+    end
+
+    context "assister_agency_profile with an hbx_admin with edit_broker_agency_profile permissions" do
+
+      before do
+        user.person.build_hbx_staff_role(hbx_profile_id: organization_with_hbx_profile.hbx_profile.id)
+        user.person.hbx_staff_role.permission_id = super_admin_permission.id
+        user.person.hbx_staff_role.save!
+      end
+
+      it "should be updatable" do
+        expect(subject.update?).to be_truthy
+      end
+    end
+
+    context "assister_agency_profile with an hbx_admin without edit_broker_agency_profile permissions" do
 
       before do
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:edit_broker_agency_profile).and_return(true)

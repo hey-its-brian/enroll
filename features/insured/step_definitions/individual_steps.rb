@@ -202,12 +202,27 @@ When(/^bs4_consumer_flow feature is enabled$/) do
   enable_feature :contrast_level_aa
 end
 
+When(/^assister_agency feature is enabled$/) do
+  allow(EnrollRegistry[:assister_agency].feature).to receive(:is_enabled).and_return(true)
+  enable_feature :assister_agency
+end
+
 When(/^bs4_consumer_flow feature is disable$/) do
   disable_feature :bs4_consumer_flow
 end
 
 Given(/^bs4_admin_flow feature is disable$/) do
   disable_feature :bs4_admin_flow
+end
+
+Given(/^bs4_admin_flow feature is enabled$/) do
+  enable_feature :bs4_admin_flow
+  allow(EnrollRegistry[:bs4_admin_flow].feature).to receive(:is_enabled).and_return(true)
+end
+
+Given(/^bs4_broker_flow feature is enabled$/) do
+  enable_feature :bs4_broker_flow
+  allow(EnrollRegistry[:bs4_broker_flow].feature).to receive(:is_enabled).and_return(true)
 end
 
 Given(/^show_new_verifications_household_summary feature is (.*)$/) do |feature|

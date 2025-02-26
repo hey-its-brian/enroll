@@ -1,6 +1,6 @@
 <% if @bs4 %>
   <% if EnrollRegistry.feature_enabled?(:show_sep_attestation_options) %>
-    <div class="home-widget p-2">
+    <div class="home-widget col-4 p-2 mr-2">
       <h3><%= l10n("insured.report_a_life_change") %></h3>
       <div class="pr-2 pl-2 pb-2 w-100">
         <% applications = FinancialAssistance::Application.where({family_id: @person.primary_family.id}) %>

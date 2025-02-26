@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
-require_relative '../../../concerns/observable_spec.rb'
+require_relative '../../../concerns/observable_spec'
 
 module BenefitSponsors
   RSpec.describe Organizations::Organization, type: :model, dbclean: :after_each do
@@ -45,7 +47,7 @@ module BenefitSponsors
       before { broker_organization.plan_design_subjects << employer_organization }
 
       it "the employer should appear in the broker's subject list" do
-        expect((broker_organization.plan_design_subjects).size).to eq 1
+        expect(broker_organization.plan_design_subjects.size).to eq 1
         expect(broker_organization.plan_design_subjects.first).to eq employer_organization
       end
 
@@ -55,7 +57,7 @@ module BenefitSponsors
       # end
 
       it "the broker should appear in the employer's author ID list" do
-        expect((employer_organization.plan_design_author_ids).size).to eq 1
+        expect(employer_organization.plan_design_author_ids.size).to eq 1
         expect(employer_organization.plan_design_author_ids.first).to eq broker_organization.id
       end
 
@@ -134,16 +136,16 @@ module BenefitSponsors
 
         it "should return searched broker agency profile" do
           search_params = {q: organization.legal_name}
-          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, nil).count). to eq 1
-          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, nil).first.legal_name). to eq organization.legal_name
+          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, nil).count).to eq 1
+          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, nil).first.legal_name).to eq organization.legal_name
         end
 
         it "should return all broker agency profiles if no search string is passed" do
           second_organization.update_attributes(legal_name: 'org2')
           second_broker_agency_profile.update_attributes(aasm_state: 'is_approved', market_kind: 'shop')
           search_params = {q: ''}
-          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, nil).count). to eq 2
-          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, nil).first.legal_name). to eq organization.legal_name
+          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, nil).count).to eq 2
+          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, nil).first.legal_name).to eq organization.legal_name
         end
 
       end
@@ -152,15 +154,72 @@ module BenefitSponsors
 
         it "should return searched broker agency profile" do
           search_params = {q: organization.legal_name}
-          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, true).count). to eq 1
-          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, true).first.legal_name). to eq organization.legal_name
+          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, true).count).to eq 1
+          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, true).first.legal_name).to eq organization.legal_name
         end
 
         it "should not return any broker agency profiles if no search string is passed" do
           second_organization.update_attributes(legal_name: 'org2')
           second_broker_agency_profile.update_attributes(aasm_state: 'is_approved')
           search_params = {q: ''}
-          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, true).count). to eq 0
+          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, true).count).to eq 0
+        end
+      end
+    end
+
+    context "search for assister agencies" do
+      let!(:site)                          { create(:benefit_sponsors_site, :with_benefit_market, :as_hbx_profile, :cca) }
+      let(:organization_with_hbx_profile)  { site.owner_organization }
+      let!(:organization)                  { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+      let!(:assister_agency_profile1) { organization.assister_agency_profile }
+
+      let!(:second_organization)                  { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+      let!(:second_assister_agency_profile) { second_organization.assister_agency_profile }
+      let!(:subject) { BenefitSponsors::Organizations::Organization }
+      let!(:new_person_for_staff) { FactoryBot.create(:person) }
+      let!(:assister_role) { FactoryBot.create(:assister_role, aasm_state: 'active', benefit_sponsors_assister_agency_profile_id: assister_agency_profile1.id, person: new_person_for_staff) }
+
+
+      let(:bap_id) { organization.assister_agency_profile.id }
+
+      before do
+        Person.create_indexes
+        BenefitSponsors::Organizations::AssisterAgencyProfile::MARKET_KINDS << :shop
+        organization.update_attributes(legal_name: 'org1')
+        assister_agency_profile1.update_attributes(aasm_state: 'is_approved', market_kind: 'shop')
+      end
+
+      context "search for assister agencies from employer portal" do
+
+        it "should return searched assister agency profile" do
+          search_params = {q: organization.legal_name}
+          expect(subject.assister_agencies_with_matching_agency_or_assister(search_params, nil).count).to eq 1
+          expect(subject.assister_agencies_with_matching_agency_or_assister(search_params, nil).first.legal_name).to eq organization.legal_name
+        end
+
+        it "should return all assister agency profiles if no search string is passed" do
+          second_organization.update_attributes(legal_name: 'org2')
+          second_assister_agency_profile.update_attributes(aasm_state: 'is_approved', market_kind: 'shop')
+          search_params = {q: ''}
+          expect(subject.assister_agencies_with_matching_agency_or_assister(search_params, nil).count).to eq 2
+          expect(subject.assister_agencies_with_matching_agency_or_assister(search_params, nil).first.legal_name).to eq organization.legal_name
+        end
+
+      end
+
+      context "search for assister agencies from assister staff portal" do
+
+        it "should return searched assister agency profile" do
+          search_params = {q: organization.legal_name}
+          expect(subject.assister_agencies_with_matching_agency_or_assister(search_params, true).count).to eq 1
+          expect(subject.assister_agencies_with_matching_agency_or_assister(search_params, true).first.legal_name).to eq organization.legal_name
+        end
+
+        it "should not return any assister agency profiles if no search string is passed" do
+          second_organization.update_attributes(legal_name: 'org2')
+          second_assister_agency_profile.update_attributes(aasm_state: 'is_approved')
+          search_params = {q: ''}
+          expect(subject.assister_agencies_with_matching_agency_or_assister(search_params, true).count).to eq 0
         end
       end
     end
@@ -188,15 +247,15 @@ module BenefitSponsors
 
         it "should return searched general agency profile" do
           search_params = {q: organization.legal_name}
-          expect(subject.general_agencies_with_matching_ga(search_params, true).count). to eq 1
-          expect(subject.general_agencies_with_matching_ga(search_params, true).first.legal_name). to eq organization.legal_name
+          expect(subject.general_agencies_with_matching_ga(search_params, true).count).to eq 1
+          expect(subject.general_agencies_with_matching_ga(search_params, true).first.legal_name).to eq organization.legal_name
         end
 
         it "should not return any broker agency profiles if no search string is passed" do
           second_organization.update_attributes(legal_name: 'org2')
           second_general_agency_profile.update_attributes(aasm_state: 'is_approved')
           search_params = {q: ''}
-          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, true).count). to eq 0
+          expect(subject.broker_agencies_with_matching_agency_or_broker(search_params, true).count).to eq 0
         end
       end
     end

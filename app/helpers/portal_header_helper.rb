@@ -183,4 +183,33 @@ module PortalHeaderHelper
       person.broker_role.present?
     end
   end
+
+  # @method display_i_am_assister_for_consumer?(person)
+  # Determines if the 'Assister' should be displayed for a given person with active Consumer Role.
+  #
+  # @param [Person] person The person for whom to check the assister status.
+  #
+  # @return [Boolean]
+  #   When the feature ':broker_role_consumer_enhancement' is enabled and Active Consumer Role exists:
+  #     Returns true if active assister role, active assister agency staff role, and both the active assister agency staff & active assister role have the same assister agency profile.
+  #     else returns false.
+  #   When the feature ':broker_role_consumer_enhancement' is disabled:
+  #     Returns true if person has a assister role.
+  #     else returns false.
+  #
+  # @example Check if 'Assister' should be displayed for a person with active Consumer Role
+  #   display_i_am_assister_for_consumer?(person) #=> true/false
+  def display_i_am_assister_for_consumer?(person)
+    return if person.blank?
+
+    if EnrollRegistry.feature_enabled?(:broker_role_consumer_enhancement) && person.has_active_consumer_role?
+      assister_role = person.assister_role
+      matching_aasr = person.assister_agency_staff_roles.where(
+        benefit_sponsors_assister_agency_profile_id: assister_role&.benefit_sponsors_assister_agency_profile_id
+      ).first
+      assister_role.present? && assister_role.active? && matching_aasr.present? && matching_aasr.active?
+    else
+      person.assister_role.present?
+    end
+  end
 end

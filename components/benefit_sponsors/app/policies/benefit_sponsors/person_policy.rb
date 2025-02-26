@@ -40,5 +40,26 @@ module BenefitSponsors
 
       false
     end
+
+    def show_assister_inbox_message?
+      assister = record.assister_role
+      assister_staff_roles = account_holder_person&.assister_agency_staff_roles&.active
+      return false if assister.blank?
+
+      # Current User Person same as the record(person).
+      return true if account_holder_person == record
+
+      # Current User is HbxStaffAdmin.
+      return true if shop_market_admin?
+
+      # Current User is Broker Agency Staff.
+      return true if assister_staff_roles&.any? { |role| role&.assister_agency_profile_id == assister.assister_agency_profile_id }
+
+      false
+    end
+
+    def destroy_assister_inbox_message?
+      show_assister_inbox_message?
+    end
   end
 end

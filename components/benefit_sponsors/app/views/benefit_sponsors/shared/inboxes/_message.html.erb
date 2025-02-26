@@ -19,8 +19,10 @@
         <%= sanitize_html(message.try(:body)) %>
       </div>
     </div>
-    <% if (@inbox_provider.class.to_s == "Person") && (/.*BrokerAgencyProfile$/.match(@inbox_provider.broker_role.broker_agency_profile._type)) %>
+    <% if (@inbox_provider.class.to_s == "Person") && (/.*BrokerAgencyProfile$/.match(@inbox_provider&.broker_role&.broker_agency_profile&._type)) %>
       <%= link_to l10n("back_to_messages"), messages_profiles_broker_agencies_broker_agency_profiles_path(id: @inbox_provider.broker_role.broker_agency_profile.id), :remote => true, "aria-expanded" => "true", "aria-controls" => "inbox", "role" => "tab", class: "button outline" %>
+    <% elsif (@inbox_provider.class.to_s == "Person") && (/.*AssisterAgencyProfile$/.match(@inbox_provider&.assister_role&.assister_agency_profile&._type)) %>
+      <%= link_to l10n("back_to_messages"), messages_profiles_assister_agencies_assister_agency_profiles_path(id: @inbox_provider.assister_role.assister_agency_profile.id), :remote => true, "aria-expanded" => "true", "aria-controls" => "inbox", "role" => "tab", class: "button outline" %>
     <% else %>
       <%= h(link_to(l10n("back_to_messages"), :back, class: 'btn outline btn-default')) %>
     <% end %>

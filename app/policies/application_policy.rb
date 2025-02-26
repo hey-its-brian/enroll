@@ -114,6 +114,14 @@ class ApplicationPolicy
     primary_family_member_ridp_verified? && active_associated_individual_market_family_broker_staff?
   end
 
+  # Checks if the current user is a primary family member who has verified their identity and is an active associated individual market family assister staff.
+  #
+  # @return [Boolean] Returns true if the primary family member has verified their
+  # identity and the user is an active associated individual market family assister staff, false otherwise.
+  def active_associated_individual_market_ridp_verified_family_assister_staff?
+    primary_family_member_ridp_verified? && active_associated_individual_market_family_assister_staff?
+  end
+
   # Checks if the current user is an active associated individual market family broker staff.
   # It checks if the user has any active broker agency staff roles and if the user's family has an active broker agency account.
   # If both conditions are met, it checks if any of the user's broker agency staff roles
@@ -137,6 +145,29 @@ class ApplicationPolicy
     end
   end
 
+  # Checks if the current user is an active associated individual market family assister staff.
+  # It checks if the user has any active assister agency staff roles and if the user's family has an active assister agency account.
+  # If both conditions are met, it checks if any of the user's assister agency staff roles
+  # are associated with the assister agency profile of the family's active assister agency account.
+  # Additionally, it checks if the assister staff's benefit sponsors assister agency profile ID matches the assister agency's ID.
+  #
+  # @return [Boolean] Returns true if the user is an active associated individual market family assister staff, false otherwise.
+  def active_associated_individual_market_family_assister_staff?
+    assister_staffs = account_holder_person&.assister_agency_staff_roles&.active
+    return false if assister_staffs.blank?
+
+    return false if family.blank?
+
+    assister_agency_account = family.active_assister_agency_account
+    return false if assister_agency_account.blank?
+
+    assister_agency = assister_agency_account.assister_agency_profile
+
+    assister_staffs.any? do |staff|
+      staff.benefit_sponsors_assister_agency_profile_id == assister_agency.id
+    end
+  end
+
   # Determines if the current user is an active associated broker in the individual market.
   # The user is considered an active associated broker if they are an active associated broker for the family in the individual market.
   # The primary family member must be verified for their identity.
@@ -145,6 +176,16 @@ class ApplicationPolicy
   # @return [Boolean] Returns true if the user is an active associated broker in the individual market who has verified their identity, false otherwise.
   def active_associated_individual_market_ridp_verified_family_broker?
     primary_family_member_ridp_verified? && active_associated_individual_market_family_broker?
+  end
+
+  # Determines if the current user is an active associated assister in the individual market.
+  # The user is considered an active associated assister if they are an active associated assister for the family in the individual market.
+  # The primary family member must be verified for their identity.
+  # The assister is allowed to access only if the assister is active and associated to the family if the primary person of the family is RIDP verified.
+  #
+  # @return [Boolean] Returns true if the user is an active associated assister in the individual market who has verified their identity, false otherwise.
+  def active_associated_individual_market_ridp_verified_family_assister?
+    primary_family_member_ridp_verified? && active_associated_individual_market_family_assister?
   end
 
   # Determines if the current user is an active associated broker in the individual market.
@@ -161,6 +202,22 @@ class ApplicationPolicy
 
     broker_agency_account.benefit_sponsors_broker_agency_profile_id == broker.benefit_sponsors_broker_agency_profile_id &&
       broker_agency_account.writing_agent_id == broker.id
+  end
+
+  # Determines if the current user is an active associated assister in the individual market.
+  # The user is considered an active associated assister if they have a assister role that is active and in the individual market,
+  # and their assister agency account is active and associated with the same assister agency profile and writing agent as their assister role.
+  #
+  # @return [Boolean] Returns true if the user is an active associated assister in the individual market, false otherwise.
+  def active_associated_individual_market_family_assister?
+    assister = account_holder_person&.assister_role
+    return false if assister.blank? || !assister.active? || !assister.individual_market?
+
+    assister_agency_account = family&.active_assister_agency_account
+    return false if assister_agency_account.blank?
+
+    assister_agency_account.benefit_sponsors_assister_agency_profile_id == assister.benefit_sponsors_assister_agency_profile_id &&
+      assister_agency_account.writing_agent_id == assister.id
   end
 
   # Determines if the current user is an admin in the individual market.
@@ -207,6 +264,26 @@ class ApplicationPolicy
 
     broker_agency_account.benefit_sponsors_broker_agency_profile_id == broker.benefit_sponsors_broker_agency_profile_id &&
       broker_agency_account.writing_agent_id == broker.id
+  end
+
+  # Checks if the account holder is an active assister associated with the given family in the coverall market.
+  # A user is considered an active assister associated with the family in the coverall market if they have an active assister role,
+  # they are associated with the coverall market, and they are the writing agent for the family's active assister agency account.
+  # TODO: We need to check if Primary Person's RIDP needs to be verified for Associated Active Certified Brokers to access Coverall Market
+  #
+  # @param family [Family] The family to check.
+  # @return [Boolean] Returns true if the account holder is an active assister associated with the given family in the coverall market, false otherwise.
+  def active_associated_coverall_market_family_assister?
+    return false unless coverall_market_role
+
+    assister = account_holder_person&.assister_role
+    return false if assister.blank? || !assister.active? || !assister.individual_market?
+
+    assister_agency_account = family.active_assister_agency_account
+    return false if assister_agency_account.blank?
+
+    assister_agency_account.benefit_sponsors_assister_agency_profile_id == assister.benefit_sponsors_assister_agency_profile_id &&
+      assister_agency_account.writing_agent_id == assister.id
   end
 
   # Checks if the account holder is an admin in the coverall market.
@@ -335,6 +412,14 @@ class ApplicationPolicy
   end
 
   def staff_approve_broker?
+    permission&.approve_broker
+  end
+
+  def staff_send_assister_agency_message?
+    permission&.send_broker_agency_message
+  end
+
+  def staff_approve_assister?
     permission&.approve_broker
   end
 
@@ -513,6 +598,8 @@ class ApplicationPolicy
       @user.has_role? :employee or
       @user.has_role? :broker or
       @user.has_role? :broker_agency_staff or
+      @user.has_role? :assister or
+      @user.has_role? :assister_agency_staff or
       @user.has_role? :consumer or
       @user.has_role? :resident or
       @user.has_role? :hbx_staff or
@@ -524,7 +611,7 @@ class ApplicationPolicy
 
   def update_all?
     @user.has_role? :broker_agency_staff or
-      @user.has_role? :assister or
+      @user.has_role? :assister_agency_staff or
       @user.has_role? :csr
   end
 
@@ -549,10 +636,22 @@ class ApplicationPolicy
     @broker_profile_ids = ([individual_market_family_broker_agency_id] + shop_market_family_broker_agency_ids).compact
   end
 
+  def assister_profile_ids
+    return @assister_profile_ids if defined? @assister_profile_ids
+
+    @assister_profile_ids = ([individual_market_family_assister_agency_id] + shop_market_family_assister_agency_ids).compact
+  end
+
   def individual_market_family_broker_agency_id
     return @individual_market_family_broker_agency_id if defined? @individual_market_family_broker_agency_id
 
     @individual_market_family_broker_agency_id = family&.current_broker_agency&.benefit_sponsors_broker_agency_profile_id
+  end
+
+  def individual_market_family_assister_agency_id
+    return @individual_market_family_assister_agency_id if defined? @individual_market_family_assister_agency_id
+
+    @individual_market_family_assister_agency_id = family&.current_assister_agency&.benefit_sponsors_assister_agency_profile_id
   end
 
   # Fetches the IDs of broker agencies associated with the family in the shop market.
@@ -576,6 +675,30 @@ class ApplicationPolicy
   def fetch_broker_agency_ids
     family.primary_person.active_employee_roles.filter_map do |er|
       er.employer_profile&.active_broker_agency_account&.benefit_sponsors_broker_agency_profile_id
+    end
+  end
+
+  # Fetches the IDs of assister agencies associated with the family in the shop market.
+  # The method first checks if the IDs have already been fetched and stored in an instance variable.
+  # If not, it fetches the IDs and stores them in the instance variable for future use.
+  # If the family is not present, it returns an empty array.
+  #
+  # @return [Array<Integer>] An array of assister agency IDs associated with the family in the shop market.
+  def shop_market_family_assister_agency_ids
+    return @shop_market_family_assister_agency_ids if defined? @shop_market_family_assister_agency_ids
+
+    @shop_market_family_assister_agency_ids = family.present? ? fetch_assister_agency_ids : []
+  end
+
+  # Fetches the IDs of assister agencies associated with the family's primary person's active employee roles.
+  # For each active employee role, it gets the employer profile, then the active assister agency account,
+  # and finally the ID of the assister agency profile.
+  # If any of these associations are not present, it skips to the next employee role.
+  #
+  # @return [Array<Integer>] An array of assister agency IDs associated with the family's primary person's active employee roles.
+  def fetch_assister_agency_ids
+    family.primary_person.active_employee_roles.filter_map do |er|
+      er.employer_profile&.active_assister_agency_account&.benefit_sponsors_assister_agency_profile_id
     end
   end
 end

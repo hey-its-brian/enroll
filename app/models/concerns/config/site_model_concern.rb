@@ -10,6 +10,7 @@ module Config::SiteModelConcern
     delegate :is_shop_or_fehb_market_enabled?, :to => :class
     delegate :is_individual_market_enabled?, :to => :class
     delegate :is_shop_and_individual_market_enabled?, :to => :class
+    delegate :is_assister_agency_enabled?, :to => :class
   end
 
   class_methods do
@@ -27,6 +28,10 @@ module Config::SiteModelConcern
 
     def is_broker_agency_enabled?
       EnrollRegistry.feature_enabled?(:brokers)
+    end
+
+    def is_assister_agency_enabled?
+      EnrollRegistry.feature_enabled?(:assister_agency)
     end
 
     def is_general_agency_enabled?

@@ -4,6 +4,7 @@ $('#help_list').addClass('hide')
 $('#help_sign_up_title').addClass('hide')
 $('#help_from_expert_title').removeClass('hide')
 $('#bottom_expert_link').addClass("hide");
+$('#bottom_expert_assister_link').addClass("hide");
 $('#help_type').html('Broker')
 <% if EnrollRegistry.feature_enabled?(:staff_list_back) %>
   $('#back_to_help').removeClass('hide')
@@ -20,6 +21,7 @@ $('.broker_select_button').click(function(e) {
   $('#close_help_modal').addClass('hide');
   $('#inbox_provider_form').addClass('hide');
   $('#help_index_status').html('');
+  $('#bottom_expert_link').addClass("hide");
   e.stopPropagation();
 })
 $('.close_broker_select').click(function(){
@@ -38,5 +40,6 @@ $(document).on('click', '#close_help_modal', function(){
   $('#help_sign_up_title').removeClass("hide");
   $('#help_from_expert_title').addClass("hide");
   $('#bottom_expert_link').removeClass("hide");
+  $('#bottom_expert_assister_link').removeClass("hide");
   location.reload();
 })

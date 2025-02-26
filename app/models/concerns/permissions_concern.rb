@@ -45,6 +45,10 @@ module PermissionsConcern
       person&.has_active_broker_staff_role?
     end
 
+    def has_assister_agency_staff_role?
+      person&.has_active_assister_staff_role?
+    end
+
     def has_general_agency_staff_role?
       person&.has_active_general_agency_staff_role?
     end
@@ -113,7 +117,7 @@ module PermissionsConcern
       broker_agency_staff: "broker_agency_staff",
       general_agency_staff: "general_agency_staff",
       assister: 'assister',
-      csr: 'csr',
+      csr: 'csr'
     }
   end
 end

@@ -1,0 +1,10 @@
+<%= render "ui-components/v1/navs/primary_nav" %>
+<% @assister_applicants = @assister_applicants.sort_by { |assister_applicant| assister_applicant.assister_role.latest_transition_time }.reverse if @status == 'applicant' %>
+<%= render "shared/assisters/applicants_index", url: exchanges_assister_applicants_path, index_url: exchanges_assister_applicants_path(status: @status) %>
+
+<script>
+  (function() {
+    enableAssisterApplicantFilters();
+  })();
+</script>
+

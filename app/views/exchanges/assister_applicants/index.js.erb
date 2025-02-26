@@ -1,0 +1,9 @@
+<% @assister_applicants = @assister_applicants.sort_by do |assister_applicant| assister_applicant.assister_role.latest_transition_time end.reverse if @status == 'applicant'%>
+
+if ($("#assister_applicants_roster").length > 0) {
+  $('#assister_applicants').html("<%= escape_javascript(render "shared/assisters/applicants", url: exchanges_assister_applicants_path, index_url: exchanges_assister_applicants_path(status: @status)) %>");
+}
+else {
+  set_tab_content("<%= escape_javascript(render "shared/assisters/applicants_index", url: exchanges_assister_applicants_path, index_url: exchanges_assister_applicants_path(status: @status)) %>");
+  enableBrokerApplicantFilters();
+}

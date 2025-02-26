@@ -36,7 +36,7 @@ $(document).on('click', '.name_search_only', function() {
   $('#help_type').html(this.id)
   $('#back_to_help').removeClass('hide')
 })
-$(document).on('click', '[data-target="#help_with_plan_shopping"]',function(){$('.help_reset').addClass("hide"); $('#help_list').removeClass("hide"); $('#back_to_help').addClass("hide"); $('#bottom_expert_link').removeClass("hide") })
+$(document).on('click', '[data-target="#help_with_plan_shopping"]',function(){$('.help_reset').addClass("hide"); $('#help_list').removeClass("hide"); $('#back_to_help').addClass("hide"); $('#bottom_expert_link').removeClass("hide"); $('#bottom_expert_assister_link').removeClass("hide") })
 
 $(document).on('click', '#back_to_help', function(){
   $('.help_reset').addClass("hide");
@@ -49,6 +49,7 @@ $(document).on('click', '#back_to_help', function(){
 
 $(document).on('click', '.select-broker', function(){
   $('.select-broker').addClass('disabled');
+  var helper_type = this.getAttribute('data-assister') ? "assister" : "broker";
   $.ajax({
     type: 'GET',
     data: {assister: this.getAttribute('data-assister'), broker: this.getAttribute('data-broker'),
@@ -61,10 +62,10 @@ $(document).on('click', '.select-broker', function(){
     broker_status = JSON.parse(response);
     var status = broker_status['status']
     $('#inbox_provider_form').hide();
-    $('#active_broker_tab .alert').removeClass('alert-warning').addClass('alert-success')
-    $('#active_broker_tab .icon').removeClass('warning-icon').addClass('success-icon')
-    $('#active_broker_tab .warning-body').text(status)
+    $('#active_'+helper_type+'_tab .alert').removeClass('alert-warning').addClass('alert-success')
+    $('#active_'+helper_type+'_tab .icon').removeClass('warning-icon').addClass('success-icon')
+    $('#active_'+helper_type+'_tab .warning-body').text(status)
     $('a.go-to-expert, button').removeClass('hidden').removeClass('hide');
-    $("#active_broker_tab button").addClass('hide')
+    $("#active_"+helper_type+"_tab button").addClass('hide')
   });
 })

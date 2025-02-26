@@ -1,0 +1,52 @@
+<h2 class="pt-4"><%= l10n("assister_agencies.staff") %></h2>
+<% if assister_staff&.any? %>
+  <table class="table border-top-0 col-9 px-0">
+    <thead>
+      <tr>
+        <th><%= l10n("name") %></th>
+        <th><%= l10n("email") %></th>
+        <th><%= l10n("phone") %></th>
+        <th><%= l10n("status") %></th>
+        <th class="numeric"><%= l10n("assister_agencies.remove_staff_role") %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% assister_staff.each do |staff_member| %>
+        <tr>
+          <td><%= staff_member.first_name.capitalize %> <%= staff_member.last_name.capitalize %></td>
+          <td><%= staff_member.work_email_or_best %></td>
+          <td><%= staff_member.work_phone %></td>
+          <td>
+            <%= staff_member.has_pending_assister_staff_role?(@assister_agency_profile.id) ? l10n("assister_agencies.pending") : l10n("assister_agencies.active") %>
+            <%= staff_member.user_id ? " #{l10n('assister_agencies.linked')} " : " #{l10n('assister_agencies.unlinked')} " %>
+              <% if staff_member.has_pending_assister_staff_role?(@assister_agency_profile.id) %>
+              <%=  link_to(
+                      approve_profiles_assister_agencies_assister_agency_staff_role_path(
+                          profile_id: @assister_agency_profile.id,
+                          person_id: staff_member.id
+                      ),
+                      :class => "approve") do %>
+                  <%= l10n("assister_agencies.approve") %>
+              <% end %>
+            <% end %>
+          </td>
+          <td class="numeric">
+            <% if current_user.has_hbx_staff_role? || current_user.person.assister_role.present? %>
+              <%= link_to(
+                  profiles_assister_agencies_assister_agency_staff_role_path(
+                  profile_id: @assister_agency_profile.id, person_id: staff_member.id
+                ),
+                :id => "destroy",
+                hidden: !can_show_destroy_for_assisters?(staff_member, assister_staff.count, @assister_agency_profile),
+                method: 'delete', class: "btn btn-error") do %>
+                  <%= l10n("assister_agencies.remove") %>
+              <% end %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+<%= link_to "Add New Staff", new_profiles_assister_agencies_assister_agency_staff_role_path(profile_id:@assister_agency_profile.id), id: "add_staff", remote: true, class: 'btn' %>
+

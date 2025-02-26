@@ -100,6 +100,10 @@ module Config::AcaModelConcern
       @@genearl_agency_enabled ||= EnrollRegistry.feature_enabled?(:general_agency)
     end
 
+    def assister_agency_enabled?
+      @@assister_agency_enabled ||= EnrollRegistry.feature_enabled?(:assister_agency)
+    end
+
     def broker_carrier_appointments_enabled?
       @@broker_carrier_appointments_enabled ||= Settings.aca.broker_carrier_appointments_enabled
     end

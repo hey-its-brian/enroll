@@ -9,6 +9,7 @@
 #   l10n('user_roles.assister') # => 'Assister'
 USER_ROLES_TRANSLATIONS = {
   'en.user_roles.assister' => 'Assister',
+  'en.user_roles.assister_agency_staff' => 'Assister Agency Staff',
   'en.user_roles.broker' => 'Broker',
   'en.user_roles.broker_agency_staff' => 'Broker Agency Staff',
   'en.user_roles.consumer' => 'Consumer',

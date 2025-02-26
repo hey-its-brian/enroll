@@ -27,7 +27,14 @@
     <% if profile.is_a? BenefitSponsors::Organizations::BrokerAgencyProfile %>
       <% broker_link = benefit_sponsors.profiles_broker_agencies_broker_agency_profile_path(profile, tab: 'home') %>
     <% end %>
-    <li style="text-align:left"><%= link_to profile.legal_name, broker_link, class: 'header-text' %></li>
+    <li><%= link_to profile.legal_name, broker_link, class: 'header-text' %></li>
+  <% end %>
+  <% assister_roles.each do |assister_staff_role| %>
+    <% profile = assister_staff_role.assister_agency_profile %>
+    <% if profile.is_a? BenefitSponsors::Organizations::AssisterAgencyProfile %>
+      <% assister_link = benefit_sponsors.profiles_assister_agencies_assister_agency_profile_path(profile, tab: 'home') %>
+    <% end %>
+    <li><%= link_to profile.legal_name, assister_link, class: 'header-text' %></li>
   <% end %>
   <% general_agency_roles.each do |ga_staff_role| %>
     <% profile = ga_staff_role.general_agency_profile %>
@@ -38,6 +45,6 @@
       <% ga_link = main_app.general_agencies_profile_path(profile) %>
     <% end %>
 
-    <li style="text-align:left"><%= link_to profile.legal_name, ga_link, class: 'header-text' %></li>
+    <li><%= link_to profile.legal_name, ga_link, class: 'header-text' %></li>
   <% end %>
 </ul>

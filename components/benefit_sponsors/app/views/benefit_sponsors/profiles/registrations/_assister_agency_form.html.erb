@@ -1,0 +1,63 @@
+<div class="profile-content top-pd">
+  <div class="tab-row">
+    <div class="tab-content" id="myTabContent">
+      <div id="assister_agency_form" class="container bs4-active agency_form">
+        <h1 class="bold mb-4"><%= @agency.organization.legal_name %></h1>
+        <%= f.fields_for :staff_roles, @agency.staff_roles, errors: {}, fieldset: false do |f| %>
+          <%= render "./ui-components/bs4/v1/forms/assister/personal_information", f: f, ao_id_disabled: true %>
+        <% end %>
+
+        <%= f.fields_for :organization, @agency.organization, errors: {}, fieldset: false do |f| %>
+          <%= f.hidden_field(:entity_kind, value: f.object.entity_kind) %>
+          <legend class='beta mb-3'><%= l10n("assister_agencies.assister_roles.new_assister_agency_form.assister_agency_information") %></legend>
+          <%= render partial: './ui-components/bs4/v1/forms/broker/agency_information', locals: {f: f} %>
+          <%= f.fields_for :profile, @agency.organization.profile, errors: {}, fieldset: false do |f| %>
+            <%= f.hidden_field :id, value: f.object.id %>
+            <%= render partial: './ui-components/bs4/v1/forms/broker/profile_information', locals: { f: f } %>
+            <%= render partial: './ui-components/bs4/v1/forms/broker/select_language', locals: { f: f } %>
+            <div class="action-group mb-4">
+              <% if (aca_broker_routing_information && @agency.profile_type == "broker_agency") %>
+                <%= render "benefit_sponsors/shared/profiles/broker_agency/bank_information", f: f %>
+                <p class="bank-name-container"></p>
+              <% end %>
+            </div>
+            <div class="action-group">
+              <%= render partial: './ui-components/bs4/v1/forms/broker/contact_information/contact_info_fields', locals: { f: f, registration: false } %>
+            <div class="row pl-3">
+              <span class="d-flex edit-buttons">
+                <%= link_to(profiles_assister_agencies_assister_agency_profile_path({id: @agency.profile_id}), class: 'btn outline mr-2 text-nowrap') do %>
+                  <%= l10n("cancel") %>
+                <% end %>
+              </span>
+              <button type="submit" class="btn btn-primary pull-right create_assister_agency_btn interaction-click-control-create-assister-agency" id="assisterFormSubmit"><%= l10n("update_assister_agency")%></button>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  $(document).on('turbolinks:load', function () {
+    var checkboxes = document.getElementById("brokerLanguageOptions").getElementsByTagName("input")
+    var button = document.getElementById("assisterFormSubmit")
+
+    for (var i = 0; i < checkboxes.length; i++) {
+      checkboxes[i].addEventListener("change", function() {
+        var checked = Array.from(checkboxes).some(function(checkbox) {
+          return checkbox.checked
+        })
+        var warning = document.getElementById("languageWarning")
+        if (checked) {
+          warning.classList.add("hidden")
+          button.removeAttribute("disabled")
+          button.classList.remove("disabled")
+        } else {
+          warning.classList.remove("hidden")
+          button.setAttribute("disabled", "disabled")
+          button.classList.add("disabled")
+        }
+      })
+    }
+  });
+</script>

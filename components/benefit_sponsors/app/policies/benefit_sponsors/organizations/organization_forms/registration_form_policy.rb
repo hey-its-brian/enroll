@@ -71,6 +71,10 @@ module BenefitSponsors
           profile_type == "broker_agency"
         end
 
+        def is_assister_profile?
+          profile_type == "assister_agency"
+        end
+
         def is_employer_profile?
           profile_type == "benefit_sponsor"
         end
@@ -97,19 +101,17 @@ module BenefitSponsors
           user.present? && (user.has_broker_agency_staff_role? || user.has_broker_role?)
         end
 
+        def assister_agency_registered?
+          user.present? && (user.has_assister_agency_staff_role? || user.has_assister_role?)
+        end
+
         def redirect_home?
           return false if record.portal && user.blank?
-          if is_employer_profile?
-            return service.is_benefit_sponsor_already_registered?(user, record)
-          end
+          return service.is_benefit_sponsor_already_registered?(user, record) if is_employer_profile?
+          return service.is_broker_agency_registered?(user, record) if is_broker_profile?
+          return service.is_assister_agency_registered?(user, record) if is_assister_profile?
+          return service.is_general_agency_registered?(user, record) if is_general_agency_profile?
 
-          if is_broker_profile?
-            return service.is_broker_agency_registered?(user, record)
-          end
-
-          if is_general_agency_profile?
-            return service.is_general_agency_registered?(user, record)
-          end
           true
         end
       end

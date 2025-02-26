@@ -88,6 +88,7 @@ aca:
   market_kinds: ['shop', 'individual', 'fehb']
   nationwide_markets: true
   general_agency_enabled: true
+  assister_agency_enabled: <%= ENV['ASSISTER_AGENCY_IS_ENABLED'] || false %>
   broker_carrier_appointments_enabled: true
   dental_market_enabled: true
   dental_plan_years_available: ['']

@@ -1,0 +1,51 @@
+.assister-staff-registration-container.mt-4.pt-4.pl-3.pr-3.pb-3
+  h1.heading-text#loaded = l10n("assister_agency_staff")
+.assister-staff-registration-container.mt-4.pt-4.pl-3.pr-3.pb-3
+  h1.heading-text#loaded = l10n("assister_agency_staff")
+  - flash.each do |key, value|
+    div class="alert alert-#{key} alert-dismissible" role="alert"
+      button.close type="button" data-dismiss="alert" aria-label="Close"
+        span aria-hidden="true" &times
+      - value.to_a.flatten.each do |v|
+        = raw v
+  = form_for @staff, as: :staff, url: {action: "create"}, remote: true,  html: {class: "needs-ajax-validation s508", id: 'assister_staff_registration_form', novalidate:true} do |f|
+    div#assister_staff
+    = render partial: './ui-components/v1/forms/assister_registration/assister_agency_staff_information', locals: {f: f}
+  = form_for @staff, as: :staff, url: {action: "create"}, remote: true,  html: {class: "needs-ajax-validation s508", id: 'assister_staff_registration_form', novalidate:true} do |f|
+    div#assister_staff
+    = render partial: './ui-components/v1/forms/assister_registration/assister_agency_staff_information', locals: {f: f}
+    .row
+      .col-md-9.col-sm-9.col-xs-12.assister-agency-search
+      .col-md-9.col-sm-9.col-xs-12.assister-agency-search
+        .row.search-dropdown-wrapper
+          .col-md-12.col-sm-12.col-xs-12
+            h4
+              = l10n("assister_agencies.assister_roles.select_your_assister_agency")
+              = l10n("assister_agencies.assister_roles.select_your_assister_agency")
+            .col-md-4.col-sm-6.col-xs-12.input-group.input-no-pd
+              = f.hidden_field :profile_id
+              = f.hidden_field :profile_type, value: "assister_agency_staff"
+              = f.hidden_field :is_assister_registration_page, value: true
+              = f.text_field :agency_search, placeholder: "#{l10n('assister_agencies.assister_roles.agency_name_placeholder')}", class: 'form-control'
+              = f.hidden_field :profile_type, value: "assister_agency_staff"
+              = f.hidden_field :is_assister_registration_page, value: true
+              = f.text_field :agency_search, placeholder: "#{l10n('assister_agencies.assister_roles.agency_name_placeholder')}", class: 'form-control'
+              .input-group-btn
+                button.btn.btn-select.search.aa-search-btn[href="#" data-loading-text="Loading..."]
+                  i.fa.fa-search
+                  = l10n("search").to_s.downcase
+        .result
+
+
+      br
+    .row
+      .col-md-9.col-sm-9.col-xs-12
+        .row.no-buffer
+          .col-md-4.col-sm-4.col-xs-12.form-group-lg.no-pd
+            br
+            button.btn.btn-primary[type="submit" disabled='disabled' id= 'assister-staff-btn']
+            button.btn.btn-primary[type="submit" disabled='disabled' id= 'assister-staff-btn']
+              = l10n("submit_application")
+
+javascript:
+  validateAjaxForm();

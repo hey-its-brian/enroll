@@ -95,6 +95,8 @@ class Person
 
   embeds_one :csr_role, cascade_callbacks: true, validate: true
   embeds_one :assister_role, cascade_callbacks: true, validate: true
+  embeds_many :assister_agency_staff_roles, cascade_callbacks: true, validate: true
+
   embeds_one :inbox, as: :recipient
 
   embeds_many :employer_staff_roles, cascade_callbacks: true, validate: true
@@ -114,7 +116,7 @@ class Person
   attr_accessor :effective_date
 
   accepts_nested_attributes_for :consumer_role, :resident_role, :broker_role, :hbx_staff_role,
-                                :employee_roles, :phones, :employer_staff_roles
+                                :employee_roles, :phones, :employer_staff_roles, :assister_role
 
   accepts_nested_attributes_for :phones, :reject_if => proc { |addy| addy[:full_phone_number].blank? }, allow_destroy: true
   accepts_nested_attributes_for :addresses, :reject_if => proc { |addy| addy[:address_1].blank? && addy[:city].blank? && addy[:state].blank? && addy[:zip].blank? }, allow_destroy: true
@@ -227,6 +229,7 @@ class Person
   scope :all_hbx_staff_roles,         -> { exists(hbx_staff_role: true) }
   scope :all_csr_roles,               -> { exists(csr_role: true) }
   scope :all_assister_roles,          -> { exists(assister_role: true) }
+  scope :all_assister_staff_roles,          -> { exists(assister_agency_staff_roles: true) }
   scope :all_broker_staff_roles,      -> { exists(broker_agency_staff_roles: true) }
   scope :all_agency_staff_roles,      lambda {
     where(
@@ -252,6 +255,14 @@ class Person
   scope :broker_role_decertified,   -> { where("broker_role.aasm_state" => { "$eq" => :decertified })}
   scope :broker_role_extended,      -> { where("broker_role.aasm_state" => { "$eq" => :application_extended })}
   scope :broker_role_denied,        -> { where("broker_role.aasm_state" => { "$eq" => :denied })}
+  scope :assister_role_having_agency, -> { where("assister_role.benefit_sponsors_assister_agency_profile_id" => { "$ne" => nil }) }
+  scope :assister_role_applicant,     -> { where("assister_role.aasm_state" => { "$eq" => :applicant })}
+  scope :assister_role_pending,       -> { where("assister_role.aasm_state" => { "$eq" => :assister_agency_pending })}
+  scope :assister_role_certified,     -> { where("assister_role.aasm_state" => { "$in" => [:active]})}
+  scope :assister_role_decertified,   -> { where("assister_role.aasm_state" => { "$eq" => :decertified })}
+  scope :assister_role_extended,      -> { where("assister_role.aasm_state" => { "$eq" => :application_extended })}
+  scope :assister_role_imported,      -> { where("assister_role.aasm_state" => { "$eq" => :imported })}
+  scope :assister_role_denied,        -> { where("assister_role.aasm_state" => { "$eq" => :denied })}
   scope :by_ssn,                    ->(ssn) { where(encrypted_ssn: Person.encrypt_ssn(ssn)) }
   scope :unverified_persons,        -> { where(:'consumer_role.aasm_state' => { "$ne" => "fully_verified" })}
   scope :matchable,                 ->(ssn, dob, last_name) { where(encrypted_ssn: Person.encrypt_ssn(ssn), dob: dob, last_name: last_name) }
@@ -802,7 +813,7 @@ class Person
         people_user_ids = query.collection.aggregate([
                             {"$match" => {
                               "$text" => {"$search" => clean_str}
-                            }.merge(Person.broker_ga_search_hash(clean_str))},
+                            }.merge(Person.broker_ga_assister_search_hash(clean_str))},
                             {"$project" => {"first_name" => 1, "last_name" => 1, "full_name" => 1}},
                             {"$sort" => {"last_name" => 1, "first_name" => 1}},
                             {"$project" => {"_id" => 1}}
@@ -811,7 +822,7 @@ class Person
                           end
         query.where(:id => {"$in" => people_user_ids})
       else
-        query.where(broker_ga_search_hash(s_str))
+        query.where(broker_ga_assister_search_hash(s_str))
       end
     end
 
@@ -824,6 +835,22 @@ class Person
         brokers_matching_search_criteria(search_str).map(&:broker_role).map(&:benefit_sponsors_broker_agency_profile_id)
       else
         brokers_matching_search_criteria(search_str).map(&:broker_role).map(&:broker_agency_profile_id)
+      end
+    end
+
+    def assisters_matching_search_criteria(search_str)
+      if assister_role_certified.search_first_name_last_name_npn(search_str).count > 0
+        assister_role_certified.search_first_name_last_name_npn(search_str)
+      else
+        self.where(broker_ga_assister_search_hash(search_str))
+      end
+    end
+
+    def agencies_with_matching_assister(search_str)
+      if assisters_matching_search_criteria(search_str).exists(:"assister_role.benefit_sponsors_assister_agency_profile_id" => true)
+        assisters_matching_search_criteria(search_str).map(&:assister_role).map(&:benefit_sponsors_assister_agency_profile_id)
+      else
+        assisters_matching_search_criteria(search_str).map(&:assister_role).map(&:assister_agency_profile_id)
       end
     end
 
@@ -1007,6 +1034,27 @@ class Person
                      })
     end
 
+    def staff_for_assister_including_pending(assister_profile)
+      Person.where(:assister_agency_staff_roles =>
+                     {
+                       '$elemMatch' => {
+                         '$and' => [
+                           {
+                             '$or' => [
+                               {benefit_sponsors_assister_agency_profile_id: assister_profile.id}
+                             ]
+                           },
+                           {
+                             '$or' => [
+                               {aasm_state: :assister_agency_pending},
+                               {aasm_state: :active}
+                             ]
+                           }
+                         ]
+                       }
+                     })
+    end
+
     def staff_for_ga_including_pending(general_agency_profile)
       Person.where(:general_agency_staff_roles =>
                      {
@@ -1028,6 +1076,27 @@ class Person
                      })
     end
 
+    def broker_ga_assister_search_hash(s_str)
+      clean_str = s_str.strip
+      s_rex = Regexp.new("^" + Regexp.escape(clean_str), true)
+      if clean_str =~ /[a-z]/i
+        {
+          "$or" => ([
+            {"first_name" => s_rex},
+            {"last_name" => s_rex},
+            {"assister_role.assister_org_id" => s_rex}
+          ] + additional_exprs(clean_str))
+        }
+      else
+        {
+          "$or" => [
+            {"broker_role.npn" => s_rex},
+            {"general_agency_staff_roles.npn" => s_rex},
+            {"assister_role.assister_org_id" => s_rex}
+          ]
+        }
+      end
+    end
     # Adds employer staff role to person
     # Returns status and message if failed
     # Returns status and person if successful
@@ -1230,6 +1299,16 @@ class Person
     )
     save!
     basr
+  end
+
+  def create_assister_agency_staff_role(aasr_params)
+    aasr = assister_agency_staff_roles.build(
+      {
+        benefit_sponsors_assister_agency_profile_id: aasr_params[:benefit_sponsors_assister_agency_profile_id]
+      }
+    )
+    save!
+    aasr
   end
 
   private

@@ -57,6 +57,26 @@ RSpec.describe InvitationsController do
         end
       end
 
+      context "assister invitation" do
+        let(:user) { FactoryBot.create(:user) }
+        let(:person) { FactoryBot.create(:person, user: user) }
+        let(:assister_agency_profile) { FactoryBot.create(:benefit_sponsors_organizations_assister_agency_profile) }
+        let!(:assister_agency_staff_role) { FactoryBot.create(:assister_agency_staff_role, benefit_sponsors_assister_agency_profile_id: assister_agency_profile.id, aasm_state: 'active', person: person)}
+        let(:invitation) { FactoryBot.create(:invitation, :assister_agency_staff_role, :source_id => assister_agency_profile.id)}
+        let(:params) { {id: invitation.id, person_id: person.id }}
+
+        before(:each) do
+          sign_in(user)
+          allow(Invitation).to receive(:find).with(invitation.id).and_return(invitation)
+        end
+
+        it 'should redirect to sign in page if already person with user record is present' do
+          invitation.source_id = assister_agency_staff_role.id
+          get :claim, params: params
+          expect(response).to redirect_to(new_user_session_url(:invitation_id => params[:id]))
+        end
+      end
+
       context "general agency invitation" do
         let(:site) { create(:benefit_sponsors_site, :with_benefit_market, :as_hbx_profile, :cca) }
         let!(:general_agency_organization) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_general_agency_profile, site: site) }

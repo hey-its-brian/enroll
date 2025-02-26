@@ -10,6 +10,7 @@ module BenefitSponsors
       attribute :market_kind, Symbol
       attribute :is_benefit_sponsorship_eligible, String
       attribute :corporate_npn, String
+      attribute :corporate_aoid, String
       attribute :languages_spoken, String
       attribute :working_hours, Boolean
       attribute :accept_new_clients, Boolean
@@ -32,7 +33,8 @@ module BenefitSponsors
 
       attribute :office_locations, Array[OrganizationForms::OfficeLocationForm]
 
-      validates_presence_of :market_kind, if: :is_broker_profile?
+      validates_presence_of :market_kind, if: :is_broker_or_assister_profile?
+
       validates_presence_of :market_kind, if: :is_general_agency_profile?
       # validates_presence_of :ach_routing_number, if: :is_broker_profile?
       validates_presence_of :ach_routing_number, if: :routing_information_enabled?
@@ -42,7 +44,7 @@ module BenefitSponsors
       validate :validate_routing_information, if: :is_broker_profile?
       validates_presence_of :referred_reason, if: :is_referred_by_other?
 
-      validate :validate_at_least_one_language_selected, if: :is_broker_profile?
+      validate :validate_at_least_one_language_selected, if: :is_broker_or_assister_profile?
 
       def initialize(params = {})
         super(params)
@@ -56,8 +58,16 @@ module BenefitSponsors
         self.office_locations = (locations_params.values)
       end
 
+      def is_broker_or_assister_profile?
+        is_broker_profile? || is_assister_profile?
+      end
+
       def is_broker_profile?
         profile_type == "broker_agency"
+      end
+
+      def is_assister_profile?
+        profile_type == "assister_agency"
       end
 
       def is_general_agency_profile?

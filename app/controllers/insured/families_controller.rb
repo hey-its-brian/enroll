@@ -354,7 +354,7 @@ class Insured::FamiliesController < FamiliesController
           ::Address.new(zip: new_county_zip.zip, county: new_county_zip.county_name, state: 'ME')
         ).map(&:issuer_provided_code)
 
-        is_approved = (old_service_area_ids.sort != new_service_area_ids.sort)
+        is_approved = (old_service_area_ids.to_set != new_service_area_ids.to_set)
       else
         is_approved = true
       end
@@ -471,6 +471,21 @@ class Insured::FamiliesController < FamiliesController
     if broker_agency.present?
       @family&.notify_broker_update_on_impacted_enrollments_to_edi({family_id: @family&.id.to_s})
       broker_agency.destroy
+      redirect_to :action => "home", flash: {notice: "Successfully deleted."}
+    else
+      redirect_to :action => "home", flash: {notice: "Unable to remove expert from this account"}
+    end
+  end
+
+  def delete_consumer_assister
+    @family = Family.find(params[:id])
+    authorize @family, :delete_consumer_broker?
+
+    assister_agency = @family&.current_assister_agency
+
+    if assister_agency.present?
+      @family.notify_assister_update_on_impacted_enrollments_to_edi({family_id: @family&.id.to_s})
+      assister_agency.destroy
       redirect_to :action => "home", flash: {notice: "Successfully deleted."}
     else
       redirect_to :action => "home", flash: {notice: "Unable to remove expert from this account"}

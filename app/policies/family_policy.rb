@@ -48,7 +48,9 @@ class FamilyPolicy < ApplicationPolicy
     return true if individual_market_primary_family_member?
     return true if individual_market_admin?
     return true if active_associated_individual_market_family_broker_staff?
+    return true if active_associated_individual_market_family_assister_staff?
     return true if active_associated_individual_market_family_broker?
+    return true if active_associated_individual_market_family_assister?
 
     return true if shop_market_primary_family_member?
     return true if shop_market_admin?
@@ -63,6 +65,7 @@ class FamilyPolicy < ApplicationPolicy
     return true if coverall_market_primary_family_member?
     return true if coverall_market_admin?
     return true if active_associated_coverall_market_family_broker?
+    return true if active_associated_coverall_market_family_assister?
 
     false
   end
@@ -80,6 +83,23 @@ class FamilyPolicy < ApplicationPolicy
   end
 
   def hire_broker_agency?
+    return true if individual_market_primary_family_member?
+    return true if individual_market_non_ridp_primary_family_member?
+    return true if individual_market_admin?
+
+    return true if shop_market_primary_family_member?
+    return true if shop_market_admin?
+
+    return true if fehb_market_primary_family_member?
+    return true if fehb_market_admin?
+
+    return true if coverall_market_primary_family_member?
+    return true if coverall_market_admin?
+
+    false
+  end
+
+  def hire_assister_agency?
     return true if individual_market_primary_family_member?
     return true if individual_market_non_ridp_primary_family_member?
     return true if individual_market_admin?
@@ -201,7 +221,27 @@ class FamilyPolicy < ApplicationPolicy
     show?
   end
 
+  def assisters?
+    show?
+  end
+
   def delete_consumer_broker?
+    return true if individual_market_primary_family_member?
+    return true if individual_market_admin?
+
+    return true if shop_market_primary_family_member?
+    return true if shop_market_admin?
+
+    return true if fehb_market_primary_family_member?
+    return true if fehb_market_admin?
+
+    return true if coverall_market_primary_family_member?
+    return true if coverall_market_admin?
+
+    false
+  end
+
+  def delete_consumer_assister?
     return true if individual_market_primary_family_member?
     return true if individual_market_admin?
 
@@ -278,6 +318,19 @@ class FamilyPolicy < ApplicationPolicy
           return true if broker_agency_profile_account_ids.include?(broker_staff.benefit_sponsors_broker_agency_profile_id)
         end
       end
+      assister_staff_roles = user_person.active_assister_staff_roles
+      assister_role = user_person.assister_role
+      if assister_role.present? || assister_staff_roles.any?
+        return true if can_assister_modify_family?(assister_role, assister_staff_roles)
+        return false unless employee_roles.any?
+        assister_agency_profile_account_ids = employee_roles.map do |er|
+          er.employer_profile.active_assister_agency_account
+        end.compact.map(&:benefit_sponsors_assister_agency_profile_id)
+        return true if assister_role.present? && assister_agency_profile_account_ids.include?(assister_role.benefit_sponsors_assister_agency_profile_id)
+        assister_staff_roles.each do |assister_staff|
+          return true if assister_agency_profile_account_ids.include?(assister_staff.benefit_sponsors_assister_agency_profile_id)
+        end
+      end
       ga_roles = user_person.active_general_agency_staff_roles
       if ga_roles.any? && employee_roles.any?
         general_agency_profile_account_ids = employee_roles.map do |er|
@@ -311,6 +364,15 @@ class FamilyPolicy < ApplicationPolicy
     staff_account = broker_staff.detect{|staff_role| staff_role.benefit_sponsors_broker_agency_profile_id == ivl_broker_account.benefit_sponsors_broker_agency_profile_id} if broker_staff.present?
     return false unless staff_account
     return true if ivl_broker_account.benefit_sponsors_broker_agency_profile_id == staff_account.benefit_sponsors_broker_agency_profile_id
+  end
+
+  def can_assister_modify_family?(assister, assister_staff)
+    ivl_assister_account = @record.active_assister_agency_account
+    return false unless ivl_assister_account.present?
+    return true if assister.present? && ivl_assister_account.benefit_sponsors_assister_agency_profile_id == assister.benefit_sponsors_assister_agency_profile_id
+    staff_account = assister_staff.detect{|staff_role| staff_role.benefit_sponsors_assister_agency_profile_id == ivl_assister_account.benefit_sponsors_assister_agency_profile_id} if assister_staff.present?
+    return false unless staff_account
+    return true if ivl_assister_account.benefit_sponsors_assister_agency_profile_id == staff_account.benefit_sponsors_assister_agency_profile_id
   end
 
   def role

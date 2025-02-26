@@ -83,7 +83,10 @@
       <% end %>
     </main>
 
-    <%= render partial: './ui-components/bs4/v1/footers/footer' %>
+    <% load_footer = true if load_footer.nil? %>
+    <% if load_footer %>
+      <%= render partial: './ui-components/bs4/v1/footers/footer' %>
+    <% end %>
     <% if @bs4 %>
       <script>
         disableSelectric = true;

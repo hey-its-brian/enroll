@@ -67,6 +67,9 @@ class BrokerRole
             allow_blank: false,
             inclusion: { in: PROVIDER_KINDS, message: "%{value} is not a valid provider kind" }
 
+  embeds_many :workflow_state_transitions, as: :transitional
+
+
   def broker_agency_profile=(new_broker_agency)
     if new_broker_agency.nil?
       self.benefit_sponsors_broker_agency_profile_id = nil

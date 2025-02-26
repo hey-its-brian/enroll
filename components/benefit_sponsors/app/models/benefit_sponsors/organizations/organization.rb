@@ -136,6 +136,7 @@ module BenefitSponsors
       scope :hbx_profiles,            ->{ where(:"profiles._type" => /.*HbxProfile$/) }
       scope :employer_profiles,       ->{ where(:"profiles._type" => /.*EmployerProfile$/) }
       scope :broker_agency_profiles,  ->{ where(:"profiles._type" => /.*BrokerAgencyProfile$/) }
+      scope :assister_agency_profiles, ->{ where(:"profiles._type" => /.*AssisterAgencyProfile$/) }
       scope :general_agency_profiles, ->{ where(:"profiles._type" => /.*GeneralAgencyProfile$/) }
       scope :all_agency_profiles,     ->{ where(:"profiles._type" => /.*AgencyProfile$/) }
       scope :issuer_profiles,         ->{ where(:"profiles._type" => /.*IssuerProfile$/) }
@@ -143,6 +144,8 @@ module BenefitSponsors
 
       scope :broker_agencies_by_market_kind,  ->(market_kind) { broker_agency_profiles.any_in(:"profiles.market_kind" => market_kind) }
       scope :approved_broker_agencies,        ->{ broker_agency_profiles.where(:"profiles.aasm_state" => 'is_approved') }
+      scope :assister_agencies_by_market_kind,  ->(market_kind) { assister_agency_profiles.any_in(:"profiles.market_kind" => market_kind) }
+      scope :approved_assister_agencies,        ->{ assister_agency_profiles.where(:"profiles.aasm_state" => 'is_approved') }
       scope :approved_general_agencies,        ->{ general_agency_profiles.where(:"profiles.aasm_state" => 'is_approved') }
 
       scope :by_employer_profile,             ->(profile_id){ where(:"profiles._id" => BSON::ObjectId.from_string(profile_id)) }
@@ -181,11 +184,8 @@ module BenefitSponsors
       scope :employer_profiles_enrolled,    -> {}
 
       scope :datatable_search, lambda { |query|
-                                 people_agency_ids = if EnrollRegistry.feature_enabled?(:broker_table_staff_name_search)
-                                                       Person.broker_staff_active_or_pending.where(Person.search_hash(query.strip)).map{|p| p.broker_agency_staff_roles.pluck(:benefit_sponsors_broker_agency_profile_id).flatten}.flatten
-                                                     else
-                                                       []
-                                                     end
+                                 people_agency_ids = broker_or_assister_staff_agancy_ids(query)
+
                                  self.where({"$or" => [
                                   {"legal_name" => ::Regexp.compile(::Regexp.escape(query), true)},
                                   {"fein" => ::Regexp.compile(::Regexp.escape(query), true)},
@@ -216,12 +216,13 @@ module BenefitSponsors
       #
 
       def self.all_profiles
-        Rails.cache.fetch("all_profiles", expires_in: 4.hour) do
-          profiles = []
-          profiles.push(*self.employer_profiles.all.map { |org| { fein: org.fein, hbx_id: org.hbx_id, legal_name: org.legal_name, id: org.id.to_s, entity_type: 'employer' } })
-          profiles.push(*self.broker_agency_profiles.all.map { |org| { fein: org.fein, hbx_id: org.hbx_id, legal_name: org.legal_name, id: org.id.to_s, entity_type: 'broker_agency' } })
-          profiles.push(*self.general_agency_profiles.all.map { |org| { fein: org.fein, hbx_id: org.hbx_id, legal_name: org.legal_name, id: org.id.to_s, entity_type: 'general_agency' } })
-        end
+        # Rails.cache.fetch("all_profiles", expires_in: 4.hour) do
+        profiles = []
+        profiles.push(*self.employer_profiles.all.map { |org| { fein: org.fein, hbx_id: org.hbx_id, legal_name: org.legal_name, id: org.id.to_s, entity_type: 'employer' } })
+        profiles.push(*self.broker_agency_profiles.all.map { |org| { fein: org.fein, hbx_id: org.hbx_id, legal_name: org.legal_name, id: org.id.to_s, entity_type: 'broker_agency' } })
+        profiles.push(*self.general_agency_profiles.all.map { |org| { fein: org.fein, hbx_id: org.hbx_id, legal_name: org.legal_name, id: org.id.to_s, entity_type: 'general_agency' } })
+        profiles.push(*self.assister_agency_profiles.all.map { |org| { fein: org.fein, hbx_id: org.hbx_id, legal_name: org.legal_name, id: org.id.to_s, entity_type: 'assister_agency' } })
+        # end
       end
 
       # Strip non-numeric characters
@@ -286,6 +287,7 @@ module BenefitSponsors
         result << 'employer' if is_employer_profile?
         result << 'broker_agency' if is_broker_agency_profile?
         result << 'general_agency' if is_general_agency_profile?
+        result << 'assister_agency' if is_assister_agency_profile?
         result
       end
 
@@ -303,6 +305,14 @@ module BenefitSponsors
 
       def is_broker_agency_profile?
         profiles.where(_type: /.*BrokerAgencyProfile$/).present?
+      end
+
+      def assister_agency_profile
+        self.profiles.where(_type: /.*AssisterAgencyProfile$/).first
+      end
+
+      def is_assister_agency_profile?
+        profiles.where(_type: /.*AssisterAgencyProfile$/).present?
       end
 
       def general_agency_profile
@@ -390,6 +400,15 @@ module BenefitSponsors
           end
         end
 
+        def broker_or_assister_staff_agancy_ids(query)
+          people_agency_ids = []
+          if EnrollRegistry.feature_enabled?(:broker_table_staff_name_search)
+            people_agency_ids += Person.broker_staff_active_or_pending.where(Person.search_hash(query.strip)).map{|p| p.broker_agency_staff_roles.pluck(:benefit_sponsors_broker_agency_profile_id).flatten}.flatten
+            people_agency_ids += Person.assister_staff_active_or_pending.where(Person.search_hash(query.strip)).map{|p| p.assister_agency_staff_roles.pluck(:benefit_sponsors_assister_agency_profile_id).flatten}.flatten
+          end
+          people_agency_ids
+        end
+
         def broker_agencies_with_matching_agency_or_broker(search_params, value = nil)
           if search_params[:q].present?
             orgs2 = approved_broker_agencies.broker_agencies_by_market_kind(['both', 'shop', 'individual']).where({
@@ -420,6 +439,45 @@ module BenefitSponsors
         def filter_brokers_by_agencies(agencies, brokers)
           agency_ids = agencies.map{|org| org.broker_agency_profile.id}
           brokers.select{ |broker| agency_ids.include?(broker.broker_role.benefit_sponsors_broker_agency_profile_id) }
+        end
+
+        def search_assister_agencies_by_criteria(search_params)
+          query_params = build_query_params(search_params)
+          if query_params.any?
+            approved_assister_agencies.assister_agencies_by_market_kind(['both', 'shop', 'individual']).where({ "$and" => build_query_params(search_params) })
+          else
+            approved_assister_agencies.assister_agencies_by_market_kind(['both', 'shop', 'individual'])
+          end
+        end
+
+        def assister_agencies_with_matching_agency_or_assister(search_params, value = nil)
+          if search_params[:q].present?
+            orgs2 = approved_assister_agencies.assister_agencies_by_market_kind(['both', 'shop', 'individual']).where(
+              {
+                :"profiles._id" => { "$in" => Person.agencies_with_matching_assister(search_params[:q]) }
+              }
+            )
+
+            assisters = Person.assisters_matching_search_criteria(search_params[:q])
+            if assisters.any?
+              search_params.delete(:q)
+              return filter_assisters_by_agencies(orgs2, assisters) if search_params.empty?
+
+              agencies_matching_advanced_criteria = orgs2.where({ "$and" => build_query_params(search_params) })
+              return filter_assisters_by_agencies(agencies_matching_advanced_criteria, assisters)
+            elsif value
+              return search_assister_agencies_by_criteria(search_params)
+            end
+          elsif !search_params[:q].present? && value
+            return []
+          end
+
+          search_assister_agencies_by_criteria(search_params)
+        end
+
+        def filter_assisters_by_agencies(agencies, assisters)
+          agency_ids = agencies.map{|org| org.assister_agency_profile.id}
+          assisters.select{ |assister| agency_ids.include?(assister.assister_role.benefit_sponsors_assister_agency_profile_id) }
         end
 
         def general_agencies_with_matching_ga(search_params, value = nil)

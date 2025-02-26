@@ -1,0 +1,49 @@
+<%= render "ui-components/v1/navs/primary_nav" %>
+<h1><%= l10n("exchange.broker_applicants.details") %></h1>
+<dl class="parent">
+  <dt><%= l10n("exchange.assister_applicants.assister_hbx") %>:</dt>
+  <dd><%= @assister_applicant.hbx_id %></dd>
+  <dt><%= l10n("applicant_name") %>:</dt>
+  <dd><%= @assister_applicant.full_name %></dd>
+  <% if assister_or_staff_role.respond_to?(:assister_org_id) %>
+    <dt><%= l10n("assister_org_id") %>:</dt>
+    <dd><%= assister_or_staff_role.assister_org_id %></dd>
+  <% end %>
+  <dt><%= l10n("email") %>:</dt>
+  <dd><%= assister_or_staff_role.email_address %></dd>
+  <dt><%= l10n("assister") %>:</dt>
+  <dd><%= assister_or_staff_role.assister_agency_profile.legal_name %></dd>
+  <dt><%= l10n("market_kinds") %>:</dt>
+  <dd><%= assister_or_staff_role.assister_agency_profile.try(:market_kind).try(:capitalize) %></dd>
+  <dt><%= l10n("languages") %>:</dt>
+  <dd>
+    <%= assister_or_staff_role.assister_agency_profile.languages_spoken.map do |lang| lang.upcase end.to_sentence %>
+  </dd>
+  <dt><%= l10n("office_locations") %>:</dt>
+  <dd>
+    <% assister_or_staff_role.assister_agency_profile.office_locations.each do |office_location| %>
+    <%= office_location.address.to_html %>
+    <% end %>
+  </dd>
+  <dt><%= l10n("phone_number") %>:</dt>
+  <dd><%= assister_or_staff_role.assister_agency_profile.phone %></dd>
+  <dt><%= l10n("history") %></dt>
+  <dd>
+    <% assister_or_staff_role.workflow_state_transitions.each do |transition| %>
+    <%= transition.to_html %>
+    <% end %>
+  </dd>
+  <dt><%= l10n("application_status") %>:</dt>
+  <dd><%= assister_or_staff_role.current_state %></dd>
+</dl>
+<section class="my-3">
+  <%= f.fields_for :assister_role do |assister_role_fields| %>
+    <% disabled = assister_or_staff_role.active? ? true : false %>
+    <label for="training" class="d-flex align-items-center">
+      <%= assister_role_fields.check_box :training, id: "training" %>
+      <span class="ml-1"><%= l10n("training") %></span>
+    </label>
+    <label for="reason" class="mt-3">Reason</label>
+    <%= assister_role_fields.text_area :reason, placeholder: "#{l10n('write_here')}...", rows: 6, disabled: disabled, id: "reason", class:"w-100" %>
+  <% end %>
+</section>

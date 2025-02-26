@@ -14,11 +14,15 @@ module Bs4
         link_to(l10n("layout.header.role.admin"), main_app.exchanges_hbx_profiles_root_path)
       elsif display_i_am_broker_for_consumer?(current_user.person) && controller_path.exclude?('general_agencies')
         link_to(l10n("layout.header.role.broker"), get_broker_profile_path)
-      elsif current_user.try(:person).try(:csr_role) || current_user.try(:person).try(:assister_role)
+      elsif display_i_am_assister_for_consumer?(current_user.person) && controller_path.exclude?('general_agencies')
+        link_to(l10n("layout.header.role.assister"), get_assister_profile_path)
+      elsif current_user.try(:person).try(:csr_role)
         link_to(l10n("layout.header.role.trained_expert"), main_app.home_exchanges_agents_path)
       elsif current_user.person&.active_employee_roles&.any?
         if controller_path.include?('broker_agencies')
           link_to(l10n("layout.header.role.broker"), get_broker_profile_path)
+        elsif controller_path.include?('assister_agencies')
+          link_to(l10n("layout.header.role.assister"), get_assister_profile_path)
         elsif controller_path.include?('general_agencies')
           link_to(l10n("layout.header.role.general_agency"), benefit_sponsors.profiles_general_agencies_general_agency_profile_path(id: current_user.person.general_agency_staff_roles.first.benefit_sponsors_general_agency_profile_id))
         elsif controller == 'employer_profiles' || controller_path.include?('employers')
@@ -28,6 +32,8 @@ module Bs4
             link_to(l10n("layout.header.role.employer"), employer_profile_path)
           elsif current_user.try(:has_broker_agency_staff_role?)
             link_to(l10n("layout.header.role.broker"), get_broker_profile_path)
+          elsif current_user.try(:has_assister_agency_staff_role?)
+            link_to(l10n("layout.header.role.assister"), get_assister_profile_path)
           end
         else
           link_to(l10n("layout.header.role.employee"), main_app.family_account_path)
@@ -41,6 +47,8 @@ module Bs4
       # rubocop:disable Lint/DuplicateBranch
       elsif current_user.try(:has_broker_agency_staff_role?) && controller_path.exclude?('general_agencies') && controller_path.exclude?('employers')
         link_to(l10n("layout.header.role.broker"), get_broker_profile_path)
+      elsif current_user.try(:has_assister_agency_staff_role?) && controller_path.exclude?('general_agencies') && controller_path.exclude?('employers')
+        link_to(l10n("layout.header.role.assister"), get_assister_profile_path)
       # rubocop:enable Lint/DuplicateBranch
       elsif current_user.try(:has_general_agency_staff_role?)
         if current_user.try(:has_employer_staff_role?) && controller_path.include?('employers')
@@ -64,6 +72,13 @@ module Bs4
       benefit_sponsors.profiles_broker_agencies_broker_agency_profile_path(id: @broker_role.benefit_sponsors_broker_agency_profile_id) if broker_agency_profile.is_a?(BenefitSponsors::Organizations::BrokerAgencyProfile)
     end
 
+    def get_assister_profile_path # rubocop:disable Naming/AccessorMethodName
+      @assister_role ||= current_user.person.assister_role
+      role = @assister_role || current_user.person.assister_agency_staff_roles.active.first
+      assister_agency_profile = role&.assister_agency_profile
+      benefit_sponsors.profiles_assister_agencies_assister_agency_profile_path(id: role.benefit_sponsors_assister_agency_profile_id) if assister_agency_profile.is_a?(BenefitSponsors::Organizations::AssisterAgencyProfile)
+    end
+
     def display_i_am_broker_for_consumer?(person)
       return if person.blank?
       if EnrollRegistry.feature_enabled?(:broker_role_consumer_enhancement) && person.has_active_consumer_role?
@@ -77,6 +92,19 @@ module Bs4
       end
     end
 
+    def display_i_am_assister_for_consumer?(person)
+      return if person.blank?
+      if EnrollRegistry.feature_enabled?(:broker_role_consumer_enhancement) && person.has_active_consumer_role?
+        assister_role = person.assister_role
+        matching_basr = person.assister_agency_staff_roles.where(
+          benefit_sponsors_assister_agency_profile_id: assister_role&.benefit_sponsors_assister_agency_profile_id
+        ).first
+        assister_role.present? && assister_role.active? && matching_basr.present? && matching_basr.active?
+      else
+        person.assister_role.present?
+      end
+    end
+
     def user_has_multiple_roles?
       # if user has at least two different types of roles, return true
       return true if all_non_admin_roles.values.select(&:present?).size > 1
@@ -85,6 +113,7 @@ module Bs4
       [
         all_non_admin_roles[:employer_staff_roles],
         all_non_admin_roles[:broker_roles],
+        all_non_admin_roles[:assister_roles],
         all_non_admin_roles[:general_agency_roles]
       ].any? { |roles| roles.present? && roles.size > 1 }
     end
@@ -99,7 +128,8 @@ module Bs4
       return roles unless person.present?
 
       roles[:consumer_role] = person.has_consumer_role?
-      roles[:csr_or_assistant] = person.csr_role || person.assister_role
+      roles[:csr_or_assistant] = person.csr_role
+      roles[:assister_roles] = person.active_assister_staff_roles
       roles[:broker_roles] = person.active_broker_staff_roles
       roles[:general_agency_roles] = person.active_general_agency_staff_roles
       roles[:employer_staff_roles] = person.active_employer_staff_roles

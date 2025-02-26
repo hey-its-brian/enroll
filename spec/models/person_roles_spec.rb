@@ -7,7 +7,7 @@ RSpec.describe Person, type: :model do
     let(:person) { FactoryBot.create(:person) }
 
     before do
-      allow(person).to receive(:assister_role).and_return(double('AssisterRole', present?: true))
+      allow(person).to receive(:assister_role).and_return(double('AssisterRole', present?: true, active?: true))
       allow(person).to receive(:active_broker_role?).and_return(true)
       allow(person).to receive(:has_active_broker_staff_role?).and_return(false)
       allow(person).to receive(:active_consumer_role?).and_return(true)

@@ -1,11 +1,14 @@
 module BenefitSponsors
   module Concerns
     module ProfileRegistration
-
       private
 
       def broker_new_registration_url
         new_profiles_registration_path(profile_type: "broker_agency")
+      end
+
+      def assister_new_registration_url
+        new_profiles_registration_path(profile_type: "assister_agency")
       end
 
       def general_agency_new_registration_url
@@ -28,11 +31,15 @@ module BenefitSponsors
         edit_profiles_registration_path(@agency.organization.profile.id)
       end
 
-      def broker_show_registration_url(profile_id=nil)
+      def broker_show_registration_url(profile_id = nil)
         profiles_broker_agencies_broker_agency_profile_path(profile_id || @agency.organization.profile.id)
       end
 
-      def general_show_registration_url(profile_id=nil)
+      def assister_show_registration_url(profile_id = nil)
+        profiles_assister_agencies_assister_agency_profile_path(profile_id || @agency.organization.profile.id)
+      end
+
+      def general_show_registration_url(profile_id = nil)
         profiles_general_agencies_general_agency_profile_path(profile_id || @agency.organization.profile.id)
       end
 
@@ -41,6 +48,8 @@ module BenefitSponsors
           sponsor_home_registration_url(profile_id)
         elsif is_broker_profile?
           broker_show_registration_url(profile_id)
+        elsif is_assister_agency_profile?
+          assister_show_registration_url(profile_id)
         elsif is_general_profile?
           general_show_registration_url(profile_id)
         end

@@ -9,6 +9,7 @@ class Invitation
     "broker_agency_staff_role" => "broker_agency_staff_role",
     "employer_staff_role" => "employer_staff_role",
     "assister_role" => "assister_role",
+    "assister_agency_staff_role" => "assister_agency_staff_role",
     "csr_role" => "csr_role",
     "hbx_staff_role" => "hbx_staff_role",
     "general_agency_staff_role" => "general_agency_staff_role"
@@ -48,23 +49,39 @@ class Invitation
       valid_broker_role_invitation?(user_obj)
     when "broker_agency_staff_role"
       valid_broker_staff_invitation?(user_obj)
+    when "assister_role"
+      valid_assister_role_invitation?(user_obj)
+    when "assister_agency_staff_role"
+      valid_assister_staff_invitation?(user_obj)
     else
       true
     end
   end
 
-  def valid_broker_role_invitation?(user_obj)
-    broker_role = BrokerRole.find(source_id)
-    person = broker_role.person
+  def valid_user?(user_obj, role)
+    person = role.person
     return true if person.user_id.blank?
     person.user_id == user_obj.id
   end
 
+  def valid_assister_role_invitation?(user_obj)
+    role = AssisterRole.find(source_id)
+    valid_user?(user_obj, role)
+  end
+
+  def valid_assister_staff_invitation?(user_obj)
+    role = AssisterAgencyStaffRole.find(source_id)
+    valid_user?(user_obj, role)
+  end
+
+  def valid_broker_role_invitation?(user_obj)
+    broker_role = BrokerRole.find(source_id)
+    valid_user?(user_obj, broker_role)
+  end
+
   def valid_broker_staff_invitation?(user_obj)
     staff_role = BrokerAgencyStaffRole.find(source_id)
-    person = staff_role.person
-    return true if person.user_id.blank?
-    person.user_id == user_obj.id
+    valid_user?(user_obj, staff_role)
   end
 
   def claim_invitation!(user_obj, redirection_obj)
@@ -85,6 +102,8 @@ class Invitation
       claim_employer_staff_role(user_obj, redirection_obj)
     when "assister_role"
       claim_assister_role(user_obj, redirection_obj)
+    when "assister_agency_staff_role"
+      claim_assister_agency_staff_role(user_obj, redirection_obj)
     when "csr_role"
       claim_csr_role(user_obj, redirection_obj)
     when "hbx_staff_role"
@@ -160,14 +179,32 @@ class Invitation
   end
 
   def claim_assister_role(user_obj, redirection_obj)
-    staff_role = AssisterRole.find(source_id)
+    assister_role = AssisterRole.find(source_id)
+    person = assister_role.person
+    redirection_obj.create_sso_account(user_obj, person, 15, "assister") do
+      person.user = user_obj
+      person.save!
+      assister_agency_profile = assister_role.assister_agency_profile
+      Operations::EnsureAssisterStaffRoleForPrimaryAssister.new(:invitation_claimed).call(assister_role)
+
+      user_obj.roles << "assister" unless user_obj.roles.include?("assister")
+      user_obj.roles << "assister_agency_staff" if assister_role.is_primary_assister? && !user_obj.roles.include?("assister_agency_staff")
+
+      user_obj.save!
+      redirection_obj.redirect_to_assister_agency_profile(assister_agency_profile)
+    end
+  end
+
+  def claim_assister_agency_staff_role(user_obj, redirection_obj)
+    staff_role = AssisterAgencyStaffRole.find(source_id)
     person = staff_role.person
     redirection_obj.create_sso_account(user_obj, person, 15, "assister") do
       person.user = user_obj
       person.save!
-      user_obj.roles << "assister" unless user_obj.roles.include?("assister")
+      assister_agency_profile = staff_role.assister_agency_profile
+      user_obj.roles << "assister_agency_staff" unless user_obj.roles.include?("assister_agency_staff")
       user_obj.save!
-      redirection_obj.redirect_to_agents_path
+      redirection_obj.redirect_to_assister_agency_profile(assister_agency_profile)
     end
   end
 
@@ -231,6 +268,14 @@ class Invitation
 
   def send_broker_staff_invitation!(invitee_name, person_id)
     UserMailer.broker_staff_invitation_email(invitation_email, invitee_name, self, person_id).deliver_now
+  end
+
+  def send_assister_invitation!(invitee_name)
+    UserMailer.assister_invitation_email(invitation_email, invitee_name, self).deliver_now
+  end
+
+  def send_assister_staff_invitation!(invitee_name, person_id)
+    UserMailer.assister_staff_invitation_email(invitation_email, invitee_name, self, person_id).deliver_now
   end
 
   def send_initial_employee_invitation!(census_employee)
@@ -341,6 +386,36 @@ class Invitation
     end
   end
 
+  def self.invite_assister!(assister_role)
+    if should_invite_assister_or_assister_staff_role?(assister_role)
+      invitation = self.create(
+        :role => "assister_role",
+        :source_kind => "assister_role",
+        :source_id => assister_role.id,
+        :invitation_email => assister_role.email_address
+      )
+      invitation.send_assister_invitation!(assister_role.parent.full_name)
+      invitation
+    elsif should_notify_linked_assister?(assister_role)
+      UserMailer.assister_linked_invitation_email(assister_role.email_address, assister_role.parent.full_name).deliver_now
+    end
+  end
+
+  def self.invite_assister_agency_staff!(assister_role)
+    if should_invite_assister_or_assister_staff_role?(assister_role)
+      invitation = self.create(
+        :role => "assister_agency_staff_role",
+        :source_kind => "assister_agency_staff_role",
+        :source_id => assister_role.id,
+        :invitation_email => assister_role.email_address
+      )
+      invitation.send_assister_staff_invitation!(assister_role.parent.full_name, assister_role.parent.id)
+      invitation
+    elsif should_notify_linked_assister_staff?(assister_role)
+      UserMailer.assister_staff_linked_invitation_email(assister_role.email_address, assister_role.parent.full_name).deliver_now
+    end
+  end
+
   def self.invite_general_agency_staff!(staff_role)
     if !staff_role.email_address.blank?
       invitation = self.create(
@@ -352,17 +427,6 @@ class Invitation
       invitation.send_agent_invitation!(staff_role.parent.full_name, staff_role.parent.id)
       invitation
     end
-  end
-
-  def self.invite_assister!(assister_role, email)
-      invitation = self.create(
-        :role => "assister_role",
-        :source_kind => "assister_role",
-        :source_id => assister_role.id,
-        :invitation_email => email
-      )
-      invitation.send_agent_invitation!(assister_role.parent.full_name)
-      invitation
   end
 
   def self.invite_csr!(csr_role, email)
@@ -408,6 +472,18 @@ class Invitation
     has_email = !role.email_address.blank?
     return has_email unless EnrollRegistry.feature_enabled?(:broker_role_consumer_enhancement)
     has_email && !claimed_consumer_role_with_login?(role)
+  end
+
+  def self.should_invite_assister_or_assister_staff_role?(role)
+    should_invite_broker_or_broker_staff_role?(role)
+  end
+
+  def self.should_notify_linked_assister?(role)
+    should_notify_linked_broker?(role)
+  end
+
+  def self.should_notify_linked_assister_staff?(role)
+    should_notify_linked_broker_staff?(role)
   end
 
   def self.should_notify_linked_broker?(role)

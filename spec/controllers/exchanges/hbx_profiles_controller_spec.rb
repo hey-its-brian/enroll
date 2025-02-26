@@ -38,6 +38,13 @@ RSpec.describe Exchanges::HbxProfilesController, dbclean: :around_each do
       expect(response).to render_template("exchanges/hbx_profiles/broker_agency_index_datatable", "layouts/progress")
     end
 
+    it "renders assister_agency_index" do
+      allow(EnrollRegistry[:bs4_admin_flow].feature).to receive(:is_enabled).and_return(true)
+      get :assister_agency_index, xhr: true
+      expect(response).to have_http_status(:success)
+      expect(response).to render_template("exchanges/hbx_profiles/assister_agency_index_datatable", "layouts/progress")
+    end
+
     xit "renders issuer_index" do
       get :issuer_index, xhr: true
       expect(response).to have_http_status(:success)

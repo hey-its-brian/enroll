@@ -1,0 +1,24 @@
+<h3><%= l10n("assister_agencies.profiles.assister_agency_contacts")%></h3>
+
+<div class="table-border">
+  <table class="table">
+    <% if assister_agency_contacts.present? %>
+        <thead>
+          <th><%= l10n("first_name")%></th>
+          <th><%= l10n("last_name")%></th>
+          <th><%= l10n("dob")%></th>
+          <th><%= l10n("assister_agencies.profiles.primary_assister_role_info")%></th>
+        </thead>
+        <% assister_agency_contacts.each do |assister_agency_contact| %>
+          <tbody>
+            <td><%= assister_agency_contact.first_name %></td>
+            <td><%= assister_agency_contact.last_name %></td>
+            <td><%= assister_agency_contact.dob %></td>
+            <td><%= assister_agency_contact.assister_role.present? ? "#{assister_agency_contact.assister_role.assister_org_id} / #{assister_agency_contact.assister_role.provider_kind}" : "" %></td>
+          </tbody>
+        <% end %>
+    <% else %>
+      <tr><td><%= l10n("assister_agencies.profiles.no_assister_agency_contacts_found")%></td></tr>
+    <% end %>
+  </table>
+</div>

@@ -307,6 +307,201 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
             end
           end
         end
+
+        context 'when the user is an assigned assister' do
+          let(:market_kind) { :both }
+          let(:assister_person) { FactoryBot.create(:person, :with_assister_role) }
+          let(:assister_person) { FactoryBot.create(:person) }
+          let(:assister_role) { FactoryBot.create(:assister_role, person: assister_person) }
+          let(:assister_user) { FactoryBot.create(:user, person: assister_person) }
+
+          let(:site) do
+            FactoryBot.create(
+              :benefit_sponsors_site,
+              :with_benefit_market,
+              :as_hbx_profile,
+              site_key: ::EnrollRegistry[:enroll_app].settings(:site_key).item
+            )
+          end
+
+          let(:assister_agency_organization) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+          let(:assister_agency_profile) { assister_agency_organization.assister_agency_profile }
+          let(:assister_agency_id) { assister_agency_profile.id }
+
+          let(:logged_in_user) { assister_user }
+
+          let(:assister_agency_account) do
+            family.assister_agency_accounts.create!(
+              benefit_sponsors_assister_agency_profile_id: assister_agency_id,
+              writing_agent_id: assister_role.id,
+              is_active: baa_active,
+              start_on: TimeKeeper.date_of_record
+            )
+          end
+
+          before do
+            assister_role.update_attributes!(benefit_sponsors_assister_agency_profile_id: assister_agency_id)
+            assister_person.create_assister_agency_staff_role(
+              benefit_sponsors_assister_agency_profile_id: assister_role.benefit_sponsors_assister_agency_profile_id
+            )
+            assister_agency_profile.update_attributes!(primary_assister_role_id: assister_role.id, market_kind: market_kind)
+            assister_role.approve!
+            assister_agency_account
+          end
+
+          context 'with active associated individual market certified assister' do
+            context 'consumer RIDP is verified' do
+              let(:baa_active) { true }
+
+              it 'grants access' do
+                expect(subject).to permit(logged_in_user, deduction)
+              end
+            end
+
+            context 'consumer RIDP is unverified' do
+              let(:baa_active) { true }
+
+              it 'grants access' do
+                consumer_role.update_attributes(identity_validation: 'na', application_validation: 'na')
+                expect(subject).to permit(logged_in_user, deduction)
+              end
+            end
+          end
+
+          context 'with active associated shop market certified assister' do
+            let(:baa_active) { false }
+            let(:market_kind) { :shop }
+
+            it 'denies access' do
+              expect(subject).not_to permit(logged_in_user, deduction)
+            end
+          end
+
+          context 'with unassociated assister' do
+            let(:baa_active) { false }
+
+            it 'denies access' do
+              expect(subject).not_to permit(logged_in_user, deduction)
+            end
+          end
+        end
+
+        context 'when the user is a assister staff' do
+          let(:market_kind) { :both }
+          let(:assister_person) { FactoryBot.create(:person) }
+          let(:assister_role) { FactoryBot.create(:assister_role, person: assister_person) }
+          let(:assister_staff_person) { FactoryBot.create(:person) }
+
+          let(:assister_staff_state) { 'active' }
+
+          let(:assister_staff) do
+            FactoryBot.create(
+              :assister_agency_staff_role,
+              person: assister_staff_person,
+              aasm_state: assister_staff_state,
+              benefit_sponsors_assister_agency_profile_id: assister_agency_id
+            )
+          end
+          let(:assister_staff_user) { FactoryBot.create(:user, person: assister_staff_person) }
+
+          let(:site) do
+            FactoryBot.create(
+              :benefit_sponsors_site,
+              :with_benefit_market,
+              :as_hbx_profile,
+              site_key: ::EnrollRegistry[:enroll_app].settings(:site_key).item
+            )
+          end
+
+          let(:assister_agency_organization) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+          let(:assister_agency_profile) { assister_agency_organization.assister_agency_profile }
+          let(:assister_agency_id) { assister_agency_profile.id }
+
+          let(:logged_in_user) { assister_staff_user }
+
+          let(:assister_agency_account) do
+            family.assister_agency_accounts.create!(
+              benefit_sponsors_assister_agency_profile_id: assister_agency_id,
+              writing_agent_id: assister_role.id,
+              is_active: baa_active,
+              start_on: TimeKeeper.date_of_record
+            )
+          end
+
+          before do
+            assister_role.update_attributes!(benefit_sponsors_assister_agency_profile_id: assister_agency_id)
+            assister_person.create_assister_agency_staff_role(
+              benefit_sponsors_assister_agency_profile_id: assister_role.benefit_sponsors_assister_agency_profile_id
+            )
+            assister_agency_profile.update_attributes!(primary_assister_role_id: assister_role.id, market_kind: market_kind)
+            assister_role.approve!
+            assister_agency_account
+            assister_staff
+          end
+
+          context 'with active associated individual market assister staff' do
+            context 'consumer RIDP is verified' do
+              let(:baa_active) { true }
+
+              it 'grants access' do
+                expect(subject).to permit(logged_in_user, deduction)
+              end
+            end
+
+            context 'consumer RIDP is unverified' do
+              let(:baa_active) { true }
+
+              it 'grants access' do
+                consumer_role.update_attributes(identity_validation: 'na', application_validation: 'na')
+                expect(subject).to permit(logged_in_user, deduction)
+              end
+            end
+          end
+
+          context 'with active associated shop market assister staff' do
+            let(:baa_active) { false }
+            let(:market_kind) { :shop }
+
+            it 'denies access' do
+              expect(subject).not_to permit(logged_in_user, deduction)
+            end
+          end
+
+          context 'with unassociated assister staff' do
+            let(:baa_active) { false }
+
+            it 'denies access' do
+              expect(subject).not_to permit(logged_in_user, deduction)
+            end
+          end
+
+          context 'with unapproved assister staff' do
+            let(:baa_active) { true }
+            let(:assister_staff_state) { 'assister_agency_pending' }
+
+            it 'denies access' do
+              expect(subject).not_to permit(logged_in_user, deduction)
+            end
+          end
+
+          context 'with assister_agency_declined assister staff' do
+            let(:baa_active) { true }
+            let(:assister_staff_state) { 'assister_agency_declined' }
+
+            it 'denies access' do
+              expect(subject).not_to permit(logged_in_user, deduction)
+            end
+          end
+
+          context 'with assister_agency_terminated assister staff' do
+            let(:baa_active) { true }
+            let(:assister_staff_state) { 'assister_agency_terminated' }
+
+            it 'denies access' do
+              expect(subject).not_to permit(logged_in_user, deduction)
+            end
+          end
+        end
       end
 
       context 'when a valid user is not logged in' do

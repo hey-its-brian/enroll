@@ -1,0 +1,7 @@
+var bs4 = document.documentElement.dataset.bs4;
+if (bs4 == "true") {
+  <%= @bs4 = true %>
+}
+
+$('.assister-agency-search .result').html("<%= escape_javascript(render "search_assister_agency") %>");
+$('.assister-agency-search a.search').button('reset');

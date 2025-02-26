@@ -83,40 +83,9 @@ class HbxProfilePolicy < ApplicationPolicy
     index?
   end
 
-  # rubocop:disable Metrics/CyclomaticComplexity
-  # Determines if the current user has permission to access the assister index.
-  # The user can access the assister index if they are a primary family member,
-  # an admin, an active associated broker staff, or an active associated broker in the individual market,
-  # the ACA Shop market, the Non-ACA Fehb market, or the coverall market.
-  #
-  # @return [Boolean] Returns true if the user has permission to access the assister index, false otherwise.
-  # @note This method checks for permissions across multiple markets and roles.
   def assister_index?
-    # Fall back on a family if it exists for the current user.
-    @family = account_holder_family
-    return true if individual_market_primary_family_member?
-    return true if individual_market_non_ridp_primary_family_member?
-    return true if individual_market_admin?
-    return true if active_associated_individual_market_family_broker_staff?
-    return true if active_associated_individual_market_family_broker?
-
-    return true if shop_market_primary_family_member?
-    return true if shop_market_admin?
-    return true if active_associated_shop_market_family_broker?
-    return true if active_associated_shop_market_general_agency?
-
-    return true if fehb_market_primary_family_member?
-    return true if fehb_market_admin?
-    return true if active_associated_fehb_market_family_broker?
-    return true if active_associated_fehb_market_general_agency?
-
-    return true if coverall_market_primary_family_member?
-    return true if coverall_market_admin?
-    return true if active_associated_coverall_market_family_broker?
-
-    false
+    index?
   end
-  # rubocop:enable Metrics/CyclomaticComplexity
 
   def family_index?
     return true if index?
@@ -208,6 +177,10 @@ class HbxProfilePolicy < ApplicationPolicy
   end
 
   def broker_agency_index?
+    index?
+  end
+
+  def assister_agency_index?
     index?
   end
 
@@ -428,34 +401,27 @@ class HbxProfilePolicy < ApplicationPolicy
   end
 
   def access_identity_verification_sub_tab?
-    return @user.person.hbx_staff_role.permission.can_access_identity_verification_sub_tab if (@user.person && @user.person.hbx_staff_role)
-    return false
+    @user&.person&.hbx_staff_role&.permission&.can_access_identity_verification_sub_tab || false
   end
 
   def access_outstanding_verification_sub_tab?
-    return @user.person.hbx_staff_role.permission.can_access_outstanding_verification_sub_tab if (@user.person && @user.person.hbx_staff_role)
-    return false
+    @user&.person&.hbx_staff_role&.permission&.can_access_outstanding_verification_sub_tab || false
   end
 
   def can_access_accept_reject_identity_documents?
-    return @user.person.hbx_staff_role.permission.can_access_accept_reject_identity_documents if (@user.person && @user.person.hbx_staff_role)
-    return false
+    @user&.person&.hbx_staff_role&.permission&.can_access_accept_reject_identity_documents || false
   end
 
   def can_access_accept_reject_paper_application_documents?
-    return @user.person.hbx_staff_role.permission.can_access_accept_reject_paper_application_documents if (@user.person && @user.person.hbx_staff_role)
-    return false
+    @user&.person&.hbx_staff_role&.permission&.can_access_accept_reject_paper_application_documents || false
   end
 
   def can_delete_identity_application_documents?
-    return @user.person.hbx_staff_role.permission.can_delete_identity_application_documents if (@user.person && @user.person.hbx_staff_role)
-    return false
+    @user&.person&.hbx_staff_role&.permission&.can_delete_identity_application_documents || false
   end
 
   def can_access_user_account_tab?
-    return @user.person.hbx_staff_role.permission.can_access_user_account_tab if @user&.person && @user.person.hbx_staff_role
-
-    false
+    @user&.person&.hbx_staff_role&.permission&.can_access_user_account_tab || false
   end
 
   def can_add_pdc?

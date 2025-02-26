@@ -6,7 +6,7 @@
       options.merge!(change_plan: 'change_plan') if @hbx_enrollments.present?
       options.merge!(resident_role_id: @person.resident_role.id) if @person.resident_role.present?
     %>
-    <div class="home-widget p-2" id='shop-for-plans-widget'>
+    <div class="home-widget col-4 p-2 mr-2" id='shop-for-plans-widget'>
       <h3><%= l10n("insured.shop_for_health_or_dental_plans") %></h3>
       <div class="mr-2 ml-2 mb-2 <%=pundit_class Family, :updateable?%>">
         <% if !person_has_any_roles?%>

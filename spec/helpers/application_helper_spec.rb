@@ -328,6 +328,45 @@ RSpec.describe ApplicationHelper, :type => :helper do
     end
   end
 
+  describe "display_my_assister?" do
+    let!(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person)}
+    let(:person) { FactoryBot.create(:person, :with_consumer_role)}
+    let(:site) {FactoryBot.create(:benefit_sponsors_site, :with_benefit_market, :cca, :as_hbx_profile)}
+    let(:organization) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, :with_aca_shop_cca_employer_profile_initial_application, site: site)}
+    let(:employer_profile) {organization.employer_profile}
+    let(:employee_role) { FactoryBot.create(:employee_role, person: person, employer_profile: employer_profile)}
+    let!(:assister_role) { FactoryBot.create(:assister_role, aasm_state: 'active') }
+    let!(:assister_agency_account) {FactoryBot.create(:benefit_sponsors_accounts_assister_agency_account,assister_agency_profile: assister_agency_profile,writing_agent: assister_role, start_on: TimeKeeper.date_of_record)}
+    let!(:assister_organization)            { FactoryBot.build(:benefit_sponsors_organizations_general_organization, site: site)}
+    let!(:assister_agency_profile)         { FactoryBot.create(:benefit_sponsors_organizations_assister_agency_profile, organization: assister_organization, legal_name: 'Legal Name1') }
+
+    context 'person with dual roles' do
+      before do
+        allow(person).to receive(:employee_roles).and_return([employee_role])
+        allow(person).to receive(:active_employee_roles).and_return([employee_role])
+        allow(person).to receive(:consumer_role).and_return([])
+        allow(person).to receive(:has_active_employee_role?).and_return(true)
+        allow(employer_profile).to receive(:assister_agency_profile).and_return([assister_agency_profile])
+      end
+
+      it "should return true if person has employee & assister roles" do
+        expect(helper.display_my_assister?(person, employee_role)).to eq true
+      end
+    end
+
+    context 'person with consumer role only' do
+      before do
+        allow(person).to receive(:employee_roles).and_return([])
+        allow(person).to receive(:active_employee_roles).and_return([])
+        allow_any_instance_of(Family).to receive(:current_assister_agency).and_return(assister_agency_account)
+      end
+
+      it "should return true if person has consumer role & assister agency linked" do
+        expect(helper.display_my_assister?(person, employee_role)).to eq true
+      end
+    end
+  end
+
   describe "relationship_options" do
     let(:dependent) { double("FamilyMember") }
 

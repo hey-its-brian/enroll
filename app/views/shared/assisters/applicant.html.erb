@@ -1,0 +1,74 @@
+<%= form_for @assister_applicant, url: {action: "update"} do |f| %>
+  <div class="content-bottom">
+    <div class="<%= 'row' unless @bs4 %>">
+      <div class="col-xs-12">
+        <% if @assister_applicant.errors.any? %>
+          <div class="alert alert-error">
+            <h4>
+              <%= "#{pluralize(@assister_applicant.errors.size, "error")} prohibited this person from being saved:" %>
+            </h4>
+            <ul>
+              <% @assister_applicant.errors.full_messages.each do |msg| %>
+                <li> <%= msg %> </li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+        <% unless @bs4 %>
+        <div class="row">
+            <a class="remove return_to_assister_applicants" href="#">
+              <i aria-hidden="true" class="far fa-times-circle"></i>
+              <%= l10n("cancel") %>
+            </a>
+        </div>
+        <% end %>
+        <% assister_or_staff_role = @assister_applicant.assister_role.nil? ? @assister_applicant.assister_agency_staff_roles[0] : @assister_applicant.assister_role %>
+        <%= render partial: "shared/assisters/assister_fields", :locals => {f: f, assister_or_staff_role: assister_or_staff_role} %>
+        <br/>
+         <div class="<%= 'row top-row no-border' unless @bs4 %>">
+          <div class="col-xs-12 text-center assister_approve_deny_btn">
+            <%= pundit_span HbxProfile, :approve_broker? %>
+              <% if @assister_agency_profile.present? %>
+                <% if assister_or_staff_role.may_assister_agency_accept? %>
+                  <%= submit_tag 'Accept', class: "btn btn-primary  interaction-click-control-assister-approve" %>
+                <% end %>
+                <% if assister_or_staff_role.may_assister_agency_decline? %>
+                  <%= submit_tag 'Decline', name: 'decline', class: "btn btn-primary  interaction-click-control-assister-deny" %>
+                <% end %>
+                <% if assister_or_staff_role.may_assister_agency_terminate? %>
+                  <%= submit_tag 'Terminate', name: 'terminate', class: "btn btn-primary  interaction-click-control-assister-decertify" %>
+                <% end %>
+              <% else %>
+                <% if assister_or_staff_role.may_approve? || (assister_or_staff_role.may_assister_agency_accept? && assister_or_staff_role.is_primary_assister?) %>
+                  <%= submit_tag 'Approve', class: "btn btn-primary interaction-click-control-assister-approve" %>
+                <% end %>
+                <% if assister_or_staff_role.may_pending? %>
+                  <%= submit_tag 'Pending', name: 'pending', class: "btn btn-primary interaction-click-control-assister-pending" %>
+                <% end %>
+                <% if assister_or_staff_role.can_update_carrier_appointments? %>
+                    <%= submit_tag 'Update', name: 'update', class: "btn btn-primary interaction-click-control-assister-update" %>
+                <% end %>
+                <% if assister_or_staff_role.may_assister_agency_decline? %>
+                  <%= submit_tag 'Deny', name: 'deny', class: "btn btn-primary interaction-click-control-assister-deny" %>
+                <% end %>
+                <% if assister_or_staff_role.may_decertify? %>
+                  <%= submit_tag 'Decertify', name: 'decertify', class: "btn btn-primary  interaction-click-control-assister-decertify" %>
+                <% end %>
+                <% if assister_or_staff_role.aasm_state == 'active' && EnrollRegistry.feature_enabled?(:resend_broker_email_button) %>
+                  <%= submit_tag 'Resend Email Invite', name: 'sendemail', class: "btn btn-primary" %>
+                <% end %>
+                <% if assister_or_staff_role.may_recertify? %>
+                  <%= submit_tag 'Re-Certify', name: 'recertify', class: "btn btn-primary  interaction-click-control-assister-recertify" %>
+                <% end %>
+                <% if assister_or_staff_role.may_extend_application? %>
+                  <%= submit_tag 'Extend', name: 'extend', class: "btn btn-primary  interaction-click-control-assister-extend" %>
+                <% end %>
+              <% end %>
+            </span>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

@@ -9,7 +9,6 @@ class AgentPolicy < ApplicationPolicy
 
   def home?
     return true if @person.csr_role
-    return true if @person.assister_role
 
     false
   end

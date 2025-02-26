@@ -5,6 +5,7 @@ module BenefitSponsors
       include Virtus.model
 
       attribute :npn, String
+      attribute :assister_org_id, String
       attribute :first_name, String
       attribute :last_name, String
       attribute :email, String
@@ -22,6 +23,8 @@ module BenefitSponsors
 
       attribute :filter_criteria, Hash
       attribute :is_broker_registration_page, Boolean, default: false
+      attribute :is_assister_registration_page, Boolean, default: false
+
       attribute :is_general_agency_registration_page, Boolean, default: false
 
       validates_presence_of :dob, :if => Proc.new { |m| m.person_id.blank? }
@@ -64,6 +67,10 @@ module BenefitSponsors
         @is_broker_registration_page = val.blank? ? false : val == "true"
       end
 
+      def is_assister_registration_page=(val)
+        @is_assister_registration_page = val.blank? ? false : val == "true"
+      end
+
       def is_broker_profile?
         profile_type == "broker_agency"
       end
@@ -88,6 +95,14 @@ module BenefitSponsors
         profile_type == "general_agency_staff"
       end
 
+      def is_assister_profile?
+        profile_type == "assister_agency"
+      end
+
+      def is_assister_agency_staff_profile?
+        profile_type == "assister_agency_staff"
+      end
+
       # for new
       def self.for_new
         self.new
@@ -103,6 +118,10 @@ module BenefitSponsors
       end
 
       def self.for_general_agency_search(attrs)
+        new(attrs)
+      end
+
+      def self.for_assister_agency_search(attrs)
         new(attrs)
       end
 
@@ -130,6 +149,10 @@ module BenefitSponsors
 
       def broker_agency_search
         service.broker_agency_search!(self)
+      end
+
+      def assister_agency_search
+        service.assister_agency_search!(self)
       end
 
       def approve!

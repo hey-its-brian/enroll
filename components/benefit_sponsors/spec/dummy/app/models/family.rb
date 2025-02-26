@@ -51,6 +51,7 @@ class Family
   embeds_many :households, cascade_callbacks: true, :before_add => :reset_active_household
   # embeds_many :broker_agency_accounts #depricated
   embeds_many :broker_agency_accounts, class_name: "BenefitSponsors::Accounts::BrokerAgencyAccount"
+  embeds_many :assister_agency_accounts, class_name: "BenefitSponsors::Accounts::AssisterAgencyAccount"
   embeds_many :general_agency_accounts
   embeds_many :documents, as: :documentable
 
@@ -219,6 +220,10 @@ class Family
 
   def active_broker_agency_account
     broker_agency_accounts.detect { |baa| baa.is_active? }
+  end
+
+  def active_assister_agency_account
+    assister_agency_accounts.detect { |baa| baa.is_active? }
   end
 
   def coverage_waived?

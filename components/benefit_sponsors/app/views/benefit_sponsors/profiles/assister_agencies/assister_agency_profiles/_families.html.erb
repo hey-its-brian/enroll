@@ -1,0 +1,152 @@
+<% model_class = Family %>
+<%t '.title', :default => model_class.model_name.human.pluralize.titleize %>
+<%= hidden_field_tag :market_enabled_check, is_shop_or_fehb_market_enabled? %>
+
+<h1><%= @assister_agency_profile.organization.legal_name %></h1>
+<h2><%= l10n("families")%></h2>
+<div id="families">
+  <div class="module">
+  <table class="table" id="Assister-Family-dataTable">
+    <thead>
+    <tr>
+      <th><%= l10n("name")%></th>
+      <% unless EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields) %>
+        <th><%= l10n("ssn")%></th>
+      <% end %>
+      <th><%= l10n("dob")%></th>
+      <th><%= l10n("hbx_id")%></th>
+      <th><%= l10n("family")%></th>
+      <th><%= l10n("registered?")%></th>
+      <% if is_shop_or_fehb_market_enabled? %>
+        <th><%= l10n("assister_agencies.consumer") %>?</th>
+        <th><%= l10n("assister_agencies.employee") %>?</th>
+      <% end %>
+    </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+  </div>
+  <script type="text/javascript" charset="utf-8">
+    var ssnRemoved = "<%= EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields) %>";
+    if (ssnRemoved) {
+      var columnList = [{ data: 'name'}, { data: 'dob' }, { data: 'hbx_id'}, { data: 'family_count'}, { data: 'registered'}];
+    } else {
+      var columnList = [{ data: 'name'}, { data: 'ssn' }, { data: 'dob' }, { data: 'hbx_id'}, { data: 'family_count'}, { data: 'registered'}];
+    }
+
+    var market_enabled = document.getElementById("market_enabled_check").value;
+    if (market_enabled == 'true') {
+      columnList.push({data: 'consumer'}, {data: 'employee'})
+      var filteredColumnList = columnList
+    } else {
+      var filteredColumnList = columnList
+    }
+
+    // datatables setup
+    $(document).ready(function() {
+      $('#Assister-Family-dataTable').DataTable( {
+        "processing": true,
+        "serverSide": true,
+        "ordering" : false,
+        "paging": true,
+        "lengthMenu": [ 10, 25, 50, 100],
+        "searchDelay" : 500,
+        "ajax": {
+          url: "<%= family_datatable_profiles_assister_agencies_assister_agency_profile_path(id: @assister_agency_profile.id, :format => :json) %>",
+          type: "POST",
+          data: function ( d ) {
+            console.log("Assister-Family-dataTable datatable")
+          }
+        },
+        "columns": filteredColumnList,
+        "buttons": [
+          {
+            extend: 'copy',
+            exportOptions: {
+              format: {
+                header: function(str) { return $("<div>" + str + "</div>").text().trim(); },
+                body: function(data, row, column, node) {
+                  if (typeof data === 'string' && data.includes('<')) {
+                    return $(node).text().trim();
+                  }
+                  return data;
+                }
+              },
+              columns: ':not(.col-actions)'
+            }
+          },
+          {
+            extend: 'excel',
+            exportOptions: {
+              format: {
+                header: function(str) { return $("<div>" + str + "</div>").text().trim(); },
+                body: function(data, row, column, node) {
+                  if (typeof data === 'string' && data.includes('<')) {
+                    return $(node).text().trim();
+                  }
+                  return data;
+                }
+              },
+              columns: ':not(.col-actions)'
+            }
+          },
+          {
+            extend: 'csv',
+            exportOptions: {
+              format: {
+                header: function(str) { return $("<div>" + str + "</div>").text().trim(); },
+                body: function(data, row, column, node) {
+                  if (typeof data === 'string' && data.includes('<')) {
+                    return $(node).text().trim();
+                  }
+                  return data;
+                }
+              },
+              columns: ':not(.col-actions)'
+            }
+          },
+          {
+            extend: 'print',
+            exportOptions: {
+              columns: ':not(.col-actions)'
+            },
+            customize: function(win) {
+              // Convert any HTML in the print view to plain text
+              $(win.document.body).find('table').find('td,th').each(function() {
+                var $cell = $(this);
+                $cell.text($cell.text().trim());
+              });
+            }
+          }
+        ],
+        'dom': "<'d-flex align-items-center w-100 justify-content-between mb-4'" +
+        "Bf" +
+        ">" +
+        "<'d-flex align-items-center w-100 '" +
+        "<'col-sm-12 col-md-12'>" +
+        ">" +
+        "<'d-flex align-items-center w-100 '" +
+        "<'col-sm-12 col-md-12 px-0'tr>"+
+        ">" +
+        "<'d-flex justify-content-between align-items-center w-100'" +
+        "il" +
+        ">" +
+        "<'d-flex align-items-center justify-content-center w-100 my-4'" +
+        "p" +
+        ">"
+      } );
+
+      var logoLink = document.getElementById("link-home-logo");
+
+      logoLink.addEventListener("click", function(e) {
+        e.preventDefault();
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+        const homeUrl = `/benefit_sponsors/profiles/assister_agencies/assister_agency_profiles/${id}`;
+
+        window.location.replace(homeUrl);
+      });
+    });
+  </script>
+</div>

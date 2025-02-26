@@ -43,6 +43,10 @@ module BenefitSponsors
         profile.try(:profile_type) == "broker_agency"
       end
 
+      def is_assister_profile?
+        profile.try(:profile_type) == "assister_agency"
+      end
+
       def is_general_agency_profile?
         profile.try(:profile_type) == "general_agency"
       end

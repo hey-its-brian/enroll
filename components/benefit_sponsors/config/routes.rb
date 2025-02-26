@@ -38,6 +38,38 @@ BenefitSponsors::Engine.routes.draw do
       end
     end
 
+    namespace :assister_agencies do
+      resources :assister_agency_profiles, format: false, only: [:new, :show, :index, :edit, :update] do
+        collection do
+          get :family_index
+          get :messages
+          get :staff_index
+          get :commission_statements
+          get :general_agency_index
+          post :email_guide
+        end
+        member do
+          post :clear_assign_for_employer
+          get :assign
+          post :update_assign
+          post :family_datatable
+          get :inbox
+          get :download_commission_statement
+          get :show_commission_statement
+        end
+      end
+      resources :assister_applicants
+
+      resources :assister_agency_staff_roles do
+        collection do
+          get :search_assister_agency
+        end
+        member do
+          get :approve
+        end
+      end
+    end
+
     namespace :general_agencies do
       resources :general_agency_profiles, only: [:new, :create, :show, :index, :edit, :update] do
         collection do

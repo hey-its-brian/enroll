@@ -124,6 +124,9 @@ module BenefitSponsors
     embeds_many :broker_agency_accounts, class_name: "BenefitSponsors::Accounts::BrokerAgencyAccount",
                                          validate: true,
                                          inverse_of: :benefit_sponsorship
+    embeds_many :assister_agency_accounts, class_name: "BenefitSponsors::Accounts::AssisterAgencyAccount",
+                                           validate: true,
+                                           inverse_of: :benefit_sponsorship
 
     # embeds_many :general_agency_accounts, class_name: "BenefitSponsors::Accounts::GeneralAgencyAccount",
     #   validate: true
@@ -152,6 +155,9 @@ module BenefitSponsors
 
     scope :by_broker_role,              ->( broker_role_id ){ where(:'broker_agency_accounts' => {:$elemMatch => { is_active: true, writing_agent_id: broker_role_id} }) }
     scope :by_broker_agency_profile,    ->( broker_agency_profile_id ) { where(:'broker_agency_accounts' => {:$elemMatch => { is_active: true, benefit_sponsors_broker_agency_profile_id: broker_agency_profile_id} }) }
+
+    scope :by_assister_role,              ->(assister_role_id){ where(:assister_agency_accounts => {:$elemMatch => { is_active: true, writing_agent_id: assister_role_id} }) }
+    scope :by_assister_agency_profile,    ->(assister_agency_profile_id) { where(:assister_agency_accounts => {:$elemMatch => { is_active: true, benefit_sponsors_assister_agency_profile_id: assister_agency_profile_id} }) }
 
     scope :may_begin_open_enrollment?,  -> (compare_date = TimeKeeper.date_of_record) {
       where(:benefit_applications => {
@@ -877,9 +883,12 @@ module BenefitSponsors
     end
 
     def active_broker_agency_account
-      broker_agency_accounts.detect { |baa| baa.is_active }
+      broker_agency_accounts.detect(&:is_active)
     end
 
+    def active_assister_agency_account
+      assister_agency_accounts.detect(&:is_active)
+    end
 
     def self.find_by_feins(feins)
       organizations = BenefitSponsors::Organizations::Organization.where(fein: {:$in => feins})

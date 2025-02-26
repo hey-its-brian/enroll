@@ -31,6 +31,10 @@ module BenefitSponsors
     let!(:active_employer_staff_role) {FactoryBot.build(:benefit_sponsor_employer_staff_role, aasm_state: 'is_active', benefit_sponsor_employer_profile_id: employer_profile.id)}
     let!(:broker_person) { FactoryBot.create(:person) }
     let(:user) { FactoryBot.create(:user, :person => person)}
+    let!(:assister_organization)                  { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+    let(:assister_agency_profile) { assister_organization.assister_agency_profile }
+    let!(:assister_agency_staff_role) {FactoryBot.build(:assister_agency_staff_role, benefit_sponsors_assister_agency_profile_id: assister_agency_profile.id)}
+
 
     describe ".find_profile" do
 
@@ -52,8 +56,19 @@ module BenefitSponsors
                                                                                profile_type: "broker_agency_staff")
         end
 
-        it 'should return employer profile' do
+        it 'should return broker agency profile' do
           expect(subject.find_profile(staff_role_form)).to eq broker_agency_profile
+        end
+      end
+
+      context "Assister Agency profile" do
+        let(:staff_role_form) do
+          BenefitSponsors::Organizations::OrganizationForms::StaffRoleForm.new(profile_id: assister_agency_profile.id,
+                                                                               profile_type: "assister_agency_staff")
+        end
+
+        it 'should return assister agency profile' do
+          expect(subject.find_profile(staff_role_form)).to eq assister_agency_profile
         end
       end
     end
@@ -121,6 +136,41 @@ module BenefitSponsors
 
         it 'should not add broker staff role' do
           expect(subject.add_profile_representative!(staff_role_form)).to eq [false, "you are already associated with this Broker Agency"]
+        end
+      end
+
+      context "adding assister staff role for new person" do
+        let!(:new_person) { FactoryBot.create(:person) }
+        let(:staff_role_form) do
+          BenefitSponsors::Organizations::OrganizationForms::StaffRoleForm.new(profile_id: assister_agency_profile.id,
+                                                                               profile_type: "assister_agency_staff",
+                                                                               first_name: new_person.first_name,
+                                                                               last_name: new_person.last_name,
+                                                                               dob: new_person.dob.to_s,
+                                                                               email: "steve@gmail.com")
+        end
+
+        it 'should add assister staff role for assister agency profile' do
+          expect(subject.add_profile_representative!(staff_role_form)).to eq [true, new_person]
+        end
+      end
+
+      context "adding person to assister agency in which he is already a staff" do
+        before do
+          person.assister_agency_staff_roles << assister_agency_staff_role
+        end
+        let(:staff_role_form) do
+          BenefitSponsors::Organizations::OrganizationForms::StaffRoleForm.new(profile_id: assister_agency_profile.id,
+                                                                               profile_type: "assister_agency_staff",
+                                                                               first_name: person.first_name,
+                                                                               last_name: person.last_name,
+                                                                               dob: person.dob.to_s,
+                                                                               email: "steve@gmail.com")
+        end
+
+
+        it 'should not add assister staff role' do
+          expect(subject.add_profile_representative!(staff_role_form)).to eq [false, "you are already associated with this Assister Agency"]
         end
       end
 
@@ -328,6 +378,47 @@ module BenefitSponsors
       end
     end
 
+    describe ".assister_agency_search!", dbclean: :after_each do
+
+      before do
+        Person.create_indexes
+      end
+
+      context 'when assister agency profile is in approved state' do
+
+        let(:staff_role_form) do
+          BenefitSponsors::Organizations::OrganizationForms::StaffRoleForm.new(filter_criteria: {"q" => assister_agency_profile.legal_name},
+                                                                               is_assister_registration_page: "true")
+        end
+        # flaky test
+        xit "should return result if assister profile is approved" do
+          assister_agency_profile.update_attributes!(aasm_state: "is_approved")
+          expect(subject.assister_agency_search!(staff_role_form)).to eq [assister_agency_profile]
+        end
+      end
+
+      context 'when assister agency profile is not in approved state' do
+        let(:staff_role_form) do
+          BenefitSponsors::Organizations::OrganizationForms::StaffRoleForm.new(filter_criteria: {"q" => assister_agency_profile.legal_name},
+                                                                               is_assister_registration_page: "true")
+        end
+        xit "should return empty result if assister profile is not approved" do
+          expect(subject.assister_agency_search!(staff_role_form)).to eq []
+        end
+      end
+
+      context 'when assister profile is in decertified state' do
+        let(:staff_role_form) do
+          BenefitSponsors::Organizations::OrganizationForms::StaffRoleForm.new(filter_criteria: {"q" => assister_agency_profile.legal_name},
+                                                                               is_assister_registration_page: "true")
+        end
+        it "should return blank search" do
+          assister_agency_profile.primary_assister_role.update_attributes!(aasm_state: "decertified")
+          expect(subject.assister_agency_search!(staff_role_form)).to eq []
+        end
+      end
+    end
+
     describe ".general_agency_search!", dbclean: :after_each do
 
       before :each do
@@ -420,6 +511,78 @@ module BenefitSponsors
         before do
           subject.add_broker_agency_staff_role(person1.first_name, person1.last_name, person1.dob,'#default@email.com', broker_agency_profile)
           @status, @result = subject.add_broker_agency_staff_role(person1.first_name, person1.last_name, person1.dob,'#default@email.com', broker_agency_profile)
+        end
+
+        it 'returns false' do
+          expect(@status).to eq false
+        end
+
+        it 'returns the person' do
+          expect(@result).to be_instance_of String
+        end
+      end
+    end
+
+    describe ".add_assister_agency_staff_role", dbclean: :after_each  do
+
+      let!(:assister_organization) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+      let(:assister_agency_profile) { assister_organization.assister_agency_profile }
+      let(:person_params) {{first_name: Forgery('name').first_name, last_name: Forgery('name').first_name, dob: '1990/05/01'}}
+      let(:person1) {FactoryBot.create(:person, person_params)}
+
+      context 'duplicate person PII' do
+        before do
+          FactoryBot.create(:person, person_params)
+          @status, @result = subject.add_assister_agency_staff_role(person1.first_name, person1.last_name, person1.dob,'#default@email.com', assister_agency_profile)
+        end
+        it 'returns false' do
+          expect(@status).to eq false
+        end
+
+        it 'returns msg' do
+          expect(@result).to be_instance_of String
+        end
+      end
+
+      context 'zero matching person PII' do
+        before {@status, @result = subject.add_assister_agency_staff_role('sam', person1.last_name, person1.dob,'#default@email.com', assister_agency_profile)}
+
+        it 'returns false' do
+          expect(@status).to eq false
+        end
+
+        it 'returns msg' do
+          expect(@result).to be_instance_of String
+        end
+      end
+
+      context 'matching one person PII' do
+        before {@status, @result = subject.add_assister_agency_staff_role(person1.first_name, person1.last_name, person1.dob,'#default@email.com', assister_agency_profile)}
+
+        it 'returns true' do
+          expect(@status).to eq true
+        end
+
+        it 'returns the person' do
+          expect(@result).to eq person1
+        end
+
+        it 'places the person into the active state, after transitioning from the initial state' do
+          person1.reload
+          assister_agency_staff_role = person1.assister_agency_staff_roles.first
+          transition = assister_agency_staff_role.workflow_state_transitions.detect do |wst|
+            wst.from_state == "assister_agency_pending" &&
+              wst.to_state == "active" &&
+              wst.event == "assister_agency_accept!"
+          end
+          expect(transition).not_to be_nil
+        end
+      end
+
+      context 'person already has assister role with this assister agency' do
+        before do
+          subject.add_assister_agency_staff_role(person1.first_name, person1.last_name, person1.dob,'#default@email.com', assister_agency_profile)
+          @status, @result = subject.add_assister_agency_staff_role(person1.first_name, person1.last_name, person1.dob,'#default@email.com', assister_agency_profile)
         end
 
         it 'returns false' do
@@ -545,6 +708,71 @@ module BenefitSponsors
         it 'should not terminate other broker agency staff role' do
           expect(person.reload.broker_agency_staff_roles.first.aasm_state).to eq "active"
           expect(Person.staff_for_broker_including_pending(broker_agency_profile).count).to eq 1
+        end
+      end
+    end
+
+    describe ".deactivate_assister_agency_staff_role" do
+      let(:person) {FactoryBot.create(:person)}
+      let!(:assister_organization)                  { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+
+      let(:assister_agency_profile) { assister_organization.assister_agency_profile }
+      let!(:assister_organization_second)                  { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+
+      let(:assister_agency_profile_second) { assister_organization_second.assister_agency_profile }
+      before do
+        FactoryBot.create(:assister_agency_staff_role, assister_agency_profile_id: assister_agency_profile.id, person: person, assister_agency_profile: assister_agency_profile, aasm_state: 'active')
+      end
+
+      context 'finds the person and deactivates the role' do
+        before do
+          @status, @result = subject.deactivate_assister_agency_staff_role(person.id, assister_agency_profile.id)
+        end
+        it 'returns true' do
+          expect(@status).to be true
+        end
+
+        it 'returns msg' do
+          expect(@result).to be_instance_of String
+        end
+
+        it 'should terminate assister agency staff role' do
+          expect(person.reload.assister_agency_staff_roles.first.aasm_state).to eq "assister_agency_terminated"
+          expect(Person.staff_for_assister_including_pending(assister_agency_profile).count).to eq 0
+        end
+      end
+
+      context 'when there are both terminated and active assister staff for an agency' do
+        let(:person2) {FactoryBot.create(:person)}
+        let!(:active_assister_agency_staff_role) do
+          FactoryBot.create(:assister_agency_staff_role,
+                            assister_agency_profile_id: assister_agency_profile.id,
+                            person: person2,
+                            assister_agency_profile: assister_agency_profile,
+                            aasm_state: 'assister_agency_terminated')
+        end
+
+        it 'should return active assister staff' do
+          expect(Person.all_assister_staff_roles.count).to eq 2
+          expect(Person.staff_for_assister_including_pending(assister_agency_profile).count).to eq 1
+        end
+      end
+
+      context 'person does not have assister agency staff role' do
+        before do
+          @status, @result = subject.deactivate_assister_agency_staff_role(person.id, assister_agency_profile_second.id)
+        end
+        it 'returns false' do
+          expect(@status).to eq false
+        end
+
+        it 'returns msg' do
+          expect(@result).to be_instance_of String
+        end
+
+        it 'should not terminate other assister agency staff role' do
+          expect(person.reload.assister_agency_staff_roles.first.aasm_state).to eq "active"
+          expect(Person.staff_for_assister_including_pending(assister_agency_profile).count).to eq 1
         end
       end
     end

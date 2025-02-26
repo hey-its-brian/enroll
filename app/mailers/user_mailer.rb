@@ -136,6 +136,42 @@ class UserMailer < ApplicationMailer
     end
   end
 
+  def assister_invitation_email(email, person_name, invitation)
+    return unless email.present?
+
+    mail({to: email, subject: "Invitation to create your Assister account on #{site_short_name}"}) do |format|
+      format.html { render "assister_invitation_email", :locals => { :person_name => person_name, :invitation => invitation }}
+    end
+  end
+
+  def assister_staff_invitation_email(email, person_name, invitation, person_id)
+    return if email.blank?
+
+    mail({to: email, subject: "Set up your #{site_short_name} account"}) do |format|
+      format.html { render "assister_staff_invitation_email", :locals => { :person_name => person_name, :invitation => invitation, :person_id => person_id }}
+    end
+  end
+
+  # Only when "assister_role_consumer_enhancement" (cr-95) is enabled, the below email will be sent to the assister.
+  # site_assister_linked_invitation_email_login_url only applies when "assister_role_consumer_enhancement" is enabled.
+  def assister_linked_invitation_email(email, person_name)
+    return if email.blank?
+
+    mail({to: email, subject: l10n("user_mailer.assister_linked_notification_email.subject")}) do |format|
+      format.html { render "assister_linked_notification_email", :locals => { :person_name => person_name, :login_url => site_broker_linked_invitation_email_login_url }}
+    end
+  end
+
+  # Only when "assister_role_consumer_enhancement" (cr-95) is enabled, the below email will be sent to the assister staff.
+  # site_assister_linked_invitation_email_login_url only applies when "assister_role_consumer_enhancement" is enabled.
+  def assister_staff_linked_invitation_email(email, person_name)
+    return if email.blank?
+
+    mail({to: email, subject: l10n("user_mailer.assister_staff_linked_notification_email.subject")}) do |format|
+      format.html { render "assister_staff_linked_notification_email", :locals => { :person_name => person_name, :login_url => site_broker_linked_invitation_email_login_url }}
+    end
+  end
+
   def message_to_broker(person, broker, params)
     if broker.email_address.present?
       mail({to: broker.email_address, subject: params[:subject], from: person.user.email}) do |format|
@@ -225,11 +261,27 @@ class UserMailer < ApplicationMailer
     end
   end
 
+  def assister_denied_notification(assister_role)
+    return unless assister_role.email_address.present?
+
+    mail({to: assister_role.email_address, subject: "Assister application denied"}) do |format|
+      format.html { render "broker_denied", :locals => { :applicant_name => assister_role.person.full_name }}
+    end
+  end
+
   def broker_application_confirmation(person)
     if person.emails.find_by(kind: 'work').address.present?
       mail({to: person.emails.find_by(kind: 'work').try(:address), subject: "Thank you for submitting your broker application to #{site_short_name}"}) do |format|
         format.html { render "broker_application_confirmation", :locals => { :person => person }}
       end
+    end
+  end
+
+  def assister_application_confirmation(person)
+    return unless person.emails.find_by(kind: 'work').address.present?
+
+    mail({to: person.emails.find_by(kind: 'work').try(:address), subject: "Thank you for submitting your Assister application to #{site_short_name}"}) do |format|
+      format.html { render "broker_application_confirmation", :locals => { :person => person }}
     end
   end
 
@@ -244,6 +296,20 @@ class UserMailer < ApplicationMailer
         format.html { render "broker_pending_missing_training_completed_carrier", :locals => { :applicant_name => broker_role.person.full_name, :unchecked_carriers => unchecked_carriers}}
       elsif !broker_role.training && unchecked_carriers.present?
         format.html { render "broker_pending_missing_training_and_carrier", :locals => { :applicant_name => broker_role.person.full_name, :unchecked_carriers => unchecked_carriers}}
+      end
+    end
+  end
+
+  def assister_pending_notification(assister_role, unchecked_carriers)
+    subject_translation_key = assister_role.training || assister_role.training == true ? "user_mailer.broker_pending_completed_training.subject" : "user_mailer.assister_pending_training.subject"
+    subject = l10n(subject_translation_key, site_short_name: site_short_name)
+    mail({to: assister_role.email_address, subject: subject}) do |format|
+      if assister_role.training && unchecked_carriers.present?
+        format.html { render "broker_pending_completed_training_missing_carrier", :locals => { :applicant_name => assister_role.person.full_name,:unchecked_carriers => unchecked_carriers}}
+      elsif !assister_role.training && !unchecked_carriers.present?
+        format.html { render "broker_pending_missing_training_completed_carrier", :locals => { :applicant_name => assister_role.person.full_name, :unchecked_carriers => unchecked_carriers}}
+      elsif !assister_role.training && unchecked_carriers.present?
+        format.html { render "broker_pending_missing_training_and_carrier", :locals => { :applicant_name => assister_role.person.full_name, :unchecked_carriers => unchecked_carriers}}
       end
     end
   end

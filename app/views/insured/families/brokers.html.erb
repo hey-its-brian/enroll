@@ -7,16 +7,45 @@
       <%= render 'employee_broker', title: l10n(".employer_assigned_broker") %>
     </section>
   <% else %>
-    <h1><%= l10n('my_broker') %></h1>
+    <% has_broker = @person&.primary_family&.current_broker_agency&.writing_agent %>
+    <% has_assister = @person&.primary_family&.current_assister_agency&.writing_agent %>
+    <% page_title = (has_broker && has_assister) ? l10n('my_experts') : l10n('my_expert')%>
+    <h1><%= page_title %></h1>
     <section class="rounded-lg bg-white border p-3 my-4 col-9">
       <% if @person.has_active_employee_role? && has_writing_agent?(@employee_role) %>
         <%= render 'employee_broker', title: nil %>
-      <% elsif @person.has_consumer_role? && has_writing_agent?(@person)%>
-        <%= render 'consumer_broker', title: nil %>
+      <% elsif @person.has_consumer_role? %>
+        <% if @person&.primary_family&.current_broker_agency&.writing_agent %>
+          <%= render 'consumer_broker', title: nil %>
+        <% end %>
+        <% if @person&.primary_family&.current_assister_agency&.writing_agent %>
+          <%= render 'consumer_assister', title: nil %>
+        <% end %>
       <% end %>
     </section>
   <% end %>
-  <a href="<%= main_app.family_account_path(tab: 'home') %>" class="button mt-4"><%= l10n("insured.brokers.return_home") %></a>
+
+  <% unless has_broker && has_assister %>
+    <% button_text = has_broker ? "Select an Assister" : "Select a Broker" %>
+
+    <a href="#help_with_plan_shopping"
+       tabindex="0"
+       id="help_me_sign_up"
+       class="button mt-4 help-me-sign-up"
+       data-target="#help_with_plan_shopping"
+       data-toggle="modal">
+      <%= button_text %>
+    </a>
+
+    <%= render partial: './ui-components/v1/modals/help_with_plan_in_my_expert'%>
+
+    &nbsp;&nbsp;&nbsp;
+  <% end %>
+
+  <a href="<%= main_app.family_account_path(tab: 'home') %>" class="button mt-4">
+    <%= l10n("insured.brokers.return_home") %>
+  </a>
+
 <% else %>
   <% content_for :navigation do %>
   <%= render partial: 'ui-components/v1/navs/families_navigation' %>
@@ -46,3 +75,16 @@
     </div>
   </div>
 <% end %>
+<script nonce="<%= content_security_policy_nonce %>">
+  document.addEventListener('DOMContentLoaded', function () {
+    const helpMeSignUpButton = document.getElementById('help_me_sign_up');
+    const modalId = '#help_with_plan_shopping';
+
+    if (helpMeSignUpButton) {
+      helpMeSignUpButton.addEventListener('click', function (event) {
+        event.preventDefault(); // Prevent default anchor behavior
+        $(modalId).modal('show'); // Use Bootstrap's modal API to show the modal
+      });
+    }
+  });
+</script>

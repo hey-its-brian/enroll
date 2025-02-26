@@ -341,8 +341,8 @@ input[type='date']:invalid::-webkit-datetime-edit {
   }
 }
 
-#broker_agency_form.bs4-active {
-  .broker-registration-tabs {
+.agency_form.bs4-active {
+  .registration-tabs {
     border-bottom: 2px solid var(--silver-border);
     font-size: 0;
     // font-size needs to be set to 0 here to hide
@@ -399,7 +399,7 @@ input[type='date']:invalid::-webkit-datetime-edit {
   // adding border-0 to these classes does not work
   // because it is a jquery-ui class
   #broker_registration,
-  #broker_agency_staff {
+  #broker_agency_staff, #assister_registration, #assister_agency_staff {
     border: none;
   }
 }

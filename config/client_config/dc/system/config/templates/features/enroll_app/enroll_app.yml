@@ -634,6 +634,8 @@ registry:
         is_enabled: true
       - key: :general_agency
         is_enabled: true
+      - key: :assister_agency
+        is_enabled: <%= ENV['ASSISTER_AGENCY_IS_ENABLED'] || false %>
       - key: :display_county
         is_enabled: false
       - key: :moving_to_state

@@ -34,9 +34,7 @@ module Effective
       end
 
       def collection
-        unless (defined? @user_collection) && @user_collection.present? #memoize the wrapper class to persist @search_string
-          @user_collection = Queries::UserDatatableQuery.new(attributes)
-        end
+        @user_collection = Queries::UserDatatableQuery.new(attributes) unless (defined? @user_collection) && @user_collection.present? #memoize the wrapper class to persist @search_string
         @user_collection
       end
 
@@ -66,10 +64,11 @@ module Effective
               ],
           users:
               [{scope: 'all', label: 'All', subfilter: :lock_unlock}].tap do |a|
-                a << {scope: 'all_employee_roles', label: 'Employee', subfilter: :lock_unlock} if is_shop_or_fehb_market_enabled?
-                a << {scope: 'all_employer_staff_roles', label: 'Employer', subfilter: :lock_unlock} if is_shop_or_fehb_market_enabled?
-                a << {scope: 'all_broker_roles', label: 'Broker', subfilter: :lock_unlock}
-                a << {scope: 'all_consumer_roles', label: 'Consumer', subfilter: :lock_unlock}
+                a << {scope: 'all_employee_roles', label: l10n('employee'), subfilter: :lock_unlock} if is_shop_or_fehb_market_enabled?
+                a << {scope: 'all_employer_staff_roles', label: l10n('employer'), subfilter: :lock_unlock} if is_shop_or_fehb_market_enabled?
+                a << {scope: 'all_broker_roles', label: l10n('broker'), subfilter: :lock_unlock}
+                a << {scope: 'all_assister_roles', label: l10n('assister'), subfilter: :lock_unlock} if is_assister_agency_enabled?
+                a << {scope: 'all_consumer_roles', label: l10n('consumer'), subfilter: :lock_unlock}
               end,
           top_scope: :users
         }

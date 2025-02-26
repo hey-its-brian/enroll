@@ -164,6 +164,12 @@ FactoryBot.define do
       end
     end
 
+    trait :with_assister_agency_profile do
+      after :build do |organization, _evaluator|
+        build(:benefit_sponsors_organizations_assister_agency_profile, organization: organization)
+      end
+    end
+
     trait :with_general_agency_profile do
       after :build do |organization, _evaluator|
         build(:benefit_sponsors_organizations_general_agency_profile, organization: organization)

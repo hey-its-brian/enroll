@@ -20,6 +20,10 @@ class InvitationsController < ApplicationController
     # redirect_to broker_agencies_profile_path(ba_profile)
   end
 
+  def redirect_to_assister_agency_profile(aa_profile)
+    redirect_to benefit_sponsors.profiles_assister_agencies_assister_agency_profile_path(aa_profile)
+  end
+
   def redirect_to_general_agency_profile(ga_profile)
     # redirect_to general_agencies_profile_path(ga_profile)
     redirect_to benefit_sponsors.profiles_general_agencies_general_agency_profile_path(ga_profile)
@@ -58,6 +62,9 @@ class InvitationsController < ApplicationController
     if invitation.role == "general_agency_staff_role"
       staff_role = GeneralAgencyStaffRole.find(invitation.source_id)
       session[:portal] = benefit_sponsors.profiles_general_agencies_general_agency_profile_path(staff_role.benefit_sponsors_general_agency_profile_id)
+    elsif invitation.role == "assister_agency_staff_role"
+      staff_role = AssisterAgencyStaffRole.find(invitation.source_id)
+      session[:portal] = benefit_sponsors.profiles_assister_agencies_assister_agency_profile_path(staff_role.benefit_sponsors_assister_agency_profile_id)
     else
       staff_role = BrokerAgencyStaffRole.find(invitation.source_id)
       session[:portal] = benefit_sponsors.profiles_broker_agencies_broker_agency_profile_path(staff_role.benefit_sponsors_broker_agency_profile_id)

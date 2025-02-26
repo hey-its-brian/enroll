@@ -38,3 +38,5 @@ registry:
       # Enhancements for Brokers acting as consumers under the same account
       - key: :broker_role_consumer_enhancement
         is_enabled: <%= ENV['BROKER_ROLE_CONSUMER_ENHANCEMENT_IS_ENABLED'] || false %>
+      - key: :broker_history_on_profile
+        is_enabled: <%= ENV['BROKER_HISTORY_ON_PROFILE_IS_ENABLED'] || false %>

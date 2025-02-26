@@ -1,0 +1,16 @@
+<%= render "shared/organization_staff_search", f: f %>  
+
+<div class="row">
+  <div class="col-md-9 col-sm-9 col-xs-12">
+    <div class="row no-buffer row-form-wrapper" style="border-top: 0;">
+      <div class="col-md-6 col-sm-4 col-xs-12 form-group-lg no-pd">
+        <%= f.text_field :email, class: "floatlabel form-control interaction-field-control-person-email", required: true, placeholder: "#{l10n('email').to_s.upcase} *" %>
+      </div>
+      <% if @filter != 'staff' %>
+        <div class="col-md-6 col-sm-4 col-xs-12 form-group-lg no-pd">
+          <%= f.text_field :assister_org_id, class: "floatlabel form-control assister_org_id_field interaction-field-control-person-assister_org_id", required: true, placeholder: "#{l10n('assister_org_id').to_s.upcase} *" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

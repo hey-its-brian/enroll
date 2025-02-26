@@ -17,6 +17,8 @@ class PersonPolicy < ApplicationPolicy
     return false unless consumer_role
     return true if active_associated_individual_market_family_broker_staff?
     return true if active_associated_individual_market_family_broker?
+    return true if active_associated_individual_market_family_assister_staff?
+    return true if active_associated_individual_market_family_assister?
     return true if individual_market_admin?
     (consumer_role == individual_market_role)
   end
@@ -42,6 +44,10 @@ class PersonPolicy < ApplicationPolicy
     broker_staff_roles = account_holder_person&.broker_agency_staff_roles&.active
     return true if broker.present? && broker_staff_roles.present? && broker_staff_roles.any? { |role| role.broker_agency_profile_id == broker.broker_agency_profile_id }
 
+    assister = record.assister_role
+    assister_staff_roles = account_holder_person&.assister_agency_staff_roles&.active
+    return true if assister.present? && assister_staff_roles.present? && assister_staff_roles.any? { |role| role.assister_agency_profile_id == assister.assister_agency_profile_id }
+
     can_download_sbc_documents?
   end
 
@@ -57,6 +63,7 @@ class PersonPolicy < ApplicationPolicy
   def can_read_inbox?
     return true if user.person.hbx_staff_role
     true if user.person.broker_role || record.broker_role
+    true if user.person.assister_role || record.assister_role
   end
 
   def can_access_identity_verifications?
@@ -81,12 +88,22 @@ class PersonPolicy < ApplicationPolicy
     has_broker_role? && (matches_individual_broker_account? || matches_shop_broker_account?)
   end
 
+  # This method checks if the current user have a assister role, has the permission to modify either the individual account or the shop account.
+  #
+  # Example:
+  #   can_assister_modify? # => true/false
+  def can_assister_modify?
+    has_assister_role? && (matches_individual_assister_account? || matches_shop_assister_account?)
+  end
+
   # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
   def can_download_sbc_documents?
     return true if individual_market_primary_family_member?
     return true if individual_market_admin?
     return true if active_associated_individual_market_family_broker_staff?
     return true if active_associated_individual_market_family_broker?
+    return true if active_associated_individual_market_family_assister_staff?
+    return true if active_associated_individual_market_family_assister?
 
     return true if shop_market_primary_family_member?
     return true if shop_market_admin?
@@ -101,6 +118,7 @@ class PersonPolicy < ApplicationPolicy
     return true if coverall_market_primary_family_member?
     return true if coverall_market_admin?
     return true if active_associated_coverall_market_family_broker?
+    return true if active_associated_coverall_market_family_assister?
 
     false
   end
@@ -118,7 +136,7 @@ class PersonPolicy < ApplicationPolicy
 
   # Determines if the current user has permission to upload ridp document.
   # The user can download the document if they are a primary family member,
-  # an active associated broker, or an admin in the individual market,
+  # an active associated broker or assister, or an admin in the individual market,
   #
   # @return [Boolean] Returns true if the user has permission to download the document, false otherwise.
   def allowed_to_access?
@@ -127,8 +145,11 @@ class PersonPolicy < ApplicationPolicy
     return true if individual_market_admin?
     return true if shop_market_admin?
     return true if active_associated_individual_market_family_broker_staff?
-    return true if active_associated_individual_market_ridp_verified_family_broker?
     return true if active_associated_individual_market_family_broker?
+    return true if active_associated_individual_market_ridp_verified_family_broker?
+    return true if active_associated_individual_market_family_assister_staff?
+    return true if active_associated_individual_market_ridp_verified_family_assister?
+    return true if active_associated_individual_market_family_assister?
 
     false
   end

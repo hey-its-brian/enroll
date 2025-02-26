@@ -1,3 +1,4 @@
+
 # frozen_string_literal: true
 
 module BenefitSponsors
@@ -153,6 +154,8 @@ module BenefitSponsors
     def retrieve_inbox(provider, folder: 'inbox')
       broker_agency_mailbox = inbox_profiles_broker_agencies_broker_agency_profile_path(id: provider.id.to_s, folder: folder)
       return broker_agency_mailbox if provider.try(:broker_role)
+      assister_agency_mailbox = inbox_profiles_assister_agencies_assister_agency_profile_path(id: provider.id.to_s, folder: folder)
+      return assister_agency_mailbox if provider.try(:assister_role)
       case provider.model_name.name.split('::').last
       when "AcaShop#{EnrollRegistry[:enroll_app].setting(:site_key).item.capitalize}EmployerProfile"
         inbox_profiles_employers_employer_profile_path(id: provider.id.to_s, folder: folder)
@@ -162,6 +165,8 @@ module BenefitSponsors
         inbox_profiles_broker_agencies_broker_agency_profile_path(id: provider.id.to_s, folder: folder)
       when "GeneralAgencyProfile"
         inbox_profiles_general_agencies_general_agency_profile_path(id: provider.id.to_s, folder: folder)
+      when "AssisterAgencyProfile"
+        inbox_profiles_assister_agencies_assister_agency_profile_path(id: provider.id.to_s, folder: folder)
       end
     end
 
@@ -185,6 +190,17 @@ module BenefitSponsors
 
       if profile.primary_broker_role.present?
         person = profile.primary_broker_role.person
+        person.inbox.unread_messages.count
+      else
+        0
+      end
+    end
+
+    def total_assister_messages(record_id)
+      profile = BenefitSponsors::Organizations::Profile.find(record_id)
+
+      if profile.primary_assister_role.present?
+        person = profile.primary_assister_role.person
         person.inbox.unread_messages.count
       else
         0

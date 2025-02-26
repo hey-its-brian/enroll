@@ -2,7 +2,7 @@
   <div class="profile-content top-pd">
     <div class="tab-row">
       <div class="tab-content" id="myTabContent">
-        <div id="broker_agency_form" class="container bs4-active">
+        <div id="broker_agency_form" class="container bs4-active agency_form">
           <h1 class="bold mb-4"><%= @agency.organization.legal_name %></h1>
           <%= f.fields_for :staff_roles, @agency.staff_roles, errors: {}, fieldset: false do |f| %>
             <%= render "./ui-components/bs4/v1/forms/broker/personal_information", f: f, npn_disabled: true %>

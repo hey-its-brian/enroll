@@ -65,4 +65,35 @@ RSpec.describe Bs4::Bs4HeaderHelper, :type => :helper, dbclean: :after_each do
     end
   end
 
+  context 'multi role user with assister agency staf role' do
+    let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+    let(:consumer_role) { person.consumer_role }
+    let(:site) { create(:benefit_sponsors_site, :with_benefit_market, :as_hbx_profile, site_key: ::EnrollRegistry[:enroll_app].settings(:site_key).item) }
+    let(:assister_agency_organization) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+    let(:assister_agency_id) { assister_agency_organization.assister_agency_profile.id }
+    let(:current_user) { FactoryBot.create(:user, person: person) }
+
+    before do
+      consumer_role.update_attributes(identity_validation: 'valid', application_validation: 'valid')
+      person.assister_agency_staff_roles.create!(
+        {
+          aasm_state: 'active',
+          benefit_sponsors_assister_agency_profile_id: assister_agency_id
+        }
+      )
+    end
+
+    describe 'my_portal_link_roles' do
+      it "should return multiple values" do
+        expect(my_portal_link_roles.length).to be > 1
+      end
+    end
+
+    describe 'user_has_multiple_roles?' do
+      it "should return true" do
+        expect(user_has_multiple_roles?).to eq(true)
+      end
+    end
+  end
+
 end

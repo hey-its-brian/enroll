@@ -3,7 +3,7 @@
   <div class="profile-content top-pd">
     <div class="tab-row">
       <div class="tab-content" id="myTabContent">
-        <div id="broker_agency_form" class="container">
+        <div id="broker_agency_form" class="container agency_form">
           <%= form_for @form_broker_agency_profile, as: :organization, url: profiles_broker_agencies_broker_agency_profile_path(@broker_agency_profile), method: :patch do |f| %>
 
             <%= f.hidden_field :id %>

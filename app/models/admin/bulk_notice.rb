@@ -12,6 +12,7 @@ module Admin
     include AASM
 
     RECIPIENTS = {}.tap do |h|
+      h["Assister Agency"] = :assister_agency if is_assister_agency_enabled?
       h["Broker Agency"] = :broker_agency if is_broker_agency_enabled?
       h["General Agency"] = :general_agency if is_general_agency_enabled?
       h["Employer"] = :employer if is_shop_or_fehb_market_enabled?

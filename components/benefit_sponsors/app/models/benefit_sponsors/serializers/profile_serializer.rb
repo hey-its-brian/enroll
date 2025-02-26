@@ -11,16 +11,16 @@ module BenefitSponsors
       # attribute :rating_area_id, if: :is_cca_employer_profile?
       attribute :sic_code, if: :is_cca_employer_profile?
       attribute :grouped_sic_code_options, if: :is_cca_employer_profile?
-      attribute :working_hours, if: :is_broker_profile?
-      attribute :market_kind_options, if: :is_broker_profile?
-      attribute :language_options, if: :is_broker_profile?
+      attribute :working_hours, if: :is_broker_or_assister_profile?
+      attribute :market_kind_options, if: :is_broker_or_assister_profile?
+      attribute :language_options, if: :is_broker_or_assister_profile?
       attribute :id, if: :is_persisted?
       attribute :ach_account_number, if: :is_broker_profile?
       attribute :ach_routing_number, if: :is_broker_profile?
-      attribute :market_kind, if: :is_broker_or_general_agency?
-      attribute :home_page, if: :is_broker_or_general_agency?
-      attribute :accept_new_clients, if: :is_broker_or_general_agency?
-      attribute :languages_spoken, if: :is_broker_or_general_agency?
+      attribute :market_kind, if: :broker_or_assister_or_general_agency?
+      attribute :home_page, if: :broker_or_assister_or_general_agency?
+      attribute :accept_new_clients, if: :broker_or_assister_or_general_agency?
+      attribute :languages_spoken, if: :broker_or_assister_or_general_agency?
 
       has_many :office_locations, serializer: ::BenefitSponsors::Serializers::OfficeLocationSerializer
       has_one :inbox, serializer: ::BenefitSponsors::Serializers::InboxSerializer
@@ -45,12 +45,24 @@ module BenefitSponsors
         is_cca_employer_profile? || is_dc_employer_profile? || is_committed_client_employer_profile?
       end
 
+      def is_broker_or_assister_profile?
+        is_broker_profile? || is_assister_profile?
+      end
+
       def is_broker_profile?
         object.is_a?(BenefitSponsors::Organizations::BrokerAgencyProfile)
       end
 
+      def is_assister_profile?
+        object.is_a?(BenefitSponsors::Organizations::AssisterAgencyProfile)
+      end
+
       def is_general_agency_profile?
         object.is_a?(BenefitSponsors::Organizations::GeneralAgencyProfile)
+      end
+
+      def broker_or_assister_or_general_agency?
+        is_broker_profile? || is_assister_profile? || is_general_agency_profile?
       end
 
       def is_broker_or_general_agency?

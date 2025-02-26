@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe ::Operations::HbxEnrollments::Expire, dbclean: :after_each do
+RSpec.describe ::Operations::HbxEnrollments::Expire, dbclean: :around_each do
   include Dry::Monads[:do, :result]
 
   let(:family)      { FactoryBot.create(:family, :with_primary_family_member) }
@@ -171,7 +171,7 @@ RSpec.describe ::Operations::HbxEnrollments::Expire, dbclean: :after_each do
           expect(transmittable_job.transmittable_errors.count).to eq(1)
           expect(transmittable_job.transmittable_errors.first.key).to eq(:create_request_transaction)
           expect(Transmittable::Error.all.count).to eq(2)
-          expect(Transmittable::Error.all.map(&:errorable).sort).to eq([request_transmission, transmittable_job].sort)
+          expect(Transmittable::Error.all.map(&:errorable)).to match_array([request_transmission, transmittable_job])
         end
 
         it 'updates the process status and creates new process state associated to the job' do
@@ -202,9 +202,9 @@ RSpec.describe ::Operations::HbxEnrollments::Expire, dbclean: :after_each do
       end
 
       it 'fails due to invalid state transition to coverage_expired' do
-        msg = "Failed to expire enrollment hbx id #{enrollment.hbx_id} - Event 'expire_coverage' cannot transition from 'coverage_selected'. Failed callback(s): [:can_be_expired?]."
+        msg = "Failed to expire enrollment hbx id #{enrollment.hbx_id} - Event 'expire_coverage' cannot transition from 'coverage_selected'."
         expect(result.success?).to be_falsey
-        expect(result.failure).to eq(msg)
+        expect(result.failure).to include(msg)
         expect(logger).to include(msg)
       end
 

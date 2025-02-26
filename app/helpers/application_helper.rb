@@ -494,6 +494,7 @@ module ApplicationHelper
 
   def retrieve_show_path(provider, message)
     return  benefit_sponsors.inboxes_message_path(provider, message_id: message.id) if provider.try(:broker_role)
+    return  benefit_sponsors.inboxes_message_path(provider, message_id: message.id) if provider.try(:assister_role)
     case provider.model_name.name
     when "Person"
       insured_inbox_path(provider, message_id: message.id)
@@ -586,6 +587,10 @@ module ApplicationHelper
   def dob_in_words(age, dob)
     return age if age > 0
     time_ago_in_words(dob)
+  end
+
+  def date_col_name_for_assister_roaster
+    date_col_name_for_broker_roaster
   end
 
   def date_col_name_for_broker_roaster
@@ -1041,6 +1046,15 @@ module ApplicationHelper
   def display_my_broker?(person, employee_role)
     employee_role ||= person.active_employee_roles.first
     (person.has_active_employee_role? && employee_role.employer_profile.broker_agency_profile.present?) || (person.has_active_consumer_role? && person.primary_family.current_broker_agency.present?)
+  end
+
+  def display_my_assister?(person, employee_role)
+    employee_role ||= person.active_employee_roles.first
+    (person.has_active_employee_role? && employee_role.employer_profile.assister_agency_profile.present?) || (person.has_active_consumer_role? && person.primary_family.current_assister_agency.present?)
+  end
+
+  def has_assister_and_broker_roles?(person)
+    display_my_broker?(person, nil) && display_my_assister?(person, nil)
   end
 
   def display_family_members(family_members, primary_person)

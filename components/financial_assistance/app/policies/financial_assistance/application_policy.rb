@@ -25,13 +25,15 @@ module FinancialAssistance
 
     # Determines if the current user has permission to edit.
     # The user can edit if they are a primary family member,
-    # an active associated broker staff, an active associated broker, or an admin in the individual market.
+    # an active associated broker or assister staff, an active associated broker, or an admin in the individual market.
     #
     # @return [Boolean] Returns true if the user has permission to edit, false otherwise.
     def edit?
       return true if individual_market_primary_family_member?
       return true if active_associated_individual_market_family_broker_staff?
+      return true if active_associated_individual_market_family_assister_staff?
       return true if active_associated_individual_market_family_broker?
+      return true if active_associated_individual_market_family_assister?
       return true if individual_market_admin?
 
       false

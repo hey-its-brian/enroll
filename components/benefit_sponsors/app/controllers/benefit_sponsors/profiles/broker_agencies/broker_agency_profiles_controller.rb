@@ -39,6 +39,7 @@ module BenefitSponsors
           authorize @broker_agency_profile
           set_flash_by_announcement
           @provider = current_user.person
+          @histories = @broker_agency_profile&.primary_broker_role&.person&.broker_role&.workflow_state_transitions if EnrollRegistry.feature_enabled?(:broker_history_on_profile)
           @id = params[:id]
         end
 

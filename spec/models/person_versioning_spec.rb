@@ -97,7 +97,7 @@ describe Person, :dbclean => :after_each do
   context 'of an assister role' do
     subject { FactoryBot.create :assister_role, person: person }
 
-    include_examples 'tracked history', 'organization', 'Testing'
+    include_examples 'tracked history', 'assister_org_id', '123456789'
   end
 
   context 'of an employer staff role' do

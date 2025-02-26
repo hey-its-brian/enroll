@@ -32,16 +32,6 @@ RSpec.describe Exchanges::AgentsController do
         end
       end
 
-      context 'assister role' do
-        it 'renders home for assister' do
-          person_user.assister_role = FactoryBot.build(:assister_role)
-          sign_in current_user
-          get :home
-          expect(response).to have_http_status(:success)
-          expect(response).to render_template("exchanges/agents/home")
-        end
-      end
-
       it 'not render home for non CSR or non assister' do
         get :home
         expect(response).not_to have_http_status(:success)
@@ -56,15 +46,6 @@ RSpec.describe Exchanges::AgentsController do
       context 'csr role' do
         it 'renders inbox for CSR' do
           person_user.csr_role = FactoryBot.build(:csr_role, cac: false)
-          sign_in current_user
-          get :inbox, params: {id: person_user.id}, format: :js
-          expect(response).to have_http_status(:success)
-        end
-      end
-
-      context 'assister role' do
-        it 'renders inbox for assister' do
-          person_user.assister_role = FactoryBot.build(:assister_role)
           sign_in current_user
           get :inbox, params: {id: person_user.id}, format: :js
           expect(response).to have_http_status(:success)

@@ -32,6 +32,12 @@ FactoryBot.define do
       end
     end
 
+    trait :with_assister_role do
+      after(:create) do |p, evaluator|
+        create_list(:assister_role, 1, person: p)
+      end
+    end
+
     trait :with_work_phone do
       phones { [FactoryBot.build(:phone, kind: "work") ] }
     end

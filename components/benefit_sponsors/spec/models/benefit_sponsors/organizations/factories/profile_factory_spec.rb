@@ -162,6 +162,78 @@ module BenefitSponsors
         }
       }
     end
+    let(:valid_assister_params) do
+      site
+      {
+        :current_user_id => current_user.id,
+        :profile_type => "assister_agency",
+        :profile_id => nil,
+        :staff_roles_attributes =>
+          {
+            0 =>
+              {
+                :assister_org_id => "3458947593",
+                first_name: first_name,
+                last_name: last_name,
+                :email => "tyrion@lannister.com",
+                :phone => nil,
+                :status => nil,
+                :dob => person_date_of_birth,
+                :person_id => nil,
+                :area_code => nil,
+                :number => nil,
+                :extension => nil,
+                :profile_id => nil,
+                :profile_type => nil
+              }
+          },
+        :organization =>
+          {
+            :entity_kind => :s_corporation,
+            :fein => fein,
+            :dba => "Doing Business As",
+            :legal_name => "Lannister Army",
+            :profiles_attributes =>
+              {
+                0 =>
+                  {
+                    :market_kind => :shop,
+                    :home_page => nil,
+                    :accept_new_clients => "0",
+                    :languages_spoken => ["", "en"],
+                    :working_hours => "0",
+                    :ach_routing_number => nil,
+                    :ach_account_number => nil,
+                    :office_locations_attributes =>
+                      {
+                        0 =>
+                          {
+                            :is_primary => true,
+                            :_destroy => nil,
+                            :phone_attributes =>
+                              {
+                                :kind => "phone main",
+                                :area_code => "879",
+                                :number => "0987987",
+                                :extension => ""
+                              },
+                            :address_attributes =>
+                              {
+                                :address_1 => "H ",
+                                :address_2 => "Wash",
+                                :city => "Wash",
+                                :kind => "primary",
+                                :state => state,
+                                :zip => "20024",
+                                :county => nil
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      }
+    end
     let(:profile_factory_class) { BenefitSponsors::Organizations::Factories::ProfileFactory }
 
     context '.persist' do
@@ -254,6 +326,26 @@ module BenefitSponsors
         end
       end
 
+      context 'when type is assister agency' do
+        let(:profile_factory) { profile_factory_class.call(valid_assister_params) }
+
+        it 'should create general organization' do
+          expect(profile_factory.organization.class).to eq BenefitSponsors::Organizations::ExemptOrganization
+        end
+
+        it 'should create assister agency profile' do
+          expect(profile_factory.profile.class).to eq BenefitSponsors::Organizations::AssisterAgencyProfile
+        end
+
+        it 'should create person with given data' do
+          expect(profile_factory.person.full_name).to eq "Tyrion Lannister"
+        end
+
+        it 'should return redirection url' do
+          expect(profile_factory.redirection_url(profile_factory.pending, true)).to eq :assister_new_registration_url
+        end
+      end
+
       context 'when type is general agency' do
         let(:valid_ga_params) do
           ga_params = valid_broker_params.merge({ :profile_type => "general_agency" })
@@ -328,6 +420,12 @@ module BenefitSponsors
           FactoryBot.create(:sponsored_benefits_plan_design_organization,
                             owner_profile_id: employer_profile.id,
                             sponsor_profile_id: broker_agency_profile.id)
+        end
+        let(:assister_agency_profile) { abc_organization.profiles.first }
+        let(:plan_design_organization) do
+          FactoryBot.create(:sponsored_benefits_plan_design_organization,
+                            owner_profile_id: employer_profile.id,
+                            sponsor_profile_id: assister_agency_profile.id)
         end
         let!(:update_plan_design) {plan_design_organization.update_attributes!(has_active_broker_relationship: true)}
 
@@ -581,6 +679,170 @@ module BenefitSponsors
 
             it 'should update email' do
               expect(broker_role.email.reload.address).to eq email
+            end
+          end
+        end
+      end
+
+      context 'when type is assister agency' do
+        let(:valid_assister_params_update) do
+          {
+            :current_user_id => current_user.id,
+            :profile_type => "assister_agency",
+            :profile_id => assister_agency_profile.id,
+            :staff_roles_attributes =>
+              {
+                0 =>
+                  {
+                    :assister_org_id => assister_org_id,
+                    :first_name => "Assister 12",
+                    :last_name => "Gov",
+                    :email => email,
+                    :phone => nil,
+                    :status => nil,
+                    :dob => dob,
+                    :person_id => person.id,
+                    :area_code => nil,
+                    :number => nil,
+                    :extension => nil,
+                    :profile_id => nil,
+                    :profile_type => nil
+                  }
+              },
+            :organization =>
+              {
+                :entity_kind => :s_corporation,
+                :fein => assister_organization.fein,
+                :dba => "",
+                :legal_name => new_organization_name,
+                :profiles_attributes =>
+                  {
+                    0 =>
+                      {
+                        :id => assister_agency_profile.id,
+                        :market_kind => assister_agency_profile.market_kind,
+                        :home_page => "",
+                        :accept_new_clients => "0",
+                        :languages_spoken => [""],
+                        :working_hours => "0",
+                        :ach_routing_number => nil,
+                        :ach_account_number => nil,
+                        :office_locations_attributes =>
+                          {
+                            0 =>
+                              {
+                                :is_primary => true,
+                                :id => office_location.id,
+                                :_destroy => "false",
+                                :phone_attributes =>
+                                  {
+                                    :kind => "work",
+                                    :area_code => "879",
+                                    :number => phone_number,
+                                    :extension => "",
+                                    :id => office_location.phone.id
+                                  },
+                                :address_attributes =>
+                                  {
+                                    :address_1 => "H",
+                                    :address_2 => "Wash",
+                                    :city => city,
+                                    :kind => "primary",
+                                    :state => "DC",
+                                    :zip => "20024",
+                                    :county => nil,
+                                    :id => office_location.address.id
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+        end
+        let(:assister_org_id) { '123412341' }
+        let(:email) { 'email@updated.com' }
+
+        let(:office_location)         { assister_agency_profile.primary_office_location }
+        let!(:assister_organization)    { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_assister_agency_profile, site: site) }
+        let(:person)                  { FactoryBot.create(:person, :with_work_email) }
+        let!(:assister_role)            { FactoryBot.create(:assister_role, benefit_sponsors_assister_agency_profile_id: assister_agency_profile.id, person: person) }
+        let(:assister_agency_profile)   { assister_organization.assister_agency_profile }
+
+        let(:profile_factory)        { profile_factory_class.call(valid_assister_params_update) }
+        let(:is_edit_npn_allowed)     { false }
+        let(:is_edit_email_allowed)   { false }
+
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).and_return(false)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:allow_alphanumeric_npn).and_return true
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:validate_quadrant).and_return true
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:display_county).and_return(false)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:financial_assistance).and_return(true)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:crm_publish_primary_subscriber).and_return(false)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:allow_edit_broker_npn).and_return is_edit_npn_allowed
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:allow_edit_broker_email).and_return is_edit_email_allowed
+          profile_factory
+
+          assister_organization.reload
+        end
+
+        it 'should update assister organization legal name' do
+          expect(assister_organization.legal_name).to eq new_organization_name
+        end
+
+        it 'should update phone number' do
+          expect(assister_organization.assister_agency_profile.primary_office_location.phone.number).to eq phone_number
+        end
+
+        it 'should update address' do
+          expect(assister_organization.assister_agency_profile.primary_office_location.address.city).to eq city
+        end
+
+        it 'should update work phone number on the person' do
+          person.reload
+          expect(person.work_phone.number).to eq phone_number
+        end
+
+        context 'update assister_org_id' do
+          before do
+            valid_assister_params_update[:staff_roles_attributes][0][:assister_org_id] = assister_org_id
+          end
+
+          context 'when assister_org_id update is not allowed' do
+            it 'should not update assister_org_id' do
+              expect(assister_role.reload.assister_org_id).not_to eq assister_org_id
+            end
+          end
+
+          context 'when assister_org_id update is allowed' do
+            let(:is_edit_npn_allowed) { true }
+
+            it 'should update assister_org_id' do
+              expect(assister_role.reload.assister_org_id).to eq assister_org_id
+            end
+          end
+        end
+
+        context 'update email' do
+
+          before do
+            valid_assister_params_update[:staff_roles_attributes][0][:email] = email
+          end
+
+          context 'when email update is not allowed' do
+
+            it 'should not update email' do
+              expect(assister_role.reload.email.address).not_to eq email
+            end
+          end
+
+          context 'when email update is allowed' do
+
+            let(:is_edit_email_allowed) { true }
+
+            it 'should update email' do
+              expect(assister_role.email.reload.address).to eq email
             end
           end
         end

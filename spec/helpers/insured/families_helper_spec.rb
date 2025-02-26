@@ -864,6 +864,73 @@ RSpec.describe Insured::FamiliesHelper, :type => :helper, dbclean: :after_each  
     end
   end
 
+  describe '#is_assister_authorized' do
+    context 'when current user is not a ga staff' do
+      let(:user) { FactoryBot.create(:user, :with_consumer_role) }
+      let(:family) { FactoryBot.create(:person, :with_family) }
+
+      it 'return false' do
+        expect(helper.is_assister_authorized?(user, family)).to eq false
+      end
+    end
+
+    context 'when family does not have an assigned assister' do
+      let(:user) { FactoryBot.create(:user, :with_consumer_role) }
+      let(:family) { FactoryBot.create(:person, :with_family).primary_family }
+
+      it 'return false' do
+        expect(helper.is_assister_authorized?(user, family)).to eq false
+      end
+    end
+
+    context 'when family an assigned assister' do
+      context 'when current user does not belong to family assister' do
+        let(:user) { FactoryBot.create(:user, person: person) }
+        let(:person) { FactoryBot.create(:person, :with_assister_role) }
+        let(:family) { FactoryBot.create(:person, :with_family).primary_family }
+
+        before do
+          allow(family).to receive(:current_assister_agency).and_return double('AssisterAgencyAccount', benefit_sponsors_assister_agency_profile_id: BSON::ObjectId.new)
+        end
+
+        it 'return false' do
+          expect(helper.is_assister_authorized?(user, family)).to eq false
+        end
+      end
+
+      context 'when current user belongs to family assister' do
+        let(:user) { FactoryBot.create(:user, person: person) }
+        let(:person) do
+          person = FactoryBot.create(:person, :with_assister_role)
+          person.assister_role.update_attributes(benefit_sponsors_assister_agency_profile_id: BSON::ObjectId.new)
+          person
+        end
+        let(:family) { FactoryBot.create(:person, :with_family).primary_family }
+
+        context 'ivl role' do
+          before do
+            allow(family).to receive(:current_assister_agency).and_return double('AssisterAgencyAccount', benefit_sponsors_assister_agency_profile_id: person.assister_role.benefit_sponsors_assister_agency_profile_id)
+          end
+
+          it 'return true' do
+            expect(helper.is_assister_authorized?(user, family)).to eq true
+          end
+        end
+
+        context 'shop role' do
+          before do
+            allow(family).to receive(:current_assister_agency).and_return nil
+            allow(helper).to receive(:shop_assister_agency_ids).with(family).and_return [person.assister_role.benefit_sponsors_assister_agency_profile_id]
+          end
+
+          it 'return true' do
+            expect(helper.is_assister_authorized?(user, family)).to eq true
+          end
+        end
+      end
+    end
+  end
+
   describe '#is_general_agency_authorized' do
     context 'when current user is not a ga staff' do
       let(:user) { FactoryBot.create(:user, :with_consumer_role) }
@@ -934,6 +1001,55 @@ RSpec.describe Insured::FamiliesHelper, :type => :helper, dbclean: :after_each  
         end
       end
     end
+
+    context 'when family an assigned assister & current user has ga staff role' do
+      context 'when current user ga does not belong to family assister' do
+        let(:user) { FactoryBot.create(:user, :with_consumer_role) }
+        let(:family) { FactoryBot.create(:person, :with_family).primary_family }
+
+        before do
+          allow(user).to receive_message_chain(:person, :active_general_agency_staff_roles).and_return [double('GeneralAgencyStaffRole', benefit_sponsors_general_agency_profile_id: general_agency_profile.id)]
+          allow(family).to receive(:current_assister_agency).and_return double('AssisterAgencyAccount', benefit_sponsors_assister_agency_profile_id: BSON::ObjectId.new)
+          plan_design_organization_with_assigned_ga
+        end
+
+        it 'return false' do
+          expect(helper.is_general_agency_authorized?(user, family)).to eq false
+        end
+      end
+
+      context 'when current user ga belongs to family assister' do
+        let(:user) { FactoryBot.create(:user, :with_consumer_role) }
+        let(:family) { FactoryBot.create(:person, :with_family).primary_family }
+
+        context 'ivl role' do
+          before do
+            allow(user).to receive_message_chain(:person, :active_general_agency_staff_roles).and_return [double('GeneralAgencyStaffRole', benefit_sponsors_general_agency_profile_id: general_agency_profile.id)]
+            allow(family).to receive(:current_assister_agency).and_return double('AssisterAgencyAccount', benefit_sponsors_assister_agency_profile_id: owner_profile.id)
+            plan_design_organization_with_assigned_ga
+          end
+
+          it 'return true' do
+            expect(helper.is_general_agency_authorized?(user, family)).to eq true
+          end
+        end
+
+        context 'shop role' do
+
+          before do
+            allow(user).to receive_message_chain(:person, :active_general_agency_staff_roles).and_return [double('GeneralAgencyStaffRole', benefit_sponsors_general_agency_profile_id: general_agency_profile.id)]
+            allow(family).to receive(:current_assister_agency).and_return nil
+            allow(helper).to receive(:shop_assister_agency_ids).with(family).and_return [owner_profile.id]
+            plan_design_organization_with_assigned_ga
+          end
+
+          it 'return true' do
+            expect(helper.is_general_agency_authorized?(user, family)).to eq true
+          end
+        end
+      end
+    end
+
 
   end
 end

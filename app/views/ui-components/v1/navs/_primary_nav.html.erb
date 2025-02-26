@@ -68,6 +68,15 @@
                 <% end %>
               </ul>
             </li>
+            <% if assister_agency_enabled? %>
+            <li class="dropdown pl-1" role="presentation">
+              <button class="dropdown-toggle unstyled" data-toggle="dropdown" id="assistersMenu">Assisters</button>
+              <ul class="dropdown-menu" aria-labelledby="assistersMenu">
+                <%= render partial: 'exchanges/hbx_profiles/shared/nav_link', locals: {tab_name: 'assisters', link_path: main_app.exchanges_assister_applicants_path, display_name: 'Assister Applications', active_tab: "assisters", remote: false, pundit_object: nil, pundit_method: nil} %>
+                <%= render partial: 'exchanges/hbx_profiles/shared/nav_link', locals: {tab_name: 'assister-agencies', link_path: main_app.assister_agency_index_exchanges_hbx_profiles_path, display_name: 'Assister Agencies', active_tab: "assisters-agencies", remote: false, pundit_object: nil, pundit_method: nil} %>
+              </ul>
+            </li>
+            <% end %>
             <li class="dropdown pl-1" role="presentation">
               <button class="dropdown-toggle unstyled" data-toggle="dropdown" id="adminMenu">Admin</button>
               <ul class="dropdown-menu" aria-labelledby="adminMenu">

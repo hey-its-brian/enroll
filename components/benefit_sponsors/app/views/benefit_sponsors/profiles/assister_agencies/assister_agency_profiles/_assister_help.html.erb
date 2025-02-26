@@ -1,0 +1,129 @@
+<% active_assister = @assister %>
+<% assister_agency_profile =  active_assister.assister_agency_profile%>
+
+<div id="assister_show_<%= active_assister.id %>" tabindex="-1" class='hide assister_selection_choice'>
+<% if @bs4 %>
+  <section id="active_assister_tab">
+    <div class="alert alert-warning d-flex" role="alert">
+      <div class="d-flex">
+        <div class="pl-2">
+          <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
+        </div>
+        <div class="my-1 pl-0 pr-2 warning-body">
+          <% if !assister_agency_profile.accept_new_clients %>
+            <p class="b"><%= l10n("assister_agencies.profiles.not_accepting_clients") %></p>
+          <% end %>
+          <p><%= l10n("assister_agencies.profiles.warning_for_existing_assister") %></p>
+        </div>
+      </div>
+    </div>
+    <h2><%= active_assister.person.full_name %></h2>
+    <h3><%= assister_agency_profile.legal_name %></h3>
+    <dl class="parent">
+      <dt><%= l10n("phone")%>:</dt>
+      <dd><%= active_assister.phone ? active_assister.phone.to_s : l10n("assister_agencies.profiles.no_phone_number") %></dd>
+      <dt><%= l10n("email")%>:</dt>
+      <dd><a href="mailto:<%= active_assister.email.address %>"><%= active_assister.email.address %></a></dd>
+      <dt><%= l10n("address")%>:</dt>
+      <dd>
+        <% if assister_agency_profile.office_locations.any? %>
+          <%= assister_agency_profile.primary_office_location.address.address_1 %>,
+          <%= assister_agency_profile.primary_office_location.address.city %>,
+          <%= assister_agency_profile.primary_office_location.address.state %>
+          <%= assister_agency_profile.primary_office_location.address.zip %>
+        <% else %>
+          <%= l10n("assister_agencies.profiles.no_address")%>
+        <% end %>
+      </dd>
+    </dl>
+    <dl class="parent my-2">
+      <dt><%= l10n("assister_agencies.profiles.new_clients")%>:</dt>
+      <dd><%= assister_agency_profile.accept_new_clients? ? l10n("yes") : l10n("no") %></dd>
+      <dt><%= l10n("assister_agencies.profiles.weekend_evening_hours")%>:</dt>
+      <dd><%= assister_agency_profile.working_hours? ? l10n("yes") : l10n("no") %></dd>
+      <dt><%= l10n("language")%>:</dt>
+      <dd><%= assister_agency_profile.languages %></dd>
+    </dl>
+    <button type="button" class="outline close_assister_select"><%= l10n("previous_step")%></button>
+    <%= h(link_to "Go To My Expert", main_app.brokers_insured_families_path(tab: l10n("assisters_tab")), class: "button hidden go-to-expert mt-4") %>
+    <button type="button" <%= 'disabled' if !assister_agency_profile.accept_new_clients %> class="select-broker" data-assister='<%=@staff.id%>'><%= l10n("select_this_expert")%></button>
+  </section>
+<% else %>
+  <div class="no-buffer" id="active_assister_tab">
+    <div class="col-xs-12">
+      <div class="panel benefits-tab col-xs-12">
+        <div class="col-xs-4">
+          <header class="row">
+            <h5 class="bg-title" style="margin-bottom: 0;"><%= active_assister.person.full_name %></h5><br/>
+            <span class="tt-u"><%= assister_agency_profile.legal_name %></span>
+          </header>
+        </div>
+        <table>
+          <tbody>
+            <tr>
+              <td class='col-xs-4'><br/>
+                <header>
+                  <% if assister_agency_profile.office_locations.any? %>
+                    <%= assister_agency_profile.primary_office_location.address.address_1 %><br/>
+                    <%= assister_agency_profile.primary_office_location.address.city %>,
+                    <%= assister_agency_profile.primary_office_location.address.state %>
+                    <%= assister_agency_profile.primary_office_location.address.zip %>
+                  <% else %>
+                  <%= l10n("assister_agencies.profiles.no_address")%>
+                  <% end %>
+                </header>
+              </td>
+              <td class='col-xs-4'><br/>
+                  <% if active_assister.phone %>
+                  <i class="fa fa-phone"></i>
+                    <%= active_assister.phone.to_s %>
+                    <% else %>
+                    <i class="fa fa-phone"></i>
+                    <%= l10n("assister_agencies.profiles.no_phone_number")%>
+                  <% end %>
+                  <br/>
+                  <i class="fa fa-at"></i>
+                  <a href="mailto:<%= active_assister.email.address %>">
+                    <%= active_assister.email.address %>
+                  </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="panel benefitgroup col-xs-12">
+        <div class="row">
+          <div class="col-xs-6">
+            <span class="lg ttu twelve">
+              <%= l10n("assister_agencies.profiles.new_clients")%>:
+            </span>
+            <span class="dg">
+              <%= assister_agency_profile.accept_new_clients? ? l10n("yes") : l10n("no") %>
+            </span>
+            <br/>
+            <span class="lg ttu twelve">
+              <%= l10n("assister_agencies.profiles.weekend_evening_hours")%>:
+            </span>
+            <span class="dg">
+              <%= assister_agency_profile.working_hours? ? l10n("yes") : l10n("no") %>
+            </span>
+          </div>
+          <div class="col-xs-6">
+            <span class="lg ttu twelve">
+              <%= l10n("language")%>:
+            </span>
+            <span class="dg">
+              <%= assister_agency_profile.languages %>
+            </span>
+          </div>
+        </div>
+        <br/>
+        <p class="lg"> <b><%= l10n("assister_agencies.profiles.not_accepting_clients") if !assister_agency_profile.accept_new_clients %></b> </p>
+        <p class="lg"> <b><%= l10n("assister_agencies.profiles.warning_for_existing_assister")%></b></p>
+        <button type="button" <%= 'disabled' if !assister_agency_profile.accept_new_clients %> class="btn btn-primary btn-small help_button close_assister_select" data-cuke="select_this_assister" data-assister='<%=@staff.id%>'><%= l10n("assister_agencies.profiles.select_this_assister")%></button>
+        <button type="button" class="btn btn-default btn-default btn-small close_assister_select"><%= l10n("previous_step") %></button>
+      </div>
+    </div>
+  </div>
+  <% end %>
+</div>

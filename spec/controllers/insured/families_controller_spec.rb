@@ -1300,6 +1300,25 @@ RSpec.describe Insured::FamiliesController, dbclean: :after_each do
         expect(family.current_broker_agency).to be nil
       end
     end
+
+    context "delete delete_consumer_assister" do
+      let(:family) {FactoryBot.build(:family)}
+      before :each do
+        allow(EnrollRegistry[:send_broker_fired_event_to_edi].feature).to receive(:is_enabled).and_return(true)
+        allow(person).to receive(:hbx_staff_role).and_return(double('hbx_staff_role', permission: double('permission',modify_family: true)))
+        allow(person).to receive(:agent?).and_return(true)
+        family.assister_agency_accounts = [
+          FactoryBot.build(:benefit_sponsors_accounts_assister_agency_account, family: family)
+        ]
+        allow(Family).to receive(:find).and_return family
+      end
+
+      it "should delete consumer assister" do
+        delete :delete_consumer_assister, params: {:id => family.id }
+        expect(response).to have_http_status(:redirect)
+        expect(family.current_assister_agency).to be nil
+      end
+    end
   end
 
   describe 'GET sep_zip_compare', dbclean: :after_each do

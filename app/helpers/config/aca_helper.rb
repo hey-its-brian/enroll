@@ -100,6 +100,10 @@ module Config
       EnrollRegistry.feature_enabled?(:general_agency)
     end
 
+    def assister_agency_enabled?
+      EnrollRegistry.feature_enabled?(:assister_agency)
+    end
+
     def broker_carrier_appointments_enabled?
       Settings.aca.broker_carrier_appointments_enabled
     end
@@ -110,6 +114,10 @@ module Config
 
     def individual_market_is_enabled?
       @individual_market_is_enabled ||= Settings.aca.market_kinds.include?("individual")
+    end
+
+    def assister_agency_is_enabled?
+      EnrollRegistry.feature_enabled?(:assister_agency)
     end
 
     def no_transition_families_is_enabled?

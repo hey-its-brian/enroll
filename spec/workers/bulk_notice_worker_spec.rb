@@ -28,6 +28,8 @@ describe BulkNoticeWorker do
       let(:broker_agency_profile) { FactoryBot.create(:benefit_sponsors_organizations_broker_agency_profile) }
       let(:broker_person) { broker_agency_profile.primary_broker_role.person }
       let(:general_agency_profile) { FactoryBot.create(:benefit_sponsors_organizations_general_agency_profile, organization: organization) }
+      let(:assister_agency_profile) { FactoryBot.create(:benefit_sponsors_organizations_assister_agency_profile) }
+      let(:assister_person) { assister_agency_profile.primary_assister_role.person }
 
       it 'should return employer profile' do
         expect(subject.fetch_resource(employer_profile.organization, 'employer')).to eq employer_profile
@@ -39,6 +41,10 @@ describe BulkNoticeWorker do
 
       it 'should return primary broker person' do
         expect(subject.fetch_resource(broker_agency_profile.organization, 'broker_agency')).to eq broker_agency_profile
+      end
+
+      it 'should return primary assister person' do
+        expect(subject.fetch_resource(assister_agency_profile.organization, 'assister_agency')).to eq assister_agency_profile
       end
     end
   end

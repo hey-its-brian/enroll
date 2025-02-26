@@ -193,6 +193,11 @@ class EmployerProfile
     @active_broker_agency_account = broker_agency_accounts.detect { |account| account.is_active? }
   end
 
+  def active_assister_agency_account
+    return @active_assister_agency_account if defined? @active_assister_agency_account
+    @active_assister_agency_account = assister_agency_accounts.detect(&:is_active?)
+  end
+
   def active_broker
     if active_broker_agency_account && active_broker_agency_account.writing_agent_id
       Person.where("broker_role._id" => BSON::ObjectId.from_string(active_broker_agency_account.writing_agent_id)).first

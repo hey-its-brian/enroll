@@ -1,0 +1,32 @@
+<% if @assister_agency_profiles.present?  %>
+  <br />
+  <div class='table-responsive col-12 px-0'>
+    <table class="assister-staff border-0">
+      <thead>
+        <tr>
+          <th class="col-4"><%= l10n("legal_name") %></th>
+          <th class="col-2"><%= l10n("assister_role.assister_org_id") %></th>
+          <th class="col-6"><%= l10n("primary_assister_name") %></th>
+        </tr>
+      </thead>
+      <% @assister_agency_profiles.each do |agency| %>
+        <tbody class="staff-select-assister">
+          <tr>
+            <td class="col-4"><%= agency.legal_name %></td>
+            <td class="col-2"><%= agency.primary_assister_role&.assister_org_id %></td>
+            <td class="col-6">
+              <span class="d-flex align-items-center justify-content-between">
+                <span><%= agency.primary_assister_role&.person&.full_name %></span>
+                <a href="#" class='btn btn-primary select-assister-agency float-right' data-assister_agency_profile_id="<%= agency._id %>"><%= l10n("select_this_assister_button") %></a>
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      <% end %>
+    </table>
+  </div>
+<% else %>
+  <h4>
+    <span class="alert-error"> <%= l10n("no_agencies_found") %> </span>
+  </h4>
+<% end %>

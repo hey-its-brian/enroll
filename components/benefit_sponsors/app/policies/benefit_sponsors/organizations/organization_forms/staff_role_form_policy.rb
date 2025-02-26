@@ -50,6 +50,9 @@ module BenefitSponsors
           when profile.is_a?(BrokerAgencyProfile)
             # BrokerAgencyProfilePolicy has a different level of access than EmployerProfile and GeneralAgencyProfile
             BenefitSponsors::Organizations::BrokerAgencyProfilePolicy.new(account_holder, profile).access_to_broker_agency_profile?
+          when profile.is_a?(AssisterAgencyProfile)
+            # AssisterAgencyProfilePolicy has a different level of access than EmployerProfile and GeneralAgencyProfile
+            BenefitSponsors::Organizations::AssisterAgencyProfilePolicy.new(account_holder, profile).access_to_assister_agency_profile?
           when profile.is_a?(GeneralAgencyProfile)
             return true if admin?
             return false if user.person.general_agency_primary_staff.blank?

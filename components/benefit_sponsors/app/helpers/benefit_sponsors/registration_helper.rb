@@ -6,6 +6,10 @@ module BenefitSponsors
       profile_type == "broker_agency"
     end
 
+    def is_assister_profile?(profile_type)
+      profile_type == "assister_agency"
+    end
+
     def is_sponsor_profile?(profile_type)
       profile_type == "benefit_sponsor"
     end

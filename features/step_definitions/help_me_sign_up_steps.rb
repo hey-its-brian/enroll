@@ -7,6 +7,18 @@ Given(/^an IVL Broker Agency exists$/) do
   broker_agency_profile(broker_name).update_attributes!(aasm_state: 'is_approved', market_kind: 'individual', accept_new_clients: true)
 end
 
+Given(/^create an IVL Assister Agency exists$/) do
+  assister_agency_profile = FactoryBot.create(:benefit_sponsors_organizations_assister_agency_profile)
+  assister_agency_profile.update_attributes!(aasm_state: 'is_approved', market_kind: 'individual', accept_new_clients: true)
+  FactoryBot.create(:assister_role, benefit_sponsors_assister_agency_profile_id: assister_agency_profile.id, aasm_state: 'active')
+end
+
+Given(/^create an IVL Broker Agency exists$/) do
+  broker_agency_profile = FactoryBot.create(:benefit_sponsors_organizations_broker_agency_profile)
+  broker_agency_profile.update_attributes!(aasm_state: 'is_approved', market_kind: 'individual', accept_new_clients: true)
+  FactoryBot.create(:broker_role, benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id, aasm_state: 'active')
+end
+
 And(/Individual has broker assigned to them/) do
   family = Family.first
   broker_id = Person.where(:broker_role.exists => true).last.id
@@ -17,6 +29,40 @@ end
 
 And(/^Individual clicks on the Help Me Sign Up link?/) do
   find('.interaction-click-control-help-me-sign-up').click unless EnrollRegistry[:bs4_consumer_flow].enabled?
+end
+
+And("clicks on #help_me_sign_up") do
+  find("#help_me_sign_up").click
+end
+
+And("clicks on #bottom_expert_assister_link") do
+  find("#bottom_expert_assister_link").click
+end
+
+And("clicks on #bottom_expert_link") do
+  find("#bottom_expert_link").click
+end
+
+Then("assister record exists and should be able to click on the Select button") do
+  within("#assister_index_view") do
+    expect(page).to have_css("tbody tr", count: 1)
+    find(".assister_select_button").click
+  end
+end
+
+Then("broker record exists and should be able to click on the Select button") do
+  within("#broker_index_view") do
+    expect(page).to have_css("tbody tr", count: 1)
+    find(".broker_select_button").click
+  end
+end
+
+And("should be able to click on the Select This broker button") do
+  find("button.select-broker").click
+end
+
+Then("should be able to see the success message") do
+  expect(page).to have_css(".alert-success")
 end
 
 And(/^Individual clicks on the Get Help Signing Up button?/) do
