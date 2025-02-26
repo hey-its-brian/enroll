@@ -54,7 +54,7 @@ module FinancialAssistance
 
             if applicant_local_mec_evidence.present?
               if response_evidence.aasm_state == 'outstanding'
-                if enrolled?(applicant, enrollments)
+                if applicant_local_mec_evidence.enrolled_in_any_aptc_csr_enrollments?(enrollments)
                   due_date = fetch_evidence_due_date_for_bulk_actions(applicant_local_mec_evidence, response_evidence)
                   applicant.set_evidence_outstanding(applicant_local_mec_evidence, due_date)
                 else
@@ -80,13 +80,6 @@ module FinancialAssistance
             end
 
             TimeKeeper.date_of_record + EnrollRegistry[:bulk_call_verification_due_in_days].item.to_i
-          end
-
-          def enrolled?(applicant, enrollments)
-            return false if enrollments.blank?
-
-            family_member_ids = enrollments.flat_map(&:hbx_enrollment_members).flat_map(&:applicant_id).uniq
-            family_member_ids.map(&:to_s).include?(applicant.family_member_id.to_s)
           end
         end
       end
