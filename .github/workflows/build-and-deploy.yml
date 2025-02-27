@@ -5,11 +5,9 @@ on:
   push:
     branches:
       - 'trunk'
-      - 'assister_portal'
   pull_request:
     branches:
       - 'trunk'
-      - 'assister_portal'
 
 concurrency:
   group: docker-${{ github.ref }}
