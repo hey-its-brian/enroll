@@ -18,7 +18,6 @@ class Exchanges::HbxProfilesController < ApplicationController
   before_action :redirect_if_employer_datatable_is_disabled, only: [:employer_datatable]
   before_action :redirect_if_people_datatable_is_disabled, only: [:people_index]
   before_action :enable_bs4_layout
-
   # GET /exchanges/hbx_profiles
   # GET /exchanges/hbx_profiles.json
   layout :resolve_layout

@@ -47,5 +47,11 @@ HBX_PROFILES_TRANSLATIONS = {
 	"en.hbx_profiles.sep_creation_date" => "Creation Date",
 	"en.hbx_profiles.sep_optional_dates" => "Option Dates",
   "en.hbx_profiles.sep_admin_comment" => "Admin Comment",
-	"en.hbx_profiles.csl_number" => "CSL Number"
+	"en.hbx_profiles.csl_number" => "CSL Number",
+	# People Index Tab
+	"en.hbx_profiles.people.table.title" => "People",
+	"en.hbx_profiles.people.table.name" => "Name",
+	"en.hbx_profiles.people.table.dob" => "DOB",
+	"en.hbx_profiles.people.table.hbx_id" => "HBX ID",
+	"en.hbx_profiles.people.active_roles" => "Active Roles"
 }

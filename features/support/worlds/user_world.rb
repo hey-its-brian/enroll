@@ -73,11 +73,15 @@ end
 
 Given(/^that a user with a (.*?) role(?: with (.*?) subrole)? exists and (.*?) logged in$/) do |type, subrole, logged_in|
   user = case type
+         when "Consumer"
+           person = FactoryBot.create(:person)
+           FactoryBot.create(:consumer_role, person: person)
+           FactoryBot.create(:user, :consumer, person: person)
          when "Employer"
            employee(employer)
          when "Broker"
-    # in features/step_definitions/broker_employee_quote_steps.rb BrokerWorld module
-           broker(email: "broker@example.com")
+           # in features/step_definitions/broker_employee_quote_steps.rb BrokerWorld module
+           broker(email: "broker@example.com", person: FactoryBot.create(:person), organization: FactoryBot.create(:broker_agency))
          when "HBX staff"
            admin(subrole)
          when 'Employer Role'

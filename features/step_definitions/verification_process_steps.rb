@@ -184,7 +184,7 @@ When(/the consumer selects a household member/) do
 end
 
 Then(/the consumer should see the individual detail page/) do
-  expect(page).to have_selector('h1', text: 'John Smith1')
+  expect(page).to have_selector('h1', text: 'John Smith')
   expect(page).to have_content(
     "We verify the information you provide us " \
     "using electronic data sources. " \
