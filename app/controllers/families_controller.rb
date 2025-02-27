@@ -87,7 +87,7 @@ private
 
   def resolve_layout
     case action_name
-    when "brokers", "inbox", "home", "enrollment_history", "personal", "manage_family", "verification", "verification_detail", "verification_individual"
+    when "brokers", "inbox", "home", "enrollment_history", "personal", "manage_family", "verification", "verification_detail", "verification_individual", "verification_history"
       EnrollRegistry.feature_enabled?(:bs4_consumer_flow) ? "progress" : "two_column"
     else
       "two_column"

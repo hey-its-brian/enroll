@@ -308,6 +308,7 @@ Rails.application.routes.draw do
         put 'update_osse_eligibilities'
         get 'brokers'
         get 'verification', format: false
+        get 'verification_history', format: false
         get 'verification_individual', format: false
         get 'verification_detail', format: false
         get 'upload_application'

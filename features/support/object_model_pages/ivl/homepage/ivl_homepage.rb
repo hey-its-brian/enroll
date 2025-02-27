@@ -7,8 +7,12 @@ class IvlHomepage
     '.interaction-click-control-my-dc-health-link'
   end
 
-  def self.documents_link
-    '.interaction-click-control-documents'
+  def self.verifications_link
+    if EnrollRegistry[:show_new_verifications_household_summary].enabled?
+      'a[href="/insured/families/verification?tab=verification"]'
+    else
+      '.interaction-click-control-documents'
+    end
   end
 
   def self.messages_link

@@ -54,7 +54,6 @@
             </thead>
             <tbody>
               <% @subjects.each do |subject| %>
-                <!-- TODO: each row should be a link to the individual details -->
                 <% documents_outstanding = subject.documents_outstanding? %>
                 <tr data-href=<%= verification_individual_insured_families_path(person_id: subject.person_id) %>>
                   <td><%= strong_if(is_strong: documents_outstanding) do subject.person.full_name end %></td>

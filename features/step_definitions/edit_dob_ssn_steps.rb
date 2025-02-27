@@ -4,10 +4,6 @@ Then(/^Hbx Admin should see the list of primary applicants and an Action button$
   end
 end
 
-When("Hbx Admin clicks Families Link") do
-  find('#families', wait: 10).click
-end
-
 Then(/^Hbx Admin should see the list of user accounts and an Action button$/) do
   within('.effective-datatable') do
     expect(page).to have_css('.dropdown-toggle', count: 2)

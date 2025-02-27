@@ -415,6 +415,18 @@ module VerificationHelper
     !["verified", "valid", "attested"].include?(verification_type_status(v_type, person))
   end
 
+  def request_response_details_formatted(person, record, v_type)
+    details = request_response_details(person, record, v_type)
+    return unless details.present?
+
+    if details.is_a?(Nokogiri::XML::Document)
+      return if details.errors.present?
+      details&.to_xhtml(indent: 2)
+    else
+      JSON.pretty_generate(details)
+    end
+  end
+
   def request_response_details(person, record, v_type)
     return show_deceased_verification_response(person, record) if v_type == VerificationType::ALIVE_STATUS
 

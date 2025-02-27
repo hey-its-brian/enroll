@@ -83,7 +83,7 @@ end
 And(/^an uploaded application in VERIFIED status is present$/) do
   login_as hbx_admin
   visit exchanges_hbx_profiles_root_path
-  find(AdminHomepage.families_dropown, wait: 5).click
+  find(AdminHomepage.families_dropdown, wait: 5).click
   find(AdminHomepage.identity_ver_btn, wait: 5).click
   sleep 2
   find('td.sorting_1 a[class^="interaction-click-control"]').click
@@ -101,7 +101,7 @@ end
 And(/^an uploaded Identity verification in VERIFIED status is present$/) do
   login_as hbx_admin
   visit exchanges_hbx_profiles_root_path
-  find(AdminHomepage.families_dropown, wait: 5).click
+  find(AdminHomepage.families_dropdown, wait: 5).click
   find(AdminHomepage.identity_ver_btn, wait: 5).click
   find('td.sorting_1 a[class^="interaction-click-control"]').click
   expect(page).to have_content('Identity', wait: 5)
@@ -126,7 +126,7 @@ end
 When(/^the Admin clicks “Continue” on the doc upload page$/) do
   login_as hbx_admin
   visit exchanges_hbx_profiles_root_path
-  find(AdminHomepage.families_dropown, wait: 5).click
+  find(AdminHomepage.families_dropdown, wait: 5).click
   find('li', :text => 'Families', :class => 'tab-second', :wait => 10).click
   sleep 2
   find_all('td.sorting_1 a[class^="interaction-click-control"]')[0].click
@@ -168,7 +168,7 @@ end
 When(/^an uploaded Identity verification in VERIFIED status is present on failed experian screen$/) do
   login_as hbx_admin
   visit exchanges_hbx_profiles_root_path
-  find(AdminHomepage.families_dropown, wait: 5).click
+  find(AdminHomepage.families_dropdown, wait: 5).click
   find(AdminHomepage.identity_ver_btn, wait: 5).click
   find('td.sorting_1 a[class^="interaction-click-control"]').click
   sleep 2
@@ -186,7 +186,7 @@ end
 When(/^an uploaded application in VERIFIED status is present on failed experian screen$/) do
   login_as hbx_admin
   visit exchanges_hbx_profiles_root_path
-  find(AdminHomepage.families_dropown, wait: 5).click
+  find(AdminHomepage.families_dropdown, wait: 5).click
   find('.interaction-click-control-identity-verification', wait: 5).click
   find('td.sorting_1 a[class^="interaction-click-control"]').click
   sleep 2

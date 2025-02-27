@@ -7,12 +7,12 @@ class AdminHomepage
     'i[class="fas fa-home fa-lg"]'
   end
 
-  def self.families_dropown
+  def self.families_dropdown
     '#families_dropdown'
   end
 
   def self.families_btn
-    'a[class="interaction-click-control-families"]'
+    '#families'
   end
 
   def self.outstanding_ver_btn

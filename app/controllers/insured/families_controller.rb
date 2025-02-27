@@ -8,7 +8,7 @@ class Insured::FamiliesController < FamiliesController
 
   layout :resolve_layout
   before_action :enable_bs4_layout, only: [:home, :find_sep, :record_sep, :check_qle_date, :check_move_reason, :check_marriage_reason,
-                                           :check_insurance_reason, :verification, :verification_detail, :verification_individual, :personal, :inbox, :manage_family, :brokers, :enrollment_history]
+                                           :check_insurance_reason, :verification, :verification_detail, :verification_individual, :verification_history, :personal, :inbox, :manage_family, :brokers, :enrollment_history]
   before_action :updateable?, only: [:delete_consumer_broker, :record_sep, :purchase, :upload_notice]
   before_action :init_qualifying_life_events, only: [:home, :manage_family, :find_sep]
   before_action :check_for_address_info, only: [:find_sep, :home]
@@ -264,13 +264,23 @@ class Insured::FamiliesController < FamiliesController
 
   def verification_detail
     authorize @family, :verification_detail?
+    create_evidence_decorator
 
+    respond_to :html
+  end
+
+  def verification_history
+    authorize @family, :verification_history?
+    create_evidence_decorator
+
+    respond_to :html
+  end
+
+  def create_evidence_decorator
     subject = @family.eligibility_determination.subjects.by_person(params[:person_id]).first
     @member = @family.find_family_member_by_person(subject.person)
     @evidence = subject.eligibility_states.by_type(params[:eligibility_kind]).first.evidence_states.by_key(params[:evidence_key]).first
     @evidence = ::EvidenceStateDecorator.new(@evidence)
-
-    respond_to :html
   end
 
   def upload_application

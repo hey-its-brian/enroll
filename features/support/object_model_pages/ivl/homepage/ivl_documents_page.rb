@@ -11,6 +11,14 @@ class IvlDocumentsPage
     '.interaction-click-control-go-to-district-direct'
   end
 
+  def self.member_link
+    'tr[data-href^="/insured/families/verification_individual"]'
+  end
+
+  def self.verification_link
+    'tr[data-href^="/insured/families/verification_individual"]'
+  end
+
   def self.income_evidence
     '#evidence_kind_income_evidence'
   end

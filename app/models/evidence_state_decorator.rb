@@ -23,12 +23,12 @@ class EvidenceStateDecorator < SimpleDelegator
     when VerificationType
       @status = specific_evidence.validation_status
       @documents = specific_evidence.type_documents
-      @history = specific_evidence.type_history_elements
+      @history = specific_evidence.type_history_elements.map { |element| EvidenceHistoryDecorator.new(element) }.sort_by(&:created_at).reverse
       @history_tracks = specific_evidence.history_tracks
     when Eligibilities::Evidence
       @documents = specific_evidence.documents
       @status = obj.status
-      @history = specific_evidence.verification_histories
+      @history = (specific_evidence.verification_histories + specific_evidence.request_results).map { |element| EvidenceHistoryDecorator.new(element) }.sort_by(&:created_at).reverse
       @history_tracks = nil
     end
   end

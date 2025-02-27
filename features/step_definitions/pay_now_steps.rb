@@ -227,7 +227,7 @@ end
 
 And(/^creates a consumer with SEP$/) do
   visit exchanges_hbx_profiles_root_path
-  find(AdminHomepage.families_dropown, wait: 10).click
+  find(AdminHomepage.families_dropdown, wait: 10).click
   page.find(AdminHomepage.new_consumer_app_btn, wait: 10).click
   visit begin_consumer_enrollment_exchanges_agents_path
   fill_in IvlPersonalInformation.first_name, with: "John"

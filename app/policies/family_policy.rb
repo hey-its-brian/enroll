@@ -157,6 +157,10 @@ class FamilyPolicy < ApplicationPolicy
     show?
   end
 
+  def verification_history?
+    admin_show?
+  end
+
   def find_sep?
     show?
   end

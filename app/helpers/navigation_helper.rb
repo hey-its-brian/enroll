@@ -147,4 +147,18 @@ module NavigationHelper
       {step: 3, page_key: :complete, display_label: l10n('complete')}
     ]
   end
+
+  def verification_navigation
+    steps = {
+      "verification" => {title: l10n('insured.families.verifications'), link: main_app.verification_insured_families_path(tab: 'verification')},
+      "verification_individual" => {title: l10n('insured.families.verifications.individual'), link: verification_individual_insured_families_path(person_id: @member.person_id) },
+      "verification_detail" => {title: l10n('insured.families.verifications.detail'), link: main_app.verification_detail_insured_families_path(person_id: @evidence&.eligibility_state&.subject&.person_id,
+                                                                                                                                               eligibility_kind: @evidence&.eligibility_state&.eligibility_item_key,
+                                                                                                                                               evidence_key: @evidence&.evidence_item_key)},
+      "verification_history" => {title: l10n('insured.families.verifications.history.verification_history'), link: '#'}
+    }
+
+    current_step_index = steps.keys.find_index(action_name)
+    { breadcrumbs: steps.values[0..current_step_index], previous_step: steps.values[current_step_index - 1] }
+  end
 end

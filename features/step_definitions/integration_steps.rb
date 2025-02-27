@@ -1103,11 +1103,11 @@ end
 And(/^clicks on the person in families tab$/) do
   login_as hbx_admin
   visit exchanges_hbx_profiles_root_path
-  page.find('#families_dropdown').click
-  find('#families', wait: 5).click
+  page.find(AdminHomepage.families_dropdown).click
+  find(AdminHomepage.families_btn, wait: 5).click
   family_member = page.find('a', :text => "#{user.person.full_name}")
   family_member.click
-  find(".interaction-click-control-documents", wait: 5).click
+  find(IvlHomepage.verifications_link, wait: 5).click
 end
 
 When(/^.+ clicks? on the tab for (.+)$/) do |tab_name|

@@ -1,0 +1,66 @@
+<% navigation = verification_navigation %>
+
+<ul class="breadcrumbs">
+  <% navigation[:breadcrumbs].each do |step| %>
+    <li><%= link_to(*step.values) %></li>
+  <% end %>
+</ul>
+
+<h1><%= title %></h1>
+
+<% if current_user.has_hbx_staff_role? %>
+  <aside class="mb-2">
+    <span class="admin-designation"></span> 
+    <%= l10n('admin.admin_designation_descriptor') %>
+  </aside>
+<% end %>
+
+<% dt_class = "px-0 #{[:status, :update_reason].any? { |row| summary_rows.include?(row) } ? 'col-4 col-lg-3 col-xl-2' : 'mr-2' }" %>
+<dl data-cuke="summary-header">
+  <% if summary_rows.include?(:member) %>
+    <div class='d-flex align-items-center'>
+      <dt class="<%= dt_class %>"><%= l10n('member') %>:</dt>
+      <dd><%= @member.full_name %></dd>
+    </div>
+  <% end %>
+  <% if summary_rows.include?(:member_status) && current_user.has_hbx_staff_role? %>
+    <div class='d-flex align-items-center'>
+      <dt class="<%= dt_class %>"><%= l10n('insured.families.verifications.detail.summary.member_status') %>:</dt>
+      <dd class="admin-designation"><%= @member.is_active? ? l10n('active') : l10n('inactive') %></dd>
+    </div>
+  <% end %>
+  <% if summary_rows.include?(:status) %>
+    <div class='d-flex align-items-center'>
+      <dt class="<%= dt_class %>"><%= "#{l10n("insured.families.verifications.detail.summary.status")}:" %></dt>
+      <dd class='d-flex'>
+        <%= strong_if(is_strong: @evidence.is_action_needed?) do %>
+          <% show_v_type(@evidence) %>
+        <% end %>
+        <% if @evidence.is_action_needed? %>
+          <div class="pl-2">
+            <div class="warning-icon icon pl-2" alt="warning" aria-hidden="true" data-cuke="actionable-status-icon">&nbsp;</div>
+          </div>
+        <% end %>
+      </dd>
+    </div>
+  <% end %>
+  <% if summary_rows.include?(:update_reason) && @evidence.update_reason.present? && @evidence.is_action_needed? %>
+    <div class='d-flex align-items-center'>
+      <dt class="<%= dt_class %>"><%= "#{l10n("insured.families.verifications.detail.summary.status_reason")}:" %></dt>
+      <dd><strong><%= @evidence.update_reason %></strong></dd>
+    </div>
+  <% end %>
+  <% if summary_rows.include?(:due_on) %>
+    <div class='d-flex align-items-center'>
+      <dt class="<%= dt_class %>"><%= "#{l10n("insured.families.verifications.detail.summary.due_on")}:" %></dt>
+      <%= strong_if(is_strong: @evidence.is_action_needed?) do %>
+        <% @evidence.due_on&.to_s || l10n('not_applicable') %>
+      <% end %>
+    </div>
+  <% end %>
+</dl>
+
+<div class="my-4">
+  <% previous_step = navigation[:previous_step] %>
+  <%= link_to(l10n("insured.families.verifications_back_to") +  previous_step[:title], previous_step[:link], class: "button #{'outline' unless is_back_nav_primary}") %>
+</div>

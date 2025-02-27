@@ -15,8 +15,31 @@ Then(/^I should see Documents link$/) do
 end
 
 When(/^.+ clicks on Documents link$/) do
-  expect(page).to have_content "Documents"
-  click_link "Documents"
+  if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+    find(IvlHomepage.verifications_link, wait: 5).click
+  else
+    find('.interaction-click-control-documents').click
+  end
+end
+
+And(/^.+ clicks on Verification History$/) do
+  find(IvlDocumentDetail.verification_history_link).click
+end
+
+And(/^.+ lands in the Verifications page$/) do
+  if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+    expect(page).to have_content "Verifications"
+  else
+    expect(page).to have_content "Documents"
+  end
+end
+
+And(/the determination for the family has been built/) do
+  ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: user.person.primary_family.reload, effective_date: TimeKeeper.date_of_record)
+end
+
+And(/^.+ clicks on member with verified status$/) do
+  find_all(IvlDocumentsPage.member_link).first.click
 end
 
 Given(/^I should see page for documents verification$/) do
@@ -62,12 +85,40 @@ And(/^the consumer's Alive Status is moved to outstanding$/) do
   alive_status.update(validation_status: 'outstanding')
 end
 
+And(/^the consumer's Alive Status is moved to rejected$/) do
+  alive_status = user.person.verification_type_by_name('Alive Status')
+  alive_status.update(validation_status: 'rejected')
+end
+
 And(/^the consumer's Alive Status is moved to verified$/) do
   user.person.verification_type_by_name('Alive Status').pass_type
 end
 
+Then(/^the Action Items table is not present$/) do
+  expect(page).not_to have_content(l10n('insured.consumer_roles.upload_ridp_documents.action_items'))
+end
+
+Then(/^the Transaction History table is present$/) do
+  expect(page).to have_content(l10n('insured.families.verifications.history.verification_history'))
+end
+
+And(/^.+ clicks on the back button of the Verification History page$/) do
+  find(IvlVerificationHistory.back_to_individual_btn).click
+end
+
+And(/^.+ clicks on the Document Detail breadcrumb$/) do
+  find(IvlDocumentDetail.doc_detail_breadcrumb).click
+end
+
+Then(/^.+ should be in the Document Detail page$/) do
+  expect(page).to have_content(l10n('insured.families.verifications.detail.verification_details'))
+  expect(page).to have_content(l10n('insured.families.verifications.detail.document_upload'))
+  expect(page).to have_content(l10n('insured.families.verifications.detail.admin_tools'))
+end
+
 Then(/^the consumer visits verification page$/) do
   visit verification_insured_families_path(tab: 'verification')
+  sleep 50
   # after refactoring turbolinks and selectric, return interaction through class
   find_all("a", text: "Documents", exact: true, wait: 5)[0].click
   # find(".interaction-click-control-documents", wait: 5).click
@@ -207,6 +258,7 @@ end
 
 When(/^the consumer is completely verified$/) do
   user.person.consumer_role.import!(OpenStruct.new({:determined_at => Time.now, :vlp_authority => "hbx"}))
+  sleep 40
 end
 
 When(/^the consumer is completely verified from curam$/) do

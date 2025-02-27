@@ -27,5 +27,3 @@ Feature: Individual Verification Details Page
     When the consumer vists the verification detail page
     And the consumer presses the Back to Individual button
     Then the consumer should see the individual detail page
-
-    
