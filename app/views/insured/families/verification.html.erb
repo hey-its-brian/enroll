@@ -31,7 +31,7 @@
                     <td><b><%= subject.person.full_name %></b></td>
                     <td><b><%= display_verification_type_name(item.evidence_item_key) %></b></td>
                     <td><b><%= show_v_type(item) %></b></td>
-                    <td><b><%= item.due_on %></b></td>
+                    <td><b><%= item.due_on || l10n('not_applicable') %></b></td>
                   </tr>
                 <% end %>
               </tbody>
