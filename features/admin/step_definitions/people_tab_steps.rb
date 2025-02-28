@@ -61,3 +61,25 @@ end
 Then(/the Hbx Admin should see no actions for the consumer/) do
   expect(page.body).to include('No actions available')
 end
+
+Given(/two people exist with different SSNs/) do
+  person = FactoryBot.create(:person, :with_consumer_role, first_name: "Hello", ssn: "123456789")
+  FactoryBot.create(:family, :with_primary_family_member, person: person)
+end
+
+When(/^the Hbx Admin clicks on the Actions dropdown for the first person$/) do
+  user_row = page.all('table tbody tr').first
+  within user_row do
+    find('.interaction-click-control-actions').click
+  end
+end
+
+When(/^the Hbx Admin updates the first person's SSN to match the second person's SSN$/) do
+  fill_in IvlPersonalInformation.ssn, :with => "123-45-6789"
+  find("input[type=submit]").click
+  page.driver.browser.switch_to.alert.accept if page.driver.browser.switch_to.respond_to?(:alert)
+end
+
+Then(/^the Hbx Admin should see an error message indicating the SSN is already taken$/) do
+  expect(page).to have_content(l10n("hbx_profiles.edit_dob_ssn.result.failure.subheader"))
+end

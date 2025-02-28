@@ -15,7 +15,8 @@ module Effective
         table_column :role_type, :label => l10n('hbx_profiles.people.active_roles'), :proc => proc { |row| all_roles(row) }, :filter => false, :sortable => false
         table_column :actions, :label => l10n('actions'), :width => '50px', :proc => proc { |row|
           dropdown = [
-            [sanitize_html("<div class='#{pundit_class(Family, :can_update_ssn?)}'> Edit DOB / SSN </div>"), edit_dob_ssn_path(id: row.id, row_actions_id: "person_actions_#{row.id}"), can_display_edit_dob_ssn?(row)]
+            [sanitize_html("<div class='#{pundit_class(Family, :can_update_ssn?)}'> Edit DOB / SSN </div>"), edit_dob_ssn_path(id: row.id, row_actions_id: "person_actions_#{row.id}"),
+             can_display_edit_dob_ssn?(row, pundit_allow(Family, :can_update_ssn?))]
           ]
 
           render partial: 'datatables/shared/dropdown', locals: {dropdowns: map_legacy_dropdown(dropdown), row_actions_id: "person_actions_#{row.id}"}, formats: :html
@@ -31,7 +32,8 @@ module Effective
         person.all_active_role_names.join(', ')
       end
 
-      def can_display_edit_dob_ssn?(person)
+      def can_display_edit_dob_ssn?(person, allow)
+        return 'disabled' unless allow
         return 'ajax' if person.families.present?
 
         'disabled'

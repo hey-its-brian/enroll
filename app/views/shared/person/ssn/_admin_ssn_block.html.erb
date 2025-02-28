@@ -2,7 +2,11 @@
 <% if presenter&.obscured_ssn&.size %>
   <div data-controller='person' id='admin-ssn-input-field' class='admin-ssn-block d-flex align-items-center justify-content-start'>
     <% if include_label %>
-      <b class="mr-1"><%= l10n('ssn') %>: </b>
+      <% if emphasize_label %>
+        <b class="mr-1"><%= l10n('ssn') %>: </b>
+      <% else %>
+        <span class="mr-1"><%= l10n('ssn') %>: </span>
+      <% end %>
     <% end %>
     <span class="hidden ssn-input ssn-input-<%= presenter.person_id %>"></span>
     <span class="ssn-facade ssn-facade-<%= presenter.person_id %> font-weight-bold">• • • • • • • • •</span>
