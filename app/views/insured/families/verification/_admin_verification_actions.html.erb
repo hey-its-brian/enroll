@@ -9,7 +9,7 @@
       <div class='mb-2'>
         <label>
           Reason
-          <div><%= select_tag :verification_reason, options_for_select(::VlpDocument::VERIFICATION_REASONS), {prompt: ' Select Reason', required: true, class: 'col-4'} %></div>
+          <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(::VlpDocument::VERIFICATION_REASONS), {prompt: ' Select Reason', required: true, class: 'col'}%></div>
         </label>
       </div>
       <div>
@@ -28,7 +28,7 @@
       <div class='mb-2'>
         <label>
           Reason
-          <div><%= select_tag :verification_reason, options_for_select(build_reject_reason_list(v_type)), {prompt: ' Select Reason', required: true, class: 'col-4'}%></div>
+          <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(build_reject_reason_list(v_type)), {prompt: ' Select Reason', required: true, class: 'col'}%></div>
         </label>
       </div>
       <div>

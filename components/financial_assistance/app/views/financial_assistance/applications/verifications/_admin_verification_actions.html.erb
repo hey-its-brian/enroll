@@ -7,7 +7,7 @@
       <div class='mb-2'>
         <label>
           Reason
-          <div><%= select_tag :verification_reason, options_for_select(::Eligibilities::Evidence::VERIFY_REASONS), {prompt: 'Select Reason', required: true, class: 'col-4'} %></div>
+          <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(::Eligibilities::Evidence::VERIFY_REASONS), {prompt: 'Select Reason', required: true, class: 'col-4'} %></div>
         </label>
       </div>
       <div>
@@ -24,7 +24,7 @@
       <div class='mb-2'>
         <label>
           Reason
-          <div><%= select_tag :verification_reason, options_for_select(::Eligibilities::Evidence::REJECT_REASONS), {prompt: 'Select Reason', required: true, class: 'col-4'} %></div>
+          <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(::Eligibilities::Evidence::REJECT_REASONS), {prompt: 'Select Reason', required: true, class: 'col-4'} %></div>
         </label>
       </div>
       <div>
