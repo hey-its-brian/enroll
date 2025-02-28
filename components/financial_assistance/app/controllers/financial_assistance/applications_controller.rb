@@ -328,7 +328,7 @@ module FinancialAssistance
       authorize @application, :check_eligibility_results_received?
 
       respond_to do |format|
-        format.html { render :plain => determination_token_present?(@application) }
+        format.html { render plain: determination_token_present?(@application), content_type: 'text/plain' }
       end
     end
 

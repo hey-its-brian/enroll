@@ -978,6 +978,10 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       it 'should return true for response body' do
         expect(response.body).to eq 'true'
       end
+
+      it 'should return true for response mime type' do
+        expect(response.media_type).to eq('text/plain')
+      end
     end
   end
 
