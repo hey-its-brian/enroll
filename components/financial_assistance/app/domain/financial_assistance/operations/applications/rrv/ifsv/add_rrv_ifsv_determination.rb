@@ -43,6 +43,7 @@ module FinancialAssistance
             end
 
             def update_applicant(response_app_entity, application)
+              enrollments = HbxEnrollment.where(:aasm_state.in => HbxEnrollment::ENROLLED_STATUSES, family_id: application.family_id)
               is_ifsv_eligible = response_app_entity.tax_households.first.is_ifsv_eligible
               status = is_ifsv_eligible ? "verified" : "outstanding"
 
@@ -52,12 +53,12 @@ module FinancialAssistance
                   Rails.logger.error("Income Evidence not found for applicant with person_hbx_id: #{applicant.person_hbx_id} in application with hbx_id: #{application.hbx_id}")
                   next
                 end
-                update_applicant_evidence(applicant, status, response_applicant_entity)
+                update_applicant_evidence(applicant, status, response_applicant_entity, enrollments)
               end
               Success('Successfully updated Applicant with evidence')
             end
 
-            def update_applicant_evidence(applicant, status, response_applicant_entity)
+            def update_applicant_evidence(applicant, status, response_applicant_entity, enrollments)
               response_income_evidence = response_applicant_entity.income_evidence
               income_evidence = applicant.income_evidence
               # below is a quick fix to avoid duplicate request results, rrv process needs refactoring
@@ -67,7 +68,11 @@ module FinancialAssistance
               when "verified"
                 applicant.set_income_evidence_verified
               when "outstanding"
-                applicant.set_evidence_outstanding(income_evidence)
+                if income_evidence.enrolled_in_any_aptc_csr_enrollments?(enrollments)
+                  applicant.set_evidence_outstanding(income_evidence)
+                else
+                  applicant.set_evidence_to_negative_response(income_evidence)
+                end
               end
 
               response_income_evidence.request_results&.each do |request_result|

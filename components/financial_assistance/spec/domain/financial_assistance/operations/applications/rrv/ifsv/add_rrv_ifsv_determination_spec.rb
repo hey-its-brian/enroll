@@ -10,8 +10,12 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::Ifsv::AddRr
     DatabaseCleaner.clean
   end
 
+  let(:family) do
+    FactoryBot.create(:family, :with_primary_family_member, person: FactoryBot.create(:person))
+  end
+
   let!(:application) do
-    FactoryBot.create(:financial_assistance_application, hbx_id: '200000126', aasm_state: "determined")
+    FactoryBot.create(:financial_assistance_application, family_id: family.id, hbx_id: '200000126', aasm_state: "determined")
   end
 
   let!(:ed) do
@@ -24,6 +28,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::Ifsv::AddRr
     FactoryBot.create(:financial_assistance_applicant,
                       :with_income_evidence,
                       eligibility_determination_id: ed.id,
+                      family_member_id: family.family_members.first.id,
                       person_hbx_id: '1629165429385938',
                       is_primary_applicant: true,
                       first_name: 'Income',
@@ -98,13 +103,6 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::Ifsv::AddRr
         expect(@result).to be_success
       end
 
-      it 'should update applicant verification' do
-        @applicant.reload
-        expect(@applicant.income_evidence.aasm_state).to eq "outstanding"
-        expect(@applicant.income_evidence.request_results.present?).to eq true
-        expect(@result.success).to eq('Successfully updated Applicant with evidence')
-      end
-
       it "should record request results" do
         expect(@applicant.income_evidence.request_results.first.action).to eq "RRV Response"
       end
@@ -130,6 +128,40 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::Ifsv::AddRr
       it "should not record request results" do
         expect(@applicant.income_evidence.request_results.count).to eq 1
       end
+    end
+
+    context 'Negative Response Received logic update' do
+      RSpec.shared_examples_for "enrollment with csr_variant_id" do |csr_variant_id, is_aptc_zero, expected_evidence_status|
+        before :each do
+          product = FactoryBot.create(:benefit_markets_products_health_products_health_product, csr_variant_id: csr_variant_id)
+          FactoryBot.create(:hbx_enrollment, :with_enrollment_members, family: family, enrollment_members: family.family_members, product: product, applied_aptc_amount: is_aptc_zero ? 0.00 : 100.00)
+          @applicant = application.applicants.first
+          @applicant.build_income_evidence(key: :income, title: "Income")
+          @applicant.save!
+          response_payload[:tax_households].first[:is_ifsv_eligible] = false
+          @result = subject.call(payload: response_payload)
+          @application = ::FinancialAssistance::Application.by_hbx_id(response_payload[:hbx_id]).first.reload
+          @app_entity = ::AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(response_payload).success
+          @applicant.reload
+        end
+
+        it 'should return success' do
+          expect(@result).to be_success
+        end
+
+        it 'should set the aasm_state on local mec evidence to outstanding when csr is income based and has aptc' do
+          expect(@applicant.reload.income_evidence.aasm_state).to eq expected_evidence_status
+        end
+      end
+
+      it_behaves_like "enrollment with csr_variant_id", "01", false, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "01", true, "negative_response_received"
+      it_behaves_like "enrollment with csr_variant_id", "02", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "03", false, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "03", true, "negative_response_received"
+      it_behaves_like "enrollment with csr_variant_id", "04", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "05", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "06", true, "outstanding"
     end
   end
 end
