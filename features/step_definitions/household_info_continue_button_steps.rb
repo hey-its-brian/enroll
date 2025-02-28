@@ -253,6 +253,10 @@ When(/^user clicks CONTINUE$/) do
   find(".btn", text: "CONTINUE").click
 end
 
+When(/^user clicks Begin Application$/) do
+  page.all(".button", text: "Begin Application").last.click
+end
+
 Then(/^the user will navigate to Family Relationships page$/) do
   expect(page).to have_content('Family Relationships')
 end

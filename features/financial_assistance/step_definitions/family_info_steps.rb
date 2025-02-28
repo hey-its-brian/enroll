@@ -4,6 +4,10 @@ And(/^consumer clicks on pencil symbol next to primary person$/) do
   page.all('.fa-pencil-alt').first.click
 end
 
+And(/^consumer edits the dependent of the application$/) do
+  find(IvlIapFamilyInformation.edit_dependent_button).click
+end
+
 Then(/^consumer should see today date and clicks continue$/) do
   expect(page).to have_field('applicant_ssn', readonly: true)
   expect(page.find("input[name='jq_datepicker_ignore_applicant[dob]'")[:disabled]).to eq "true"

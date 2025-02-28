@@ -9,6 +9,10 @@ When(/user clicks the Add New Person Button$/) do
   click_link "Add New Person"
 end
 
+When(/user clicks the Add Member button$/) do
+  click_link "Add New Member"
+end
+
 And(/user enters applicant info WITHOUT tribal member us citizen or naturalization status and submits form$/) do
   fill_in FinancialAssistance::ApplicantForm.applicant_first_name, :with => 'johnson'
   fill_in FinancialAssistance::ApplicantForm.applicant_last_name, :with => 'smith'

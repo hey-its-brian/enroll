@@ -372,6 +372,8 @@ class Insured::FamilyMembersController < ApplicationController
       end
     end
 
+    ["ssn", "dob"].each { |field| dependent_params.delete(field) } if action_name == 'update' && EnrollRegistry.feature_enabled?(:people_tab)
+
     params[:dependent] = dependent_params
   end
 

@@ -23,3 +23,11 @@ Feature: Individual ability to update family information
     And the individual selects gender as female
     And individual saves personal information changes
     Then the individual should show gender as female
+
+  Scenario: Individual cannot edit dependent dob and ssn
+    Given bs4_consumer_flow feature is enabled
+    And EnrollRegistry people_tab feature is enabled
+    And consumer has a dependent in child relationship with consumer role
+    When individual clicks on the Manage Family button
+    And the individual edits the dependent
+    Then the individual should see disabled ssn & dob fields

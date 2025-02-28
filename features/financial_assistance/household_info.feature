@@ -25,3 +25,12 @@ Feature: A dedicated page that gives the user access to household member creatio
     And consumer clicks on pencil symbol next to primary person
     And consumer chooses no for us citizen
     Then consumer should see the eligible immigration status checkbox
+
+  Scenario: Individual cannot edit dependent dob and ssn
+    Given bs4_consumer_flow feature is enabled
+    And EnrollRegistry people_tab feature is enabled
+    And that the user is on the Application Checklist page
+    When user clicks Begin Application
+    And the user has a dependent
+    And consumer edits the dependent of the application
+    Then the user should see disabled ssn & dob fields for the applicant

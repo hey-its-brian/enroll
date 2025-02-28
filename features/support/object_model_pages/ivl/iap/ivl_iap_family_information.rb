@@ -23,6 +23,10 @@ class IvlIapFamilyInformation
     end
   end
 
+  def self.edit_dependent_button
+    '#edit-dependent-person'
+  end
+
   def self.new_person_first_name
     'applicant_first_name'
   end

@@ -36,11 +36,11 @@ class IvlManageFamilyPage
   end
 
   def self.dependent_dob
-    'jq_datepicker_ignore_dependent[dob]'
+    '#dependent_dob'
   end
 
   def self.dependent_ssn
-    'dependent[ssn]'
+    '#dependent_ssn'
   end
 
   def self.dependent_i_dobt_have_ssn_checkbox
@@ -253,5 +253,9 @@ class IvlManageFamilyPage
 
   def self.consumer_fields
     '[data-cuke="consumer_fields"]'
+  end
+
+  def self.edit_dependent_button
+    '.edit-member'
   end
 end

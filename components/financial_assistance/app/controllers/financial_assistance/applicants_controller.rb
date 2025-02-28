@@ -200,6 +200,8 @@ module FinancialAssistance
         end
       end
 
+      ["ssn", "dob"].each { |field| applicant_params.delete(field) } if action_name == 'update' && EnrollRegistry.feature_enabled?(:people_tab)
+
       params[:applicant] = applicant_params
     end
 

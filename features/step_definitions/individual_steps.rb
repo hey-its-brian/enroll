@@ -145,9 +145,16 @@ Then(/^.+ should see heading labeled personal information/) do
   expect(page).to have_css("#gender-tooltip")
 end
 
-Then(/^.+ should see disabled ssn & dob fields/) do
-  expect(page.find("#person_ssn")[:disabled]).to eq "true"
-  expect(page.find("input[name='jq_datepicker_ignore_person[dob]'")[:disabled]).to eq "true"
+Then(/^.+ should see disabled ssn & dob fields$/) do
+  if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+    [:dependent_ssn, :dependent_dob].each do |selector|
+      element = find(IvlManageFamilyPage.send(selector))
+      expect(element[:disabled]).to eq "true"
+    end
+  else
+    expect(page.find("#person_ssn")[:disabled]).to eq "true"
+    expect(page.find("input[name='jq_datepicker_ignore_person[dob]'")[:disabled]).to eq "true"
+  end
 end
 
 Then(/Individual should click on Individual market for plan shopping/) do
