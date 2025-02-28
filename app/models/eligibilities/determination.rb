@@ -34,5 +34,9 @@ module Eligibilities
        outstanding_verification_earliest_due_date: outstanding_verification_earliest_due_date,
        outstanding_verification_document_status: outstanding_verification_document_status}.deep_symbolize_keys
     end
+
+    def negative?
+      subjects.any?(&:has_uploadable_eligibility_with_negative_evidences?)
+    end
   end
 end

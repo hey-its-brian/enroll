@@ -606,7 +606,9 @@ class HbxEnrollment
   end
 
   def record_transition(*args)
-    generate_enrollment_saved_event
+    check_determination = args.find { |arg| arg.is_a?(Hash) && arg.key?(:check_determination) }
+    args.delete(check_determination)
+    generate_enrollment_saved_event(check_determination: check_determination&.fetch(:check_determination, false))
 
     meta_args = {}
     meta_args = args.last if !args.empty? && args.last.is_a?(Hash)
@@ -2854,11 +2856,11 @@ class HbxEnrollment
     @couple_enrollee ||= primary_enrollee? && hbx_enrollment_members.any? {|hem| (hem.primary_relationship == 'domestic_partner') }
   end
 
-  def generate_enrollment_saved_event
+  def generate_enrollment_saved_event(check_determination: false)
     return if self.shopping?
     return if self.is_shop?
     cv_enrollment = Operations::Transformers::HbxEnrollmentTo::Cv3HbxEnrollment.new.call(self)
-    event = event('events.enrollment_saved', attributes: {gid: self.to_global_id.uri, payload: cv_enrollment.success})
+    event = event('events.enrollment_saved', attributes: {gid: self.to_global_id.uri, payload: cv_enrollment.success, check_determination: check_determination})
     event.success.publish if event.success?
   rescue StandardError => e
     Rails.logger.error { "Couldn't generate enrollment #{self.hbx_id} save event due to #{e.backtrace}" }

@@ -25,6 +25,10 @@ module Eligibilities
 
     accepts_nested_attributes_for :evidence_states, :grants
 
+    def has_negative_evidences?
+      evidence_states.any?(&:is_negative?)
+    end
+
     # seliarizable_cv_hash for eligibility states including evidence states
     # @return [Hash] hash of eligibility states
     def serializable_cv_hash

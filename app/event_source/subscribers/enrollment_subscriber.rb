@@ -99,13 +99,16 @@ module Subscribers
 
       family = enrollment.family
       assistance_year = enrollment.effective_on.year
+      should_update_docs = !(payload[:check_determination] && !enrollment.family.is_determination_negative?)
 
       if HbxEnrollment::ENROLLED_AND_RENEWAL_STATUSES.include?(enrollment.aasm_state)
-        family.update_verification_types
+        family.update_verification_types if should_update_docs
         application = fetch_application(enrollment)
         subscriber_logger.info "EnrollmentSubscriber, redetermine_family_eligibility for enrollment #{enrollment.hbx_id} with the application #{application&.hbx_id}"
         application&.enrolled_with(enrollment) if enrollment.health?
       end
+
+      return unless should_update_docs
 
       family.update_due_dates_on_vlp_docs_and_evidences(assistance_year)
       ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: enrollment.effective_on.to_date)

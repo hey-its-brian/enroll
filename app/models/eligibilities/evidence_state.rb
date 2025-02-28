@@ -43,6 +43,10 @@ module Eligibilities
       verification_outstanding && status.to_s.downcase != 'review'
     end
 
+    def is_negative?
+      verification_outstanding || status == :negative_response_received
+    end
+
     # seliarizable_cv_hash for evidence states
     # @return [Hash] hash of evidence states
     def serializable_cv_hash
