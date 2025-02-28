@@ -1,6 +1,6 @@
 <% if item_count > 0 %>
   <div class="alert alert-warning d-flex align-items-center p-2 mb-0 ml-4" role="alert">
-    <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
+    <div class="warning-icon icon transparent" alt="warning" aria-hidden="true">&nbsp;</div>
     <b><%= "#{item_count} " + l10n("insured.families.verifications.action_items.outstanding_document").pluralize(item_count) %></b>
   </div>
 <% end %>
