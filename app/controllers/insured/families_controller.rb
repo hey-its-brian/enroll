@@ -236,8 +236,9 @@ class Insured::FamiliesController < FamiliesController
     authorize @family, :verification?
 
     if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
-      @action_items = @family.eligibility_determination.subjects.map { |subject| subject.eligibility_states.by_type_uploadable }.flatten.map { |state| state.evidence_states.where_action_needed }.flatten.sort_by(&:due_on)
-      @action_items = @action_items.map { |evidence| EvidenceStateDecorator.new(evidence) }
+      action_items = @family.eligibility_determination.subjects.map { |subject| subject.eligibility_states.by_type_uploadable }.flatten.map { |state| state.evidence_states.where_action_needed }.flatten
+      sorted_action_items = action_items.sort_by { |evidence| evidence.due_on || Float::INFINITY }
+      @action_items = sorted_action_items.map { |evidence| EvidenceStateDecorator.new(evidence) }
 
       # sort subjects first by `documents_outstanding?`, then by `documents_outstanding?` then by nil `due_on``
       @subjects = @family.eligibility_determination.subjects.sort_by { |subject| [subject.documents_outstanding? ? 0 : 1, subject.earliest_due_date || Float::INFINITY] }
@@ -256,7 +257,13 @@ class Insured::FamiliesController < FamiliesController
 
     # sort evidences first by `is_action_needed?`, then by `due_on`, then by nil `due_on``
     evidences = subject.eligibility_states.by_type_uploadable.map(&:evidence_states).flatten
-    sorted_evidences = evidences.sort_by { |evidence| [evidence.is_action_needed? ? 0 : 1, evidence.due_on || Float::INFINITY] }
+    sorted_evidences = evidences.sort_by do |evidence|
+      [
+        evidence.is_action_needed? ? 0 : 1,
+        evidence.due_on || Float::INFINITY,
+        display_verification_type_name(evidence.evidence_item_key)
+      ]
+    end
     @evidences = sorted_evidences.map { |evidence| EvidenceStateDecorator.new(evidence) }
 
     respond_to :html
