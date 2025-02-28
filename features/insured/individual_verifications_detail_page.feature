@@ -27,3 +27,18 @@ Feature: Individual Verification Details Page
     When the consumer vists the verification detail page
     And the consumer presses the Back to Individual button
     Then the consumer should see the individual detail page
+
+  Scenario Outline: Admin extends the verification due date
+    And EnrollRegistry verification_due_on_options feature is enabled
+    And the user with hbx_staff role is logged in
+    And the consumer vists the verification detail page for a verification with outstanding status
+    And the user selects the Extend option from the actions dropdown
+    And the user selects the <date_option> option from the extend due date dropdown
+    When Admin clicks confirm
+    Then the user should see the new date
+
+  Examples:
+    | date_option  |
+    | 95 Day       |
+    | 35 Day       |
+    | Manual       |

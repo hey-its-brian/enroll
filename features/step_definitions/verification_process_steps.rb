@@ -178,7 +178,7 @@ Then(/the consumer should see the verification detail page/) do
   expect(page).to have_content("We verify the information you give us using electronic data sources. If the data sources do not match the information you gave us, we need you to provide documents to prove what you told us.")
 end
 
-When(/the consumer vists the verification detail page for a verification with (.*) status/) do |status|
+When(/the .* vists the verification detail page for a verification with (.*) status/) do |status|
   steps %(
     Given the consumer has a verification with #{status} status
     And the consumer visits the verification tab
@@ -340,6 +340,17 @@ And(/^Individual clicks on Actions dropdown$/) do
   find_all('.v-type-actions')[-1].click
 end
 
+When(/^the user selects the (.+) option from the actions dropdown/) do |option|
+  find('.v-type-actions').find('select').click
+  find('option', text: option).click
+end
+
+When(/^the user selects the (.+) option from the extend due date dropdown/) do |option|
+  find('#due-on-options').find('select').click
+  find('option', text: option).click
+  find('#manual-due-on').find('input').set(TimeKeeper.date_of_record + 1.year) if option == 'manual'
+end
+
 And(/^Admin clicks on esi evidence action dropdown$/) do
   find_all('.v-type-actions')[-3].click
 end
@@ -350,7 +361,15 @@ And(/^Admin should see and click (.*) option$/) do |option|
 end
 
 And(/^Admin clicks confirm$/) do
-  find('.v-type-confirm-button').click
+  if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+    click_button 'Confirm'
+  else
+    find('.v-type-confirm-button').click
+  end
+end
+
+Then(/the user should see the new date/) do
+  expect(page).to have_content(TimeKeeper.date_of_record)
 end
 
 Then(/^Admin should see the error message ([^"]*)$/) do |error_message|

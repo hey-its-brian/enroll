@@ -110,6 +110,7 @@ RSpec.describe 'reports:export_eligible_users_with_outstanding_income_evidences'
 
     context "when generating a report and migrating data" do
       before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:verification_due_on_options).and_return(false)
         rake.reenable
         rake.invoke(true) # including 'true' as an arg when running the rake task will migrate the data
 

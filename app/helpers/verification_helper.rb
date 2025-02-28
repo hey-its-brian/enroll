@@ -367,15 +367,18 @@ module VerificationHelper
   end
 
   def build_evidence_admin_actions_list(evidence, f_member)
+    rejections = []
     if is_evidence_market_eligibility?(evidence)
       return [] if EnrollRegistry.feature_enabled?(:ai_an_self_attestation) && evidence.evidence_item_key == Eligibilities::EvidenceState::AMERICAN_INDIAN_STATUS
 
-      rejections = []
       rejections << ::VlpDocument::CALL_HUB if f_member.consumer_role.aasm_state == 'unverified' || Eligibilities::EvidenceState::ADMIN_CALL_HUB_VERIFICATION_TYPES.exclude?(evidence.evidence_item_key)
       rejections << ::VlpDocument::REJECT if verification_type_status(evidence, f_member) == :outstanding
+      rejections << ::VlpDocument::EXTEND unless !EnrollRegistry.feature_enabled?(:verification_due_on_options) || evidence.is_action_needed?
       ::VlpDocument::ADMIN_VERIFICATION_ACTIONS - rejections
     else
-      Eligibilities::Evidence::ADMIN_VERIFICATION_ACTIONS - (evidence.status == :outstanding ? ["Reject"] : [])
+      rejections << ["Reject"] if evidence.status == :outstanding
+      rejections << ["Extend"] unless !EnrollRegistry.feature_enabled?(:verification_due_on_options) || evidence.is_action_needed?
+      Eligibilities::Evidence::ADMIN_VERIFICATION_ACTIONS - rejections
     end
   end
 
@@ -577,7 +580,8 @@ module VerificationHelper
             person: person,
             type_id: gid,
             v_type: type,
-            f_member: @family.find_family_member_by_person(person)
+            f_member: @family.find_family_member_by_person(person),
+            due_on: @evidence.due_on
           }
         }
       }
@@ -590,9 +594,18 @@ module VerificationHelper
         id: "#{applicant.id}-#{evidence_kind.split.join('-')}",
         partial: {
           :partial => "financial_assistance/applications/verifications/admin_verification_actions",
-          locals: { application: application, applicant: applicant, evidence_kind: evidence_kind}
+          locals: { application: application, applicant: applicant, evidence_kind: evidence_kind, due_on: @evidence.due_on }
         }
       }
     end
+  end
+
+  def admin_evidence_due_on_options(due_on)
+    static_options = EnrollRegistry[:verification_due_on_options].setting(:static_options).item
+    static_options.map do |day_offset|
+      incremented_day_offset = day_offset.to_i + 1 # +1 to account for DR triggers at midnight
+      new_due_on = due_on + incremented_day_offset.days
+      [l10n('admin.verifications.extend.due_date_options.select.static_option', day_offset: day_offset, calculated_due_on: new_due_on.strftime('%m/%d/%Y')), incremented_day_offset]
+    end + [[l10n('admin.verifications.extend.due_date_options.set_manual_date'), 'manual']]
   end
 end

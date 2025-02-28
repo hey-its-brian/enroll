@@ -64,7 +64,7 @@ class VlpDocument < Document
   REJECT = 'Reject'.freeze
   VIEW_HISTORY = 'View History'.freeze
   CALL_HUB = 'Call HUB'.freeze
-  EXTEND = 'Extend'.freeze
+  EXTEND = EnrollRegistry.feature_enabled?(:verification_due_on_options) ? 'Set due date' : 'Extend'
 
   # admin action list for verification process, dropdown for each verification type
   ADMIN_VERIFICATION_ACTIONS = [VERIFY, REJECT, VIEW_HISTORY, CALL_HUB, EXTEND] # rubocop:disable Style/MutableConstant

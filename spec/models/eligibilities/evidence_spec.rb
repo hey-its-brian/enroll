@@ -73,6 +73,10 @@ RSpec.describe ::Eligibilities::Evidence, type: :model, dbclean: :after_each do
         applicant.schedule_verification_due_on + 30.days
       end
 
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:verification_due_on_options).and_return(false)
+      end
+
       it 'should update due date' do
         expect(income_evidence.due_on).to be_nil
         expect(income_evidence.verification_histories).to be_empty

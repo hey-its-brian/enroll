@@ -10,10 +10,11 @@ module Eligibilities
     include ::EventSource::Command
     include GlobalID::Identification
     include Eligibilities::Eventable
+    include L10nHelper
 
     DUE_DATE_STATES = %w[review outstanding rejected].freeze
 
-    ADMIN_VERIFICATION_ACTIONS = ["Verify", "Reject", "View History", "Call HUB", "Extend"].freeze
+    ADMIN_VERIFICATION_ACTIONS = ["Verify", "Reject", "View History", "Call HUB", EnrollRegistry.feature_enabled?(:verification_due_on_options) ? 'Set due date' : 'Extend'].freeze
 
     VERIFY_REASONS = EnrollRegistry[:verification_reasons].item
     VERIFY_REASONS += EnrollRegistry[:non_applicant_verification_reason].item if EnrollRegistry.feature_enabled?(:non_applicant_verification_reason)
@@ -170,9 +171,13 @@ module Eligibilities
       result
     end
 
+    def set_due_on(due_on, updated_by = nil, action = 'extend_due_date', extension_descriptor: nil)
+      self.due_on = due_on
+      add_verification_history(action, l10n('admin.verifications.extend.history_description', extension_descriptor: extension_descriptor, date: due_on), updated_by)
+    end
+
     def extend_due_on(period = 30.days, updated_by = nil, action = 'extend_due_date')
-      self.due_on = verif_due_date + period
-      add_verification_history(action, "Extended due date to #{due_on.strftime('%m/%d/%Y')}", updated_by)
+      self.set_due_on(verif_due_date + period, updated_by, action, extension_descriptor: EnrollRegistry.feature_enabled?(:verification_due_on_options) ? l10n('admin.verifications.extend.history_description.static', day_offset: period - 1) : '')
     end
 
     def auto_extend_due_on(period = 30.days, updated_by = nil)

@@ -62,8 +62,18 @@ module FinancialAssistance
       @family_member = FamilyMember.find(@evidence.evidenceable.family_member_id)
       enrollment = @family_member.family.enrollments.enrolled.first
       if enrollment.present? && @evidence.type_unverified?
-        if @evidence.extend_due_on(30.days, current_user.oim_id)
-          flash[:success] = "#{@evidence.title} verification due date was extended for 30 days."
+        extension = if params[:due_on].present?
+                      @evidence.set_due_on(params[:due_on], current_user.oim_id, extension_descriptor: l10n('admin.verifications.extend.history_description.manual'))
+                    else
+                      @evidence.extend_due_on(params[:extension_period]&.to_i || 30.days, current_user.oim_id)
+                    end
+        if extension
+          duration_string = if EnrollRegistry.feature_enabled?(:verification_due_on_options)
+                              l10n('admin.verifications.extend.success_message.until', date: @evidence.due_on.strftime('%m/%d/%Y'))
+                            else
+                              l10n('admin.verifications.extend.success_message.period')
+                            end
+          flash[:success] = l10n('admin.verifications.extend.success_message', type: @evidence.title, duration: duration_string)
           @success = true
         else
           flash[:danger] = "Unable to extend due date"

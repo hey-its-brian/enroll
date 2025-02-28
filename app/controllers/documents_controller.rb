@@ -190,10 +190,15 @@ class DocumentsController < ApplicationController
     @family_member = FamilyMember.find(params[:family_member_id])
     enrollment = @family_member.family.enrollments.verification_needed.where(:"hbx_enrollment_members.applicant_id" => @family_member.id).first
     if enrollment.present?
-      new_date = @verification_type.verif_due_date + 30.days
+      new_date = parse_date(params[:due_on]) || @verification_type.verif_due_date + (params[:extension_period].to_i.days || 30.days)
       updated = @verification_type.update_attributes(:due_date => new_date)
       if updated
-        flash[:success] = "#{@verification_type.type_name} verification due date was extended for 30 days."
+        duration_string = if EnrollRegistry.feature_enabled?(:verification_due_on_options)
+                            l10n('admin.verifications.extend.success_message.until', date: @verification_type.due_date.strftime('%m/%d/%Y'))
+                          else
+                            l10n('admin.verifications.extend.success_message.period')
+                          end
+        flash[:success] = l10n('admin.verifications.extend.success_message', type: @verification_type.type_name, duration: duration_string)
         set_min_due_date_on_family
         add_type_history_element
       end
@@ -265,7 +270,20 @@ class DocumentsController < ApplicationController
   def add_type_history_element
     actor = current_user ? current_user.email : "external source or script"
     action = params[:admin_action] || params[:action]
-    action = "Delete #{params[:doc_title]}" if action == "destroy"
+    case action
+    when "destroy"
+      action = "Delete #{params[:doc_title]}"
+    when "extend"
+      if EnrollRegistry.feature_enabled?(:verification_due_on_options)
+        due_date = @verification_type.due_date
+        extension_descriptor = if params[:extension_period]
+                                 l10n('admin.verifications.extend.history_description.static', day_offset: params[:extension_period].to_i - 1)
+                               else
+                                 l10n('admin.verifications.extend.history_description.manual')
+                               end
+        action = l10n('admin.verifications.extend.history_description', extension_descriptor: extension_descriptor, date: due_date)
+      end
+    end
     reason = params[:verification_reason]
     if @verification_type
       @verification_type.add_type_history_element(action: action.split('_').join(' '),
