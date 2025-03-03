@@ -51,7 +51,7 @@
                 pattern: "(?!666|000|9\\d{2})\\d{3}[\\- ]{0,1}(?!00)\\d{2}[\\- ]{0,1}(?!0{4})\\d{4}", oninvalid: "this.setCustomValidity('#{l10n('insured.consumer_roles.invalid_ssn_error')}')",
                 oninput: "this.setCustomValidity('')", readonly: @applicant.is_primary_applicant? || EnrollRegistry.feature_enabled?(:people_tab) %>
             <% else %>
-              <%= f.text_field :ssn, placeholder: "000-00-0000", class: "required mask-ssn", readonly: @applicant.is_primary_applicant? || f.object.is_a?(Forms::EmployeeRole) || EnrollRegistry.feature_enabled?(:people_tab) %>
+              <%= f.text_field :ssn, placeholder: "000-00-0000", class: "required mask-ssn", readonly: @applicant.is_primary_applicant? || f.object.is_a?(Forms::EmployeeRole) || EnrollRegistry.feature_enabled?(:people_tab)  %>
             <% end %>
           <% end %>
         </div>
