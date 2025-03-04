@@ -99,7 +99,6 @@
   <section>
     <h2 class="admin-designation"><%= l10n('insured.families.verifications.detail.admin_tools') %></h2>
     <section class="mb-3">
-      <h3><%= l10n('actions') %></h3>
       <% actions_hash = verification_admin_actions %>
       <label class="v-type-actions">
         <%= l10n('action') %>
@@ -108,7 +107,7 @@
       <%= render actions_hash[:partial] %>
     </section>
     <section>
-      <h3><%= l10n('view_history') %></h3>
+      <h3><%= l10n('history') %></h3>
       <%= link_to l10n('insured.families.verifications.detail.admin_tools.view_history'), verification_history_insured_families_path(person_id: @evidence.eligibility_state.subject.person_id, eligibility_kind: @evidence.eligibility_state.eligibility_item_key, evidence_key: @evidence.evidence_item_key) %>
     </section>
   </section>
