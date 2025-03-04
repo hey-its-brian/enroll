@@ -6,7 +6,7 @@ on:
 
 concurrency:
   group: qb-${{ github.ref }}
-  # cancel-in-progress: true #This is temporary to avoid trunk GHA collisions
+  cancel-in-progress: true
 
 env:
   REPORT_PATH: 'ci/cuke-report.json'
@@ -44,7 +44,7 @@ jobs:
           name: security-reports
           path: brakeman.html
   brakeman-engines:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -76,7 +76,7 @@ jobs:
           path: ${{ matrix.engine }}.brakeman.html
   engines:
     needs: [brakeman-engines]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     services:
       rabbitmq:
         image: rabbitmq:latest
@@ -163,6 +163,16 @@ jobs:
           echo bundle config
           bundle config path vendor/bundle
           NODE_ENV=test RAILS_ENV=test ./bin/webpack
+      - name: Install libffi7 dependency for ffi
+        if: matrix.engine-name == 'sponsored_benefits'
+        run: |
+          sudo apt-get update
+          # Try to install libffi7 directly
+          sudo apt-get install -y libffi7 || {
+            # If apt-get fails, download and install the package manually
+            wget http://archive.ubuntu.com/ubuntu/pool/main/libf/libffi/libffi7_3.3-4_amd64.deb
+            sudo dpkg -i libffi7_3.3-4_amd64.deb
+          }
       - name: test engine
         env:
           COVERAGE: 'true'
@@ -186,7 +196,7 @@ jobs:
           path: ${{ github.workspace }}/engines-${{ matrix.engine-name }}_${{ strategy.job-total }}-coverage.xml
   financial-assistance:
     needs: [brakeman-engines]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     services:
       rabbitmq:
         image: rabbitmq:latest
@@ -262,7 +272,7 @@ jobs:
           path: ${{ github.workspace }}/coverage/fa-${{ matrix.group }}_${{ strategy.job-total }}-coverage.xml
   benefit-sponsors:
     needs: [brakeman-engines]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     services:
       rabbitmq:
         image: rabbitmq:latest
@@ -338,6 +348,15 @@ jobs:
         run: |
           bundle config path vendor/bundle
           NODE_ENV=test RAILS_ENV=test ./bin/webpack
+      - name: Install libffi7 dependency for ffi
+        run: |
+          sudo apt-get update
+          # Try to install libffi7 directly
+          sudo apt-get install -y libffi7 || {
+            # If apt-get fails, download and install the package manually
+            wget http://archive.ubuntu.com/ubuntu/pool/main/libf/libffi/libffi7_3.3-4_amd64.deb
+            sudo dpkg -i libffi7_3.3-4_amd64.deb
+          }
       - name: test engine
         env:
           RSPEC_SPLIT_CONFIGURATION_PATH: '${{ github.workspace }}/ci/benefit_sponsors-split-config.json'
