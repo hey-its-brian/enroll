@@ -18,7 +18,7 @@ RSpec.describe ::Operations::People::BulkHubCallsForVerificationTypes, dbclean: 
     end
 
     it 'should return a success message' do
-      expect(@result.success).to eq([[person.hbx_id, person.verification_types.ssn_type.first.type_name, "not eligible for hub call"]])
+      expect(@result.success).to match(/Finished Bulk Hub Call, fetch the report from/)
     end
   end
 
@@ -85,7 +85,7 @@ RSpec.describe ::Operations::People::BulkHubCallsForVerificationTypes, dbclean: 
     end
 
     it 'should return a success message' do
-      expect(@result.success).to eq([[person.hbx_id, person.verification_types.ssn_type.first.type_name, "Request was sent to FedHub."]])
+      expect(@result.success).to match(/Finished Bulk Hub Call, fetch the report from/)
     end
   end
 
@@ -179,7 +179,7 @@ RSpec.describe ::Operations::People::BulkHubCallsForVerificationTypes, dbclean: 
       end
 
       it 'should return a success message' do
-        expect(@result.success).to match_array([[person.hbx_id, person.verification_types.ssn_type.first.type_name, "Request was sent to FedHub."], [person1.hbx_id, person1.verification_types.ssn_type.first.type_name, "not eligible for hub call"]])
+        expect(@result.success).to match(/Finished Bulk Hub Call, fetch the report from/)
       end
     end
 
@@ -210,8 +210,21 @@ RSpec.describe ::Operations::People::BulkHubCallsForVerificationTypes, dbclean: 
       end
 
       it 'should return a success message' do
-        expect(@result.success).to match_array([[person.hbx_id, person.verification_types.ssn_type.first.type_name, "Request was sent to FedHub."], [person1.hbx_id, person1.verification_types.ssn_type.first.type_name, "not eligible for hub call"]])
+        expect(@result.success).to match(/Finished Bulk Hub Call, fetch the report from/)
+      end
+
+      it 'should create a csv file' do
+        expect(File.exist?("#{Rails.root}/bulk_hub_call_report_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.csv")).to be_truthy
+      end
+
+      it 'should have the correct data in the csv file' do
+        csv_data = CSV.read("#{Rails.root}/bulk_hub_call_report_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.csv", headers: true)
+        expect(csv_data.size).to eq(2)
       end
     end
+  end
+
+  after :all do
+    File.delete("#{Rails.root}/bulk_hub_call_report_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.csv") if File.exist?("#{Rails.root}/bulk_hub_call_report_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.csv")
   end
 end

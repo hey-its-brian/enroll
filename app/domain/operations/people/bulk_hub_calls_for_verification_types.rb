@@ -5,6 +5,8 @@ require 'dry/monads/do'
 
 # Syntax:
 # Operations::People::BulkHubCallsForVerificationTypes.new.call({hbx_ids: [], verification_type_names: ["Social Security Number"]})
+# Report
+# Fetch the report from the root path bulk_hub_call_report_2021_09_29.csv
 module Operations
   module People
     # Bulk FedHubCalls for verification types
@@ -30,7 +32,8 @@ module Operations
       # @return [Dry::Monads::Result] the result of the operation
       def call(params)
         params = yield validate(params)
-        result = yield start(params)
+        csv_data = yield start(params)
+        result = yield generate_csv(csv_data)
 
         Success(result)
       end
@@ -69,6 +72,10 @@ module Operations
 
       def process_verification_type(person, verification_type)
         return [person.hbx_id, verification_type.type_name, 'not eligible for hub call'] unless eligible_for_hub_call?(verification_type, person.consumer_role)
+
+        verification_type.add_type_history_element(action: "Hub Request Initiated",
+                                                   modifier: "Admin",
+                                                   update_reason: "Bulk Hub Call")
 
         result = ::Operations::CallFedHub.new.call(
           person_id: person.id,
@@ -121,6 +128,19 @@ module Operations
         ssn_verification_indicator = ssa_response[:SSNVerificationIndicator]
         citizenship_verification_indicator = ssa_response[:PersonUSCitizenIndicator]
         ssn_verification_indicator && citizenship_verification_indicator
+      end
+
+      def generate_csv(csv_data)
+        field_names = %w[hbx_id verification_type message]
+        file_name = "#{Rails.root}/bulk_hub_call_report_#{Date.today.strftime('%Y_%m_%d')}.csv"
+        FileUtils.touch(file_name) unless File.exist?(file_name)
+
+        CSV.open(file_name, 'w+', headers: true) do |csv|
+          csv << field_names
+          csv_data.each { |row| csv << row }
+        end
+
+        Success("Finished Bulk Hub Call, fetch the report from the root path #{file_name}")
       end
     end
   end
