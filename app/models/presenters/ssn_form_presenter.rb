@@ -64,7 +64,11 @@ module Presenters
       family_member = @form_object.family_member
 
       @person_id = family_member.person_id.to_s
-      @disabled = family_member.is_primary_applicant
+      @disabled = if EnrollRegistry.feature_enabled?(:people_tab)
+                    family_member.person&.ssn.present? ? true : false
+                  else
+                    family_member.is_primary_applicant
+                  end
     end
 
     def sanitize_applicant
@@ -75,7 +79,11 @@ module Presenters
       @person_id = person.id.to_s
 
       obscure_ssn(person)
-      @disabled = @form_object.is_primary_applicant?
+      @disabled = if EnrollRegistry.feature_enabled?(:people_tab)
+                    @form_object.ssn.present? ? true : false
+                  else
+                    @form_object.is_primary_applicant?
+                  end
     end
 
     def obscure_ssn(subject = @form_object)

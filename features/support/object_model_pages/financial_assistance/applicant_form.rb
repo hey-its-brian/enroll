@@ -21,6 +21,10 @@ module FinancialAssistance
       'applicant[ssn]'
     end
 
+    def self.applicant_form_no_ssn
+      'applicant[no_ssn]'
+    end
+
     def self.applicant_relationship
       'applicant[relationship]'
     end

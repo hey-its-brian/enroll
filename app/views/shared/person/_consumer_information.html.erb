@@ -39,13 +39,13 @@
         <%= f.label :ssn, l10n("social_security") %>
         <% if EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields) %>
           <%= render partial: 'shared/person/ssn/consumer_ssn_field',
-            locals: { f: f, presenter: organize_ssn_params(f.object), default_disabled: readonly_status }
+            locals: { f: f, presenter: organize_ssn_params(f.object), default_disabled: (readonly_status && @person.ssn.present?) }
           %>
         <% else %>
           <% if EnrollRegistry.feature_enabled?(:ssn_ui_validation) %>
             <%= f.text_field :ssn, placeholder: "000-00-0000", class: "required keep-label mask-ssn",
               pattern: "(?!666|000|9\\d{2})\\d{3}[\\- ]{0,1}(?!00)\\d{2}[\\- ]{0,1}(?!0{4})\\d{4}", oninvalid: "this.setCustomValidity('#{l10n('insured.consumer_roles.invalid_ssn_error')}')",
-              oninput: "this.setCustomValidity('')", disabled: readonly_status, readonly: f.object.is_a?(Forms::EmployeeRole) %>
+              oninput: "this.setCustomValidity('')", disabled: (readonly_status && @person.ssn.present?), readonly: f.object.is_a?(Forms::EmployeeRole) %>
           <% else %>
             <%= f.text_field :ssn, placeholder: "000-00-0000", class: "required mask-ssn", disabled: readonly_status,
               readonly: f.object.is_a?(Forms::EmployeeRole) %>
@@ -54,7 +54,7 @@
       </div>
       <div class="col-sm col-md-6 col-lg-3 p-0 pt-md-4 no-ssn-container mr-auto">
         <%= f.label :no_ssn, class: "mt-1 d-inline-block" do %>
-          <%= f.check_box :no_ssn, disabled: readonly_status || @person.try(:ssn) %>
+          <%= f.check_box :no_ssn, disabled: readonly_status && @person.ssn.present? %>
           <span class='no_ssn'>&nbsp;<%= l10n("do_not_have_ssn") %></span>
         <% end %>
 

@@ -5,6 +5,10 @@ And(/^consumer clicks on pencil symbol next to primary person$/) do
 end
 
 And(/^consumer edits the dependent of the application$/) do
+  sleep 2
+  application.reload
+  dependent = application.applicants.last
+  FactoryBot.create(:person, hbx_id: dependent.person_hbx_id)
   find(IvlIapFamilyInformation.edit_dependent_button).click
 end
 

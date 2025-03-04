@@ -71,20 +71,21 @@
           </div>
 
           <div class="d-flex mb-md-4 <%= 'new_dependent' unless is_editing %>">
+            <% ssn_enabled = EnrollRegistry.feature_enabled?(:people_tab) ? is_editing && dependent.ssn.present? : false %>
             <div class="col-md-6 col-lg-3 p-0">
               <%= f.label :ssn, l10n("social_security") %>
-              <% if EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields) && !(EnrollRegistry.feature_enabled?(:people_tab) && is_editing) %>
+              <% if EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields) %>
                 <%= render partial: 'shared/person/ssn/consumer_ssn_field',
-                  locals: { f: f, presenter: organize_ssn_params(f.object, @person.primary_family.id) }
+                  locals: { f: f, presenter: organize_ssn_params(f.object, @person.primary_family.id), default_disabled: ssn_enabled  }
                 %>
               <% else %>
                 <% if EnrollRegistry.feature_enabled?(:ssn_ui_validation) %>
                   <%= f.text_field :ssn, placeholder: "000-00-0000", class: "required keep-label mask-ssn dependent-ssn-input",
                     pattern: "(?!666|000|9\\d{2})\\d{3}[\\- ]{0,1}(?!00)\\d{2}[\\- ]{0,1}(?!0{4})\\d{4}",
-                    disabled: readonly_status || (EnrollRegistry.feature_enabled?(:people_tab) && !f.object.new_record?),
+                    disabled: ssn_enabled,
                     data: {'error_message': l10n('insured.consumer_roles.invalid_ssn_error')} %>
                 <% else %>
-                  <%= f.text_field :ssn, placeholder: "000-00-0000", class: "required", disabled: readonly_status || (EnrollRegistry.feature_enabled?(:people_tab) && is_editing) %>
+                  <%= f.text_field :ssn, placeholder: "000-00-0000", class: "required", disabled: ssn_enabled  %>
                 <% end %>
               <% end %>
             </div>

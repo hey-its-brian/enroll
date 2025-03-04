@@ -148,7 +148,7 @@ end
 Then(/^.+ should see disabled ssn & dob fields$/) do
   if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
     [:dependent_ssn, :dependent_dob].each do |selector|
-      element = find(IvlManageFamilyPage.send(selector))
+      element = find(IvlManageFamilyPage.send(selector), visible: :all)
       expect(element[:disabled]).to eq "true"
     end
   else

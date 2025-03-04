@@ -64,7 +64,7 @@ And(/(.*) has a dependent in (.*) relationship with age (.*) than 26/) do |role,
               when 'Resident'
                 FactoryBot.create :person, :with_resident_role, :with_active_resident_role, dob: dob
               else
-                FactoryBot.create :person, :with_consumer_role, :with_active_consumer_role, dob: dob
+                FactoryBot.create :person, :with_consumer_role, :with_active_consumer_role, :with_ssn, dob: dob
               end
   fm = FactoryBot.create :family_member, family: family, person: dependent
   final_person = @person || user.person
