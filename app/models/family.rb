@@ -1133,8 +1133,7 @@ class Family
                     assister_role_id: assister_role_id,
                     start_date: TimeKeeper.datetime_local,
                     current_assister_account_id: current_assister_agency&.id }
-    ::Operations::Families::HireAssisterAgency.new.call(hire_params)
-    # publish_assister_hired_event(hire_params)
+    publish_assister_hired_event(hire_params)
   end
 
   def publish_assister_hired_event(hire_params)
@@ -1142,17 +1141,6 @@ class Family
     event.success.publish if event.success?
   rescue StandardError => e
     Rails.logger.error { "Couldn't publish assister hired event due to #{e.backtrace}" }
-  end
-
-  def notify_assister_update_on_impacted_enrollments_to_edi(opts = {})
-    return false unless EnrollRegistry.feature_enabled?(:send_broker_hired_event_to_edi) ||
-                        EnrollRegistry.feature_enabled?(:send_broker_fired_event_to_edi)
-
-    enrollments.each do |enr|
-      enr.notify_of_broker_update(opts)
-    end
-
-    true
   end
 
   # Terminate the active Broker agency for this family
@@ -1166,9 +1154,8 @@ class Family
   end
 
   def publish_assister_fired_event(terminate_params)
-    ::Operations::Families::TerminateAssisterAgency.new.call(terminate_params)
-    # event = event('events.family.assisters.assister_fired', attributes: terminate_params)
-    # event.success.publish if event.success?
+    event = event('events.family.assisters.assister_fired', attributes: terminate_params)
+    event.success.publish if event.success?
   rescue StandardError => e
     Rails.logger.error { "Couldn't publish assister fired event due to #{e.backtrace}" }
   end

@@ -277,19 +277,19 @@ describe Family, type: :model, dbclean: :around_each do
       let(:assister_agency_profile) { FactoryBot.build(:benefit_sponsors_organizations_assister_agency_profile)}
       let(:writing_agent)         { FactoryBot.create(:assister_role, benefit_sponsors_assister_agency_profile_id: assister_agency_profile.id) }
 
-      # it "trigger assister assister hired event" do
-      #   expect_any_instance_of(Events::Family::Brokers::BrokerHired).to receive(:publish)
-      #   carols_family.hire_assister_agency(writing_agent.id)
-      # end
+      it "trigger assister assister hired event" do
+        expect_any_instance_of(Events::Family::Assisters::AssisterHired).to receive(:publish)
+        carols_family.hire_assister_agency(writing_agent.id)
+      end
 
-      # it "trigger assister fired event" do
-      #   carols_family.assister_agency_accounts.new(benefit_sponsors_assister_agency_profile_id: assister_agency_profile.id,
-      #                                              writing_agent_id: writing_agent.id,
-      #                                              start_on: Time.now,
-      #                                              is_active: true)
-      #   expect_any_instance_of(Events::Family::Brokers::BrokerFired).to receive(:publish)
-      #   carols_family.terminate_assister_agency(writing_agent.id)
-      # end
+      it "trigger assister fired event" do
+        carols_family.assister_agency_accounts.new(benefit_sponsors_assister_agency_profile_id: assister_agency_profile.id,
+                                                   writing_agent_id: writing_agent.id,
+                                                   start_on: Time.now,
+                                                   is_active: true)
+        expect_any_instance_of(Events::Family::Assisters::AssisterFired).to receive(:publish)
+        carols_family.terminate_assister_agency(writing_agent.id)
+      end
     end
   end
 

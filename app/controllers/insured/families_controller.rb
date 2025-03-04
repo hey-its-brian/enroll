@@ -497,7 +497,6 @@ class Insured::FamiliesController < FamiliesController
     assister_agency = @family&.current_assister_agency
 
     if assister_agency.present?
-      @family.notify_assister_update_on_impacted_enrollments_to_edi({family_id: @family&.id.to_s})
       assister_agency.destroy
       redirect_to :action => "home", flash: {notice: "Successfully deleted."}
     else
