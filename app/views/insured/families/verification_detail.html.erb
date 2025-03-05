@@ -43,7 +43,7 @@
         <span tabindex="0" onkeydown="handleButtonKeyDown(event, 'file-input')" class="btn btn-secondary btn-file text-nowrap mr-2">
           <i class="fa fa-upload" aria-hidden="true"></i>
           <label>
-            <%= l10n('upload_documents') %>
+            <%= l10n('upload_document') %>
             <%= file_field_tag "file[]", type: :file, accept: accepted_file_types.join(','), tabindex:"-1", :multiple => true, value: "Upload Documents", class: 'doc-upload-file', :'data-target' => "file-manager.fileInput", :'data-action' => "change->file-manager#accumulateAttachments" %>
           </label>
         </span>

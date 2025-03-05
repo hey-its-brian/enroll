@@ -4,15 +4,7 @@
 class IvlDocumentDetail
 
   def self.doc_detail_breadcrumb
-    '.interaction-click-control-document-detail'
-  end
-
-  def self.back_to_individual_top_btn
-    'a[class="button interaction-click-control-back-to-individual"]'
-  end
-
-  def self.back_to_individual_bottom_btn
-    '#previous_button'
+    '.interaction-click-control-verification-detail'
   end
 
   def self.actions_upload_dropdown

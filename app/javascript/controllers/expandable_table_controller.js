@@ -9,22 +9,26 @@ export default class extends Controller {
   // Setup actionable rows
   connect() {
     // prepend a caret icon to the first cell of each row
+    const hasExpandable = this.rowTargets.some((row) => { return this.#isExpandable(row) });
+
     this.rowTargets.forEach(row => {
-      if(!this.#isExpandable(row)) { return; }
-
-      const actions = [ "click", "keydown" ].map((eventType) => { return `${eventType}->${this.identifier}#handleEvent` }).join(" ");
-      row.setAttribute('data-action', actions);
-      row.setAttribute('tabindex', '0');
-
       const firstCell = row.querySelector('td');
       const originalContent = Array.from(firstCell.children)
-  
-      const caretDiv = document.createElement('div');
-      caretDiv.classList.add('caret-icon', 'mr-2');
-
       const newContent = document.createElement('div');
+
+      if(this.#isExpandable(row)) {
+        const actions = [ "click", "keydown" ].map((eventType) => { return `${eventType}->${this.identifier}#handleEvent` }).join(" ");
+        row.setAttribute('data-action', actions);
+        row.setAttribute('tabindex', '0');
+
+        const caretDiv = document.createElement('div');
+        caretDiv.classList.add('caret-icon', 'mr-1');
+        newContent.appendChild(caretDiv);
+      } else if (hasExpandable) {
+        newContent.classList.add('ml-3');
+      }
+
       newContent.classList.add('d-flex', 'align-items-center');
-      newContent.appendChild(caretDiv);
       originalContent.forEach(child => {
         newContent.appendChild(child);
       });
@@ -32,6 +36,7 @@ export default class extends Controller {
       while (firstCell.firstChild) {
         firstCell.removeChild(firstCell.firstChild);
       }
+
       firstCell.appendChild(newContent);
     });
 

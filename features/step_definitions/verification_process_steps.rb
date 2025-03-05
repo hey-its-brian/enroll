@@ -103,7 +103,7 @@ Then(/^the Transaction History table is present$/) do
 end
 
 And(/^.+ clicks on the back button of the Verification History page$/) do
-  find(IvlVerificationHistory.back_to_individual_btn).click
+  find(IvlVerificationHistory.back_to_verification_detail_btn).click
 end
 
 And(/^.+ clicks on the Document Detail breadcrumb$/) do
