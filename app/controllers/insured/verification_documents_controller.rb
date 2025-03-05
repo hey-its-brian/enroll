@@ -70,7 +70,15 @@ class Insured::VerificationDocumentsController < ApplicationController
   end
 
   def alive_status_authorization?
-    return true if can_display_type?(@verification_type)
+    obj = if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+            Family.where(id: params[:family]).first
+            &.eligibility_determination&.subjects&.by_person(params[:person_id])&.first
+            &.eligibility_states&.by_type(params[:eligibility_kind])&.first
+            &.evidence_states&.by_key(params[:evidence_key])&.first
+          else
+            @verification_type
+          end
+    return true if can_display_type?(obj)
 
     flash[:error] = "You are not authorized to upload this document"
     redirect_to verification_insured_families_path
