@@ -437,7 +437,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.insured.families.verifications.detail.document_upload.disclaimer' => "Choose your file with the document upload button. You can upload %{file_types} of up to %{max_size}MBs",
   :'en.insured.families.verifications.detail.uploaded_document' => "Uploaded Document(s)",
   :'en.insured.families.verifications.detail.submit_document' => "Submit Document(s)",
-  :'en.insured.families.verifications.detail.upload_history' => "%{verification_type} History",
+  :'en.insured.families.verifications.detail.upload_history' => "%{verification_type} Upload History",
   :'en.insured.families.verifications.detail.document.name' => "Document Name",
   :'en.insured.families.verifications.detail.document.submitted_on' => "Submitted On",
   :'en.insured.families.verifications.detail.document.details' => "Document Details",

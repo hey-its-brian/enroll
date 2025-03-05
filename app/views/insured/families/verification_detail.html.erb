@@ -12,7 +12,7 @@
 <% if display_upload_for_verification?(@evidence) %>
   <section class="my-4" data-cuke='upload-documents'>
     <h2><%= l10n('insured.families.verifications.detail.verification_details') %></h2>
-    <p><%= l10n(EnrollRegistry.feature_enabled?(:show_new_documents_tab_text) ? 'insured.verification_information' : 'insured.verification_information_old') %></p>
+    <p><%= l10n('insured.verification_information_old') %></p>
 
     <div class="mb-4">
       <% disable_list_flag = EnrollRegistry.feature_enabled?(:disable_documents_we_accept_list) %>
