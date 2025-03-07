@@ -194,13 +194,38 @@ RSpec.describe ::Operations::Eligibilities::BuildFamilyDetermination,
       person2.consumer_role.update(:is_applying_coverage => false)
     end
 
-    it 'should not build and perist determination' do
+    it 'should build and persist determination successfully' do
       result = subject.call(required_params)
-      expect(result.success?).to be_falsey
-      expect(result.success).not_to be_a(Eligibilities::Determination)
-      expect(result.failure).to eq(
-        "Determination cannot be built as None of the family members are applying for coverage or Primary person's Consumer Role is missing."
-      )
+      expect(result.success?).to be_truthy
+      expect(result.success).to be_a(Eligibilities::Determination)
+    end
+  end
+
+  context "when migrating data regardless of consumer role" do
+    let(:migration_params) { required_params.merge(is_migrating: true) }
+
+    context "when primary person doesn't have consumer role" do
+      let!(:person_without_consumer) do
+        FactoryBot.create(
+          :person,
+          first_name: 'no_consumer',
+          last_name: 'role_person'
+        )
+      end
+
+      let!(:family_without_consumer) do
+        FactoryBot.create(:family, :with_primary_family_member, person: person_without_consumer)
+      end
+
+      let(:migration_params_without_consumer) do
+        { family: family_without_consumer, effective_date: effective_date, is_migrating: true }
+      end
+
+      it 'should build and persist determination for migration' do
+        result = subject.call(migration_params_without_consumer)
+        expect(result.success?).to be_truthy
+        expect(result.success).to be_a(Eligibilities::Determination)
+      end
     end
   end
 
@@ -231,6 +256,7 @@ RSpec.describe ::Operations::Eligibilities::BuildFamilyDetermination,
     it 'should not build and perist determination' do
       result = subject.call(required_params)
       expect(result.success?).to be_falsey
+      expect(result.failure).to eq("Determination cannot be built as Primary person's Consumer Role is missing.")
       expect(result.success).not_to be_a(Eligibilities::Determination)
     end
   end
