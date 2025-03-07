@@ -45,15 +45,7 @@ function init_faa_dependent_form() {
       
       // disable the button and change the text
       $button.attr('disabled', 'disabled')
-             .addClass('disabled')
-             .text('Please Wait...');
-      
-      // restore the button after 2 seconds
-      setTimeout(() => {
-        $button.text(originalText)
-               .attr('disabled', originalDisabled)
-               .attr('class', originalClasses);
-      }, 2000);
+             .addClass('disabled');
       
       // submit the form
       submitForm();
@@ -68,12 +60,16 @@ function init_faa_dependent_form() {
 
         $(".btn-confirmation").removeAttr('disabled');
 
-        var form = $('#new_dependent')[0] || $('#edit_dependent')[0];
+        var form = $('#new_applicant')[0] || $('#new_dependent')[0] || $('#edit_dependent')[0];
 
         if (!$("input#applicant_same_with_primary").is(":checked")) {
           $('#addressChangeConfirmation').modal('show');
         } else {
           PersonValidations.manageRequiredValidations($('#confirm-dependent'));
+          if (!form.checkValidity()){
+             $button.attr('disabled', 'disabled')
+             .removeClass('disabled');
+          }
         }
       }
     });
