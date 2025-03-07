@@ -33,9 +33,9 @@ module DropdownHelper
     else
       application = fetch_latest_determined_application(@family.id)
       applicant = application.applicants.detect { |appl| appl.family_member_id == GlobalID::Locator.locate(verification.eligibility_state.subject.gid)&.id }
-      kind = verification.evidence_item_key
+      evidence_key = verification.evidence_item_key
       option_args = [
-        [l10n('download'), "/financial_assistance/applications/#{application.id}/applicants/#{applicant.id}/verification_documents/download?key=#{doc_key}&evidence_kind=#{kind}}", :blank_target],
+        [l10n('download'), "/financial_assistance/applications/#{application.id}/applicants/#{applicant.id}/verification_documents/download?key=#{doc_key}&evidence_kind=#{evidence_key}", :blank_target],
         [l10n('remove'),
          financial_assistance.application_applicant_verification_documents_destroy_path(
            document,
@@ -43,7 +43,6 @@ module DropdownHelper
            :evidence => gid,
            :doc_key => doc_key,
            :doc_title => document.title&.titleize,
-           :evidence_kind => kind,
            :person_id => verification.eligibility_state.subject.person_id,
            :eligibility_kind => verification.eligibility_state.eligibility_item_key,
            :evidence_key => verification.evidence_item_key

@@ -82,7 +82,9 @@ module VerificationHelper
     outstanding_status?(previous_states, previous_states_history, obj)
   end
 
-  def can_display_evidence_state?(evidence_state)
+  def can_display_evidence_state?(evidence_state, is_admin: current_user.has_hbx_staff_role?)
+    return true if is_admin
+
     if is_evidence_market_eligibility?(evidence_state)
       case evidence_state.evidence_item_key
       when Eligibilities::EvidenceState::ALIVE_STATUS
@@ -100,6 +102,8 @@ module VerificationHelper
   end
 
   def can_display_v_type?(verif_type)
+    return true if current_user.has_hbx_staff_role?
+
     case verif_type&.type_name
     when VerificationType::ALIVE_STATUS
       EnrollRegistry.feature_enabled?(:alive_status) && had_outstanding_status?(verif_type)
@@ -115,9 +119,7 @@ module VerificationHelper
   # @param verif_type [Object, nil] The verification type object to check. Can be nil.
   # @return [Boolean] Returns true if the verification type should be displayed, false otherwise.
   def can_display_type?(obj, is_admin: current_user.has_hbx_staff_role?)
-    return true if is_admin
-
-    EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) ? can_display_evidence_state?(obj) : can_display_v_type?(obj)
+    EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) ? can_display_evidence_state?(obj, is_admin: is_admin) : can_display_v_type?(obj)
   end
 
   def ridp_status_translated(type, person)
