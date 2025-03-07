@@ -8,7 +8,7 @@
       <%= hidden_field_tag('family', f_member.family.id) %>       
       <div class='mb-2'>
         <label>
-          Reason
+          <%= l10n('admin.verifications.verify_reason') %>
           <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(::VlpDocument::VERIFICATION_REASONS), {prompt: ' Select Reason', required: true, class: 'col'}%></div>
         </label>
       </div>
@@ -27,7 +27,7 @@
       <%= hidden_field_tag('family', f_member.family.id) %>       
       <div class='mb-2'>
         <label>
-          Reason
+          <%= l10n('admin.verifications.reject_reason') %>
           <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(build_reject_reason_list(v_type)), {prompt: ' Select Reason', required: true, class: 'col'}%></div>
         </label>
       </div>

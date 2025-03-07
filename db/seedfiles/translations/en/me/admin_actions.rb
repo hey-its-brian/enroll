@@ -100,4 +100,6 @@ ADMIN_ACTIONS_TRANSLATIONS = {
   'en.admin.verifications.extend.history_description' => "Extended due date%{extension_descriptor} to %{date}",
   'en.admin.verifications.extend.history_description.manual' => " manually",
   'en.admin.verifications.extend.history_description.static' => " by %{day_offset} days",
+  'en.admin.verifications.reject_reason' => "Reject reason:",
+  'en.admin.verifications.verify_reason' => "Provide verification reason:",
 }
