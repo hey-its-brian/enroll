@@ -62,7 +62,7 @@ $(document).on('ajax:success', '#edit-dependent-person', function (event) {
     $(this).addClass('disabled').attr('tabindex', -1).blur();
     PersonValidations.manageRequiredValidations($('#confirm_member'));
 
-    if ($(this).closest('form')[0].checkValidity()) {
+    if (!$(this).closest('form')[0].checkValidity()) {
       $(this).removeClass('disabled').attr('tabindex', 0);
     }
   });

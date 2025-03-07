@@ -31,15 +31,6 @@ And(/user enters applicant info WITHOUT tribal member us citizen or naturalizati
   find(".btn", text: "CONFIRM MEMBER").click
 end
 
-And(/user will have to accept alert pop ups for missing fields$/) do
-  sleep 1
-  page.driver.browser.switch_to.alert.accept
-  sleep 1
-  page.driver.browser.switch_to.alert.accept
-  sleep 1
-  page.driver.browser.switch_to.alert.accept
-end
-
 Then(/the applicant should have been created successfully$/) do
   # Do this step better but you get the point
   sleep 2

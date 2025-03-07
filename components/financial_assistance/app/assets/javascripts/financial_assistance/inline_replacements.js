@@ -97,12 +97,12 @@ function init_faa_dependent_form() {
       const applicantSSN = document.getElementById('applicant_ssn')
       const applicantNoSSN = document.getElementById('applicant_no_ssn')
 
-      element.text("Please Wait...").addClass("disabled");
+      element.addClass("disabled");
 
       ApplicantValidations.manageRequiredValidations(element);
 
       if (!form.checkValidity() || !isGenderSelected(maleRadio, femaleRadio) || !isSsnSelected(applicantSSN, applicantNoSSN)) {
-        element.text(confirmButtonText).removeClass("disabled");
+        element.removeClass("disabled");
       }
     }
 

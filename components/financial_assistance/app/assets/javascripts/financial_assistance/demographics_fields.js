@@ -236,15 +236,44 @@ var ApplicantValidations = (function(window, undefined) {
     });
   }
 
+  function customValidityWithChangeEvent(element, message) {
+    // Set custom validity on all radio buttons in the group
+    element.each(function() {
+      this.setCustomValidity(message);
+    });
+
+    // One-time setup for the change event (if not already bound)
+    if (!element.data('validationBound')) {
+      element.data('validationBound', true);
+      element.on('change', function() {
+        // Clear the validity message on all radios in the group when any one changes
+        element.each(function() {
+          this.setCustomValidity('');
+        });
+      });
+    }
+  }
+
+  function reportValidityForRadioGroup(element) {
+    // Report validity on all radio buttons in the group
+    element.each(function() {
+      this.reportValidity();
+    });
+  }
+
   function validationForUsCitizenOrUsNational(e) {
     if ($('input[name="applicant[is_applying_coverage]"]').length > 0 && $('input[name="applicant[is_applying_coverage]"]').not(":checked").val() == "true"){
       return true;
     }
     if ($('input[name="applicant[us_citizen]"]').not(":checked").length == 2) {
-      resetConfirmButton();
-      alert('Please provide an answer for question: Are you a US Citizen or US National?');
+      var usCitizenRadios = $('input[name="applicant[us_citizen]"]');
+      customValidityWithChangeEvent(usCitizenRadios, "Please provide an answer for question: Are you a US Citizen or US National?")
       ApplicantValidations.restoreRequiredAttributes(e);
+      reportValidityForRadioGroup(usCitizenRadios)
+      return false;
     }
+
+    return true;
   }
 
   function validationForIndianTribeMember(e) {
@@ -267,10 +296,12 @@ var ApplicantValidations = (function(window, undefined) {
     var tribe_member_no = $("input#indian_tribe_member_no").is(':checked');
 
     if (!tribe_member_yes && !tribe_member_no){
-      resetConfirmButton();
-      alert("Please select the option for 'Are you a member of an American Indian or Alaska Native Tribe?'");
+      var indianTribeMemberRadios = $('input[name="applicant[indian_tribe_member]"]');
+      customValidityWithChangeEvent(indianTribeMemberRadios, "Please select the option for 'Are you a member of an American Indian or Alaska Native Tribe?'")
       ApplicantValidations.restoreRequiredAttributes(e);
-    };
+      reportValidityForRadioGroup(indianTribeMemberRadios)
+      return false;
+    }
 
     if (tribe_member_no){
       $('#tribal-state').val("");
@@ -289,15 +320,19 @@ var ApplicantValidations = (function(window, undefined) {
       if ($('.featured_tribes_selection').length > 0 && $('#tribal-state').val() == $('#enroll_state_abbr').val()){
         var tribe_codes_array = $('.tribe_codes:checked').map(function(){ return $(this).val(); }).get();
         if (tribe_codes_array.length < 1) {
-          resetConfirmButton();
-          alert("At least one tribe must be selected.");
+          var tribeCodesboxes = $('input[name="applicant[tribe_codes][]"]');
+          customValidityWithChangeEvent(tribeCodesboxes, "At least one tribe must be selected.")
           ApplicantValidations.restoreRequiredAttributes(e);
+          tribeCodesboxes[1].reportValidity();
+          return false;
         }
 
         if (tribe_codes_array.includes("OT") && $('input#tribal-name').val() == ""){
-            resetConfirmButton();
-            alert("Please provide an answer for 'Other' tribe name.");
+            var tribalNametext = $('input[name="applicant[tribal_name]"]');
+            customValidityWithChangeEvent(tribalNametext, "Please provide an answer for 'Other' tribe name.")
             ApplicantValidations.restoreRequiredAttributes(e);
+            tribalNametext[0].reportValidity();
+            return false;
         }
 
         if (!tribe_codes_array.includes("OT")){
@@ -322,10 +357,13 @@ var ApplicantValidations = (function(window, undefined) {
       return true;
     }
     if ($('input[name="applicant[is_incarcerated]"]').not(":checked").length == 2) {
-      resetConfirmButton();
-      alert('Please provide an answer for question: Are you currently incarcerated?');
+      var incarceratedRadios = $('input[name="applicant[is_incarcerated]"]');
+      customValidityWithChangeEvent(incarceratedRadios, 'Please provide an answer for question: Are you currently incarcerated?')
       ApplicantValidations.restoreRequiredAttributes(e);
+      reportValidityForRadioGroup(incarceratedRadios)
+      return false;
     }
+    return true;
   }
 
   function validationForNaturalizedCitizen(e) {
@@ -333,10 +371,13 @@ var ApplicantValidations = (function(window, undefined) {
       return true;
     }
     if ($('#naturalized_citizen_container').is(':visible') && $('input[name="applicant[naturalized_citizen]"]').not(":checked").length == 2) {
-      resetConfirmButton();
-      alert('Please provide an answer for question: Are you a naturalized citizen?');
+      var naturalizedRadios = $('input[name="applicant[naturalized_citizen]"]');
+      customValidityWithChangeEvent(naturalizedRadios, 'Please provide an answer for question: Are you a naturalized citizen?')
       ApplicantValidations.restoreRequiredAttributes(e);
+      reportValidityForRadioGroup(naturalizedRadios)
+      return false;
     }
+    return true;
   }
 
   function validationForEligibleImmigrationStatuses(e) {

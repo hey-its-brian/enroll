@@ -13,6 +13,5 @@ Feature: User can create/edit personal info (dob, address, etc.) of applicant an
     Then the user will navigate to the FAA Household Info page for the corresponding application.
     When user clicks the Add New Person Button
     And user enters applicant info WITHOUT tribal member us citizen or naturalization status and submits form
-    And user will have to accept alert pop ups for missing fields
     And user fills in the missing fields and clicks submit
     Then the applicant should have been created successfully
