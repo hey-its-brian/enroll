@@ -36,18 +36,14 @@ module FinancialAssistance
       else
         params[:file].each do |file|
           doc_uri = Aws::S3Storage.save(file_path(file), 'id-verification')
-          if doc_uri.present?
-            if update_documents(file_name(file), doc_uri)
-              add_verification_history(file)
-              flash[:notice] = "File Saved"
-              @success = true
-            else
-              flash[:error] = "Could not save file. #{@doc_errors.join('. ')}"
-              redirect_back(fallback_location: redirect_location)
-              break
-            end
+          if doc_uri.present? && update_documents(file_name(file), doc_uri)
+            add_verification_history(file)
+            flash_type, flash_message = EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) ? [:success, "Document successfully Submitted"] : [:notice, "File Saved"]
+            flash[flash_type] = flash_message
+            @success = true
           else
-            flash[:error] = "Could not save file"
+            flash[:error] = "Could not save file#{". #{@doc_errors.join('. ')}" if @doc_errors.present?}"
+            redirect_back(fallback_location: redirect_location) and return nil
           end
         end
       end

@@ -32,8 +32,8 @@ class Insured::VerificationDocumentsController < ApplicationController
           flash[flash_type] = flash_message
           @success = true
         else
-          flash[:error] = "Could not save file.#{" #{@doc_errors.join('. ')}" if @doc_errors.present?}"
-          redirect_back(fallback_location: redirect_location)
+          flash[:error] = "Could not save file#{". #{@doc_errors.join('. ')}" if @doc_errors.present?}"
+          redirect_back(fallback_location: redirect_location) and return nil
         end
       end
     end
