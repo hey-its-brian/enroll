@@ -7,3 +7,11 @@ ignore:
   # as it does not impact this particular application.
   # Further information available in the SECURITY.md file.
   - GHSA-vvfq-8hwr-qm4m
+  # Ignore security advisory  https://github.com/rack/rack/security/advisories/GHSA-8cgq-6mh2-7j6v
+  # as it does not impact this particular application.
+  # Further information available in the SECURITY.md file.
+  - GHSA-8cgq-6mh2-7j6v
+  # Ignore security advisory  https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-r95h-9x8f-r3f7
+  # as it does not impact this particular application.
+  # Further information available in the SECURITY.md file.
+  - GHSA-r95h-9x8f-r3f7

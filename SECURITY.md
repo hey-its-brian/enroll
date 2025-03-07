@@ -97,3 +97,68 @@ There are few endpoints in Enroll which accept XML data.  Of those, none perform
 #### Actions Taken
 
 Given that Enroll is not considered vulnerable against either underlying CVE, this specific security advisory has been added to the bundler audit ignore file.
+
+
+### CVE-2025-27111 - Rack
+
+Issue:  https://github.com/rack/rack/security/advisories/GHSA-8cgq-6mh2-7j6v
+
+Source: https://gitlab.gnome.org/GNOME/libxml2/-/issues/828
+
+Summary: Rack::Sendfile can be exploited by crafting input that includes newline characters to manipulate log entries.
+
+Description: Rack versions before 2.2.12, 3.0.13, and 3.1.11 contain an escape sequence injection vulnerability that may allow an attacker to inject malicious characters into log files. This could lead to log manipulation or, in some cases, remote code execution depending on log processing mechanisms.
+
+**Vulnerability:**
+
+Escape Sequence Injection vulnerability in Rack lead to Possible Log Injection
+
+**Mitigation:**
+
+Enroll does not log untrusted user inputs in a way that could be exploited by this vulnerability. We are not sending any sensitive information via logging mechanism from our system. Additionally, there are no known attack vectors where an attacker could inject escape sequences that would result in a security risk. We are not using any Rack::Sendfile.
+
+**Actions Taken:**
+
+1. Reviewed logging mechanisms to ensure no exposure to this vulnerability.
+2. Added GHSA-8cgq-6mh2-7j6v to the Bundler audit ignore file.
+3. Verified Usage of Rack::Sendfile on our repo.
+
+
+**Ongoing Measures:**
+1. Regular review of dependencies and their security advisories.
+
+
+### Advisory GHSA-r95h-9x8f-r3f7 - Nokogiri 2025-03-07
+
+#### Vulnerability
+
+Source: https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-r95h-9x8f-r3f7
+
+This advisory addresses this vulnerabilities:
+1. CVE-2024-34459
+
+These vulnerabilities are present in the underlying `libxml2` implementation packaged with Nokogiri versions `< 1.18.3`.
+
+#### CVE-2024-34459
+
+Source: https://gitlab.gnome.org/GNOME/libxml2/-/commit/2876ac53
+
+**Description:**
+
+```
+Nokogiri v1.16.5 upgrades its dependency libxml2 to 2.12.7 from 2.12.6. This issue is happening with libxml2's xmllint tool.
+```
+
+Notes from the libxml2 bugtracker state:
+
+```
+There is no impact to Nokogiri users because the issue is present only in libxml2's xmllint tool which Nokogiri does not provide or expose.
+```
+
+**Mitigation:**
+
+this a low severity issue as it only affects the rarely used --htmlout option of xmllint. We are not using this on our system.
+
+#### Actions Taken
+
+Given that Enroll is not considered vulnerable against either underlying CVE, this specific security advisory has been added to the bundler audit ignore file.
