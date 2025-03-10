@@ -370,8 +370,33 @@ describe ::FinancialAssistance::Services::SummaryService do
 
         describe "Personal Information subsection" do
           let(:subsection_index) { 0 }
+          let(:expected_title) { "Personal Information" }
 
-          it_behaves_like "subsection structure", expected_title: "Personal Information", expected_rows: { "Age" => 40, "Gender" => "Male", "Relationship" => "Self", "Status" => nil, "Incarcerated" => "N/A", "Needs Coverage?" => "N/A" }
+          let(:dob_age) do
+            current_date = TimeKeeper.date_of_record
+            app_dob = applicant.dob
+            dob_age = current_date.year - app_dob.year - ((current_date.month > app_dob.month || (current_date.month == app_dob.month && current_date.day >= app_dob.day)) ? 0 : 1)
+            dob_age
+          end
+
+          let(:expected_rows) do
+            {
+              "Age" => dob_age,
+              "Gender" => "Male",
+              "Relationship" => "Self",
+              "Status" => nil,
+              "Incarcerated" => "N/A",
+              "Needs Coverage?" => "N/A"
+            }
+          end
+
+          it "includes the subsection structure subsection with the expected rows" do
+            expect(subsection).not_to be_nil
+            expect(subsection[:title]).to eq(expected_title) unless expected_title.include?("nested") # nested subsections do not have titles
+            rows = subsection[:rows]
+            # reduce sut from descriptive hash to a hash of key-value pairs for easy comparison
+            expect(rows.reduce({}) { |stripped_rows, row| stripped_rows.update(row[:key] => row[:value]) }).to eq(expected_rows)
+          end
         end
 
         describe "Tax Information subsection" do
