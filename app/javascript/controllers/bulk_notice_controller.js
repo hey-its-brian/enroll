@@ -5,8 +5,16 @@ export default class extends Controller {
   static targets = ['recipientList', 'moreRecipients', 'lessRecipients']
 
   connect() {
-    StimulusReflex.register(this)
-    window.addEventListener('load', () => this.displayExpandLink())
+    StimulusReflex.register(this);
+    this.element.addEventListener('submit', this.onFormSubmit.bind(this));
+    window.addEventListener('load', () => this.displayExpandLink());
+  }
+
+  onFormSubmit(event) {
+    const textFieldOverride = document.querySelector('textarea[name="admin_bulk_notice[audience_ids]"]');
+    if (textFieldOverride) {
+      textFieldOverride.setAttribute('name', 'identifier_input');
+    }
   }
 
   newIdentifierSuccess(element) {

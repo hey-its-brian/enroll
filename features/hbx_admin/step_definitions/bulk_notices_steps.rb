@@ -13,6 +13,10 @@ When(/^Admin selects Broker Agency$/) do
   select 'Broker Agency'
 end
 
+When(/^Admin selects Assister Agency$/) do
+  select 'Assister Agency'
+end
+
 When(/^Admin selects General Agency$/) do
   select 'General Agency'
 end
@@ -23,11 +27,18 @@ When(/^Admin fills form with (.*?) FEIN$/) do |name|
            employer("ACME").fein
          when "BrokerAgency"
            broker_agency_profile("ACME").fein
-         when "GeneralAgency"
-           general_agency_profile("ACME").fein
+         when "AssisterAgency"
+           assister_agency_profile("ACME").fein
          end
+  @current_fein = fein
   fill_in "bulk-notice-audience-identifiers", with: fein
-  find("body").click
+  textarea = find("#bulk-notice-audience-identifiers")
+  textarea.click
+  find("#bulk-notice-audience-identifiers").click
+  find("#bulk-notice-audience-identifiers:focus", wait: 2)
+
+  textarea.native.send_keys :tab
+  expect(page).to have_css(".badge-blue, .badge-alt-blue")
 end
 
 Then(/^Admin should see (.*?) badge$/) do |name|
@@ -36,8 +47,8 @@ Then(/^Admin should see (.*?) badge$/) do |name|
              employer("ACME").hbx_id
            when "BrokerAgency"
              broker_agency_profile("ACME").hbx_id
-           when "GeneralAgency"
-             general_agency_profile("ACME").hbx_id
+           when "AssisterAgency"
+             assister_agency_profile("ACME").hbx_id
            end
   expect(page).to have_css('span.badge', text: hbx_id)
 end
@@ -48,9 +59,9 @@ When(/^Admin fills in the rest of the form$/) do
 end
 
 When(/^Admin clicks on Preview button$/) do
-  click_on 'Preview'
+  find('#preview_submit').click
 end
 
 Then(/^Admin should see the Preview Screen$/) do
-  expect(page).to have_content('Preview')
+  expect(page).to have_css('h1', text: l10n("preview"))
 end

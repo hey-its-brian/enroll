@@ -29,7 +29,7 @@ class BulkNoticeReflex < ApplicationReflex
     # and then loops through all the audience_ids to generate badges
     # employee becomes employer, every other type as is
     audience_type = params[:admin_bulk_notice][:audience_type] == 'employee' ? 'employer' : params[:admin_bulk_notice][:audience_type]
-    audience_ids = params[:admin_bulk_notice][:audience_ids] || []
+    audience_ids = Array(params[:admin_bulk_notice][:audience_ids]) || []
 
     identifiers = element[:value]
     morph '#recipient-list', org_badges_for(identifiers.split(/\s| |, |,/m) + audience_ids, audience_type)
@@ -40,7 +40,7 @@ class BulkNoticeReflex < ApplicationReflex
     # which does audience type checks
     # employee becomes employer, every other type as is
     audience_type = params[:admin_bulk_notice][:audience_type] == 'employee' ? 'employer' : params[:admin_bulk_notice][:audience_type]
-    audience_ids = params[:admin_bulk_notice][:audience_ids] || []
+    audience_ids = Array(params[:admin_bulk_notice][:audience_ids]) || []
 
     morph '#recipient-list', org_badges_for(audience_ids, audience_type)
   end
