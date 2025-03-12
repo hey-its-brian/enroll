@@ -59,11 +59,11 @@ $(document).on('ajax:success', '#edit-dependent-person', function (event) {
 
       $('.btn-confirmation').removeAttr('disabled');
     }
-    $(this).addClass('disabled').attr('tabindex', -1).blur();
+    $(this).attr('disabled', 'disabled').addClass('disabled').attr('tabindex', -1).blur();
     PersonValidations.manageRequiredValidations($('#confirm_member'));
 
     if (!$(this).closest('form')[0].checkValidity()) {
-      $(this).removeClass('disabled').attr('tabindex', 0);
+      $(this).removeAttr('disabled').removeClass('disabled').attr('tabindex', 0);
     }
   });
 });

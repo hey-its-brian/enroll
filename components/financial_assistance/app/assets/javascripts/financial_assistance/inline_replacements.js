@@ -12,10 +12,21 @@ function init_faa_dependent_form() {
   var bs4 = document.documentElement.dataset.bs4
 
   if (bs4) {
+    function disableButton(button) {
+      button.attr('disabled', 'disabled')
+            .addClass('disabled');
+    };
+
+    function enableButton(button) {
+      button.removeAttr('disabled')
+            .removeClass('disabled');
+    };
+
     $(document).ready(function() {
       $.inputMasks();
-
       $('.field_with_errors > *').unwrap();
+      // enable confirm member button
+      enableButton($('#confirm-dependent'));
 
       $('#applicant_same_with_primary').click(function(){
         if($(this).is(':checked')){
@@ -35,21 +46,11 @@ function init_faa_dependent_form() {
     $(document).off('click', '#confirm-dependent');
     $(document).on('click', '#confirm-dependent', function(e) {
       const $button = $(this);
-
       e.preventDefault();
-      
-      // Store original text and state
-      const originalText = $button.text();
-      const originalDisabled = $button.prop('disabled');
-      const originalClasses = $button.attr('class');
-      
-      // disable the button and change the text
-      $button.attr('disabled', 'disabled')
-             .addClass('disabled');
-      
+      // disable confirm member button
+      disableButton($button);
       // submit the form
       submitForm();
-
 
       function submitForm() {
         if ($("input#applicant_same_with_primary").is(":checked")) {
@@ -58,7 +59,8 @@ function init_faa_dependent_form() {
           $("#dependent-address input.required, dependent-address select.required, #dependent-address .address_required").attr('required', true);
         }
 
-        $(".btn-confirmation").removeAttr('disabled');
+        // addressChange pop up Confirmation button
+        enableButton($(".btn-confirmation"));
 
         var form = $('#new_applicant')[0] || $('#new_dependent')[0] || $('#edit_dependent')[0];
 
@@ -66,11 +68,12 @@ function init_faa_dependent_form() {
           $('#addressChangeConfirmation').modal('show');
         } else {
           PersonValidations.manageRequiredValidations($('#confirm-dependent'));
-          if (!form.checkValidity()){
-             $button.attr('disabled', 'disabled')
-             .removeClass('disabled');
-          }
         }
+
+        // enable confirm member button
+        if (!form.checkValidity()){
+          enableButton($button);
+       }
       }
     });
   } else {
