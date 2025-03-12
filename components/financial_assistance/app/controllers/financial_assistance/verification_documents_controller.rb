@@ -24,7 +24,7 @@ module FinancialAssistance
 
       @doc_errors = []
       redirect_location = if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
-                            main_app.verification_detail_insured_families_path(person_id: params['person_id'], eligibility_kind: params['eligibility_kind'], evidence_key: params['evidence_key'])
+                            main_app.verification_detail_insured_families_path(person_id: params['person_id'], eligibility_kind: params['eligibility_kind'], evidence_key: params['evidence_kind'])
                           else
                             main_app.verification_insured_families_path
                           end
@@ -88,7 +88,7 @@ module FinancialAssistance
       end
       respond_to do |format|
         if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
-          format.html { redirect_to main_app.verification_detail_insured_families_path(person_id: params['person_id'], eligibility_kind: params['eligibility_kind'], evidence_key: params['evidence_key']) }
+          format.html { redirect_to main_app.verification_detail_insured_families_path(person_id: params['person_id'], eligibility_kind: params['eligibility_kind'], evidence_key: params['evidence_kind']) }
         else
           format.html { redirect_to main_app.verification_insured_families_path }
         end

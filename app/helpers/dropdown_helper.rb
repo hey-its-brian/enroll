@@ -45,7 +45,7 @@ module DropdownHelper
            :doc_title => document.title&.titleize,
            :person_id => verification.eligibility_state.subject.person_id,
            :eligibility_kind => verification.eligibility_state.eligibility_item_key,
-           :evidence_key => verification.evidence_item_key
+           :evidence_kind => verification.evidence_item_key
          ), :delete]
       ]
     end
