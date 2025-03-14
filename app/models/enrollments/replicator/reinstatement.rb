@@ -3,6 +3,7 @@
 module Enrollments
   module Replicator
     class Reinstatement
+      include LoggerUtils
 
       attr_accessor :base_enrollment, :new_effective_date, :new_aptc, :year, :duplicate_hbx, :reinstate_enrollment, :eligible_dependents
 
@@ -103,11 +104,14 @@ module Enrollments
             unless base_enrollment.ineligible_for_termination?(new_effective_date)
               base_enrollment.terminate_coverage!
               base_enrollment.update_attributes!(terminated_on: new_effective_date - 1.day)
+              log_info("Terminated base enrollment: #{base_enrollment.id}  due to reinstatement")
             end
           elsif base_enrollment.enrollment_superseded_and_eligible_for_cancellation?(new_effective_date)
             base_enrollment.cancel_coverage_for_superseded_term!
+            log_info("Cancelled base enrollment: #{base_enrollment.id}  due to reinstatement")
           elsif base_enrollment.may_cancel_coverage?
             base_enrollment.cancel_coverage!
+            log_info("Cancelled base enrollment: #{base_enrollment.id}  due to reinstatement")
           end
         end
 
