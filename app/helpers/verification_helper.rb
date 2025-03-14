@@ -369,19 +369,26 @@ module VerificationHelper
   end
 
   def build_evidence_admin_actions_list(evidence, f_member)
-    rejections = []
-    if is_evidence_market_eligibility?(evidence)
-      return [] if EnrollRegistry.feature_enabled?(:ai_an_self_attestation) && evidence.evidence_item_key == Eligibilities::EvidenceState::AMERICAN_INDIAN_STATUS
+    is_evidence_market_eligibility?(evidence) ? build_evidence_admin_actions_list_market(evidence, f_member) : build_evidence_admin_actions_list_aptc_csr(evidence)
+  end
 
-      rejections << ::VlpDocument::CALL_HUB if f_member.consumer_role.aasm_state == 'unverified' || Eligibilities::EvidenceState::ADMIN_CALL_HUB_VERIFICATION_TYPES.exclude?(evidence.evidence_item_key)
-      rejections << ::VlpDocument::REJECT if verification_type_status(evidence, f_member) == :outstanding
-      rejections << ::VlpDocument::EXTEND unless !EnrollRegistry.feature_enabled?(:verification_due_on_options) || evidence.is_action_needed?
-      ::VlpDocument::ADMIN_VERIFICATION_ACTIONS - rejections
-    else
-      rejections << ["Reject"] if evidence.status == :outstanding
-      rejections << ["Extend"] unless !EnrollRegistry.feature_enabled?(:verification_due_on_options) || evidence.is_action_needed?
-      Eligibilities::Evidence::ADMIN_VERIFICATION_ACTIONS - rejections
-    end
+  def build_evidence_admin_actions_list_market(evidence, f_member)
+    rejections = []
+    return [] if EnrollRegistry.feature_enabled?(:ai_an_self_attestation) && evidence.evidence_item_key == Eligibilities::EvidenceState::AMERICAN_INDIAN_STATUS
+
+    rejections << ::VlpDocument::CALL_HUB if f_member.consumer_role.aasm_state == 'unverified' || Eligibilities::EvidenceState::ADMIN_CALL_HUB_VERIFICATION_TYPES.exclude?(evidence.evidence_item_key)
+    rejections << ::VlpDocument::REJECT if verification_type_status(evidence, f_member) == :outstanding
+    rejections << ::VlpDocument::EXTEND unless !EnrollRegistry.feature_enabled?(:verification_due_on_options) || (evidence.is_action_needed? && pundit_allow(HbxProfile, :can_extend_due_date?))
+
+    ::VlpDocument::ADMIN_VERIFICATION_ACTIONS - rejections
+  end
+
+  def build_evidence_admin_actions_list_aptc_csr(evidence)
+    rejections = []
+    rejections << Eligibilities::Evidence::REJECT if evidence.status == :outstanding
+    rejections << Eligibilities::Evidence::EXTEND unless !EnrollRegistry.feature_enabled?(:verification_due_on_options) || (evidence.is_action_needed? && pundit_allow(HbxProfile, :can_extend_due_date?))
+
+    Eligibilities::Evidence::ADMIN_VERIFICATION_ACTIONS - rejections
   end
 
   def build_admin_actions_list(obj, f_member)

@@ -444,7 +444,7 @@ class HbxProfilePolicy < ApplicationPolicy
   end
 
   def can_extend_due_date?
-    individual_market_admin?
+    EnrollRegistry.feature_enabled?(:verification_due_on_options) ? (user_hbx_staff_role&.permission&.can_set_evidence_due_date || false) : individual_market_admin?
   end
 
   def can_update_verification_type?

@@ -124,7 +124,15 @@ Then(/^the consumer visits verification page$/) do
   # find(".interaction-click-control-documents", wait: 5).click
 end
 
-Then(/^the consumer visits the verification tab$/) do
+Then(/^the (.*) visits the verification tab$/) do |user|
+  if user == 'admin'
+    visit family_index_dt_exchanges_hbx_profiles_path
+    expect(page).to have_css('table')
+    within('table') do
+      find('tr:first-child a').click
+    end
+    expect(page).to have_content('Verifications')
+  end
   visit verification_insured_families_path(tab: 'verification')
 end
 
@@ -178,10 +186,10 @@ Then(/the consumer should see the verification detail page/) do
   expect(page).to have_content("We verify the information you give us using electronic data sources. If the data sources do not match the information you gave us, we need you to provide documents to prove what you told us.")
 end
 
-When(/the .* vists the verification detail page for a verification with (.*) status/) do |status|
+When(/the (.*) vists the verification detail page for a verification with (.*) status/) do |user, status|
   steps %(
     Given the consumer has a verification with #{status} status
-    And the consumer visits the verification tab
+    And the #{user} visits the verification tab
     And the consumer selects a household member
     And the consumer selects the verification for the member
   )
@@ -243,6 +251,11 @@ Then(/the consumer should see the individual detail page/) do
     "such as whether or not this person need health coverage. " \
     "Select a type of information we verify to view details and take any action needed."
   )
+end
+
+Then(/the user should (.*) see the set due date option/) do |negation|
+  is_visible = !negation.include?('not')
+  expect(page).send(is_visible ? :to : :not_to, have_select(with_options: ["Extend"]))
 end
 
 Then(/^the selectric class is visible$/) do

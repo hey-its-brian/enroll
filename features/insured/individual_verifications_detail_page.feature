@@ -2,11 +2,11 @@ Feature: Individual Verification Details Page
   Background:
     Given bs4_consumer_flow feature is enabled
     And show_new_verifications_household_summary feature is enabled
+
+  Scenario Outline: Consumer vists the Verification Details Page for a status
     And a consumer exists
     And the consumer is logged in
     And consumer has successful ridp
-
-  Scenario Outline: Consumer vists the Verification Details Page for a status 
     When the consumer vists the verification detail page for a verification with <status> status
     Then the consumer should the summary header with the <user_facing_status> status
     And the consumer should see the summary header <with_or_without_reason> the status reason
@@ -24,14 +24,36 @@ Feature: Individual Verification Details Page
       | curam        | verified           | without                | not see                          | not see                       |
 
   Scenario: Consumer presses the Back to Individual button
+    And a consumer exists
+    And the consumer is logged in
+    And consumer has successful ridp
     When the consumer vists the verification detail page
     And the consumer presses the Back to Individual button
     Then the consumer should see the individual detail page
 
-  Scenario Outline: Admin extends the verification due date
+  Scenario Outline: Admin sees the extend verification due date option
+    And a consumer exists
     And EnrollRegistry verification_due_on_options feature is enabled
-    And the user with hbx_staff role is logged in
-    And the consumer vists the verification detail page for a verification with outstanding status
+    And all permissions are present
+    And that a user with a HBX staff role with <subrole> subrole exists and is logged in
+    And the admin vists the verification detail page for a verification with outstanding status
+    Then the user should <should_see> see the set due date option
+
+  Examples:
+    | subrole            | should_see |
+    | hbx_staff          | see        |
+    | hbx_read_only      | not see    |
+    | super_admin        | see        |
+    | hbx_csr_tier1      | not see    |
+    | hbx_csr_tier2      | not see    |
+    | hbx_tier3          | not see    |
+
+  Scenario Outline: Admin extends the verification due date
+    And a consumer exists
+    And EnrollRegistry verification_due_on_options feature is enabled
+    And Hbx Admin exists
+    And that a user with a HBX staff role with HBX staff subrole exists and is logged in
+    And the admin vists the verification detail page for a verification with outstanding status
     And the user selects the Extend option from the actions dropdown
     And the user selects the <date_option> option from the extend due date dropdown
     When Admin clicks confirm

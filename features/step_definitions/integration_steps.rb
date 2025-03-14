@@ -270,7 +270,7 @@ Given(/^Hbx Admin exists$/) do
                             can_reset_password: true, view_the_configuration_tab: true, can_access_new_consumer_application_sub_tab: true,
                             can_complete_resident_application: true, can_add_sep: true, can_view_username_and_email: true, can_view_application_types: true,
                             view_personal_info_page: true, can_access_outstanding_verification_sub_tab: true, can_access_identity_verification_sub_tab: true,
-                            can_access_accept_reject_paper_application_documents: true, can_delete_identity_application_documents: true,
+                            can_access_accept_reject_paper_application_documents: true, can_delete_identity_application_documents: true, can_set_evidence_due_date: true,
                             can_access_accept_reject_identity_documents: true, can_edit_aptc: true, can_drop_enrollment_members: true, can_add_pdc: true)
 
   person = people['Hbx Admin']
@@ -303,7 +303,7 @@ Given(/^a Hbx admin with super admin access exists$/) do
                               modify_family: true, modify_employer: true, revert_application: true, list_enrollments: true,
                               send_broker_agency_message: true, approve_broker: true, approve_ga: true,
                               modify_admin_tabs: true, view_admin_tabs: true, can_update_ssn: true, can_complete_resident_application: true,
-                              can_access_new_consumer_application_sub_tab: true, can_access_accept_reject_paper_application_documents: true, can_access_pay_now: true)
+                              can_access_new_consumer_application_sub_tab: true, can_access_accept_reject_paper_application_documents: true, can_access_pay_now: true,can_set_evidence_due_date: true)
   person = people['Hbx Admin']
   hbx_profile = FactoryBot.create :hbx_profile, :no_open_enrollment_coverage_period
   user = FactoryBot.create :user, :with_family, :with_hbx_staff_role, email: person[:email], password: person[:password], password_confirmation: person[:password]

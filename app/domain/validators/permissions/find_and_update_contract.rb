@@ -58,6 +58,7 @@ module Validators
             :can_access_accept_reject_identity_documents,
             :can_access_accept_reject_paper_application_documents,
             :can_delete_identity_application_documents,
+            :can_set_evidence_due_date,
             :can_access_pay_now,
             :view_agency_staff,
             :manage_agency_staff,

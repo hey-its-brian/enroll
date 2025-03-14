@@ -38,4 +38,4 @@ CSV.open("#{Rails.root}/permissions_update_report.csv", 'w', force_quotes: true)
 end
 
 p 'Permissions update report generated successfully with the name permissions_update_report.csv at the root of the project.'
-p '****** Password protect the file and attach it to the PIVOTAL ticket. ******'
+p '****** Password protect the file and attach it to the CLICKUP ticket. ******'
