@@ -70,7 +70,7 @@
           <%= select_tag :extension_period, options_for_select(admin_evidence_due_on_options(due_on)), prompt: l10n('admin.verifications.extend.due_date_options.select'), class: 'd-block col-5', required: true, allow_blank: false %>
         </label>
         <label id="manual-due-on" class="my-3 hidden">
-          <%= l10n('admin.verifications.extend.enter_manual_date') %>
+          <%= l10n('admin.verifications.extend.due_date_options.enter_manual_date') %>
           <%= date_field_tag :due_on, date_field_value(due_on), min: date_field_value, required: true, disabled: true, class: 'd-block' %>
         </label>
       <% end %>
