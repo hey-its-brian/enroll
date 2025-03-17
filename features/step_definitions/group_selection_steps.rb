@@ -654,15 +654,30 @@ end
 # end
 
 Then(/^\w+ should be able to see the new enrollment tile styling$/) do
-  expect(page).to have_css('.plan-tile')
+  expect(page).to have_css('.hbx-enrollment-refactored-panel')
   expect(page).to_not have_css('.hbx-enrollment-panel')
 end
 
 Then(/^\w+ should see the dental plan below the health plan$/) do
-  expect(find_all(".plan-year")[0].text.downcase).to include('health')
-  expect(find_all(".plan-year")[0].text.downcase).not_to include('dental')
-  expect(find_all(".plan-year")[1].text.downcase).to include('dental')
-  expect(find_all(".plan-year")[1].text.downcase).not_to include('health')
+  if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+    if page.has_css?('.plan-year', text: '2025 HEALTH COVERAGE INDIVIDUAL & FAMILY')
+      # This string is build out for 2025 enrollment tiles for DC. It needs to be cleaned up once we can separate the cucumbers from DC context.
+      expect(page).to have_css('.plan-year', text: '2025 HEALTH COVERAGE INDIVIDUAL & FAMILY')
+      expect(page).to have_css('.plan-year', text: '2025 DENTAL COVERAGE INDIVIDUAL & FAMILY')
+    else
+      expect(find_all(".plan-type")[0].text.downcase).to include('health')
+      expect(find_all(".plan-type")[0].text.downcase).not_to include('dental')
+      # The class 'plan-type' is used for both plan-types and plan-kinds in app/views/insured/families/_enrollment_refactored.html.erb.
+      # This is leading to some confusion and a longer list of tags using the 'plan-type' class. This should be cleaned up as it doesn't make sense in the html.erb file and any corresponding .scss and .js files.
+      expect(find_all(".plan-type")[2].text.downcase).to include('dental')
+      expect(find_all(".plan-type")[2].text.downcase).not_to include('health')
+    end
+  else
+    expect(find_all(".plan-year")[0].text.downcase).to include('health')
+    expect(find_all(".plan-year")[0].text.downcase).not_to include('dental')
+    expect(find_all(".plan-year")[1].text.downcase).to include('dental')
+    expect(find_all(".plan-year")[1].text.downcase).not_to include('health')
+  end
 end
 
 When(/^\w+ should be able to see Actions dropdown$/) do

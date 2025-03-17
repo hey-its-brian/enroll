@@ -1,7 +1,6 @@
 Feature: Insured Plan Shopping on Individual market
 
   Background:
-    Given bs4_consumer_flow feature is disable
     Given choose_shopping_method feature is disabled
     Given the temporary_configuration_enable_multi_tax_household_feature feature is disabled
     Given Individual has not signed up as an HBX user
@@ -15,6 +14,7 @@ Feature: Insured Plan Shopping on Individual market
     And Individual sees form to enter personal information
 
   Scenario: New insured user purchases on individual market
+    Given bs4_consumer_flow feature is enabled
     When the individual clicks continue on the personal information page
     And Individual agrees to the privacy agreeement
     And the person named Patrick Doe is RIDP verified
@@ -30,6 +30,7 @@ Feature: Insured Plan Shopping on Individual market
     Then Individual clicks on the Continue button to go to the Individual home page
 
   Scenario: New insured user purchases on individual market and click on 'Make changes' button on enrollment
+    Given bs4_consumer_flow feature is enabled
     When the individual clicks continue on the personal information page
     And Individual agrees to the privacy agreeement
     And the person named Patrick Doe is RIDP verified

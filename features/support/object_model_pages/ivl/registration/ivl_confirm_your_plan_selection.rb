@@ -16,7 +16,7 @@ class IvlConfirmYourPlanSelection
   end
 
   def self.confirm_btn
-    '.interaction-click-control-confirm' unless EnrollRegistry[:bs4_consumer_flow].enabled?
+    '#btn-continue'
   end
 
   def self.dup_enrollment_warning_1

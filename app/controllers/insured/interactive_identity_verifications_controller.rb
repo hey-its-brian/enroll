@@ -4,10 +4,11 @@ module Insured
   class InteractiveIdentityVerificationsController < ApplicationController
     layout 'progress' if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
 
-    before_action :enable_bs4_layout if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+    before_action :enable_bs4_layout
     before_action :set_current_person
     before_action :set_consumer_bookmark_url, only: [:service_unavailable, :failed_validation]
 
+    layout :determine_layout
     def new
       authorize @person, :complete_ridp?
       service = ::IdentityVerification::InteractiveVerificationService.new
@@ -127,7 +128,12 @@ module Insured
     end
 
     def enable_bs4_layout
-      @bs4 = true
+      @bs4 = true if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+    end
+
+    def determine_layout
+      return 'progress' if @bs4
+      'application'
     end
   end
 end

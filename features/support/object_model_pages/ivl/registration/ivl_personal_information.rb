@@ -99,7 +99,7 @@ class IvlPersonalInformation
 
   def self.male_radiobtn
     if EnrollRegistry[:bs4_consumer_flow].enabled?
-      '.interaction-choice-control-person-gender-0'
+      '.interaction-choice-control-person-gender-1'
     else
       'label[for="radio_male"] span'
     end
@@ -107,18 +107,30 @@ class IvlPersonalInformation
 
   def self.female_radiobtn
     if EnrollRegistry[:bs4_consumer_flow].enabled?
-      ''
+      '.interaction-choice-control-person-gender-2'
     else
       'label[for="radio_female"] span'
     end
   end
 
   def self.reason_yes_radiobtn
-    'label[for="reason_accept"] span'
+    if EnrollRegistry[:bs4_consumer_flow].enabled?
+      '#reason_accept'
+    else
+      'label[for="reason_accept1"] span'
+    end
   end
 
   def self.reason_no_radiobtn
-    'label[for="reason_accept1"] span'
+    if EnrollRegistry[:bs4_consumer_flow].enabled?
+      '#reason_accept1'
+    else
+      'label[for="reason_accept1"] span'
+    end
+  end
+
+  def self.reason_no_checkbox
+    '.interaction-choice-control-value-no-qle-checkbox'
   end
 
   def self.continue_btn
@@ -238,7 +250,11 @@ class IvlPersonalInformation
   end
 
   def self.tribe_state_dropdown
+    if EnrollRegistry[:bs4_consumer_flow].enabled?
+      '.interaction-choice-control-tribal-state-24'
+    else
     '#tribal-state-container .selectric span.label'
+    end
   end
 
   def self.tribal_id
@@ -358,19 +374,26 @@ class IvlPersonalInformation
   end
 
   def self.select_state_dropdown
-    'div.home-div span.label'
+    if EnrollRegistry[:bs4_consumer_flow].enabled?
+      'person_addresses_attributes_0_state'
+    else
+      'div.home-div span.label'
+    end
   end
 
   def self.select_me_state
-    '.interaction-choice-control-person-addresses-attributes-0-state-24'
+    if EnrollRegistry[:bs4_consumer_flow].enabled?
+      '.interaction-choice-control-person-addresses-attributes-0-state-24'
+    else
+      '.interaction-choice-control-inputstate-9'
+    end
   end
 
   def self.select_dc_state
     if EnrollRegistry[:bs4_consumer_flow].enabled?
       '.interaction-choice-control-person-addresses-attributes-0-state-24'
     else
-    #'.interaction-choice-control-person-addresses-attributes-0-state-9'
-      '.interaction-choice-control-inputstate-9'
+      '.interaction-choice-control-person-addresses-attributes-0-state-9'
     end
   end
 

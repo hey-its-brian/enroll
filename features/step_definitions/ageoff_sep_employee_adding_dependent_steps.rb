@@ -14,17 +14,23 @@ When(/(.*) selects a current qle date/) do |_person|
   expect(page).to have_content "Married"
   # screenshot("past_qle_date")
   fill_in "qle_date", :with => TimeKeeper.date_of_record.strftime("%m/%d/%Y")
-  within '#qle-date-chose' do
-
-    find('.interaction-click-control-continue')
-    find('.interaction-click-control-continue').click unless page.has_content?("Based on the information you entered, you may be eligible to enroll now but there is limited time")
+  if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+    within '#qle-date-chose' do
+      find('.interaction-click-control-continue-to-next-step').click
+    end
+    find('.interaction-click-control-continue-to-next-step').click unless page.has_content?("Based on the information you entered, you may be eligible to enroll now but there is limited time")
+  else
+    within '#qle-date-chose' do
+      find('.interaction-click-control-continue')
+      find('.interaction-click-control-continue').click unless page.has_content?("Based on the information you entered, you may be eligible to enroll now but there is limited time")
+    end
   end
 end
 
 Then(/(.*) sees the QLE confirmation message and clicks on continue$/) do |_person|
   expect(page).to have_content "Based on the information you entered, you may be eligible to enroll now but there is limited time"
   # screenshot("valid_qle")
-  click_button "Continue"
+  find('.interaction-click-control-continue-to-next-step').click
 end
 
 When(/^.+ sees the new dependent form$/) do

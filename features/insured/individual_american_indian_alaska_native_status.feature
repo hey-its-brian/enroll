@@ -2,7 +2,7 @@
 
 Feature: UI Validations for American Indian Alaska Native
     Background:
-        Given bs4_consumer_flow feature is disable
+        Given bs4_consumer_flow feature is enabled
         Given AI AN Details feature is enabled
         Given Featured Tribe Selection feature is enabled
         Given Individual has not signed up as an HBX user

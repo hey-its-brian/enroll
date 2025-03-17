@@ -17,10 +17,7 @@ class Insured::GroupSelectionController < ApplicationController
     "other_cancel"
   ].freeze
 
-
-  layout 'progress', only: [:new, :edit_plan] if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
-  before_action :enable_bs4_layout, only: [:new, :edit_plan] if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
-
+  before_action :enable_bs4_layout, only: [:new, :edit_plan]
   before_action :initialize_common_vars, only: [:new, :create, :terminate_selection]
   before_action :validate_rating_address, only: [:create]
   before_action :set_cache_headers, only: [:new, :edit_plan]
@@ -29,6 +26,8 @@ class Insured::GroupSelectionController < ApplicationController
   helper_method :cancelation_reasons
   helper_method :show_cancellation_reason
   helper_method :show_termination_calendar?
+
+  layout :determine_layout
 
   def new
     set_bookmark_url
@@ -567,6 +566,11 @@ class Insured::GroupSelectionController < ApplicationController
   end
 
   def enable_bs4_layout
-    @bs4 = true
+    @bs4 = true if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+  end
+
+  def determine_layout
+    return 'progress' if @bs4 && action_name.in?(['new', 'edit_plan'])
+    'application'
   end
 end

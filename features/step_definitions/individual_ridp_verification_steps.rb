@@ -39,11 +39,22 @@ And(/^Identity verification is OUTSTANDING$/) do
 end
 
 Then(/^the CONTINUE button is functionally DISABLED$/) do
-  expect(['disabled', 'true', '']).to include(find('.interaction-click-control-continue')['disabled'])
+  if EnrollRegistry[:bs4_consumer_flow].enabled?
+    expect(page).to have_selector('a.btn.disabled.interaction-click-control-continue-to-next-step#continue_button')
+  else
+    expect(['disabled', 'true', '']).to include(find('.interaction-click-control-continue')['disabled'])
+  end
 end
 
 Then(/^visibly DISABLED$/) do
-  expect(['disabled', 'true', '']).to include(find('.interaction-click-control-continue')['disabled'])
+  if EnrollRegistry[:bs4_consumer_flow].enabled?
+    expected_color = 'rgba(224, 222, 220, 1)'
+    element = find('a.btn.disabled.interaction-click-control-continue-to-next-step#continue_button')
+    background_color = element.native.style('background-color')
+    expect(background_color).to eq(expected_color)
+  else
+    expect(['disabled', 'true', '']).to include(find('.interaction-click-control-continue')['disabled'])
+  end
 end
 
 And(/^an uploaded application in REVIEW status is present$/) do
@@ -87,15 +98,15 @@ And(/^an uploaded application in VERIFIED status is present$/) do
   find(AdminHomepage.identity_ver_btn, wait: 5).click
   sleep 2
   find('td.sorting_1 a[class^="interaction-click-control"]').click
-  expect(page).to have_content('Application', wait: 5)
+  expect(page).to have_css('h4', text: l10n('application'), wait: 5)
+  ridp_id = Person.first.id
   within('#Application', wait: 10) do
-    find('.label', :text => 'Action').click
-    find('li', :text => 'Verify').click
+    find(".interaction-choice-control-v-action-#{ridp_id}-application-1").click
   end
-  find(IvlVerifyIdentity.select_reason_dropdown).click
-  find('li', :text => 'Document in EnrollApp').click
+  find('.interaction-choice-control-verification-reason-14').click
   find('.v-type-confirm-button').click
-  expect(page).to have_content('Application successfully verified.')
+  # the below text is generated on the back-end, so we are not referencing it via l10n
+  expect(page).to have_css('.alert-success', text: 'Application successfully verified.')
 end
 
 And(/^an uploaded Identity verification in VERIFIED status is present$/) do
@@ -105,22 +116,22 @@ And(/^an uploaded Identity verification in VERIFIED status is present$/) do
   find(AdminHomepage.identity_ver_btn, wait: 5).click
   find('td.sorting_1 a[class^="interaction-click-control"]').click
   expect(page).to have_content('Identity', wait: 5)
-  within('#Identity', wait: 5) do
-    find('.label', :text => 'Action').click
-    find('li', :text => 'Verify').click
+  identity_id = Person.first.id
+  within('#Identity', wait: 10) do
+    find(".interaction-choice-control-v-action-#{identity_id}-identity-1").click
   end
-  find(IvlVerifyIdentity.select_reason_dropdown).click
-  find('li', :text => 'Document in EnrollApp').click
+  find('.interaction-choice-control-verification-reason-1').click
   find('.v-type-confirm-button').click
-  expect(page).to have_content('Identity successfully verified.')
+  # the below text is generated on the back-end, so we are not referencing it via l10n
+  expect(page).to have_css('.alert-success', text: 'Identity successfully verified.')
 end
 
 Then(/^the CONTINUE button is functionally ENABLED$/) do
-  find('.interaction-click-control-continue').visible?
+  expect(page).to have_selector('a.btn.interaction-click-control-continue-to-next-step#continue_button')
 end
 
 Then(/^visibly ENABLED$/) do
-  find('.interaction-click-control-continue').visible?
+  find('.interaction-click-control-continue-to-next-step').visible?
 end
 
 When(/^the Admin clicks “Continue” on the doc upload page$/) do
@@ -133,14 +144,18 @@ When(/^the Admin clicks “Continue” on the doc upload page$/) do
 end
 
 Then(/^the Admin is unable to complete the application for the consumer until ID is verified$/) do
-  expect(['disabled', 'true', '']).to include(find('.interaction-click-control-continue')['disabled'])
+  if EnrollRegistry[:bs4_consumer_flow].enabled?
+    expect(page).to have_selector('a.btn.disabled.interaction-click-control-continue-to-next-step#continue_button')
+  else
+    expect(['disabled', 'true', '']).to include(find('.interaction-click-control-continue')['disabled'])
+  end
 end
 
 
 When(/^the consumer selects “I Agree”$/) do
-  expect(page).to have_content('Authorization and Consent')
+  expect(page).to have_css('h1', text: l10n('insured.consumer_roles.ridp_agreement.heading'))
   find(IvlAuthorizationAndConsent.i_agree_radiobtn).click
-  click_link "Continue"
+  find(".interaction-click-control-continue-to-next-step").click
 end
 
 Then(/^the consumer will be directed to answer the Experian Identity Proofing questions$/) do
@@ -153,7 +168,7 @@ And(/^that the consumer has answered the Experian Identity Proofing questions$/)
   find(IvlVerifyIdentity.pick_answer_a).click
   find(IvlVerifyIdentity.pick_answer_c).click
   # screenshot("identify_verification")
-  click_button "Submit"
+  find('.interaction-click-control-submit').click
 end
 
 When(/^Experian is unable to verify Identity for the consumer$/) do
@@ -173,14 +188,15 @@ When(/^an uploaded Identity verification in VERIFIED status is present on failed
   find('td.sorting_1 a[class^="interaction-click-control"]').click
   sleep 2
   expect(page).to have_content('Identity')
-  within('#Identity', wait: 5) do
-    find('.label', :text => 'Action').click
-    find('li', :text => 'Verify').click
+  expect(page).to have_css('h4', text: l10n('application'), wait: 5)
+  ridp_id = Person.first.id
+  within('#Application', wait: 10) do
+    find(".interaction-choice-control-v-action-#{ridp_id}-application-1").click
   end
-  find(IvlVerifyIdentity.select_reason_dropdown).click
-  find('li', :text => 'Document in EnrollApp').click
+  find('.interaction-choice-control-verification-reason-14').click
   find('.v-type-confirm-button').click
-  expect(page).to have_content('Identity successfully verified.')
+  # the below text is generated on the back-end, so we are not referencing it via l10n
+  expect(page).to have_css('.alert-success', text: 'Application successfully verified.')
 end
 
 When(/^an uploaded application in VERIFIED status is present on failed experian screen$/) do
@@ -191,14 +207,15 @@ When(/^an uploaded application in VERIFIED status is present on failed experian 
   find('td.sorting_1 a[class^="interaction-click-control"]').click
   sleep 2
   expect(page).to have_content('Application', wait: 5)
-  within('#Application', wait: 5) do
-    find('.label', :text => 'Action').click
-    find('li', :text => 'Verify').click
+  expect(page).to have_css('h4', text: l10n('application'), wait: 5)
+  ridp_id = Person.first.id
+  within('#Application', wait: 10) do
+    find(".interaction-choice-control-v-action-#{ridp_id}-application-1").click
   end
-  find(IvlVerifyIdentity.select_reason_dropdown).click
-  find('li', :text => 'Document in EnrollApp').click
+  find('.interaction-choice-control-verification-reason-14').click
   find('.v-type-confirm-button').click
-  expect(page).to have_content('Application successfully verified.')
+  # the below text is generated on the back-end, so we are not referencing it via l10n
+  expect(page).to have_css('.alert-success', text: 'Application successfully verified.')
 end
 
 Then(/^HBX admin should see the dependents form$/) do
@@ -227,9 +244,14 @@ And(/^HBX admin click on back to my account button$/) do
 end
 
 Then(/^HBX admin should land on home page$/) do
-  expect(page).to have_content EnrollRegistry[:enroll_app].setting(:short_name).item
+  if EnrollRegistry[:bs4_consumer_flow].enabled?
+    expect(page).to have_css('h1', text: "My CoverME.gov")
+  else
+    expect(page).to have_content EnrollRegistry[:enroll_app].setting(:short_name).item
+  end
 end
 
 And(/^I click on Continue button$/) do
   find(:xpath, "//*[@id='btn-continue']").click
 end
+

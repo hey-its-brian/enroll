@@ -167,6 +167,10 @@ Then(/Individual sees form to enter personal information with checked female gen
   expect(find("#radio_female", visible: false)).to be_checked
 end
 
+Then(/^.+ continues through authorization and consent page$/) do
+  find(IvlAuthorizationAndConsent.continue_btn).click
+end
+
 Then(/^.+ sees form to enter personal information$/) do
   find(IvlPersonalInformation.us_citizen_or_national_yes_radiobtn).click
   find(IvlPersonalInformation.naturalized_citizen_no_radiobtn).click
@@ -175,7 +179,6 @@ Then(/^.+ sees form to enter personal information$/) do
   #find(IvlPersonalInformation.tobacco_user_yes_radiobtn).click if tobacco_user_field_enabled?
   fill_in IvlPersonalInformation.address_line_one, :with => "4900 USAA BLVD NE"
   fill_in IvlPersonalInformation.address_line_two, :with => "212"
-
   if EnrollRegistry[:bs4_consumer_flow].enabled?
     fill_in IvlPersonalInformation.city, with: 'Augusta'
     find(IvlPersonalInformation.select_me_state).click
@@ -212,9 +215,8 @@ Then(/^.+ sees form to enter personal information but doesn't fill it out comple
   fill_in IvlPersonalInformation.address_line_one, :with => "4900 USAA BLVD NE"
   fill_in IvlPersonalInformation.address_line_two, :with => "212"
   fill_in IvlPersonalInformation.city, :with => "Washington"
-  find_all(IvlPersonalInformation.select_state_dropdown).first.click
-  find_all(:xpath, "//li[contains(., '#{EnrollRegistry[:enroll_app].setting(:state_abbreviation).item}')]").last.click
-  #fill_in IvlPersonalInformation.zip, :with => EnrollRegistry[:enroll_app].setting(:contact_center_zip_code).item
+  find_all(IvlPersonalInformation.select_dc_state).first.click
+  fill_in IvlPersonalInformation.zip, :with => EnrollRegistry[:enroll_app].setting(:contact_center_zip_code).item
   fill_in IvlPersonalInformation.home_phone, :with => "22075555555"
   sleep 2
 end
@@ -228,8 +230,7 @@ Then(/^.+ sees form to enter personal information but doesn't check every box$/)
   fill_in IvlPersonalInformation.address_line_one, :with => "4900 USAA BLVD NE"
   fill_in IvlPersonalInformation.address_line_two, :with => "212"
   fill_in IvlPersonalInformation.city, :with => "Washington"
-  find_all(IvlPersonalInformation.select_state_dropdown).first.click
-  find_all(:xpath, "//li[contains(., '#{EnrollRegistry[:enroll_app].setting(:state_abbreviation).item}')]").last.click
+  find_all(IvlPersonalInformation.select_dc_state).first.click
   fill_in IvlPersonalInformation.zip, :with => EnrollRegistry[:enroll_app].setting(:contact_center_zip_code).item
   fill_in IvlPersonalInformation.home_phone, :with => "22075555555"
   sleep 2
@@ -278,7 +279,7 @@ When(/^AI AN question is answered yes$/) do
 end
 
 Then(/^states dropdown should popup$/) do
-  expect(page.find("#tribal-state-container .selectric-items").present?).to be_truthy
+  expect(page.find("#tribal-state").present?).to be_truthy
 end
 
 Then(/^.+ should see error message (.*)$/) do |text|
@@ -314,13 +315,18 @@ And(/(.*) selects eligible immigration status$/) do |text|
       find(:xpath, '//label[@for="dependent_eligible_immigration_status_true"]').click
     end
   else
-    find(:xpath, '//label[@for="person_us_citizen_false"]').click
+    us_citizen_label = EnrollRegistry.feature_enabled?(:bs4_consumer_flow) ? 'us_citizen_false' : 'person_us_citizen_false'
+    immigration_status_checkbox_id = EnrollRegistry.feature_enabled?(:bs4_consumer_flow) ? 'eligible_immigration_status' : 'person_eligible_immigration_status'
+    immigration_status_label = EnrollRegistry.feature_enabled?(:bs4_consumer_flow) ? 'eligible_immigration_status_true' : 'person_eligible_immigration_status_true'
+
+    find(:xpath, "//label[@for='#{us_citizen_label}']").click
+
     if EnrollRegistry[:immigration_status_checkbox].enabled?
-      peis_checkbox = find('#person_eligible_immigration_status')
+      peis_checkbox = find("##{immigration_status_checkbox_id}")
       peis_checkbox.checked? ? peis_checkbox.double_click : peis_checkbox.click
     else
-      find('label[for=person_eligible_immigration_status_true]').click
-      choose 'person_eligible_immigration_status_true', visible: false, allow_label_click: true
+      find("label[for=#{immigration_status_label}]").click
+      choose immigration_status_label, visible: false, allow_label_click: true
     end
   end
 end
@@ -372,38 +378,36 @@ Then(/^Individual (.*) go to Authorization and Consent page$/) do |argument|
 end
 
 Then(/select I-551 doc and fill details/) do
-  find('.label', :text => 'Select document type', wait: 10).click
-  find('li', :text => 'I-551 – Permanent resident card', wait: 10).click
-  fill_in 'Alien Number', with: '987654323'
-  fill_in 'Card Number', with: 'aaa1231231231'
-  fill_in 'I-551 Expiration Date', with: TimeKeeper.date_of_record.to_s
-  click_link((TimeKeeper.date_of_record + 10.days).day)
+  find('.interaction-choice-control-immigration-doc-type-2').click
+  fill_in 'person[consumer_role][vlp_documents_attributes][0][alien_number]', with: '987654323'
+  fill_in 'person[consumer_role][vlp_documents_attributes][0][card_number]', with: 'aaa1231231231'
+  fill_in 'person[consumer_role][vlp_documents_attributes][0][expiration_date]', with: TimeKeeper.date_of_record.to_s
 end
 
 Then(/click citizen yes/) do
-  find(:xpath, '//label[@for="person_us_citizen_true"]').click
+  find(:xpath, '//label[@for="us_citizen_true"]').click
 end
 
 Then(/click citizen no/) do
-  find(:xpath, '//label[@for="person_us_citizen_false"]').click
+  find(:xpath, '//label[@for="us_citizen_false"]').click
 end
 
 When(/click eligible immigration status yes/) do
   if EnrollRegistry[:immigration_status_checkbox].enabled?
-    peis_checkbox = find('#person_eligible_immigration_status')
+    peis_checkbox = find('#eligible_immigration_status')
     peis_checkbox.checked? ? peis_checkbox.double_click : peis_checkbox.click
   else
-    find('label[for=person_eligible_immigration_status_true]', wait: 20).click
-    choose 'person_eligible_immigration_status_true', visible: false, allow_label_click: true
+    find('label[for=eligible_immigration_status_true]', wait: 20).click
+    choose 'eligible_immigration_status_true', visible: false, allow_label_click: true
   end
 end
 
 Then(/should find I-551 doc type/) do
-  find('.label', :text => 'I-551 – Permanent resident card', wait: 10)
+  find('.interaction-choice-control-immigration-doc-type-2')
 end
 
 And(/should find alien number/) do
-  find('#person_consumer_role_vlp_documents_attributes_0_alien_number')
+  find('#alien_number')
 end
 
 And(/Individual edits dependent/) do
@@ -451,30 +455,45 @@ Then(/^Individual should be on verification page/) do
 end
 
 When(/^.+ clicks on the Continue button of the Family Information page$/) do
-  find_all(IvlIapFamilyInformation.continue_btn)[1].click unless EnrollRegistry[:bs4_consumer_flow].enabled?
-  find(IvlIapFamilyInformation.continue_btn).click
+  if EnrollRegistry[:bs4_consumer_flow].enabled?
+    find_all('.interaction-click-control-continue-to-next-step')[0].click
+  else
+    find(IvlIapFamilyInformation.continue_btn).click
+  end
   sleep 10
 end
 
 When(/^Individual navigates to Sep Page$/) do
-  find_all(IvlIapFamilyInformation.continue_btn)[0].click
+  find_all(IvlChoosePlan.continue_btn)[0].click
 end
 
 When(/^Individual clicks on the continue button$/) do
   wait_for_ajax
-  find_all('.interaction-click-control-continue')[0].click
+  if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+    if page.has_css?('#continue_button')
+      find('#continue_button').click
+    elsif page.has_css?('#btn-continue')
+      find('#btn-continue').click
+    end
+  else
+    find('.interaction-click-control-continue').click
+  end
 end
 
 Then(/^.+ answers the questions of the Identity Verification page and clicks on submit/) do
   sleep 10
-  expect(page).to have_content IvlVerifyIdentity.verify_identity_text
+  if EnrollRegistry[:bs4_consumer_flow].enabled?
+    expect(page).to have_css('h1', text: IvlVerifyIdentity.verify_identity_text)
+  else
+    expect(page).to have_content IvlVerifyIdentity.verify_identity_text
+  end
   find(IvlVerifyIdentity.pick_answer_a).click
   find(IvlVerifyIdentity.pick_answer_c).click
   screenshot("identify_verification")
   find(IvlVerifyIdentity.submit_btn).click
   screenshot("override")
   if EnrollRegistry[:bs4_consumer_flow].enabled?
-    find_all(IvlVerifyIdentity.continue_application_btn)[1].click
+    find_all('.interaction-click-control-continue-to-next-step').first.click
   else
     sleep 2
     find(IvlVerifyIdentity.continue_application_btn).click
@@ -658,7 +677,11 @@ end
 And(/.+ selects a plan on plan shopping page/) do
   screenshot("plan_shopping")
   wait_for_ajax(3, 2)
-  expect(page).to have_content "Choose Plan"
+  if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+    expect(page).to have_content l10n('.choose_plan')
+  else
+    expect(page).to have_content "Choose Plan"
+  end
   sleep 5
   continue_btn = find_all(EmployeePersonalInformation.continue_btn)
   if continue_btn.any? && !continue_btn.first&.disabled?
@@ -709,8 +732,11 @@ end
 And(/^.+ clicks on the Continue button to go to the Individual home page/) do
   if page.has_link?('CONTINUE')
     click_link "CONTINUE"
+  elsif EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+    find('.interaction-click-control-back-to-my-account').click
   else
-    click_link "GO TO MY ACCOUNT"
+    find('.interaction-click-control-go-to-my-account').click if page.has_css?('.interaction-click-control-go-to-my-account')
+    find('.interaction-click-control-continue-to-my-account').click if page.has_css?('.interaction-click-control-continue-to-my-account')
   end
   sleep 10
 end
@@ -1356,12 +1382,12 @@ Then(/^Individual should see not qualify message$/) do
 end
 
 Then(/^Individual should see confirmation and continue$/) do
-  expect(page).to have_content "Based on the information you entered, you may be eligible to enroll now but there is limited time"
-  find('#sep_continue').click
+  expect(page).to have_css('.alert-success', text: l10n('insured.qle_detail.eligible_to_enroll_limited_time'))
+  find('.interaction-click-control-continue-to-next-step').click
 end
 
 Then(/^Individual should see successful sep message$/) do
-  expect(page).to have_content "Based on the information you entered, you may be eligible to enroll now but there is limited time"
+  expect(page).to have_css('.alert-success', text: l10n('insured.qle_detail.eligible_to_enroll_limited_time'))
 end
 
 When(/^Individual clicks on Make Changes from Actions tab$/) do
@@ -1384,7 +1410,11 @@ end
 
 Then(/Individual should land on Home page$/) do
   sleep 1
-  expect(page).to have_content "My #{EnrollRegistry[:enroll_app].setting(:short_name).item}"
+  if EnrollRegistry[:bs4_consumer_flow].enabled?
+    expect(page).to have_content "My CoverME.gov"
+  else
+    expect(page).to have_content "My #{EnrollRegistry[:enroll_app].setting(:short_name).item}"
+  end
 end
 
 When(/Individual clicks on Go To My Account button$/) do
@@ -1552,22 +1582,21 @@ Then(/the continue button has a data disabled attribute$/) do
 end
 
 And(/^the Continue button is visible on Account Setup page/i) do
-  continue_button = find('a.interaction-click-control-continue')
+  continue_button = find('.interaction-click-control-continue-to-next-step')
   expect(continue_button).to be_visible
 end
 
 Then(/^.+ sees form to enter personal information with invalid phone number$/) do
-  find('#person_us_citizen_true').click
-  find('#person_naturalized_citizen_false').click
+  find('#us_citizen_true').click
+  find('#naturalized_citizen_false').click
   find('#indian_tribe_member_no').click
-  find("#radio_incarcerated_no").click
+  find("#is_incarcerated_false").click
   fill_in IvlPersonalInformation.address_line_one, :with => "4900 USAA BLVD NE"
   fill_in IvlPersonalInformation.address_line_two, :with => "212"
 
   if EnrollRegistry[:bs4_consumer_flow].enabled?
     fill_in IvlPersonalInformation.city, with: 'Augusta'
-    find("#inputState").click
-    find_all('.interaction-choice-control-inputstate-24').first.click
+    find_all(IvlPersonalInformation.select_me_state).first.click
     fill_in IvlPersonalInformation.zip, with: '04330'
     fill_in IvlPersonalInformation.mobile_phone, :with => "0000000000"
   else
@@ -1586,7 +1615,3 @@ And(/^Individual selects contact text check box/i) do
   sleep 30
 end
 
-And(/^.+ clicks? on the Continue button of the Account Setup page with bs4 enabled$/i) do
-  wait_for_ajax
-  find(".interaction-click-control-continue").click
-end

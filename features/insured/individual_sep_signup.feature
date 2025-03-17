@@ -1,6 +1,6 @@
 Feature: Insured Plan Shopping on Individual market
   Background:
-    Given bs4_consumer_flow feature is disable
+    Given bs4_consumer_flow feature is enabled
     Given choose_shopping_method feature is disabled
     Given the FAA feature configuration is enabled
     Given individual Qualifying life events are present
@@ -25,7 +25,6 @@ Feature: Insured Plan Shopping on Individual market
     And Individual selects a current qle date
     Then Individual should see confirmation and continue
     And Individual clicks on the continue button
-    And Individual clicks on continue button on Choose Coverage page
     And Individual select three plans to compare
     Then Individual should not see any plan which premium is 0
     When Individual selects a plan on plan shopping page

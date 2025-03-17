@@ -1,7 +1,7 @@
 Feature: Enrollment Tiles
 
   Background:
-    Given bs4_consumer_flow feature is disable
+    Given bs4_consumer_flow feature is enabled
     Given the display enrollment summary configuration is enabled
     # Given the generic_redirect setting is disabled
     Given EnrollRegistry enrollment_plan_tile_update feature is enabled

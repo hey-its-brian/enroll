@@ -4,14 +4,14 @@
 class IvlAuthorizationAndConsent
 
   def self.i_agree_radiobtn
-    'label[for="agreement_agree"] span'
+    'label[for="agreement_agree"]'
   end
 
   def self.i_disagree_radiobtn
     if EnrollRegistry[:bs4_consumer_flow].enabled?
       '#agreement_disagree'
     else
-    'label[for="agreement_disagree"] span'
+      'label[for="agreement_disagree"]'
     end
   end
 

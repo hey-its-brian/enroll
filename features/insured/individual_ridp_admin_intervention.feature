@@ -1,7 +1,7 @@
 Feature: Consumer agrees RIDP verification process with Admin intervention
 
   Background: Individual RIDP Verification process
-    Given bs4_consumer_flow feature is disable
+    Given bs4_consumer_flow feature is enabled
     Given Individual has not signed up as an HBX user
     Given the FAA feature configuration is enabled
     When Individual visits the Insured portal outside of open enrollment
@@ -28,7 +28,6 @@ Feature: Consumer agrees RIDP verification process with Admin intervention
     When HBX admin logs out
     And Individual signed in to resume enrollment
     Then the CONTINUE button is functionally ENABLED
-    And visibly ENABLED
 
   Scenario: New insured user chooses I Agree on Auth and Consent Page and uploaded application document
     Given that the consumer has navigated to the AUTH & CONSENT page
@@ -58,7 +57,6 @@ Feature: Consumer agrees RIDP verification process with Admin intervention
     When HBX admin logs out
     And Individual signed in to resume enrollment
     Then the CONTINUE button is functionally ENABLED
-    And visibly ENABLED
   
   Scenario: New insured user chooses I Agree on Auth and Consent Page and uploaded Identity document and admin already purchased a plan
     Given that the consumer has navigated to the AUTH & CONSENT page

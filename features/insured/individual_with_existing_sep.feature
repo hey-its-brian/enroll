@@ -7,6 +7,7 @@ Feature: Consumer shops for plan with existing seps
   
   Scenario: Individual add SEP and see SHOP for Plans Banner
     Given there exists Patrick Doe with active individual market role and verified identity
+    And Patrick Doe has a draft application
     And Patrick Doe logged into the consumer portal
     When Patrick Doe click the "Married" in qle carousel
     And Patrick Doe selects a past qle date
@@ -14,4 +15,4 @@ Feature: Consumer shops for plan with existing seps
     Then Patrick Doe should see family members page and clicks continue
     And Patrick Doe should see the group selection page
     And Patrick Doe clicks on back to my account button
-    Then Patric Doe should land on Home page and should see Shop for Plans Banner
+    Then Patrick Doe should land on Home page and should see Shop for Plans Banner

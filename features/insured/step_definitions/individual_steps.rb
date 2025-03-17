@@ -15,6 +15,11 @@ And(/there exists (.*) with active individual market role and verified identity$
   consumer_with_verified_identity(named_person)
 end
 
+And(/(.*) has a draft application$/) do |named_person|
+  consumer = consumer_with_verified_identity(named_person)
+  FactoryBot.create(:application, family_id: consumer.primary_family.id, aasm_state: "draft", effective_date: TimeKeeper.date_of_record)
+end
+
 And(/(.*) logged into the consumer portal$/) do |named_person|
   person = people[named_person]
   person_rec = Person.where(first_name: person[:first_name], last_name: person[:last_name]).first
@@ -65,9 +70,12 @@ end
 When(/^(.*) selects a past qle date$/) do |_name|
   expect(page).to have_content "Married"
   fill_in "qle_date", :with => (TimeKeeper.date_of_record - 5.days).strftime("%m/%d/%Y")
-  click_link((TimeKeeper.date_of_record - 5.days).day)
   within '#qle-date-chose' do
-    click_link "CONTINUE"
+    if EnrollRegistry[:bs4_consumer_flow].enabled?
+      find('.interaction-click-control-continue-to-next-step').click
+    else
+      click_link "CONTINUE"
+    end
   end
 end
 
@@ -138,18 +146,14 @@ Then(/^.+ enter personal information with american indian alaska native status w
   find(IvlPersonalInformation.us_citizen_or_national_yes_radiobtn).click
   find(IvlPersonalInformation.naturalized_citizen_no_radiobtn).click
   find(IvlPersonalInformation.american_or_alaskan_native_yes_radiobtn).click
-  if EnrollRegistry[:bs4_consumer_flow].enabled?
-    find(IvlPersonalInformation.tribe_state_dropdown).click
-    find("#tribal-state-container .selectric-items li", text: EnrollRegistry[:enroll_app].setting(:state_abbreviation).item).click
-    tribe_codes = find_all('input.tribe_codes')
-    tribe_codes.first.click unless tribe_codes.empty?
-  end
+  find(IvlPersonalInformation.tribe_state_dropdown).click
+  tribe_codes = find_all('input.tribe_codes')
+  tribe_codes.first.click unless tribe_codes.empty?
   find(IvlPersonalInformation.incarcerated_no_radiobtn).click
   fill_in IvlPersonalInformation.address_line_one, :with => "4900 USAA BLVD NE"
   fill_in IvlPersonalInformation.address_line_two, :with => "212"
   fill_in IvlPersonalInformation.city, :with => "Washington"
-  find_all(IvlPersonalInformation.select_state_dropdown).first.click
-  find_all(:xpath, "//li[contains(., '#{EnrollRegistry[:enroll_app].setting(:state_abbreviation).item}')]").last.click
+  find(IvlPersonalInformation.select_me_state).click
   fill_in IvlPersonalInformation.zip, :with => EnrollRegistry[:enroll_app].setting(:contact_center_zip_code).item
   fill_in IvlPersonalInformation.home_phone, :with => "22075555555"
   sleep 2
@@ -159,19 +163,15 @@ Then(/^.+ enter personal information with american indian alaska native status w
   find(IvlPersonalInformation.us_citizen_or_national_yes_radiobtn).click
   find(IvlPersonalInformation.naturalized_citizen_no_radiobtn).click
   find(IvlPersonalInformation.american_or_alaskan_native_yes_radiobtn).click
-  if EnrollRegistry[:bs4_consumer_flow].enabled?
-    find(IvlPersonalInformation.tribe_state_dropdown).click
-    find("#tribal-state-container .selectric-items li", text: EnrollRegistry[:enroll_app].setting(:state_abbreviation).item).click
-    tribe_codes = find_all('input.tribe_codes')
-    tribe_codes.last.click unless tribe_codes.empty?
-    fill_in IvlPersonalInformation.tribal_name, :with => "testTribeName" unless tribe_codes.empty?
-  end
+  find(IvlPersonalInformation.tribe_state_dropdown).click
+  tribe_codes = find_all('input.tribe_codes')
+  tribe_codes.last.click unless tribe_codes.empty?
+  fill_in IvlPersonalInformation.tribal_name, :with => "testTribeName" unless tribe_codes.empty?
   find(IvlPersonalInformation.incarcerated_no_radiobtn).click
   fill_in IvlPersonalInformation.address_line_one, :with => "4900 USAA BLVD NE"
   fill_in IvlPersonalInformation.address_line_two, :with => "212"
   fill_in IvlPersonalInformation.city, :with => "Washington"
-  find_all(IvlPersonalInformation.select_state_dropdown).first.click
-  find_all(:xpath, "//li[contains(., '#{EnrollRegistry[:enroll_app].setting(:state_abbreviation).item}')]").last.click
+  find_all(IvlPersonalInformation.select_me_state)
   fill_in IvlPersonalInformation.zip, :with => EnrollRegistry[:enroll_app].setting(:contact_center_zip_code).item
   fill_in IvlPersonalInformation.home_phone, :with => "22075555555"
   sleep 2

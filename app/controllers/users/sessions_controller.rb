@@ -3,7 +3,7 @@ class Users::SessionsController < Devise::SessionsController
   include RecaptchaConcern if Settings.aca.recaptcha_enabled
   respond_to :html, :js
   after_action :log_failed_login, :only => :new
-  before_action :enable_bs4_layout, only: [:create, :new] if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+  before_action :enable_bs4_layout, only: [:create, :new]
   before_action :enable_updated_layout, only: [:create, :new]
 
   def new
@@ -51,7 +51,7 @@ class Users::SessionsController < Devise::SessionsController
   end
 
   def enable_bs4_layout
-    @bs4 = true
+    @bs4 = true if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
   end
 
   def enable_updated_layout

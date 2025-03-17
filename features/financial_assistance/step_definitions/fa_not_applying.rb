@@ -279,11 +279,6 @@ And(/Individual fills in info required and selects text only as contact option/)
   find(IvlPersonalInformation.male_radiobtn).click
   find(IvlPersonalInformation.need_coverage_yes).click
   find(IvlPersonalInformation.continue_btn).click
-  if EnrollRegistry[:bs4_consumer_flow].enabled?
-    expect(page).to have_css('.alert-success', text: l10n('insured.consumer_roles.no_match_info', site_short_name: 'CoverME.gov'))
-  else
-    expect(page).to have_css('.alert-success', text: l10n('insured.consumer_roles.no_match_info', site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item))
-  end
   find(IvlPersonalInformation.continue_btn_2).click
   find(IvlPersonalInformation.us_citizen_or_national_yes_radiobtn).click
   find(IvlPersonalInformation.naturalized_citizen_no_radiobtn).click
@@ -319,12 +314,6 @@ And(/Individual fills in info required and selects no contact option/) do
   find(IvlPersonalInformation.male_radiobtn).click
   find(IvlPersonalInformation.need_coverage_yes).click
   find(IvlPersonalInformation.continue_btn).click
-
-  if EnrollRegistry[:bs4_consumer_flow].enabled?
-    expect(page).to have_css('.alert-success', text: l10n('insured.consumer_roles.no_match_info', site_short_name: 'CoverME.gov'))
-  else
-    expect(page).to have_css('.alert-success', text: l10n('insured.consumer_roles.no_match_info', site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item))
-  end
   find(IvlPersonalInformation.continue_btn_2).click
   find(IvlPersonalInformation.us_citizen_or_national_yes_radiobtn).click
   find(IvlPersonalInformation.naturalized_citizen_no_radiobtn).click

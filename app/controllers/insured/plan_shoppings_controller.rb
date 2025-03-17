@@ -16,7 +16,7 @@ class Insured::PlanShoppingsController < ApplicationController
   before_action :validate_rating_address, only: [:show, :choose_shopping_method]
   before_action :check_enrollment_state, only: [:show, :thankyou, :choose_shopping_method]
   before_action :set_cache_headers, only: [:show, :thankyou, :choose_shopping_method]
-  before_action :enable_bs4_layout, only: [:show, :plans, :receipt, :thankyou, :choose_shopping_method] if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+  before_action :enable_bs4_layout, only: [:show, :plans, :receipt, :thankyou, :choose_shopping_method]
 
   layout :resolve_layout
 
@@ -753,6 +753,6 @@ class Insured::PlanShoppingsController < ApplicationController
   end
 
   def enable_bs4_layout
-    @bs4 = true
+    @bs4 = true if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
   end
 end

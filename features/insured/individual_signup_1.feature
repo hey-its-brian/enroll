@@ -1,7 +1,7 @@
 Feature: Insured Plan Shopping on Individual market 1
 
   Background:
-    Given bs4_consumer_flow feature is disable
+    Given bs4_consumer_flow feature is enabled
     Given Individual has not signed up as an HBX user
     Given the FAA feature configuration is enabled
     When Individual visits the Consumer portal during open enrollment

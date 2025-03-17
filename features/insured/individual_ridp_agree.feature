@@ -1,7 +1,7 @@
 Feature: Consumer agrees RIDP verification process
 
   Background: Individual RIDP Verification process
-    Given bs4_consumer_flow feature is disable
+    Given bs4_consumer_flow feature is enabled
     Given Individual has not signed up as an HBX user
     Given the FAA feature configuration is enabled
     When Individual visits the Insured portal outside of open enrollment

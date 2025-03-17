@@ -1194,7 +1194,7 @@ And(/.+ select three plans to compare/) do
     page.all(IvlChoosePlan.compare_checkbox)[2].click
     find(IvlChoosePlan.compare_plans_btn).click
     wait_for_ajax(10)
-    expect(page).to have_content("Choose Plan - Compare Selected Plans")
+    expect(page).to have_css('h5', text: l10n('plans.compare_selected'))
     find(IvlChoosePlan.compare_selected_plans_close_btn).click
   end
 end

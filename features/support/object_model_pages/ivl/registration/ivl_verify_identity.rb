@@ -10,7 +10,7 @@ class IvlVerifyIdentity
 
   def self.pick_answer_a
     if EnrollRegistry[:bs4_consumer_flow].enabled?
-      '#interactive_verification_questions_attributes_0_response_id_a'
+      '.interaction-choice-control-value-interactive-verification-questions-attributes-0-response-id-a'
     else
       'label[for="interactive_verification_questions_attributes_0_response_id_a"] span'
     end
@@ -18,7 +18,7 @@ class IvlVerifyIdentity
 
   def self.pick_answer_b
     if EnrollRegistry[:bs4_consumer_flow].enabled?
-      '#interactive_verification_questions_attributes_0_response_id_b'
+      '.interaction-choice-control-value-interactive-verification-questions-attributes-0-response-id-b'
     else
       'label[for="interactive_verification_questions_attributes_0_response_id_b"] span'
     end
@@ -26,7 +26,7 @@ class IvlVerifyIdentity
 
   def self.pick_answer_c
     if EnrollRegistry[:bs4_consumer_flow].enabled?
-      '#interactive_verification_questions_attributes_1_response_id_c'
+      '.interaction-choice-control-value-interactive-verification-questions-attributes-1-response-id-c'
     else
       'label[for="interactive_verification_questions_attributes_1_response_id_c"] span'
     end
@@ -34,7 +34,7 @@ class IvlVerifyIdentity
 
   def self.pick_answer_d
     if EnrollRegistry[:bs4_consumer_flow].enabled?
-      '#interactive_verification_questions_attributes_1_response_id_d'
+      '.interaction-choice-control-value-interactive-verification-questions-attributes-1-response-id-d'
     else
       'label[for="interactive_verification_questions_attributes_1_response_id_d"] span'
     end
@@ -50,7 +50,7 @@ class IvlVerifyIdentity
 
   def self.continue_application_btn
     if EnrollRegistry[:bs4_consumer_flow].enabled?
-      '.interaction-click-control-continue-to-next-step'
+      '.interaction-click-control-continue-application'
     else
       '.interaction-click-control-continue'
     end
@@ -97,6 +97,10 @@ class IvlVerifyIdentity
   end
 
   def self.continue_btn
-    '#btn-continue'
+    if EnrollRegistry[:bs4_consumer_flow].enabled?
+      '.interaction-click-control-override-identity-verification'
+    else
+      '#btn-continue'
+    end
   end
 end
