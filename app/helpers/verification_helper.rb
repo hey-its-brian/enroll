@@ -590,7 +590,7 @@ module VerificationHelper
             type_id: gid,
             v_type: type,
             f_member: @family.find_family_member_by_person(person),
-            due_on: @evidence.due_on
+            due_on: @evidence.due_on || TimeKeeper.date_of_record
           }
         }
       }
@@ -603,7 +603,7 @@ module VerificationHelper
         id: "#{applicant.id}-#{evidence_kind.split.join('-')}",
         partial: {
           :partial => "financial_assistance/applications/verifications/admin_verification_actions",
-          locals: { application: application, applicant: applicant, evidence_kind: evidence_kind, due_on: @evidence.due_on }
+          locals: { application: application, applicant: applicant, evidence_kind: evidence_kind, due_on: @evidence.due_on || TimeKeeper.date_of_record }
         }
       }
     end

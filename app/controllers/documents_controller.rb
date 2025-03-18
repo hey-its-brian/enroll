@@ -190,7 +190,8 @@ class DocumentsController < ApplicationController
     @family_member = FamilyMember.find(params[:family_member_id])
     enrollment = @family_member.family.enrollments.verification_needed.where(:"hbx_enrollment_members.applicant_id" => @family_member.id).first
     if enrollment.present?
-      new_date = parse_date(params[:due_on]) || @verification_type.verif_due_date + (params[:extension_period].to_i.days || 30.days)
+      current = EnrollRegistry.feature_enabled?(:verification_due_on_options) ? @verification_type.due_date || TimeKeeper.date_of_record : @verification_type.verif_due_date
+      new_date = parse_date(params[:due_on]) || current + (params[:extension_period].to_i.days || 30.days)
       updated = @verification_type.update_attributes(:due_date => new_date)
       if updated
         duration_string = if EnrollRegistry.feature_enabled?(:verification_due_on_options)

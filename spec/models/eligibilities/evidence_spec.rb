@@ -99,6 +99,37 @@ RSpec.describe ::Eligibilities::Evidence, type: :model, dbclean: :after_each do
       end
     end
 
+    context '.extend_due_on with verification_due_on_options flag on' do
+      let(:new_due_date) do
+        TimeKeeper.date_of_record + 30.days
+      end
+
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:verification_due_on_options).and_return(true)
+      end
+
+      it 'should update due date from current day' do
+        expect(income_evidence.due_on).to be_nil
+        expect(income_evidence.verification_histories).to be_empty
+
+        output = income_evidence.extend_due_on(30.days, 'system')
+        income_evidence.reload
+
+        expect(output).to be_truthy
+        expect(income_evidence.due_on).to eq new_due_date
+        expect(income_evidence.verification_histories).to be_present
+
+        history = income_evidence.verification_histories.first
+        expect(history.action).to eq 'extend_due_date'
+        expect(history.update_reason).to eq "Extended due date by 30 days to #{income_evidence.due_on.strftime('%m/%d/%Y')}"
+        expect(history.updated_by).to eq 'system'
+      end
+
+      it 'should update default due date for 30 days' do
+        expect(income_evidence.extend_due_on).to be_truthy
+      end
+    end
+
     context '.request_determination for income evidence' do
       before do
         allow(EnrollRegistry).to receive(:feature_enabled?).and_return(false)

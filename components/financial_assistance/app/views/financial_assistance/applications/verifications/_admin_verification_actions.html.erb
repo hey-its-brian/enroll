@@ -52,7 +52,7 @@
       <%= hidden_field_tag 'applicant_id', applicant.id  %>
       <%= hidden_field_tag 'evidence_kind', evidence_kind  %>
       <%= hidden_field_tag 'admin_action', 'extend' %> 
-      <% if EnrollRegistry.feature_enabled?(:verification_due_on_options) && due_on.present? %>
+      <% if EnrollRegistry.feature_enabled?(:verification_due_on_options) %>
         <label class="my-3" id="due-on-options">
           <%= l10n('admin.verifications.extend.due_date_options') %>
           <%= select_tag :extension_period, options_for_select(admin_evidence_due_on_options(due_on)), prompt: l10n('admin.verifications.extend.due_date_options.select'), class: 'd-block col-5', required: true, allow_blank: false %>
