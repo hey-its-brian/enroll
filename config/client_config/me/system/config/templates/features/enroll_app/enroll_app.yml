@@ -787,6 +787,9 @@ registry:
       - key: :live_chat_widget_error_logging
         item: :live_chat_widget_error_logging
         is_enabled: <%= ENV['LIVECHAT_ERROR_LOGGING_IS_ENABLED'] || false %>
+      - key: :genesys_cloud_messenger
+        item: :genesys_cloud_messenger
+        is_enabled: <%= ENV['GENESYS_CLOUD_MESSENGER_IS_ENABLED'] || false %>
       - key: :in_person_assister
         item: :in_person_assister
         is_enabled: false

@@ -7,7 +7,7 @@
           <span><%= l10n("layout.footer.all_rights") %></span>
         </div>
 
-        <div id="right-column" class="get-help-container footer-column d-flex flex-column flex-md-row align-items-md-center px-2 px-md-3 py-2">
+        <div id="right-column" class="get-help-container footer-column d-flex flex-column flex-md-row align-items-md-center px-2 px-md-3 py-2 <% 'mr-5' if EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>">
           <div class="btn-group">
             <a class="button btn-secondary" href="tel:<%=EnrollRegistry[:enroll_app].settings(:contact_center_short_number).item%>">
               <svg role="img" aria-label="phone icon" width="16" height="16" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">

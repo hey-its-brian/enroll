@@ -80,7 +80,7 @@
     }
   </script>
   <button class="<% if @bs4 %>live-chat-button-bs4<% else %>live-chat-button<% end %> qna-bot-open-click-button" type="button" data-cuke="bot-button">
-<% else %>
+<% elsif EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) == false %>
   <button class="<% if @bs4 %>live-chat-button-bs4<% else %>live-chat-button<% end %> live-webchat-open-click-button" type="button" data-cuke="chat-button" id="chat-button">
 <% end %>
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="transform: scale(-1,1)" xmlns="http://www.w3.org/2000/svg">
