@@ -59,7 +59,8 @@
         </label>
         <label id="manual-due-on" class="my-3 hidden">
           <%= l10n('admin.verifications.extend.due_date_options.enter_manual_date') %>
-          <%= date_field_tag :due_on, date_field_value(due_on), min: date_field_value, required: true, disabled: true, class: 'd-block' %>
+          <% due_on_value = date_field_value(due_on) %>
+          <%= date_field_tag :due_on, due_on_value, min: due_on_value, required: true, disabled: true, class: 'd-block' %>
         </label>
       <% end %>
       <div class='d-flex'>
