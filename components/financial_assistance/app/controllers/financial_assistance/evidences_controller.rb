@@ -65,7 +65,8 @@ module FinancialAssistance
         extension = if params[:due_on].present?
                       @evidence.set_due_on(params[:due_on], current_user.oim_id, extension_descriptor: l10n('admin.verifications.extend.history_description.manual'))
                     else
-                      @evidence.extend_due_on(params[:extension_period]&.to_i || 30.days, current_user.oim_id)
+                      period = params[:extension_period]&.to_i || 30
+                      @evidence.extend_due_on(period.days, current_user.oim_id)
                     end
         if extension
           duration_string = if EnrollRegistry.feature_enabled?(:verification_due_on_options)
