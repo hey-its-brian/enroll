@@ -433,3 +433,26 @@ dl.parent.weight-n {
     columns: 2;
   }
 }
+
+.accordion {
+  margin-top: 12px;
+  
+  a {
+    &[data-toggle="collapse"]{ 
+      text-decoration: none;
+      padding-left: 28px;
+      margin-left: 28px;
+      background-position: 0 center;  
+      background: url('data:image/svg+xml,<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="18" height="18" rx="4" stroke="%23201F1E" stroke-width="2"/><rect x="9" y="4" width="2" height="12" rx="1" fill="%23201F1E"/><rect x="16" y="9" width="2" height="12" rx="1" transform="rotate(90 16 9)" fill="%23201F1E"/></svg>') no-repeat left center;
+
+      &[aria-expanded="true"] {
+        background: url('data:image/svg+xml,<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="18" height="18" rx="4" stroke="%23201F1E" stroke-width="2"/><rect x="16" y="9" width="2" height="12" rx="1" transform="rotate(90 16 9)" fill="%23201F1E"/></svg>') no-repeat left center;
+      }
+    }
+  }
+
+  a + ul {
+    margin-left: 42px;
+    margin-top: 12px;
+  }
+}

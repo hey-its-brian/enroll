@@ -67,9 +67,40 @@ And(/^the user is RIDP verified$/) do
   user.person.consumer_role.move_identity_documents_to_verified
 end
 
-Given(/the consumer has a verification with (\w+) status/) do |status|
-  FactoryBot.create(:verification_type, type_name: "Citizenship", validation_status: status, update_reason: "Mock Reason", due_date: TimeKeeper.date_of_record, person: user.person)
-  ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: user.person.primary_family.reload, effective_date: TimeKeeper.date_of_record)
+Given(/the consumer has a(?: (.+))? verification with (\w+) status/) do |type, status|
+  type ||= "Citizenship"
+
+  family = user.person.primary_family
+  case type
+  when "Citizenship", "Immigration Status", "Social Security Number"
+    FactoryBot.create(:verification_type, type_name: type, validation_status: status, update_reason: "Mock Reason", due_date: TimeKeeper.date_of_record, person: user.person)
+  else
+    case type
+    when "Income"
+      type = "income"
+    when "Coverage from a job"
+      type = "esi"
+    when "Coverage from MaineCare"
+      step "EnrollRegistry local_mec_evidence feature is enabled"
+      type = "local_mec"
+    when "Coverage from another program"
+      type = "non_esi"
+    end
+    type += "_evidence"
+    application = FactoryBot.create(:application,
+                                    family_id: family.id,
+                                    created_at: TimeKeeper.date_of_record,
+                                    aasm_state: "determined",
+                                    effective_date: TimeKeeper.date_of_record)
+    user_family_member_id = family.primary_family_member.id
+    FactoryBot.create(:financial_assistance_applicant,
+                      "with_#{type}".to_sym,
+                      application: application,
+                      is_primary_applicant: true,
+                      family_member_id: user_family_member_id)
+    application.applicants.where(family_member_id: user_family_member_id).first.send(type).update_attributes(aasm_state: status)
+  end
+  ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family.reload, effective_date: TimeKeeper.date_of_record)
 end
 
 Given(/the alive_status feature is enabled/) do
@@ -183,15 +214,15 @@ end
 
 Then(/the consumer should see the verification detail page/) do
   expect(page).to have_content("Verification Details")
-  expect(page).to have_content("We verify the information you give us using electronic data sources. If the data sources do not match the information you gave us, we need you to provide documents to prove what you told us.")
 end
 
-When(/the (.*) vists the verification detail page for a verification with (.*) status/) do |user, status|
+When(/the (.*) vists the verification detail page for a(?: (.+))? verification with (.*) status/) do |user, type, status|
+  type_substring = type ? " #{type}" : ''
   steps %(
-    Given the consumer has a verification with #{status} status
+    Given the consumer has a#{type_substring} verification with #{status} status
     And the #{user} visits the verification tab
     And the consumer selects a household member
-    And the consumer selects the verification for the member
+    And the consumer selects the#{type_substring} verification for the member
   )
 end
 
@@ -203,8 +234,10 @@ When(/the consumer presses the Back to Verifications button/) do
   find('a', text: "Back to Verifications").click
 end
 
-Given(/the consumer selects the verification for the member/) do
-  find("#{IvlDocumentsPage.individual_verifications_section} tbody tr", text: "Citizenship").click
+Given(/the consumer selects the(?: +(.+))? verification for the member/) do |type|
+  type = "Deceased" if type == "Alive Status"
+  sleep 1
+  all("#{IvlDocumentsPage.individual_verifications_section} tbody tr", text: type || "Citizenship").first.click
 end
 
 When(/^the consumer vists the verification detail page$/) do
@@ -251,6 +284,17 @@ Then(/the consumer should see the individual detail page/) do
     "such as whether or not this person need health coverage. " \
     "Select a type of information we verify to view details and take any action needed."
   )
+end
+
+When("the consumer expands all accordions") do
+  all('.accordion a[data-toggle="collapse"]').each do |accordion|
+    accordion.click
+    sleep 1
+  end
+end
+
+Then(/the consumer should see the (.*) documents we accept section/) do |type|
+  expect(VerificationDocumentsHelper.verify_content_for(type, page)).to be true
 end
 
 Then(/the user should (.*) see the set due date option/) do |negation|

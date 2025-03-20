@@ -63,3 +63,6 @@ registry:
             item: 
             - 35
             - 95
+      - key: :show_new_documents_types
+        is_enabled: <%= ENV['SHOW_NEW_DOCUMENTS_TYPES_IS_ENABLED'] || false %>
+        

@@ -1,0 +1,267 @@
+<div class="mb-4">
+  <% type_name = @evidence.evidence_item_key.to_s %>
+  <% informational_sheet_url = "https://www.coverme.gov/sites/default/files/inline-files/documents%20needed%20for%20verification%20informational%20sheet.pdf" %>
+
+  <% case @evidence.evidence_item_key %>
+  <% when :income_evidence %>
+    <p>
+      <%= l10n('verifications_document_types.income.preface') %>
+      <%= l10n('verifications_document_types.redirect_1', type_substring: l10n('verifications_document_types.income.redirect_specification')) %>
+      <a href=<%= informational_sheet_url %> target="_blank"><%= l10n('verifications_document_types.redirect_link_text') %></a><%= l10n('verifications_document_types.redirect_2') %>
+    </p>
+    <div>
+      <div class='accordion'>
+        <a data-toggle="collapse" href="#collapse0"><%= l10n('verifications_document_types.income.earned_income.type_1') %><strong><%= l10n('verifications_document_types.income.earned_income.type_2') %></strong></a>
+        <ul id="collapse0" class="collapse">
+          <li><strong><%= l10n('verifications_document_types.income.earned_income.subtype.1040_1') %></strong><%= l10n('verifications_document_types.income.earned_income.subtype.1040_2') %></li>
+          <li><strong><%= l10n('verifications_document_types.income.earned_income.subtype.pay_stubs_1') %></strong><%= l10n('verifications_document_types.income.earned_income.subtype.pay_stubs_2') %></li>
+          <li><strong><%= l10n('verifications_document_types.income.earned_income.subtype.tax_statement_1') %></strong><%= l10n('verifications_document_types.income.earned_income.subtype.tax_statement_2') %></li>
+          <li><strong><%= l10n('verifications_document_types.income.earned_income.subtype.employer_statement_1') %></strong><%= l10n('verifications_document_types.income.earned_income.subtype.employer_statement_2') %></li>
+        </ul>
+      </div>
+      <div class='accordion'>
+        <a data-toggle="collapse" href="#collapse1"><%= l10n('verifications_document_types.income.self_employment.type_1') %><strong><%= l10n('verifications_document_types.income.self_employment.type_2') %></strong></a>
+        <ul id="collapse1" class="collapse">
+          <li><strong><%= l10n('verifications_document_types.income.self_employment.subtype.tax_return_1') %></strong><%= l10n('verifications_document_types.income.self_employment.subtype.tax_return_2') %></li>
+          <li><strong><%= l10n('verifications_document_types.income.self_employment.subtype.ledger_1') %></strong><%= l10n('verifications_document_types.income.self_employment.subtype.ledger_2') %></li>
+        </ul>
+      </div>
+      <div class='accordion'>
+        <a data-toggle="collapse" href="#collapse2"><%= l10n('verifications_document_types.income.other_income.type_1') %><strong><%= l10n('verifications_document_types.income.other_income.type_2') %></strong></a>
+        <ul id="collapse2" class="collapse">
+          <li><%= l10n('verifications_document_types.income.other_income.subtype.ssa_statement') %></li>
+          <li><%= l10n('verifications_document_types.income.other_income.subtype.unemployment') %></li>
+          <li><%= l10n('verifications_document_types.income.other_income.subtype.award_letters') %></li>
+          <li><%= l10n('verifications_document_types.income.other_income.subtype.workers_comp') %></li>
+          <li><%= l10n('verifications_document_types.income.other_income.subtype.prizes') %></li>
+          <li><%= l10n('verifications_document_types.income.other_income.subtype.gifts') %></li>
+          <li><%= l10n('verifications_document_types.income.other_income.subtype.inheritances') %></li>
+          <li><%= l10n('verifications_document_types.income.other_income.subtype.interests') %></li>
+        </ul>
+      </div>
+    </div>
+  <% when :citizenship %>
+    <p>
+      <%= l10n('verifications_document_types.citizenship.preface') %>
+      <%= l10n('verifications_document_types.redirect_1', type_substring: l10n('verifications_document_types.citizenship.redirect_specification')) %>
+      <a href=<%= informational_sheet_url %> target="_blank"><%= l10n('verifications_document_types.redirect_link_text') %></a><%= l10n('verifications_document_types.redirect_2') %>
+    </p>
+    <div>
+      <div class='accordion'>
+        <a data-toggle="collapse" href="#collapse0"><%= l10n('verifications_document_types.citizenship.type') %></a>
+        <ul id="collapse0" class="collapse">
+          <li><%= l10n('verifications_document_types.citizenship.subtype.passport') %></li>
+          <li><%= l10n('verifications_document_types.citizenship.subtype.naturalization') %></li>
+          <li><%= l10n('verifications_document_types.citizenship.subtype.citizenship_cert') %></li>
+          <li><%= l10n('verifications_document_types.citizenship.subtype.crba') %></li>
+          <li><%= l10n('verifications_document_types.citizenship.subtype.enhanced_dl') %></li>
+          <li><%= l10n('verifications_document_types.citizenship.subtype.tribal_doc') %>
+            <ul>
+              <li><%= l10n('verifications_document_types.citizenship.subtype.tribal.subtype.enrollment_card')%></li>
+              <li><%= l10n('verifications_document_types.citizenship.subtype.tribal.subtype.certificate_of_blood')%></li>
+              <li><%= l10n('verifications_document_types.citizenship.subtype.tribal.subtype.census_document')%></li>
+              <li><%= l10n('verifications_document_types.citizenship.subtype.tribal.subtype.letterhead')%></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div class='accordion'>
+        <a data-toggle="collapse" href="#collapse1"><%= l10n('verifications_document_types.citizenship.two_docs.intro') %></a>
+        <ul id="collapse1" class="collapse">
+          <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.intro') %>
+            <ul>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.birth_cert') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.crba') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.ds1350') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.fs545') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.citizen_id') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.mariana') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.adoption') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.military') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.civil_service') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.medical') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.insurance') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.religious') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.school') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.census') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list1.foreign_adopted') %></li>
+            </ul>
+          </li>
+          <li><strong><%= l10n('verifications_document_types.citizenship.two_docs.list2.intro_1') %></strong><%= l10n('verifications_document_types.citizenship.two_docs.list2.intro_2') %>
+            <ul>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list2.dl') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list2.school_id') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list2.military') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list2.dependent') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list2.merchant') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list2.voter') %></li>
+              <li><%= l10n('verifications_document_types.citizenship.two_docs.list2.clinic') %></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  <% when :immigration_status %>
+    <p>
+      <%= l10n('verifications_document_types.immigration_status.preface') %>
+      <%= l10n('verifications_document_types.redirect_1', type_substring: l10n('verifications_document_types.immigration_status.redirect_specification')) %>
+      <a href=<%= informational_sheet_url %> target="_blank"><%= l10n('verifications_document_types.redirect_link_text') %></a><%= l10n('verifications_document_types.redirect_2') %>
+    </p>
+    <div>
+      <div class='accordion'>
+        <a data-toggle="collapse" href="#collapse0"><%= l10n('verifications_document_types.immigration_status.type_1') %><strong><%= l10n('verifications_document_types.immigration_status.type_2') %></strong></a>
+        <ul id="collapse0" class="collapse">
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.green_card') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.reentry_permit') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.refugee') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.eac') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.visa') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.i551_stamp') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.passport') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.i94') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.i94_passport') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.i20') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.ds2019') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.i797') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.tribal') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.hhs') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.deportation') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.orr_letter') %></li>
+          <li><%= l10n('verifications_document_types.immigration_status.subtype.i797c') %></li>
+        </ul>
+      </div>
+    </div>
+  <% when :identity %>
+    <p><%= l10n('verifications_document_types.identity.preface') %></p>
+    <div>
+      <div class='accordion'>
+        <a data-toggle="collapse" href="#collapse0"><%= l10n('verifications_document_types.identity.type') %></a>
+        <ul id="collapse0" class="collapse">
+          <li><%= l10n('verifications_document_types.identity.subtype.dl') %></li>
+          <li><%= l10n('verifications_document_types.identity.subtype.school_id') %></li>
+          <li><%= l10n('verifications_document_types.identity.subtype.voter') %></li>
+          <li><%= l10n('verifications_document_types.identity.subtype.military') %></li>
+          <li><%= l10n('verifications_document_types.identity.subtype.dependent') %></li>
+          <li><%= l10n('verifications_document_types.identity.subtype.government_id') %></li>
+          <li><%= l10n('verifications_document_types.identity.subtype.naturalization') %></li>
+          <li><%= l10n('verifications_document_types.identity.subtype.citizenship') %></li>
+          <li><%= l10n('verifications_document_types.identity.subtype.green_card') %></li>
+          <li><%= l10n('verifications_document_types.identity.subtype.eac') %></li>
+          <li><%= l10n('verifications_document_types.identity.subtype.passport') %></li>
+          <li><%= l10n('verifications_document_types.identity.subtype.tribal') %></li>
+          <li><%= l10n('verifications_document_types.identity.subtype.merchant') %></li>
+          <li><%= l10n('verifications_document_types.identity.subtype.foreign_passport') %></li>
+        </ul>
+      </div>
+      <div class='accordion'>
+        <a data-toggle="collapse" href="#collapse1"><%= l10n('verifications_document_types.identity.two_docs.intro') %></a>
+        <ul id="collapse1" class="collapse">
+          <li><%= l10n('verifications_document_types.identity.two_docs.birth_cert') %></li>
+          <li><%= l10n('verifications_document_types.identity.two_docs.ssn') %></li>
+          <li><%= l10n('verifications_document_types.identity.two_docs.marriage') %></li>
+          <li><%= l10n('verifications_document_types.identity.two_docs.divorce') %></li>
+          <li><%= l10n('verifications_document_types.identity.two_docs.employer_id') %></li>
+          <li><%= l10n('verifications_document_types.identity.two_docs.diploma') %></li>
+          <li><%= l10n('verifications_document_types.identity.two_docs.property') %></li>
+        </ul>
+      </div>
+    </div>
+  <% when :non_esi_evidence %>
+    <p>
+      <%= l10n('verifications_document_types.no_other_coverage.preface') %>
+      <%= l10n('verifications_document_types.no_other_coverage.warning') %>
+      <%= l10n('verifications_document_types.redirect_1', type_substring: l10n('verifications_document_types.no_other_coverage.redirect_specification')) %>
+      <a href=<%= informational_sheet_url %> target="_blank"><%= l10n('verifications_document_types.redirect_link_text') %></a><%= l10n('verifications_document_types.redirect_2') %>
+    </p>
+    <div>
+      <div class='accordion'>
+        <a data-toggle="collapse" href="#collapse0"><%= l10n('verifications_document_types.no_other_coverage.medicare.type') %></a>
+        <ul id="collapse0" class="collapse">
+          <li><%= l10n('verifications_document_types.no_other_coverage.medicare.subtype.administrative_letter') %>
+            <ul>
+              <li><%= l10n('verifications_document_types.no_other_coverage.medicare.subtype.administrative_letter.subtype.part_a_not_premium') %></li>
+              <li><%= l10n('verifications_document_types.no_other_coverage.medicare.subtype.administrative_letter.subtype.part_a_premium') %></li>
+              <li><%= l10n('verifications_document_types.no_other_coverage.medicare.subtype.administrative_letter.subtype.not_eligible_ssdi') %></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div class='accordion'>
+        <a data-toggle="collapse" href="#collapse1"><%= l10n('verifications_document_types.no_other_coverage.other.type') %></a>
+        <ul id="collapse1" class="collapse">
+          <li><%= l10n('verifications_document_types.no_other_coverage.other.subtype.va') %></li>
+          <li><%= l10n('verifications_document_types.no_other_coverage.other.subtype.tricare') %></li>
+          <li><%= l10n('verifications_document_types.no_other_coverage.other.subtype.peace_corps') %></li>
+        </ul>
+      </div>
+    </div>
+  <% when :esi_evidence %>
+    <p><%= l10n('verifications_document_types.no_job_coverage.preface') %></p>
+    <div>
+      <div class='accordion'>
+        <a data-toggle="collapse" href="#collapse0"><%= l10n('verifications_document_types.no_job_coverage.type') %></a>
+        <ul id="collapse0" class="collapse">
+          <li><%= l10n('verifications_document_types.no_job_coverage.subtype.employer_tool_1') %><a href='https://me-affordabilityestimator.checkbookhealth.org/#/'><%= l10n('verifications_document_types.no_job_coverage.subtype.employer_tool_link_text') %></a></li>
+          <li><%= l10n('verifications_document_types.no_job_coverage.subtype.documentation') %>
+            <ul>
+              <li><%= l10n('verifications_document_types.no_job_coverage.subtype.documentation.subtype.employer_statement_coverage') %></li>
+              <li><%= l10n('verifications_document_types.no_job_coverage.subtype.documentation.subtype.employer_statement_mvs') %></li>
+              <li><%= l10n('verifications_document_types.no_job_coverage.subtype.documentation.subtype.premium_cost') %></li>
+            </ul>
+          </li>
+          <li><%= l10n('verifications_document_types.no_job_coverage.subtype.expiration') %></li>
+        </ul>
+      </div>
+    </div>
+  <% when :local_mec_evidence %>
+    <p>
+      <%= l10n('verifications_document_types.no_mainecare.preface') %>
+      <ul>
+        <li><%= l10n('verifications_document_types.no_mainecare.preface.end_coverage') %></li>
+        <li><%= l10n('verifications_document_types.no_mainecare.preface.contact') %></li>
+        <li><%= l10n('verifications_document_types.no_mainecare.preface.limited') %></li>
+      </ul>
+      <%= l10n('verifications_document_types.redirect_1', type_substring: "") %>
+      <a href=<%= informational_sheet_url %> target="_blank"><%= l10n('verifications_document_types.redirect_link_text') %></a><%= l10n('verifications_document_types.redirect_2') %>
+    </p>
+    <div>
+      <div class='accordion'>
+        <a data-toggle="collapse" href="#collapse0"><%= l10n('verifications_document_types.no_mainecare.type') %></a>
+        <ul id="collapse0" class="collapse">
+          <li><%= l10n('verifications_document_types.no_mainecare.subtype.not_enrolled') %></li>
+          <li><%= l10n('verifications_document_types.no_mainecare.subtype.limited_benefit') %></li>
+          <li><%= l10n('verifications_document_types.no_mainecare.subtype.ended') %></li>
+        </ul>
+      </div>
+    </div>
+  <% when :social_security_number %>
+    <p><%= l10n('verifications_document_types.ssn.preface') %></p>
+    <div>
+      <div class='accordion'>
+        <a data-toggle="collapse" href="#collapse0"><%= l10n('verifications_document_types.ssn.type') %></a>
+        <ul id="collapse0" class="collapse">
+          <li><%= l10n('verifications_document_types.ssn.subtype.ssn_card') %></li>
+          <li><%= l10n('verifications_document_types.ssn.subtype.tax_return') %></li>
+          <li><%= l10n('verifications_document_types.ssn.subtype.w2') %></li>
+          <li><%= l10n('verifications_document_types.ssn.subtype.w4') %></li>
+          <li><%= l10n('verifications_document_types.ssn.subtype.1095') %></li>
+          <li><%= l10n('verifications_document_types.ssn.subtype.pay_stub') %></li>
+          <li><%= l10n('verifications_document_types.ssn.subtype.ssa_doc') %></li>
+          <li><%= l10n('verifications_document_types.ssn.subtype.military') %></li>
+          <li><%= l10n('verifications_document_types.ssn.subtype.military_id') %></li>
+          <li><%= l10n('verifications_document_types.ssn.subtype.dependent') %></li>
+          <li><%= l10n('verifications_document_types.ssn.subtype.unemployment') %></li>
+          <li><%= l10n('verifications_document_types.ssn.subtype.court_order') %></li>
+          <li><%= l10n('verifications_document_types.ssn.subtype.divorce') %></li>
+        </ul>
+      </div>
+    </div>
+  <% when :alive_status %>
+    <p>
+      <%= l10n('verifications_document_types.death.preface') %>
+      <%= l10n('verifications_document_types.death.contact') %>
+    </p>
+  <% else %>
+    <p><%= l10n('insured.verification_information_old') %></p>
+  <% end %>
+</div>

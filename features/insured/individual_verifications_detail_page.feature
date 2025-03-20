@@ -31,6 +31,24 @@ Feature: Individual Verification Details Page
     And the consumer presses the Back to Individual button
     Then the consumer should see the individual detail page
 
+  Scenario Outline: Consumer sees the documents we accept section
+    And EnrollRegistry show_new_documents_types feature is enabled
+    And a consumer exists
+    And the consumer is logged in
+    And consumer has successful ridp
+    When the consumer vists the verification detail page for a <type> verification with review status
+    And the consumer expands all accordions
+    Then the consumer should see the <type> documents we accept section
+
+    Examples:
+    | type                          |
+    | Citizenship                   |
+    | Social Security Number        |
+    | Income                        |
+    | Coverage from a job           |
+    | Coverage from another program |
+
+
   Scenario Outline: Admin sees the extend verification due date option
     And a consumer exists
     And EnrollRegistry verification_due_on_options feature is enabled
@@ -49,8 +67,8 @@ Feature: Individual Verification Details Page
     | hbx_tier3          | not see    |
 
   Scenario Outline: Admin extends the verification due date
-    And a consumer exists
     And EnrollRegistry verification_due_on_options feature is enabled
+    And a consumer exists
     And Hbx Admin exists
     And that a user with a HBX staff role with HBX staff subrole exists and is logged in
     And the admin vists the verification detail page for a verification with outstanding status

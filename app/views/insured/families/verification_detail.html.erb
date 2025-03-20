@@ -12,32 +12,33 @@
 <% if display_upload_for_verification?(@evidence) %>
   <section class="my-4" data-cuke='upload-documents'>
     <h2><%= l10n('insured.families.verifications.detail.verification_details') %></h2>
-    <p><%= l10n('insured.verification_information_old') %></p>
 
-    <div class="mb-4">
-      <% disable_list_flag = EnrollRegistry.feature_enabled?(:disable_documents_we_accept_list) %>
-      <a aria-controls="docs-verification-faq" aria-expanded="false" data-toggle=<%= disable_list_flag ? "none" : "collapse" %>  href=<%= disable_list_flag ? ::EnrollRegistry[:enroll_app].setting(:submit_docs_url).item : "#docs-verification-faq" %> role="button" rel="noopener noreferrer" target=<%= "_blank" if disable_list_flag  %>>
-        <%= l10n("insured.families.verification.documents_FAQ") %>
-      </a>
-      <div class="mt-2 collapse" id="docs-verification-faq">
-        <%= render partial: "insured/families/verification/documents_verification_list" %>
+    <% if EnrollRegistry.feature_enabled?(:show_new_documents_types) %>
+      <%= render partial: "accepted_document_types" %>
+    <% else %>
+      <div class="mb-4">
+        <% disable_list_flag = EnrollRegistry.feature_enabled?(:disable_documents_we_accept_list) %>
+        <a aria-controls="docs-verification-faq" aria-expanded="false" data-toggle=<%= disable_list_flag ? "none" : "collapse" %>  href=<%= disable_list_flag ? ::EnrollRegistry[:enroll_app].setting(:submit_docs_url).item : "#docs-verification-faq" %> role="button" rel="noopener noreferrer" target=<%= "_blank" if disable_list_flag  %>>
+          <%= l10n("insured.families.verification.documents_FAQ") %>
+        </a>
+        <div class="mt-2 collapse" id="docs-verification-faq">
+          <%= render partial: "insured/families/verification/documents_verification_list" %>
+        </div>
       </div>
-    </div>
+    <% end %>
   </section>
 
-  <% query = verification_upload_query %>
-  <% attachable = false %>
-  <%= form_tag query[:url], multipart: true, method: :post, :'data-controller' => ("file-manager" if attachable), :'data-action' => 'file-manager#submitForm' do %>
-    <% query[:params].each do |name, value| %>
-      <%= hidden_field_tag name, value %>
-    <% end %>
-
-    <section class="mb-4">
-      <h2><%= l10n('insured.families.verifications.detail.document_upload') %></h2>
+  <section class="mb-4">
+    <h2><%= l10n('insured.families.verifications.detail.document_upload') %></h2>
+    <% query = verification_upload_query %>
+    <% attachable = false %>
+    <%= form_tag query[:url], multipart: true, method: :post, :'data-controller' => ("file-manager" if attachable), :'data-action' => 'file-manager#submitForm' do %>
+      <% query[:params].each do |name, value| %>
+        <%= hidden_field_tag name, value %>
+      <% end %>
       
       <% accepted_file_types = ::FileUploadValidator::VERIFICATION_DOC_TYPES %>
       <% human_readable_file_types = ::FileUploadValidator.human_readable_file_types(content_types: accepted_file_types, formatter: :to_sentence, pluralize: true) %>
-      
       <p><%= l10n("insured.families.verifications.detail.document_upload.disclaimer", file_types: human_readable_file_types, max_size: ::FileUploadValidator::MAX_FILE_SIZE_MB) %></p>
       <div class='d-flex'>
         <span tabindex="0" class="btn btn-secondary btn-file text-nowrap mr-2" data-keydown-id="file-input" >
@@ -62,8 +63,8 @@
           </div>
         </section>
       <% end %>
-    </section>
-  <% end %>
+    <% end %>
+  </section>
 <% end %>
 
 <% unless @evidence.documents&.empty? %>
