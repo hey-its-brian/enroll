@@ -21,21 +21,22 @@ module BenefitMarkets
         BenefitMarkets::Locations::RatingArea.each do |ra|
           rating_area_cache[ra.id] = ra.exchange_provided_code
         end
-        BenefitMarkets::Products::Product.each do |product|
-          $product_rate_age_bounding_cache[product.id] = {
-            minimum: product.premium_ages.min, 
-            maximum: product.premium_ages.max
+        BenefitMarkets::Products::Product.only(:_id, :premium_tables, :premium_ages).batch_size(100).pluck(:_id, :premium_tables, :premium_ages).each do |product|
+          product_id = product[0]
+          $product_rate_age_bounding_cache[product_id] = {
+            minimum: product[2]["min"],
+            maximum: product[2]["max"]
           }
-          product.premium_tables.each do |pt|
-            r_area_tag = rating_area_cache[pt.rating_area_id]
-            pt.premium_tuples.each do |tuple|
+          product[1].each do |pt|
+            r_area_tag = rating_area_cache[pt["rating_area_id"]]
+            pt["premium_tuples"].each do |tuple|
               ::BenefitMarkets::Products::PremiumTuple::TOBACCO_USE_VALUES.each do |tobacco_value|
-                $product_rate_calculation_cache[product.id][r_area_tag][tuple.age][tobacco_value] = (
-                  $product_rate_calculation_cache[product.id][r_area_tag][tuple.age][tobacco_value] +
+                $product_rate_calculation_cache[product_id][r_area_tag][tuple["age"]][tobacco_value] = (
+                  $product_rate_calculation_cache[product_id][r_area_tag][tuple["age"]][tobacco_value] +
                   [{
-                    start_on: pt.effective_period.min,
-                    end_on: pt.effective_period.max,
-                    cost: tobacco_value == 'Y' ? (tuple.tobacco_cost || tuple.cost) : tuple.cost # Requirement is to fall back to regular costs if tobacco rate doesn't exists.
+                    start_on: pt["effective_period"]["min"],
+                    end_on: pt["effective_period"]["max"],
+                    cost: tobacco_value == 'Y' ? (tuple["tobacco_cost"] || tuple["cost"]) : tuple["cost"] # Requirement is to fall back to regular costs if tobacco rate doesn't exists.
                   }]
                 )
               end
