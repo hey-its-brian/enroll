@@ -92,10 +92,16 @@ module Eligibilities
           method_name = "determine_#{key.to_s.split('_').last}_evidence_aasm_status".to_sym
           send(method_name)
 
-          update_reason = "#{key.to_s.titleize} Evidence Determination Request Failed due to #{response.failure}"
-          add_verification_history("Hub Request Failed", update_reason, "system")
-        end
+          update_reason, updated_by = if update_reason == "Bulk Hub Call"
+                                        update_reason = "Bulk Process: #{key.to_s.titleize} Evidence Determination Request Failed due to #{response.failure}"
+                                        [update_reason, updated_by]
+                                      else
+                                        update_reason = "#{key.to_s.titleize} Evidence Determination Request Failed due to #{response.failure}"
+                                        [update_reason, "system"]
+                                      end
 
+          add_verification_history("Hub Request Failed", update_reason, updated_by)
+        end
         false
       else
         move_to_pending!

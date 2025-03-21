@@ -35,7 +35,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
   end
   let!(:renewal_draft_application) do
     FactoryBot.create(:financial_assistance_application,
-                      hbx_id: '111222333',
+                      hbx_id: '111222334',
                       family_id: family.id,
                       is_renewal_authorized: false,
                       is_requesting_voter_registration_application_in_mail: true,
@@ -50,7 +50,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
                       assistance_year: renewal_year,
                       full_medicaid_determination: true)
   end
-  let!(:submitted_application) do
+  let(:submitted_application) do
     FactoryBot.create(:financial_assistance_application,
                       hbx_id: '111222333',
                       family_id: family.id,
@@ -104,7 +104,9 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
 
       it 'returns array of resubmission details' do
         expect(@result.success).to be_truthy
-        expect(@result.success.first[:application_hbx_id]).to eq(renewal_draft_application.hbx_id)
+        results = @result.success
+        application_hbx_ids = results.collect{|a| a[:application_hbx_id]}
+        expect(application_hbx_ids).to include(renewal_draft_application.hbx_id)
         expect(@result.success.first[:original_state]).to eq('renewal_draft')
         expect(@result.success.first[:resubmission_result]).to eq('success')
         expect(@result.success.first[:result_message]).to eq('Successfully Published for event determination_requested')
@@ -113,15 +115,19 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
 
     context 'with submitted renewal application' do
       before do
+        submitted_application
         @result = subject.call({ renewal_year: renewal_year })
       end
 
       it 'returns array of resubmission details' do
         expect(@result.success).to be_truthy
-        expect(@result.success.last[:application_hbx_id]).to eq(renewal_draft_application.hbx_id)
-        expect(@result.success.last[:original_state]).to eq('submitted')
-        expect(@result.success.last[:resubmission_result]).to eq('success')
-        expect(@result.success.last[:result_message]).to eq('Successfully Published for event determination_requested')
+        results = @result.success
+        application_hbx_ids = results.collect{|a| a[:application_hbx_id]}
+        expect(application_hbx_ids).to include(renewal_draft_application.hbx_id)
+        expect(application_hbx_ids).to include(submitted_application.hbx_id)
+        expect(results.last[:original_state]).to eq('submitted')
+        expect(results.last[:resubmission_result]).to eq('success')
+        expect(results.last[:result_message]).to eq('Successfully Published for event determination_requested')
       end
 
       it 'sets the assistance_year on the resubmitted application' do

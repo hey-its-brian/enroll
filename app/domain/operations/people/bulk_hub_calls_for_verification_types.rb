@@ -95,8 +95,8 @@ module Operations
           verification_type.fail_type
           verification_type.add_type_history_element(
             action: "Hub Request Failed",
-            modifier: "System",
-            update_reason: "#{verification_type.type_name} Request Failed due to #{message}"
+            modifier: "Admin",
+            update_reason: "Bulk Process: #{verification_type.type_name} Request Failed due to #{message}"
           )
           person.families.each do |family|
             ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
