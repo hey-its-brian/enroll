@@ -67,7 +67,7 @@ Rails.application.config.content_security_policy do |policy|
   policy.img_src     :self, csp_proto, :data, "*.google-analytics.com", "*.gstatic.com", "*.googletagmanager.com"
   policy.script_src  :self, csp_proto, "https://tagmanager.google.com", "https://www.googletagmanager.com", "https://apps.usw2.pure.cloud", "*.fontawesome.com", "*.google-analytics.com", "https://js-agent.newrelic.com"
   policy.style_src   :self, csp_proto, "'unsafe-inline'", "https://tagmanager.google.com", "https://www.googletagmanager.com", "https://fonts.googleapis.com", "*.fontawesome.com"
-  policy.connect_src :self, csp_proto, "https://api.usw2.pure.cloud", "wss://streaming.usw2.pure.cloud", "*.nr-data.net"
+  policy.connect_src :self, csp_proto, "https://api.usw2.pure.cloud", "wss://streaming.usw2.pure.cloud", "*.nr-data.net", "wss://webmessaging.usw2.pure.cloud"
   policy.media_src   :self, csp_proto, :data
 end
 
