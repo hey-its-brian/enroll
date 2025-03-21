@@ -410,6 +410,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.insured.families.verifications' => "Verifications",
   :'en.insured.families.verifications.types.evidence_type_residency' => "Income",
   :'en.insured.families.verifications.types.evidence_type_alive_status' => "Deceased",
+  :'en.insured.families.verifications.types.evidence_type_identity' => "Identity",
   :'en.insured.families.verifications.statuses.verified' => "Verified",
   :'en.insured.families.verifications.statuses.external_source' => "External Source",
   :'en.insured.families.verifications.action_items.outstanding_document' => "Outstanding Document",

@@ -29,7 +29,7 @@
       <tbody>
         <% evidences.each do |evidence| %>
           <% is_action_needed = evidence.is_action_needed? %>
-          <tr data-href=<%= verification_detail_insured_families_path(person_id: @member.person_id, eligibility_kind: evidence.eligibility_state.eligibility_item_key, evidence_key: evidence.evidence_item_key) %>>
+          <tr data-href=<%= verification_detail_insured_families_path(person_id: evidence.person.id, eligibility_kind: evidence.evidence_group, evidence_key: evidence.evidence_item_key) %>>
             <td class="<%= 'admin-designation' if current_user.has_hbx_staff_role? && !can_display_type?(evidence, is_admin: false) %>">
               <%= strong_if(is_strong: is_action_needed) do display_verification_type_name(evidence.evidence_item_key) end %>
             </td>

@@ -271,6 +271,10 @@ Then(/the consumer should (.*) the upload section/) do |negation|
   expect(page).send(is_visible ? :to : :not_to, have_selector(IvlDocumentsPage.upload_documents_section))
 end
 
+Then(/the consumer should see the Identity verification/) do
+  expect(page).to have_css('tr', text: 'Identity')
+end
+
 When(/the consumer selects a household member/) do
   find("#{IvlDocumentsPage.household_members_section} tbody tr").click
 end

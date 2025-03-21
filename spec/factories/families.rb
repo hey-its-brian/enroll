@@ -72,6 +72,21 @@ FactoryBot.define do
         end
       end
     end
+
+    trait :with_eligibility_determination do
+      transient do
+        subject_count { 2 }
+        subjects_with_outstanding { 1 }
+      end
+
+      after(:build) do |family, evaluator|
+        family.eligibility_determination = build(
+          :eligibilities_determination,
+          subject_count: evaluator.subject_count,
+          subjects_with_outstanding: evaluator.subjects_with_outstanding
+        )
+      end
+    end
   end
 end
 

@@ -26,9 +26,9 @@
               </thead>
               <tbody>
                 <% items.each do |item| %>
-                  <% subject = item.eligibility_state.subject %>
-                  <tr data-href=<%= verification_detail_insured_families_path(person_id: subject.person_id, eligibility_kind: item.eligibility_state.eligibility_item_key, evidence_key: item.evidence_item_key) %>>
-                    <td><b><%= subject.person.full_name %></b></td>
+                  <% person = item.person %>
+                  <tr data-href=<%= verification_detail_insured_families_path(person_id: person.id, eligibility_kind: item.evidence_group, evidence_key: item.evidence_item_key) %>>
+                    <td><b><%= person.full_name %></b></td>
                     <td><b><%= display_verification_type_name(item.evidence_item_key) %></b></td>
                     <td><b><%= show_v_type(item) %></b></td>
                     <td><b><%= item.due_on || l10n('not_applicable') %></b></td>

@@ -15,24 +15,30 @@ module DropdownHelper
   end
 
   def verification_dropdowns(verification, document)
-    parsed = GlobalID.parse(verification.evidence_gid)
-    gid = parsed.model_id
     doc_key = document.identifier.split('#').last
-    if parsed.model_class == VerificationType
+    case verification.evidence_group
+    when 'ridp'
+      option_args = [[l10n('download'), "/insured/ridp_documents/download/#{doc_key}", :blank_target]]
+    when 'aca_individual_market_eligibility'
       option_args = [
         [l10n('download'), "/insured/verification_documents/download/#{doc_key}", :blank_target],
         [l10n('remove'), document_path(
           document,
-          :verification_type => gid,
+          :verification_type => GlobalID.parse(verification.evidence_gid).model_id,
           :doc_title => document.title&.titleize,
-          :person_id => verification.eligibility_state.subject.person_id,
-          :eligibility_kind => verification.eligibility_state.eligibility_item_key,
+          :person_id => verification.person.id,
+          :eligibility_kind => verification.evidence_group,
           :evidence_key => verification.evidence_item_key
         ), :delete]
       ]
-    else
+    when 'aptc_csr_credit'
       application = fetch_latest_determined_application(@family.id)
-      applicant = application.applicants.detect { |appl| appl.family_member_id == GlobalID::Locator.locate(verification.eligibility_state.subject.gid)&.id }
+      family_member = @family.find_family_member_by_person(verification.person)
+      return [] unless family_member.present?
+
+      applicant = application.applicants.detect { |appl| appl.family_member_id == family_member.id }
+      return [] unless applicant.present?
+
       evidence_key = verification.evidence_item_key
       option_args = [
         [l10n('download'), "/financial_assistance/applications/#{application.id}/applicants/#{applicant.id}/verification_documents/download?key=#{doc_key}&evidence_kind=#{evidence_key}", :blank_target],
@@ -40,11 +46,11 @@ module DropdownHelper
          financial_assistance.application_applicant_verification_documents_destroy_path(
            document,
            :applicant_id => applicant.id,
-           :evidence => gid,
+           :evidence => GlobalID.parse(verification.evidence_gid).model_id,
            :doc_key => doc_key,
            :doc_title => document.title&.titleize,
-           :person_id => verification.eligibility_state.subject.person_id,
-           :eligibility_kind => verification.eligibility_state.eligibility_item_key,
+           :person_id => verification.person.id,
+           :eligibility_kind => verification.evidence_group,
            :evidence_kind => verification.evidence_item_key
          ), :delete]
       ]

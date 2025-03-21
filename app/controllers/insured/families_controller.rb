@@ -24,6 +24,7 @@ class Insured::FamiliesController < FamiliesController
     :healthcare_for_childcare_program_form,
     :update_osse_eligibilities
   ]
+  before_action :create_evidence, only: [:verification_detail, :verification_history]
 
   around_action :cache_hbx, only: [:home]
 
@@ -236,12 +237,15 @@ class Insured::FamiliesController < FamiliesController
     authorize @family, :verification?
 
     if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
-      action_items = @family.eligibility_determination.subjects.map { |subject| subject.eligibility_states.by_type_uploadable }.flatten.map { |state| state.evidence_states.where_action_needed }.flatten
-      sorted_action_items = action_items.sort_by { |evidence| evidence.due_on || Float::INFINITY }
-      @action_items = sorted_action_items.map { |evidence| EvidenceStateDecorator.new(evidence) }
+      result = Operations::Families::Verifications::Summary::HouseholdQuery.new.call(family: @family)
+      if result.success?
+        value = result.value!
 
-      # sort subjects first by `documents_outstanding?`, then by `documents_outstanding?` then by nil `due_on``
-      @subjects = @family.eligibility_determination.subjects.sort_by { |subject| [subject.documents_outstanding? ? 0 : 1, subject.earliest_due_date || Float::INFINITY] }
+        @action_items = value[:action_items]
+        @subjects = value[:subjects]
+      else
+        redirect_back(fallback_location: home_insured_families_path, :flash => {error: result.failure})
+      end
     else
       @family_members = @person.primary_family.has_active_consumer_family_members
     end
@@ -252,42 +256,47 @@ class Insured::FamiliesController < FamiliesController
   def verification_individual
     authorize @family, :verification_individual?
 
-    subject = @family.eligibility_determination.subjects.by_person(params[:person_id]).first
-    @member = @family.find_family_member_by_person(subject.person)
+    result = Operations::Families::Verifications::Summary::IndividualQuery.new.call(family: @family, person_id: params[:person_id])
+    if result.success?
+      value = result.value!
 
-    # sort evidences first by `is_action_needed?`, then by `due_on`, then by nil `due_on``
-    evidences = subject.eligibility_states.by_type_uploadable.map(&:evidence_states).flatten
-    sorted_evidences = evidences.sort_by do |evidence|
-      [
-        evidence.is_action_needed? ? 0 : 1,
-        evidence.due_on || Float::INFINITY,
-        display_verification_type_name(evidence.evidence_item_key)
-      ]
+      @member = value[:member]
+      @evidences = value[:evidences]
+    else
+      redirect_back(fallback_location: verification_insured_families_path, :flash => {error: result.failure})
     end
-    @evidences = sorted_evidences.map { |evidence| EvidenceStateDecorator.new(evidence) }
 
     respond_to :html
   end
 
   def verification_detail
     authorize @family, :verification_detail?
-    create_evidence_decorator
 
     respond_to :html
   end
 
   def verification_history
     authorize @family, :verification_history?
-    create_evidence_decorator
 
     respond_to :html
   end
 
-  def create_evidence_decorator
-    subject = @family.eligibility_determination.subjects.by_person(params[:person_id]).first
-    @member = @family.find_family_member_by_person(subject.person)
-    @evidence = subject.eligibility_states.by_type(params[:eligibility_kind]).first.evidence_states.by_key(params[:evidence_key]).first
-    @evidence = ::EvidenceStateDecorator.new(@evidence)
+  def create_evidence
+    result = Operations::Families::Verifications::Summary::EvidenceQuery.new.call(
+      family: @family,
+      person_id: params[:person_id],
+      evidence_key: params[:evidence_key],
+      eligibility_kind: params[:eligibility_kind]
+    )
+
+    if result.success?
+      value = result.value!
+
+      @member = value[:member]
+      @evidence = value[:evidence]
+    else
+      redirect_back(fallback_location: verification_insured_families_path, :flash => {error: result.failure})
+    end
   end
 
   def upload_application

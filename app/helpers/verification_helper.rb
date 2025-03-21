@@ -3,6 +3,7 @@
 module VerificationHelper
   include DocumentsVerificationStatus
   include HtmlScrubberUtil
+  include L10nHelper
 
   def doc_status_label(doc)
     case doc.status
@@ -39,36 +40,43 @@ module VerificationHelper
     end
   end
 
-  def display_verification_type_name(type)
-    if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
-      case type
-      # Financial Assistance Evidences
-      when :esi_evidence
-        l10n("faa.evidence_type_esi")
-      when :local_mec_evidence
-        l10n("faa.evidence_type_aces")
-      when :non_esi_evidence
-        l10n("faa.evidence_type_non_esi")
-      when :income_evidence
-        l10n("faa.evidence_type_income")
-      # Market Eligibility Verifications
-      when :residency
-        l10n("insured.families.verifications.types.evidence_type_residency")
-      when :alive_status
-        l10n("insured.families.verifications.types.evidence_type_alive_status")
-      else
-        type.to_s.titleize
-      end
+  def display_v_type_name(type)
+    case type
+    when 'ME Residency'
+      'Income'
+    when 'Alive Status'
+      'Deceased'
     else
-      case type
-      when 'ME Residency'
-        'Income'
-      when 'Alive Status'
-        'Deceased'
-      else
-        type
-      end
+      type
     end
+  end
+
+  def display_evidence_name(type)
+    case type
+    # Financial Assistance Evidences
+    when :esi_evidence
+      l10n("faa.evidence_type_esi")
+    when :local_mec_evidence
+      l10n("faa.evidence_type_aces")
+    when :non_esi_evidence
+      l10n("faa.evidence_type_non_esi")
+    when :income_evidence
+      l10n("faa.evidence_type_income")
+    # Market Eligibility Verifications
+    when :residency
+      l10n("insured.families.verifications.types.evidence_type_residency")
+    when :alive_status
+      l10n("insured.families.verifications.types.evidence_type_alive_status")
+      # RIDP
+    when :identity
+      l10n('insured.families.verifications.types.evidence_type_identity')
+    else
+      type.to_s.titleize
+    end
+  end
+
+  def display_verification_type_name(type)
+    EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) ? display_evidence_name(type) : display_v_type_name(type)
   end
 
   # @!method had_outstanding_status?(verif_type)
@@ -85,7 +93,8 @@ module VerificationHelper
   def can_display_evidence_state?(evidence_state, is_admin: current_user.has_hbx_staff_role?)
     return true if is_admin
 
-    if is_evidence_market_eligibility?(evidence_state)
+    case evidence_state.evidence_group
+    when 'aca_individual_market_eligibility'
       case evidence_state.evidence_item_key
       when Eligibilities::EvidenceState::ALIVE_STATUS
         EnrollRegistry.feature_enabled?(:alive_status) && had_outstanding_status?(evidence_state)
@@ -96,8 +105,10 @@ module VerificationHelper
       else
         true
       end
-    else
+    when 'aptc_csr_credit'
       !(evidence_state.evidence_item_key == :local_mec_evidence && !FinancialAssistanceRegistry.feature_enabled?(:mec_check))
+    else
+      true
     end
   end
 
@@ -340,6 +351,10 @@ module VerificationHelper
     options_for_select(build_admin_actions_list(obj, f_member))
   end
 
+  def admin_actions_allowed?(evidence)
+    true unless evidence.evidence_item_key == :identity
+  end
+
   def display_upload_for_verification?(obj)
     if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
       %w[verified attested valid curam].exclude?(obj.status.to_s)
@@ -369,7 +384,14 @@ module VerificationHelper
   end
 
   def build_evidence_admin_actions_list(evidence, f_member)
-    is_evidence_market_eligibility?(evidence) ? build_evidence_admin_actions_list_market(evidence, f_member) : build_evidence_admin_actions_list_aptc_csr(evidence)
+    case evidence.evidence_group
+    when 'aca_individual_market_eligibility'
+      build_evidence_admin_actions_list_market(evidence, f_member)
+    when 'aptc_csr_credit'
+      build_evidence_admin_actions_list_aptc_csr(evidence)
+    else
+      []
+    end
   end
 
   def build_evidence_admin_actions_list_market(evidence, f_member)
@@ -519,7 +541,7 @@ module VerificationHelper
   private
 
   def fetch_previous_states(obj)
-    history_elements = obj.is_a?(EvidenceStateDecorator) ? obj.history : obj&.type_history_elements
+    history_elements = obj.is_a?(::Adapters::EvidenceAdapter) ? obj.history : obj&.type_history_elements
     history_elements&.pluck(:from_validation_status, :to_validation_status)&.flatten&.compact
   end
 
@@ -529,7 +551,7 @@ module VerificationHelper
   end
 
   def outstanding_status?(previous_states, previous_states_history, obj)
-    status = obj.is_a?(EvidenceStateDecorator) ? obj.status : obj&.validation_status
+    status = obj.is_a?(::Adapters::EvidenceAdapter) ? obj.status : obj&.validation_status
     previous_states&.include?('outstanding') || previous_states_history || status == 'outstanding'
   end
 
@@ -537,16 +559,14 @@ module VerificationHelper
     is_strong ? content_tag(:strong, &block) : yield
   end
 
-  def is_evidence_market_eligibility?(evidence)
-    return false unless evidence.is_a?(EvidenceStateDecorator)
-
-    evidence.eligibility_state.eligibility_item_key == 'aca_individual_market_eligibility'
-  end
-
   def verification_upload_query
-    person = @evidence.eligibility_state.subject.person
+    group = @evidence.evidence_group
+    return if group == 'ridp'
+
+    person = @evidence.person
     gid = GlobalID.parse(@evidence.evidence_gid).model_id
-    if is_evidence_market_eligibility?(@evidence)
+    case group
+    when 'aca_individual_market_eligibility'
       query = {
         url: insured_verification_documents_upload_path,
         params: {
@@ -554,7 +574,7 @@ module VerificationHelper
           :verification_type => gid
         }
       }
-    else
+    when 'aptc_csr_credit'
       application = fetch_latest_determined_application(@family.id)
       member = @family.find_family_member_by_person(person)
       applicant = application.applicants.detect { |appl| appl.family_member_id == member.id }
@@ -569,16 +589,19 @@ module VerificationHelper
         }
       }
     end
-    query[:params][:person_id] = @evidence.eligibility_state.subject.person_id
-    query[:params][:eligibility_kind] = @evidence.eligibility_state.eligibility_item_key
+    query[:params][:person_id] = person.id
+    query[:params][:eligibility_kind] = @evidence.evidence_group
     query[:params][:evidence_key] = @evidence.evidence_item_key
     query[:params][:family] = @family.id
     query
   end
 
   def verification_admin_actions
-    person = @evidence.eligibility_state.subject.person
-    if is_evidence_market_eligibility?(@evidence)
+    return nil if @evidence.evidence_group == 'ridp'
+
+    person = @evidence.person
+    case @evidence.evidence_group
+    when 'aca_individual_market_eligibility'
       type = @evidence.evidence_item_key.to_s
       gid = GlobalID.parse(@evidence.evidence_gid).model_id
       {
@@ -594,7 +617,7 @@ module VerificationHelper
           }
         }
       }
-    else
+    when 'aptc_csr_credit'
       application = fetch_latest_determined_application(@family.id)
       member = @family.find_family_member_by_person(person)
       applicant = application.applicants.detect { |appl| appl.family_member_id == member.id }
