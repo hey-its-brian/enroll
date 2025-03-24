@@ -44,7 +44,7 @@ class VerificationDocumentsHelper
     end
 
     def informational_sheet_anchor_hash
-      {:a => "Documents Needed for Verification", :href => "https://www.coverme.gov/sites/default/files/inline-files/documents%20needed%20for%20verification%20informational%20sheet.pdf"}
+      {:a => "Documents Needed for Verification", :href => "https://www.dchealthlink.com/submit-docs"}
     end
 
     def citizenship_content
@@ -215,6 +215,13 @@ class VerificationDocumentsHelper
 
     def non_esi_content
       [
+        "Our records indicate you may have other health insurance coverage that meets Affordable Care Act (ACA) standards (such as Medicare, TRICARE, Veteran's health coverage). Individuals who are enrolled or have access to other coverage are not" \
+        " eligible to enroll with financial assistance on CoverME.gov.",
+        "If you have Medicare or other coverage, it is important to end this person's CoverME.gov coverage as soon as possible to avoid needing to pay back all or some of the premium tax credits you received.",
+        "If you aren’t eligible or enrolled in other coverage, you need to provide documents to confirm you do not have coverage from another program.",
+        "For a full listing of documents you can submit to verify you don’t have other health coverage, see the",
+        informational_sheet_anchor_hash,
+        "informational sheet on CoverME.gov.",
         "Documents we accept to confirm you don't have qualifying health coverage through Medicare:",
         "Letter or statement from Medicare or the Social Security Administration stating that you or your family members are:",
         "Not eligible for or enrolled in premium-free Medicare Part A.",
@@ -252,7 +259,7 @@ class VerificationDocumentsHelper
         "informational sheet on CoverME.gov.",
         "Documents we accept as proof of earned income:",
         "Most recently filed Federal Income Tax Form 1040, with appropriate Schedules. Must contain first and last name, income amount, and tax year.",
-        "Pay stubs : Must contain first and last name or other identifying information (e.g., SSN), income amount, and pay period or frequency of pay with the date of payment.",
+        "Pay stubs: Must contain first and last name or other identifying information (e.g., SSN), income amount, and pay period or frequency of pay with the date of payment.",
         "Wages and tax statement (W-2 and/or 1099, including 1099 MISC, 1099G, 1099R, 1099SSA, 1099 DIV, 1099SS, 1099INT). Must contain first and last name, income amount, tax year, and employer name (if applicable).",
         "Employer Statement. Must be on company letterhead or state the name of the company, employer contact information, signed by the employer, be no older than 45 days from the date received by CoverME.gov, and verify the start or end date of" \
         " employment and pay amount.",

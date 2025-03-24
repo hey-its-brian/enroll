@@ -31,6 +31,8 @@ registry:
             item: ''
           - key: :submit_docs_url
             item: 'https://www.coverme.gov/support/forms'
+          - key: :submit_docs_information_url
+            item: "https://www.coverme.gov/sites/default/files/inline-files/Documents%20Needed%20for%20Verification%20Informational%20Sheet.pdf"
           - key: :state_residency
             item: 'ME Residency'
           - key: :site_key

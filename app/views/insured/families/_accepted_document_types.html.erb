@@ -1,6 +1,6 @@
 <div class="mb-4">
   <% type_name = @evidence.evidence_item_key.to_s %>
-  <% informational_sheet_url = "https://www.coverme.gov/sites/default/files/inline-files/documents%20needed%20for%20verification%20informational%20sheet.pdf" %>
+  <% informational_sheet_url = EnrollRegistry[:enroll_app].setting(:submit_docs_information_url).item %>
 
   <% case @evidence.evidence_item_key %>
   <% when :income_evidence %>
@@ -167,9 +167,10 @@
       </div>
     </div>
   <% when :non_esi_evidence %>
+    <p><%= l10n('verifications_document_types.no_other_coverage.preface') %></p>
+    <p><%= l10n('verifications_document_types.no_other_coverage.warning') %></p>
     <p>
-      <%= l10n('verifications_document_types.no_other_coverage.preface') %>
-      <%= l10n('verifications_document_types.no_other_coverage.warning') %>
+      <%= l10n('verifications_document_types.no_other_coverage.provide_documents') %>
       <%= l10n('verifications_document_types.redirect_1', type_substring: l10n('verifications_document_types.no_other_coverage.redirect_specification')) %>
       <a href=<%= informational_sheet_url %> target="_blank"><%= l10n('verifications_document_types.redirect_link_text') %></a><%= l10n('verifications_document_types.redirect_2') %>
     </p>
@@ -257,10 +258,8 @@
       </div>
     </div>
   <% when :alive_status %>
-    <p>
-      <%= l10n('verifications_document_types.death.preface') %>
-      <%= l10n('verifications_document_types.death.contact') %>
-    </p>
+    <p><%= l10n('verifications_document_types.death.preface') %></p>
+    <p><%= l10n('verifications_document_types.death.contact') %></p>
   <% else %>
     <p><%= l10n('insured.verification_information_old') %></p>
   <% end %>

@@ -440,6 +440,7 @@ dl.parent.weight-n {
   a {
     &[data-toggle="collapse"]{ 
       text-decoration: none;
+      color: inherit;
       padding-left: 28px;
       margin-left: 28px;
       background-position: 0 center;  
