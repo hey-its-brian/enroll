@@ -51,10 +51,6 @@ module Eligibilities
       end
     end
 
-    def has_uploadable_eligibility_with_negative_evidences?
-      eligibility_states.by_type_uploadable.any?(&:has_negative_evidences?)
-    end
-
     # seliarizable_cv_hash for subject including eligibility states
     # @return [Hash] hash of subject
     def serializable_cv_hash

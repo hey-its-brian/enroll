@@ -1235,10 +1235,6 @@ class Family
     update_due_date_on_vlp_documents(new_due_date)
   end
 
-  def is_determination_negative?
-    eligibility_determination&.negative? || true
-  end
-
   class << self
 
     # Set the sort order to return families by primary applicant last_name, first_name

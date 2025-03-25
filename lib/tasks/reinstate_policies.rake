@@ -63,14 +63,14 @@ namespace :reinstate_policies do
           reinstate_enrollment = HbxEnrollment.new
           reinstate_enrollment.assign_attributes(params)
           if reinstate_enrollment.present? && reinstate_enrollment.may_reinstate_coverage?
-            reinstate_enrollment.reinstate_coverage!(check_determination: true)
+            reinstate_enrollment.reinstate_coverage!
             if EnrollRegistry.feature_enabled?(:temporary_configuration_enable_multi_tax_household_feature) && base_enrollment.is_ivl_by_kind?
               TaxHouseholdEnrollment.by_enrollment_id(base_enrollment.id).each do |thhe|
                 new_thhe = thhe.build_tax_household_enrollment_for(reinstate_enrollment)
                 new_thhe.save
               end
             end
-            reinstate_enrollment.begin_coverage!(check_determination: true) if reinstate_enrollment.may_begin_coverage?
+            reinstate_enrollment.begin_coverage! if reinstate_enrollment.may_begin_coverage?
             reinstate_enrollment.notify_of_coverage_start(false)
             enrollments = HbxEnrollment.where(
               { :family_id => base_enrollment.family_id,
