@@ -762,6 +762,31 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
         end
       end
     end
+
+    context "when the people tab flag is enabled" do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:people_tab).and_return(true)
+      end
+
+      it "should not update the DOB" do
+        patch :update, params: update_params
+        applicant.reload
+        expect(applicant.dob).not_to eq Date.parse(update_params[:applicant][:dob])
+        expect(applicant.dob).to eq TimeKeeper.date_of_record - 40.years
+      end
+
+      it "should update the applicant otherwise" do
+        patch :update, params: update_params
+        applicant.reload
+        expect(applicant.first_name).to eq 'update'
+      end
+
+      it "should not raise any errors" do
+        patch :update, params: update_params
+        applicant.reload
+        expect(applicant.valid?).to be_truthy
+      end
+    end
   end
 
   context "DELETE destroy" do
