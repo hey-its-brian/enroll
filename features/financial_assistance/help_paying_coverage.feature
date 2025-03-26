@@ -24,6 +24,16 @@ Feature: Help Paying for Coverage
     When the consumer manually enters the "Help Paying for Coverage" url in the browser search bar
     Then the consumer will not have access to the Help Paying for Coverage page
 
+  Scenario: FAA Feature Is Disabled - Consumer can not have access to the Help Paying for Coverage Page
+    Given the FAA feature configuration is disabled
+    When the consumer manually enters the "Help Paying for Coverage" url in the browser search bar
+    Then the consumer will not have access to the Help Paying for Coverage page
+
+  Scenario: FAA Feature Is Enabled, RIDP Incomplete - Consumer can not have access to the Help Paying for Coverage Page
+    Given the FAA feature configuration is enabled
+    When the consumer manually enters the "Help Paying for Coverage" url in the browser search bar
+    Then the consumer will not navigate to the Help Paying for Coverage page
+
   Scenario: FAA Feature Is Enabled - Consumer will redirect to Help Paying for Coverage page
     Given the FAA feature configuration is enabled
     And the user answers all the VERIFY IDENTITY  questions
@@ -34,5 +44,8 @@ Feature: Help Paying for Coverage
   
   Scenario: FAA Feature Is Enabled - Consumer can access the Help Paying for Coverage Page
     Given the FAA feature configuration is enabled
-    When the consumer manually enters the "Help Paying for Coverage" url in the browser search bar
+    And the user answers all the VERIFY IDENTITY  questions
+    And the person named Patrick Doe is RIDP verified
+    When the user clicks on submit button
+    And the Experian returns a VERIFIED response
     Then the consumer will navigate to the Help Paying for Coverage page

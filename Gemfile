@@ -142,7 +142,6 @@ group :development, :test do
   gem 'action-cable-testing'
   gem 'addressable',            '~> 2.3'
   gem 'axe-core-cucumber',      '~> 4.8.0'
-  gem 'brakeman',               '~> 6.1'
   gem 'climate_control',        '~> 0.2.0'
   gem 'email_spec',             '~> 2'
   gem 'factory_bot_rails',      '~> 4.11'
@@ -181,6 +180,7 @@ group :test do
   gem 'watir',                        '~> 6.18.0'
   gem 'webdrivers', '~> 5.3.1'
   gem 'webmock',                      '~> 3.9.0'
+  gem 'detest', :git => 'https://github.com/ideacrew/detest.git'
 end
 
 group :production do

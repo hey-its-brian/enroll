@@ -399,6 +399,10 @@ Then(/^the consumer will navigate to the Help Paying for Coverage page$/) do
   expect(page).to have_selector('h2', text: 'Your Application for Premium Reductions')
 end
 
+Then(/^the consumer will not navigate to the Help Paying for Coverage page$/) do
+  expect(page).not_to have_selector('h2', text: 'Your Application for Premium Reductions')
+end
+
 Then(/^the consumer will navigate to the Family Members page$/) do
   expect(page).to have_selector('h2', text: l10n('family_information').to_s)
 end

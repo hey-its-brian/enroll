@@ -1,6 +1,6 @@
 require "rails_helper"
-require "#{BenefitSponsors::Engine.root}/spec/shared_contexts/benefit_market.rb"
-require "#{BenefitSponsors::Engine.root}/spec/shared_contexts/benefit_application.rb"
+require "#{BenefitSponsors::Engine.root}/spec/shared_contexts/benefit_market"
+require "#{BenefitSponsors::Engine.root}/spec/shared_contexts/benefit_application"
 
 RSpec.describe ApplicationHelper, :type => :helper do
 

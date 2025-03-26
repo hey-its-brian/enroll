@@ -34,6 +34,13 @@ GIT
       sneakers
 
 GIT
+  remote: https://github.com/ideacrew/detest.git
+  revision: 540794c146a8b250ef63c441e5996a6067e09a34
+  specs:
+    detest (0.1.0)
+      redis
+
+GIT
   remote: https://github.com/ideacrew/event_source.git
   revision: 302d1b22876c1824215dcd71accd06f2ff2459da
   branch: trunk
@@ -1900,8 +1907,6 @@ GEM
     bindex (0.8.1)
     bootsnap (1.18.3)
       msgpack (~> 1.2)
-    brakeman (6.1.2)
-      racc
     browser (2.7.0)
     bson (4.15.0)
     builder (3.3.0)
@@ -2600,7 +2605,6 @@ DEPENDENCIES
   benefit_markets!
   benefit_sponsors!
   bootsnap (>= 1.1)
-  brakeman (~> 6.1)
   browser (= 2.7.0)
   bson (~> 4.3)
   capybara (~> 3.12)
@@ -2613,6 +2617,7 @@ DEPENDENCIES
   config (~> 2.0)
   cucumber-rails (= 2.0)
   database_cleaner-mongoid (~> 2.0, >= 2.0.1)
+  detest!
   devise (~> 4.5)
   devise-jwt (= 0.9.0)
   devise-security

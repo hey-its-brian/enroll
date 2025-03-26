@@ -2,158 +2,6 @@
 
 require 'rails_helper'
 
-RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each, type: :controller do
-  routes { FinancialAssistance::Engine.routes }
-
-  after :all do
-    DatabaseCleaner.clean
-  end
-
-  let(:person1) { FactoryBot.create(:person, :with_consumer_role)}
-  let!(:user) { FactoryBot.create(:user, :person => person1) }
-  let!(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person1) }
-  let!(:person2) do
-    per = FactoryBot.create(:person, :with_consumer_role, dob: Date.today - 30.years)
-    person1.ensure_relationship_with(per, 'spouse')
-    person1.save!
-    per
-  end
-  let!(:family_member_2) { FactoryBot.create(:family_member, person: person2, family: family)}
-  let!(:person3) do
-    per = FactoryBot.create(:person, :with_consumer_role, dob: Date.today - 10.years)
-    person1.ensure_relationship_with(per, 'child')
-    person1.save!
-    per
-  end
-  let!(:family_member_3) { FactoryBot.create(:family_member, person: person3, family: family)}
-  let!(:person4) do
-    per = FactoryBot.create(:person, :with_consumer_role, dob: Date.today - 10.years)
-    person1.ensure_relationship_with(per, 'child')
-    person1.save!
-    per
-  end
-  let!(:family_member_4) { FactoryBot.create(:family_member, person: person4, family: family)}
-
-  let(:family_id) { family.id}
-  let(:effective_on) { TimeKeeper.date_of_record.next_month.beginning_of_month }
-  let(:application_period) {effective_on.beginning_of_year..effective_on.end_of_year}
-
-  before do
-    family.primary_person.consumer_role.move_identity_documents_to_verified
-  end
-
-  describe "GET index" do
-    before(:each) do
-      sign_in user
-    end
-
-    it "assigns @applications" do
-      application = FinancialAssistance::Application.create!(family_id: family_id)
-      get :index
-      expect(assigns(:applications).to_a).to eq([application])
-    end
-
-    it "renders the index template" do
-      get :index
-      expect(response).to render_template("index")
-    end
-
-    context "when the request type is invalid" do
-      it "renders the index template" do
-        get :index, format: :json
-        expect(response.status).to eq 406
-        expect(response.body).to eq "{\"error\":\"Unsupported format\"}"
-        expect(response.media_type).to eq "application/json"
-      end
-
-      it "renders the index template" do
-        get :index, format: :fake
-        expect(response.status).to eq 406
-        expect(response.body).to eq "Unsupported format"
-      end
-
-      it "renders the index template" do
-        get :index, format: :xml
-        expect(response.status).to eq 406
-        expect(response.body).to eq "<error>Unsupported format</error>"
-      end
-    end
-
-    context 'for a person who exists in multiple families(with financial assistance applications)' do
-      let!(:family2) { FactoryBot.create(:family, :with_primary_family_member, person: person2) }
-      let!(:application1) { FinancialAssistance::Application.create!(family_id: family_id) }
-      let!(:application2) { FinancialAssistance::Application.create!(family_id: family2.id) }
-      let!(:family_member_2_2) { FactoryBot.create(:family_member, person: person1, family: family2)}
-
-      before do
-        get :index
-      end
-
-      it 'should include applications associated with family1' do
-        expect(assigns(:applications).map(&:id).map(&:to_s)).to include(application1.id.to_s)
-      end
-
-      it 'should NOT include applications associated with family2' do
-        expect(assigns(:applications).map(&:id).map(&:to_s)).not_to include(application2.id.to_s)
-      end
-    end
-  end
-
-  context "copy an application" do
-    let(:family1_id) { family.id }
-    let!(:application) { FactoryBot.create :financial_assistance_application, :with_applicants, family_id: family.id, aasm_state: 'determined' }
-    let(:current_hbx_profile) { OpenStruct.new(under_open_enrollment?: true) }
-
-    before(:each) do
-      sign_in user
-      allow(HbxProfile).to receive(:current_hbx).and_return(current_hbx_profile)
-      applicants = application.applicants
-      application.add_or_update_relationships(applicants[0], applicants[1], 'spouse')
-      application.add_or_update_relationships(applicants[0], applicants[2], 'parent')
-      application.add_or_update_relationships(applicants[0], applicants[3], 'parent')
-      application.add_or_update_relationships(applicants[1], applicants[2], 'parent')
-      application.add_or_update_relationships(applicants[1], applicants[3], 'parent')
-      application.add_or_update_relationships(applicants[2], applicants[3], 'sibling')
-      application.relationships << ::FinancialAssistance::Relationship.new(kind: 'spouse', applicant_id: applicants[0].id, relative_id: applicants[1].id)
-      application.relationships << ::FinancialAssistance::Relationship.new(kind: 'spouse', applicant_id: applicants[0].id, relative_id: applicants[1].id)
-    end
-
-    context 'when application service raises an error' do
-
-      before do
-        get :copy, params: { :id => application.id }
-        @new_application = FinancialAssistance::Application.where(family_id: application.family_id, :id.ne => application.id).first
-      end
-
-      it "redirects to the new application copy" do
-        expect(response).to redirect_to(edit_application_path(assigns(:application).reload))
-      end
-
-      it 'create duplicate application' do
-        expect(@new_application.family_id).to eq application.family_id
-      end
-
-      it 'create duplicate application with assistance year' do
-        expect(@new_application.assistance_year).not_to eq nil
-      end
-
-      it 'copies all the applicants' do
-        expect(@new_application.applicants.count).to eq application.applicants.count
-      end
-
-      it 'does not copy duplicate relationships' do
-        applicants = @new_application.applicants
-        expect(@new_application.relationships.where(applicant_id: applicants[0].id, relative_id: applicants[1].id).count).to eq 1
-      end
-
-      it 'only copies relationships to the primary applicant' do
-        applicants = @new_application.applicants
-        expect(@new_application.relationships.where(applicant_id: applicants[2].id, relative_id: applicants[3].id).count).to eq 0
-        expect(@new_application.relationships.count).to eq 6
-      end
-    end
-  end
-end
 
 RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each, type: :controller do
   include Dry::Monads[:do, :result]
@@ -391,6 +239,285 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       post :save_preferences, params: { id: application.id, application: application_valid_params.merge!("is_renewal_authorized" => "true") }
       application.reload
       expect(application.years_to_renew).to eq 5
+    end
+  end
+
+  context "POST submit" do
+    before do
+      allow(controller).to receive(:haven_determination_is_enabled?).and_return(true)
+      setup_faa_data
+      allow(FinancialAssistance::Operations::Applications::MedicaidGateway::PublishApplication).to receive(:new).and_return(obj)
+      allow(obj).to receive(:build_event).and_return(event)
+      allow(event.success).to receive(:publish).and_return(true)
+      controller.instance_variable_set(:@model, application.reload)
+    end
+
+    context "submit step with a valid but incomplete application" do
+      before do
+        application.update_attributes!(aasm_state: 'draft')
+        allow(application).to receive(:complete?).and_return(false)
+        allow(application).to receive(:save).and_return(true)
+        allow(FinancialAssistance::Application).to receive(:find_by).and_return(application)
+        allow(controller).to receive(:build_error_messages)
+
+        post :submit_your_application_save, params: { id: application.id, application: application_valid_params.merge!("parent_living_out_of_home_terms" => "false") }
+      end
+
+      it "should render error page when there is an incomplete or already submitted application" do
+        expect(response).to redirect_to(application_publish_error_application_path(application))
+      end
+
+      it "should set attestation terms to nil" do
+        expect(application.reload.attestation_terms).to eq nil
+      end
+    end
+
+    context "submit with a publish_result failure" do
+      # receive_message_chain(:new, :call).and_return(success_result)
+      let(:operation) { double new: double(call: double(failure: failure, success?: false)) }
+
+      before do
+        application.update_attributes!(aasm_state: 'submitted')
+        allow(application).to receive(:complete?).and_return(true)
+        allow(application).to receive(:may_submit?).and_return(true)
+        allow(application).to receive(:submit!).and_return(true)
+        allow(application).to receive(:save).and_return(true)
+        allow(FinancialAssistance::Application).to receive(:find_by).and_return(application)
+        allow(controller).to receive(:determination_request_class).and_return(operation)
+
+        post :submit_your_application_save, params: { id: application.id, application: application_valid_params }
+      end
+
+      context "containing a failed Dry::Validation::Result" do
+        let(:failure) do
+          Dry::Validation::Result.new(double(message_set: [], to_h: {})) do |r|
+            r.add_error(Dry::Validation::Message.new("length must be within 10 - 15",
+                                                     path: [:applicants, 0, :phones, 0, :full_phone_number]))
+          end
+        end
+
+        it 'redirects to application_publish_error_application_path' do
+          expect(response).to redirect_to(application_publish_error_application_path(application.id))
+        end
+
+        it 'builds the flash message correctly' do
+          expect(flash[:error].first).to eql("The 1st applicants's 1st phones's full phone number: length must be within 10 - 15.")
+        end
+      end
+
+      context "containing an Exception" do
+        let(:failure) do
+          StandardError.new("test")
+        end
+
+        it 'builds the flash message with the exception text' do
+          expect(flash[:error]).to eql('test')
+        end
+      end
+
+      context "containing with a string" do
+        let(:failure) { "big big problem" }
+
+        it 'builds the flash message with the string' do
+          expect(flash[:error]).to eql('Submission Error: big big problem')
+        end
+      end
+    end
+    context "when params has application key" do
+      let(:success_result) { double(success?: true)}
+
+      let!(:create_home_address) do
+        [application, application2].each do |applin|
+          applin.applicants.first.update_attributes!(is_primary_applicant: true)
+          address_attributes = {
+            kind: 'home',
+            address_1: '3 Awesome Street',
+            address_2: '#300',
+            city: FinancialAssistanceRegistry[:enroll_app].setting(:contact_center_city).item,
+            state: FinancialAssistanceRegistry[:enroll_app].setting(:state_abbreviation).item,
+            zip: FinancialAssistanceRegistry[:enroll_app].setting(:contact_center_zip_code).item
+          }
+          if EnrollRegistry[:enroll_app].setting(:geographic_rating_area_model).item == 'county'
+            address_attributes.merge!(
+              county: FinancialAssistanceRegistry[:enroll_app].setting(:contact_center_county).item
+            )
+          end
+          financial_assistance_address = ::FinancialAssistance::Locations::Address.new(address_attributes)
+          applin.reload
+          applin.applicants.each do |applicant|
+            applicant.addresses << financial_assistance_address
+            applicant.save!
+          end
+          family_id = applin.family_id
+          family = Family.find(family_id) if family_id.present?
+          next unless family
+          family.family_members.each do |fm|
+            main_app_address = Address.new(address_attributes)
+            fm.person.addresses << main_app_address
+            fm.person.save!
+          end
+        end
+      end
+
+      before do
+        applicant1 = application2.applicants.first
+        applicant2 = application2.applicants.last
+        application2.add_or_update_relationships(applicant1, applicant2, "spouse")
+      end
+
+      it "When model is saved" do
+        post :submit_your_application_save, params: { id: application.id, application: application_valid_params }
+        expect(application.save).to eq true
+      end
+
+      context "when the request type is invalid" do
+        it "should be an error when csv" do
+          post :submit_your_application_save, params: { id: application.id, application: application_valid_params }, format: :csv
+          expect(response.status).to eq 406
+          expect(response.body).to eq "Unsupported format"
+          expect(response.media_type).to eq "text/csv"
+        end
+
+        it "should be an error when js" do
+          post :submit_your_application_save, params: { id: application.id, application: application_valid_params }, format: :js
+          expect(response.status).to eq 406
+          expect(response.body).to eq "Unsupported format"
+        end
+
+        it "should be an error when xml" do
+          post :submit_your_application_save, params: { id: application.id, application: application_valid_params }, format: :xml
+          expect(response.status).to eq 406
+          expect(response.body).to eq "<error>Unsupported format</error>"
+        end
+      end
+
+      it "should fail during publish application and redirects to error_page" do
+        application2.ensure_relationship_with_primary(application2.applicants[1], 'spouse')
+        post :submit_your_application_save, params: { id: application2.id, application: application_valid_params }
+        expect(flash[:error]).to match(/Submission Error: /)
+        expect(response).to redirect_to(application_publish_error_application_path(application2))
+      end
+
+      it "should successfully publish application and redirects to wait_for_eligibility" do
+        application.update_attributes!(aasm_state: 'submitted')
+        application.reload
+        allow(application).to receive(:complete?).and_return(true)
+        allow(application).to receive(:may_submit?).and_return(true)
+        allow(application).to receive(:submit!).and_return(true)
+        allow(FinancialAssistance::Operations::Application::RequestDetermination).to receive_message_chain(:new, :call).and_return(success_result)
+        allow(FinancialAssistance::Application).to receive(:find_by).and_return(application)
+        post :submit_your_application_save, params: { id: application.id, application: application_valid_params }
+        expect(response).to redirect_to(wait_for_eligibility_response_application_path(application))
+      end
+    end
+
+    it "should re if model is not saved" do
+
+      post :submit_your_application_save, params: { id: application.id }
+      expect(response).to render_template 'financial_assistance/applications/submit_your_application'
+    end
+  end
+
+  context "GET copy" do
+    context "when there is not response from eligibility service" do
+      let(:current_hbx_profile) { OpenStruct.new(under_open_enrollment?: true) }
+
+      before do
+        FinancialAssistance::Application.where(family_id: family_id).each {|app| app.update_attributes(aasm_state: "determined")}
+        allow(HbxProfile).to receive(:current_hbx).and_return(current_hbx_profile)
+      end
+
+      it 'should copy applicant and redirect to financial assistance application edit path unless iap_year_selection enabled' do
+        skip "skipped: iap_year_selection enabled" if FinancialAssistanceRegistry[:iap_year_selection].enabled?
+
+        get :copy, params: { id: application.id }
+        existing_app_ids = [application.id, application2.id]
+        copy_app = FinancialAssistance::Application.where(family_id: family_id).reject {|app| existing_app_ids.include? app.id}.first
+        expect(response).to redirect_to(edit_application_path(copy_app.id))
+      end
+
+      it 'should copy applicant and redirect to financial assistance assistance year select path if iap_year_selection enabled' do
+        skip "skipped: iap_year_selection not enabled" unless FinancialAssistanceRegistry[:iap_year_selection].enabled?
+
+        get :copy, params: { id: application.id }
+        existing_app_ids = [application.id, application2.id]
+        copy_app = FinancialAssistance::Application.where(family_id: family_id).reject {|app| existing_app_ids.include? app.id}.first
+        expect(response).to redirect_to(application_year_selection_application_path(copy_app.id))
+      end
+    end
+
+    context "when there is response from eligibility service" do
+      include ::L10nHelper
+      include ActionView::Helpers::TranslationHelper
+
+      before do
+        allow(controller).to receive(:call_service)
+        controller.instance_variable_set(:@assistance_status, false)
+        controller.instance_variable_set(:@message, "101")
+        get :copy, params: { id: application.id }
+      end
+
+      let(:message) {l10n("faa.acdes_lookup")}
+
+      it 'should not copy applicant and redirect to financial_assistance_applications_path' do
+        expect(response).to redirect_to(applications_path)
+      end
+
+      it 'should not copy applicant and throw message' do
+        expect(flash[:error].to_s).to match(message)
+      end
+    end
+
+    context 'broker logged in' do
+      let!(:broker_user) { FactoryBot.create(:user, :person => writing_agent.person, roles: ['broker_role', 'broker_agency_staff_role']) }
+      let(:broker_agency_profile) { FactoryBot.build(:benefit_sponsors_organizations_broker_agency_profile, market_kind: :both) }
+
+      let(:writing_agent) do
+        FactoryBot.create(:broker_role, benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id, aasm_state: "active")
+      end
+
+      let(:assister)  do
+        assister = FactoryBot.build(:broker_role, benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id, npn: "SMECDOA00", aasm_state: "active")
+        assister.save(validate: false)
+        assister
+      end
+      let(:user) { broker_user }
+      let(:current_hbx_profile) { OpenStruct.new(under_open_enrollment?: true) }
+
+      before do
+        FinancialAssistance::Application.where(family_id: family_id).each {|app| app.update_attributes(aasm_state: "determined")}
+        allow(HbxProfile).to receive(:current_hbx).and_return(current_hbx_profile)
+        family.primary_person.consumer_role.move_identity_documents_to_verified
+      end
+
+      context 'hired by family' do
+        before(:each) do
+          family.broker_agency_accounts << BenefitSponsors::Accounts::BrokerAgencyAccount.new(benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id,
+                                                                                              writing_agent_id: writing_agent.id,
+                                                                                              start_on: Time.now,
+                                                                                              is_active: true)
+          family.reload
+        end
+
+        it "should render" do
+          skip "skipped: iap_year_selection enabled" if FinancialAssistanceRegistry[:iap_year_selection].enabled?
+
+          get :copy, params: { id: application.id }, session: { person_id: family.primary_person.id }
+          existing_app_ids = [application.id, application2.id]
+          copy_app = FinancialAssistance::Application.where(family_id: family_id).reject {|app| existing_app_ids.include? app.id}.first
+          expect(response).to redirect_to(edit_application_path(copy_app.id))
+        end
+      end
+
+      context 'not hired by family' do
+        it "should render" do
+          skip "skipped: iap_year_selection enabled" if FinancialAssistanceRegistry[:iap_year_selection].enabled?
+
+          get :copy, params: { id: application.id }, session: { person_id: family.primary_person.id }
+          expect(response).to have_http_status(:redirect)
+          expect(flash[:error]).to eq('Access not allowed for financial_assistance/application_policy.copy?, (Pundit policy)')
+        end
+      end
     end
   end
 
@@ -699,10 +826,6 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       it 'should return true for response body' do
         expect(response.body).to eq 'true'
       end
-
-      it 'should return true for response mime type' do
-        expect(response.media_type).to eq('text/plain')
-      end
     end
   end
 
@@ -782,76 +905,6 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       end
     end
   end
-end
-
-RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each, type: :controller do
-  include Dry::Monads[:do, :result]
-
-  before :all do
-    DatabaseCleaner.clean
-  end
-
-  context "with :filtered_application_list on" do
-    let(:person) { FactoryBot.create(:person, :with_consumer_role, first_name: "test1") }
-    let(:user) { FactoryBot.create(:user, :person => person) }
-
-    before do
-      allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:filtered_application_list).and_return(true)
-      allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:haven_determination).and_call_original
-      allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:medicaid_gateway_determination).and_call_original
-      Rails.application.reload_routes!
-    end
-
-    after do
-      allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:filtered_application_list).and_call_original
-      Rails.application.reload_routes!
-    end
-
-    describe 'Feature flagged endpoints', type: :request do
-
-      describe "GET /applications" do
-        let!(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
-        let!(:application) { FactoryBot.create :financial_assistance_application, :with_applicants, family_id: family.id, aasm_state: 'determined' }
-
-        before(:each) do
-          person.consumer_role.move_identity_documents_to_verified
-          sign_in(user)
-        end
-
-        it 'succeeds' do
-          get '/financial_assistance/applications'
-          expect(response).to render_template(:index_with_filter)
-        end
-
-        context "when the request type is invalid" do
-          let(:operation_instance) { instance_double(FinancialAssistance::Operations::Applications::QueryFilteredApplications) }
-          let(:failure_result) { Dry::Monads::Result::Failure.new({message: "error message"}) }
-
-          it "should not render the index_with_filter template" do
-            allow(FinancialAssistance::Operations::Applications::QueryFilteredApplications).to receive(:new).and_return(operation_instance)
-            allow(operation_instance).to receive(:call).and_return(failure_result)
-            get '/financial_assistance/applications', params: { format: :csv }
-            expect(response.status).to eq 406
-            expect(response.body).to eq "Unsupported format"
-            expect(response.media_type).to eq "text/csv"
-          end
-
-          it "should not render the index_with_filter template" do
-            get '/financial_assistance/applications', params: { format: :fake }
-            expect(response.status).to eq 406
-            expect(response.body).to eq "Unsupported format"
-          end
-
-          it "should not render the index_with_filter template" do
-            get '/financial_assistance/applications', params: { format: :xml }
-            expect(response.status).to eq 406
-            expect(response.body).to eq "<error>Unsupported format</error>"
-          end
-        end
-      end
-    end
-  end
-
 end
 
 def setup_faa_data

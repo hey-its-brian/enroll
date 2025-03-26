@@ -917,8 +917,10 @@ RSpec.describe Insured::ConsumerRolesController, dbclean: :after_each, :type => 
         let!(:assistance_year) { FinancialAssistance::Operations::EnrollmentDates::ApplicationYear.new.call.value! }
         let!(:application) { FactoryBot.create(:financial_assistance_application, aasm_state: 'draft', assistance_year: assistance_year, family_id: family.id, applicants: [applicant])}
 
-        it 'should error out for attempting to navigate without identity verification' do
-          expect { get :help_paying_coverage }.to raise_error(Pundit::NotDefinedError)
+        it 'should redirect for attempting to navigate without a consumer role' do
+          get :help_paying_coverage
+          expect(response).to have_http_status(:redirect)
+          expect(response).to redirect_to(search_insured_consumer_role_index_path)
         end
       end
 

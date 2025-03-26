@@ -24,6 +24,7 @@ AllCops:
     - "./components/transport_profiles/spec/dummy/**/*"
     - "./components/transport_profiles/spec/dummy/**/*"
     - "./eyes/enroll.eye.rb"
+    - "./test/detest_**"
 
 # TODO: RWC
 Layout/CommentIndentation:

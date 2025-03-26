@@ -614,7 +614,6 @@ RSpec.describe Insured::PlanShoppingsController, :type => :controller, dbclean: 
                           product: product,
                           household: family.active_household,
                           coverage_kind: "health",
-                          aasm_state: "shopping",
                           kind: 'individual',
                           hbx_enrollment_members: [hbx_enrollment_member, hbx_enrollment_member_1],
                           aasm_state: 'coverage_selected')
@@ -624,7 +623,6 @@ RSpec.describe Insured::PlanShoppingsController, :type => :controller, dbclean: 
                           family: family,
                           product: product,
                           kind: 'individual',
-                          aasm_state: "shopping",
                           household: family.active_household,
                           coverage_kind: "health",
                           hbx_enrollment_members: [hbx_enrollment_member_1],

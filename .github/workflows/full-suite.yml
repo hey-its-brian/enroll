@@ -10,8 +10,11 @@ concurrency:
 
 env:
   REPORT_PATH: 'ci/cuke-report.json'
-  CUCUMBER_SPLIT_CONFIGURATION_PATH: 'ci/cucumber-split-config.json'
   CLIENT: 'dc'
+  DETEST_SESSION_ID: ${{ github.run_id }}
+  DETEST_REDIS_IP: ${{ secrets.DETEST_REDIS_IP }}
+  DETEST_REDIS_PASSWORD: ${{ secrets.DETEST_REDIS_PASSWORD }}
+  DETEST_RERUN: ${{ github.run_attempt > 1 && 'true' || 'false' }}
 
 jobs:
   view_linter:
@@ -132,9 +135,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vendor/bundle
-          key: v6-${{ matrix.engine-name }}-${{ hashFiles('**/Gemfile.lock') }}
-          restore-keys: |
-            v6-${{ matrix.engine-name }}-${{ hashFiles('**/Gemfile.lock') }}
+          key: v6-${{ matrix.engine-name }}-${{ hashFiles('**/*.gemspec', '**/Gemfile', '**/Gemfile.lock') }}
       - name: bundle install
         run: |
           gem update --system --quiet --silent
@@ -152,8 +153,6 @@ jobs:
         with:
           path: node_modules
           key: ${{ runner.os }}-node_modules-v14-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-node_modules-v14-${{ hashFiles('yarn.lock') }}
       - name: yarn install
         if: steps.npm-cache.outputs.cache-hit != 'true'
         run: |
@@ -250,8 +249,6 @@ jobs:
         with:
           path: node_modules
           key: ${{ runner.os }}-node_modules-v14-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-node_modules-v14-${{ hashFiles('yarn.lock') }}
       - name: Install node dependencies
         if: steps.npm-cache.outputs.cache-hit != 'true'
         run: yarn install
@@ -321,9 +318,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vendor/bundle
-          key: benefit_sponsors-${{ hashFiles('**/Gemfile.lock') }}
-          restore-keys: |
-            benefit_sponsors-${{ hashFiles('**/Gemfile.lock') }}
+          key: benefit_sponsors-${{ hashFiles('benefit_sponsors.gemspec', '**/Gemfile', '**/Gemfile.lock') }}
       - name: bundle install
         run: |
           gem update --system --quiet --silent
@@ -339,8 +334,6 @@ jobs:
         with:
           path: node_modules
           key: ${{ runner.os }}-node_modules-v14-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-node_modules-v14-${{ hashFiles('yarn.lock') }}
       - name: yarn install
         if: steps.npm-cache.outputs.cache-hit != 'true'
         run: yarn install
@@ -376,8 +369,63 @@ jobs:
         with:
           name: code-coverage.bs-${{ matrix.group }}_${{ strategy.job-total }}
           path: ${{ github.workspace }}/bs-${{ matrix.group }}_${{ strategy.job-total }}-coverage.xml
-  rspec:
+  rspec-publisher:
+    runs-on: ubuntu-latest
     needs: [brakeman, brakeman-engines]
+    services:
+      rabbitmq:
+        image: rabbitmq:latest
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --name "rabbitmq"
+          --health-cmd "rabbitmqctl node_health_check"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mongo:
+        image: mongo:4.2
+        ports:
+          - 27017:27017
+        options: >-
+          --name "mongo"
+          --health-cmd mongo
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:3.2-alpine
+        ports:
+          - 6379
+        options: >-
+          --name "redis"
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          rubygems: 3.3.26
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '14'
+      - name: Restore Node Modules
+        id: npm-cache
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-v14-${{ hashFiles('yarn.lock') }}
+      - name: Install node dependencies
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: yarn install
+      - name: Publish Tests
+        run: bundle exec ruby test/detest_rspec_publish.rb --require rails_helper --color --format progress --pattern '{spec,components/benefit_markets,components/benefit_sponsors,components/financial_assistance,components/notifier,components/sponsored_benefits,components/transport_gateway,components/transport_profiles}/**/*_spec.rb'
+  rspec-worker:
+    needs: [rspec-publisher]
     runs-on: ubuntu-latest
     services:
       rabbitmq:
@@ -439,6 +487,13 @@ jobs:
             21,
             22,
             23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
           ]
     steps:
       - uses: actions/checkout@v4
@@ -449,25 +504,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '14'
-      - name: Install Test Boosters gem
-        run: gem install treye-semaphore_test_boosters --version '2.5.2'
       - name: Restore Node Modules
         id: npm-cache
         uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ runner.os }}-node_modules-v14-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-node_modules-v14-${{ hashFiles('yarn.lock') }}
       - name: Install node dependencies
         if: steps.npm-cache.outputs.cache-hit != 'true'
         run: yarn install
       - name: Run tests
         env:
           COVERAGE: 'true'
-          RSPEC_SPLIT_CONFIGURATION_PATH: 'ci/rspec-split-config.json'
-          TEST_BOOSTERS_RSPEC_TEST_FILE_PATTERN: '{spec,components/benefit_markets,components/benefit_sponsors,components/financial_assistance,components/notifier,components/sponsored_benefits,components/transport_gateway,components/transport_profiles}/**/*_spec.rb'
-        run: rspec_booster --job ${{ matrix.group }}/${{ strategy.job-total }}
+        run: bundle exec ruby test/detest_rspec_worker.rb --require rails_helper --color --format progress --pattern '{spec,components/benefit_markets,components/benefit_sponsors,components/financial_assistance,components/notifier,components/sponsored_benefits,components/transport_gateway,components/transport_profiles}/**/*_spec.rb'
       - name: copy coverage report
         if: (github.event_name == 'push') && (github.ref == 'refs/heads/trunk')
         run: |
@@ -478,8 +527,63 @@ jobs:
         with:
           name: code-coverage.rspec-${{ matrix.group }}_${{ strategy.job-total }}
           path: ${{ github.workspace }}/coverage/rspec-${{ matrix.group }}_${{ strategy.job-total }}-coverage.xml
-  cucumber:
+  cucumber-publisher:
+    runs-on: ubuntu-latest
     needs: [brakeman, brakeman-engines]
+    services:
+      rabbitmq:
+        image: rabbitmq:latest
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --name "rabbitmq"
+          --health-cmd "rabbitmqctl node_health_check"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mongo:
+        image: mongo:4.2
+        ports:
+          - 27017:27017
+        options: >-
+          --name "mongo"
+          --health-cmd mongo
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:3.2-alpine
+        ports:
+          - 6379
+        options: >-
+          --name "redis"
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          rubygems: 3.3.26
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '14'
+      - name: Restore Node Modules
+        id: npm-cache
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-v14-${{ hashFiles('yarn.lock') }}
+      - name: Install node dependencies
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: yarn install
+      - name: Publish Tests
+        run: bundle exec ruby test/detest_cucumber_publish.rb
+  cucumber-worker:
+    needs: [cucumber-publisher]
     runs-on: ubuntu-latest
     services:
       rabbitmq:
@@ -581,16 +685,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '14'
-      - name: Install Test boosters gem
-        run: gem install treye-semaphore_test_boosters --version '2.5.2'
       - name: Restore Node Modules
         id: npm-cache
         uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ runner.os }}-node_modules-v14-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-node_modules-v14-${{ hashFiles('yarn.lock') }}
       - name: Install node dependencies
         if: steps.npm-cache.outputs.cache-hit != 'true'
         run: yarn install
@@ -603,7 +703,7 @@ jobs:
           COVERAGE: 'true'
           WD_VERSION: "131.0.6778.264"
           WD_CHROME_PATH: ${{ github.workspace }}/chrome-linux64/chrome
-        run: cucumber_booster --job ${{ matrix.group }}/${{ strategy.job-total }}
+        run: bundle exec ruby test/detest_cucumber_worker.rb
       - name: copy coverage report
         if: (github.event_name == 'push') && (github.ref == 'refs/heads/trunk')
         run: |
@@ -614,8 +714,30 @@ jobs:
         with:
           name: code-coverage.cukes-${{ matrix.group }}_${{ strategy.job-total }}
           path: ${{ github.workspace }}/coverage/cukes-${{ matrix.group }}_${{ strategy.job-total }}-coverage.xml
+  rspec:
+    needs: [rspec-worker]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          rubygems: 3.3.26
+      - name: Report Offenders
+        run: bundle exec ruby test/detest_rspec_offenders.rb
+  cucumber:
+    needs: [cucumber-worker]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          rubygems: 3.3.26
+      - name: Report Offenders
+        run: bundle exec ruby test/detest_cucumber_offenders.rb
   quality-workbench:
-    needs: [engines, benefit-sponsors, rspec, cucumber]
+    needs: [engines, benefit-sponsors, financial-assistance, rspec, cucumber]
     if: always()
     runs-on: ubuntu-latest
     strategy:

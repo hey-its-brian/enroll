@@ -855,4 +855,5 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.invalid_email_error_message' => "Person update failed. Email is invalid",
   :'en.invalid_phone_error_message' => "Person update failed. Phone is invalid",
   :'en.person_update_failed' => "Person update failed.",
+  :'en.error_header_text' => "You need to correct the following errors:",
 }.freeze

@@ -649,4 +649,5 @@ How to find the SEVIS ID: On the DS-2019, the number is on the top right hand si
   :'en.invalid_email_error_message' => "Person update failed. Email is invalid",
   :'en.invalid_phone_error_message' => "Person update failed. Phone is invalid",
   :'en.person_update_failed' => "Person update failed.",
+  :'en.error_header_text' => "You need to correct the following errors:",
 }.freeze
