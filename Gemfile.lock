@@ -35,7 +35,7 @@ GIT
 
 GIT
   remote: https://github.com/ideacrew/detest.git
-  revision: 540794c146a8b250ef63c441e5996a6067e09a34
+  revision: ceff5fee9c2096c8f51546115a2e7e4142ada4a6
   specs:
     detest (0.1.0)
       redis
