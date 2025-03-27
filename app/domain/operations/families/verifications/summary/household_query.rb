@@ -30,6 +30,7 @@ module Operations
           end
 
           def find_action_items_and_sort(family)
+            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record) if family.eligibility_determination.nil?
             uploadable_eligibilities = family.eligibility_determination.subjects.map do |subject|
               subject.eligibility_states.by_type_uploadable
             end.flatten
