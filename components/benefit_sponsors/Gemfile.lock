@@ -28,7 +28,7 @@ GIT
 
 GIT
   remote: https://github.com/ideacrew/event_source.git
-  revision: ab7531f2bbc296bf0fc56794b99f6321f75f8f71
+  revision: 302d1b22876c1824215dcd71accd06f2ff2459da
   branch: trunk
   specs:
     event_source (0.5.8)
@@ -55,10 +55,10 @@ GIT
 
 GIT
   remote: https://github.com/ideacrew/resource_registry.git
-  revision: 326b5606bd2cd29209446682e26d477ec235dbd1
-  branch: trunk
+  revision: a3ca0b8001247663a7f052cfdc32180dc7e1f43d
+  branch: v0.10.1
   specs:
-    resource_registry (0.7.0)
+    resource_registry (0.10.1)
       bootsnap (~> 1.0)
       deep_merge (>= 1.0.0)
       dry-configurable (~> 0.12)
@@ -90,7 +90,7 @@ PATH
       aasm (~> 4.8)
       active_model_serializers (~> 0.10)
       bson (~> 4.3)
-      config (~> 2.0)
+      config (~> 4.2.1)
       dry-monads
       dry-struct
       dry-types
@@ -102,7 +102,7 @@ PATH
       rails (~> 6.1.7.8)
       rexml (>= 3.3.9)
       slim (~> 3.0)
-      symmetric-encryption (= 3.9.1)
+      symmetric-encryption (~> 4.6.0)
       virtus (~> 1.0)
 
 PATH
@@ -112,7 +112,7 @@ PATH
       aasm (~> 4.8)
       ckeditor (= 4.2.4)
       combine_pdf
-      config (~> 2.0)
+      config (~> 4.2.1)
       money-rails (~> 1.13)
       mongoid (~> 7.5.4)
       non-stupid-digest-assets
@@ -130,7 +130,7 @@ PATH
   specs:
     sponsored_benefits (0.0.1)
       aasm (~> 4.8.0)
-      config (~> 2.0)
+      config (~> 4.2.1)
       devise (~> 4.5)
       dry-auto_inject
       dry-container
@@ -150,7 +150,7 @@ PATH
       sass (~> 3.7.3)
       slim (~> 3.0.8)
       symmetric-encryption
-      webpacker (~> 4.0.2)
+      webpacker (~> 5.4.4)
 
 PATH
   remote: .
@@ -159,7 +159,7 @@ PATH
       aasm (~> 4.8)
       active_model_serializers (~> 0.10)
       browser (= 2.7.0)
-      config (~> 2.0)
+      config (~> 4.2.1)
       devise (~> 4.5)
       dry-auto_inject
       dry-container
@@ -181,9 +181,9 @@ PATH
       rails (~> 6.1.7.8)
       roo (~> 2.10)
       slim (~> 3.0)
-      symmetric-encryption (= 3.9.1)
+      symmetric-encryption (~> 4.6.0)
       virtus (~> 1.0)
-      webpacker (~> 4.0.2)
+      webpacker (~> 5.4.4)
 
 GEM
   remote: https://rubygems.org/
@@ -263,7 +263,7 @@ GEM
       thread_safe (~> 0.3, >= 0.3.1)
     bcrypt (3.1.20)
     bigdecimal (3.1.8)
-    bootsnap (1.18.3)
+    bootsnap (1.18.4)
       msgpack (~> 1.2)
     browser (2.7.0)
     bson (4.15.0)
@@ -301,7 +301,7 @@ GEM
       matrix
       ruby-rc4 (>= 0.1.5)
     concurrent-ruby (1.3.3)
-    config (2.2.3)
+    config (4.2.1)
       deep_merge (~> 1.2, >= 1.2.1)
       dry-validation (~> 1.0, >= 1.0.0)
     crass (1.0.6)
@@ -459,7 +459,7 @@ GEM
       mime-types-data (~> 3.2015)
     mime-types-data (3.2024.0305)
     mini_mime (1.1.5)
-    mini_portile2 (2.8.7)
+    mini_portile2 (2.8.8)
     minitest (5.23.1)
     monetize (1.13.0)
       money (~> 6.12)
@@ -494,7 +494,7 @@ GEM
       mongoid (>= 4.0.0)
       rails (>= 4.2.0)
       railties (>= 4.2.0)
-    msgpack (1.7.2)
+    msgpack (1.8.0)
     multi_json (1.15.0)
     multipart-post (2.4.0)
     net-imap (0.4.12)
@@ -507,7 +507,7 @@ GEM
     net-smtp (0.5.0)
       net-protocol
     nio4r (2.7.3)
-    nokogiri (1.16.5)
+    nokogiri (1.18.6)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
     nokogiri-happymapper (0.9.0)
@@ -636,6 +636,7 @@ GEM
       sprockets (> 3.0)
       sprockets-rails
       tilt
+    semantic_range (3.1.0)
     serverengine (2.0.7)
       sigdump (~> 0.2.2)
     set (1.0.4)
@@ -673,7 +674,7 @@ GEM
       actionpack (>= 6.1)
       activesupport (>= 6.1)
       sprockets (>= 3.0.0)
-    symmetric-encryption (3.9.1)
+    symmetric-encryption (4.6.0)
       coercible (~> 1.0)
     temple (0.8.2)
     terrapin (0.6.0)
@@ -695,10 +696,11 @@ GEM
       equalizer (~> 0.0, >= 0.0.9)
     warden (1.2.9)
       rack (>= 2.0.9)
-    webpacker (4.0.7)
-      activesupport (>= 4.2)
+    webpacker (5.4.4)
+      activesupport (>= 5.2)
       rack-proxy (>= 0.6.1)
-      railties (>= 4.2)
+      railties (>= 5.2)
+      semantic_range (>= 2.3.0)
     websocket-driver (0.7.6)
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.5)
@@ -726,6 +728,7 @@ DEPENDENCIES
   forgery (~> 0.7.0)
   mongoid-rspec (~> 4)
   mongoid_rails_migrations (~> 1.2.0)
+  nokogiri (~> 1.18.6)
   notifier!
   rails-controller-testing
   rails-perftest (~> 0.0.7)
@@ -738,7 +741,7 @@ DEPENDENCIES
   simplecov-cobertura (~> 2.1.0)
   sponsored_benefits!
   test-prof (~> 1.3)
-  webpacker (~> 4.0.2)
+  webpacker (~> 5.4.4)
 
 BUNDLED WITH
    2.3.24

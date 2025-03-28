@@ -78,7 +78,6 @@ jobs:
           name: security-reports.${{ matrix.engine }}
           path: ${{ matrix.engine }}.brakeman.html
   engines:
-    needs: [brakeman-engines]
     runs-on: ubuntu-latest
     services:
       rabbitmq:
@@ -194,7 +193,6 @@ jobs:
           name: code-coverage.engines-${{ matrix.engine-name }}_${{ strategy.job-total }}
           path: ${{ github.workspace }}/engines-${{ matrix.engine-name }}_${{ strategy.job-total }}-coverage.xml
   financial-assistance:
-    needs: [brakeman-engines]
     runs-on: ubuntu-latest
     services:
       rabbitmq:
@@ -268,7 +266,6 @@ jobs:
           name: code-coverage.fa-${{ matrix.group }}_${{ strategy.job-total }}
           path: ${{ github.workspace }}/coverage/fa-${{ matrix.group }}_${{ strategy.job-total }}-coverage.xml
   benefit-sponsors:
-    needs: [brakeman-engines]
     runs-on: ubuntu-latest
     services:
       rabbitmq:
@@ -371,7 +368,6 @@ jobs:
           path: ${{ github.workspace }}/bs-${{ matrix.group }}_${{ strategy.job-total }}-coverage.xml
   rspec-publisher:
     runs-on: ubuntu-latest
-    needs: [brakeman, brakeman-engines]
     services:
       rabbitmq:
         image: rabbitmq:latest
@@ -529,7 +525,6 @@ jobs:
           path: ${{ github.workspace }}/coverage/rspec-${{ matrix.group }}_${{ strategy.job-total }}-coverage.xml
   cucumber-publisher:
     runs-on: ubuntu-latest
-    needs: [brakeman, brakeman-engines]
     services:
       rabbitmq:
         image: rabbitmq:latest
@@ -737,12 +732,12 @@ jobs:
       - name: Report Offenders
         run: bundle exec ruby test/detest_cucumber_offenders.rb
   quality-workbench:
-    needs: [engines, benefit-sponsors, financial-assistance, rspec, cucumber]
+    needs: [engines, benefit-sponsors, financial-assistance, rspec, cucumber, brakeman, brakeman-engines, view_linter]
     if: always()
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        check: [engines, benefit-sponsors, rspec, cucumber]
+        check: [engines, benefit-sponsors, financial-assistance, rspec, cucumber, brakeman, brakeman-engines, view_linter]
     steps:
       - name: Check build matrix status
         env:

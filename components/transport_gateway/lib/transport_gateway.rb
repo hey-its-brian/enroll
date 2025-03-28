@@ -17,7 +17,7 @@ module URI
     end
   end
 
-  @@schemes['S3'] = S3
+  register_scheme 'S3', S3
 end
 
 # Provides the raw underlying plumbing for transfering resources.

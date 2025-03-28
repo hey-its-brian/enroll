@@ -24,7 +24,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency "aasm",                      "~> 4.8"
   s.add_dependency 'active_model_serializers',  '~> 0.10'
-  s.add_dependency 'config',                    '~> 2.0'
+  s.add_dependency 'config',                    '~> 4.2.1'
   s.add_dependency 'devise',                    '~> 4.5'
   s.add_dependency 'interactor',                '~> 3.0'
   s.add_dependency 'interactor-rails',          '~> 2.2'
@@ -34,8 +34,8 @@ Gem::Specification.new do |s|
   s.add_dependency 'roo',                       '~> 2.10'
   s.add_dependency 'virtus',                    '~> 1.0'
   s.add_dependency "slim",                      "~> 3.0"
-  s.add_dependency 'symmetric-encryption',      '3.9.1'
-  s.add_dependency 'webpacker',                 '~> 4.0.2'
+  s.add_dependency 'symmetric-encryption',      '~> 4.6.0'
+  s.add_dependency 'webpacker',                 '~> 5.4.4'
   s.add_dependency 'dry-types'
   s.add_dependency 'mail'
   s.add_dependency 'dry-schema', '~> 1.0'

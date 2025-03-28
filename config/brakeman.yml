@@ -1,0 +1,3 @@
+---
+:skip_files:
+- node_modules/stimulus_reflex/lib/stimulus_reflex/logger.rb

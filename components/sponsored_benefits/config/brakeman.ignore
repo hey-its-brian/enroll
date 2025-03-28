@@ -302,6 +302,30 @@
       "note": "Checked partial render used by UJS to render another template."
     },
     {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "78fd95984aa9fa45b58587200ce660f7f3e9d5197b10d877f6e22475088364f1",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/sponsored_benefits/validations/us_date.rb",
+      "line": 7,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "klass.class_eval(\"          def __valid_US_date_property_#{prop_name}\\n            d_value = #{prop_name}\\n            begin\\n              Date.strptime(d_value, \\\"%m/%d/%Y\\\")\\n            rescue\\n              errors.add(:#{prop_name}, \\\"invalid date: \\\" + d_value.to_s)\\n            end\\n          end\\n\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "SponsoredBenefits::Validations::UsDate",
+        "method": "SponsoredBenefits::Validations::UsDate.on"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not accept user input."
+    },
+    {
       "warning_type": "Usage of html_safe",
       "warning_code": 2,
       "fingerprint": "b1be5240e7fdb0ca5dbe977611cdc7e82843f11797ec2001278780bf8bc6bc34",
@@ -370,9 +394,9 @@
       "warning_code": 120,
       "fingerprint": "d84924377155b41e094acae7404ec2e521629d86f97b0ff628e3d1b263f8101c",
       "check_name": "EOLRails",
-      "message": "Support for Rails 5.2.4.4 ended on 2022-06-01",
+      "message": "Support for Rails 6.1.7.8 ended on 2024-10-01",
       "file": "Gemfile.lock",
-      "line": 391,
+      "line": 434,
       "link": "https://brakemanscanner.org/docs/warning_types/unmaintained_dependency/",
       "code": null,
       "render_path": null,
@@ -437,6 +461,5 @@
       "note": "Checked partial render used by UJS to render another template."
     }
   ],
-  "updated": "2024-02-20 15:17:19 +0000",
-  "brakeman_version": "5.4.1"
+  "brakeman_version": "7.0.0"
 }

@@ -6,7 +6,7 @@ source 'https://rubygems.org'
 gemspec
 
 gem 'acapi', git: "https://github.com/ideacrew/acapi.git", branch: 'trunk'
-gem 'resource_registry',  git:  'https://github.com/ideacrew/resource_registry.git', branch: 'trunk'
+gem 'resource_registry',  git:  'https://github.com/ideacrew/resource_registry.git', branch: 'v0.10.1'
 gem 'pry-byebug'
 
 # Declare any dependencies that are still in development here instead of in

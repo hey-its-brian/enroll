@@ -24,13 +24,13 @@ Gem::Specification.new do |s|
 
   s.add_dependency "aasm",                      "~> 4.8"
   s.add_dependency 'active_model_serializers',  '~> 0.10'
-  s.add_dependency 'config',                    '~> 2.0'
+  s.add_dependency 'config',                    '~> 4.2.1'
   s.add_dependency 'language_list',             '~> 1'
   s.add_dependency 'money-rails',               '~> 1.13'
   s.add_dependency 'pundit',                    '~> 2.0'
   s.add_dependency 'virtus',                    '~> 1.0'
   s.add_dependency "slim",                      "~> 3.0"
-  s.add_dependency 'symmetric-encryption',      '3.9.1'
+  s.add_dependency 'symmetric-encryption',      '~> 4.6.0'
   s.add_dependency 'rexml',                     '>= 3.3.9'
 
   s.add_dependency 'dry-types'

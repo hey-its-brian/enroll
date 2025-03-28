@@ -28,7 +28,7 @@ Gem::Specification.new do |s|
   s.add_dependency "non-stupid-digest-assets"
   s.add_dependency "roo", '~> 2.10'
   s.add_dependency 'aasm', '~> 4.8'
-  s.add_dependency 'config', '~> 2.0'
+  s.add_dependency 'config', '~> 4.2.1'
   s.add_dependency 'money-rails', '~> 1.13'
   s.add_dependency 'pundit', '~> 2.0'
   s.add_dependency 'rexml', '>= 3.3.9'

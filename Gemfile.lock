@@ -35,7 +35,7 @@ GIT
 
 GIT
   remote: https://github.com/ideacrew/detest.git
-  revision: ceff5fee9c2096c8f51546115a2e7e4142ada4a6
+  revision: 1f89ea4c4b224f1e0e4832fe9098b815cbc71324
   specs:
     detest (0.1.0)
       redis
@@ -78,10 +78,10 @@ GIT
 
 GIT
   remote: https://github.com/ideacrew/resource_registry.git
-  revision: 326b5606bd2cd29209446682e26d477ec235dbd1
-  branch: trunk
+  revision: a3ca0b8001247663a7f052cfdc32180dc7e1f43d
+  branch: v0.10.1
   specs:
-    resource_registry (0.7.0)
+    resource_registry (0.10.1)
       bootsnap (~> 1.0)
       deep_merge (>= 1.0.0)
       dry-configurable (~> 0.12)
@@ -113,7 +113,7 @@ PATH
       aasm (~> 4.8)
       active_model_serializers (~> 0.10)
       bson (~> 4.3)
-      config (~> 2.0)
+      config (~> 4.2.1)
       dry-monads
       dry-struct
       dry-types
@@ -125,7 +125,7 @@ PATH
       rails (~> 6.1.7.8)
       rexml (>= 3.3.9)
       slim (~> 3.0)
-      symmetric-encryption (= 3.9.1)
+      symmetric-encryption (~> 4.6.0)
       virtus (~> 1.0)
 
 PATH
@@ -135,7 +135,7 @@ PATH
       aasm (~> 4.8)
       active_model_serializers (~> 0.10)
       browser (= 2.7.0)
-      config (~> 2.0)
+      config (~> 4.2.1)
       devise (~> 4.5)
       dry-auto_inject
       dry-container
@@ -157,16 +157,16 @@ PATH
       rails (~> 6.1.7.8)
       roo (~> 2.10)
       slim (~> 3.0)
-      symmetric-encryption (= 3.9.1)
+      symmetric-encryption (~> 4.6.0)
       virtus (~> 1.0)
-      webpacker (~> 4.0.2)
+      webpacker (~> 5.4.4)
 
 PATH
   remote: components/financial_assistance
   specs:
     financial_assistance (0.1.0)
       aasm (~> 4.8)
-      config (~> 2.0)
+      config (~> 4.2.1)
       devise (~> 4.5)
       dry-monads
       dry-types
@@ -180,7 +180,7 @@ PATH
       rails (~> 6.1.7.8)
       rexml (>= 3.3.9)
       slim (~> 3.0)
-      symmetric-encryption (= 3.9.1)
+      symmetric-encryption (~> 4.6.0)
 
 PATH
   remote: components/notifier
@@ -189,7 +189,7 @@ PATH
       aasm (~> 4.8)
       ckeditor (= 4.2.4)
       combine_pdf
-      config (~> 2.0)
+      config (~> 4.2.1)
       money-rails (~> 1.13)
       mongoid (~> 7.5.4)
       non-stupid-digest-assets
@@ -207,7 +207,7 @@ PATH
   specs:
     sponsored_benefits (0.0.1)
       aasm (~> 4.8.0)
-      config (~> 2.0)
+      config (~> 4.2.1)
       devise (~> 4.5)
       dry-auto_inject
       dry-container
@@ -227,7 +227,7 @@ PATH
       sass (~> 3.7.3)
       slim (~> 3.0.8)
       symmetric-encryption
-      webpacker (~> 4.0.2)
+      webpacker (~> 5.4.4)
 
 PATH
   remote: components/transport_gateway
@@ -246,7 +246,7 @@ PATH
       mongoid (~> 7.5.4)
       rails (~> 6.1.7.8)
       rubyzip (>= 1.3.0)
-      symmetric-encryption (= 3.9.1)
+      symmetric-encryption (~> 4.6.0)
       transport_gateway
 
 PATH
@@ -1950,7 +1950,7 @@ GEM
     combine_pdf (1.0.16)
       ruby-rc4 (>= 0.1.5)
     concurrent-ruby (1.3.4)
-    config (2.2.3)
+    config (4.2.1)
       deep_merge (~> 1.2, >= 1.2.1)
       dry-validation (~> 1.0, >= 1.0.0)
     connection_pool (2.4.1)
@@ -2194,7 +2194,7 @@ GEM
       mime-types-data (~> 3.2015)
     mime-types-data (3.2024.0305)
     mini_mime (1.1.5)
-    mini_portile2 (2.8.7)
+    mini_portile2 (2.8.8)
     minitest (5.25.1)
     monetize (1.9.4)
       money (~> 6.12)
@@ -2259,7 +2259,7 @@ GEM
     net-ssh (4.2.0)
     newrelic_rpm (9.7.1)
     nio4r (2.7.3)
-    nokogiri (1.16.7)
+    nokogiri (1.18.6)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
     nokogiri-happymapper (0.8.1)
@@ -2295,7 +2295,7 @@ GEM
       rack (>= 2.0.0)
     rack-protection (2.2.3)
       rack
-    rack-proxy (0.6.5)
+    rack-proxy (0.7.7)
       rack
     rack-test (2.1.0)
       rack (>= 1.3)
@@ -2455,9 +2455,10 @@ GEM
       childprocess (>= 0.5, < 5.0)
       rexml (~> 3.2, >= 3.2.5)
       rubyzip (>= 1.2.2)
+    semantic_range (3.1.0)
     serverengine (2.0.7)
       sigdump (~> 0.2.2)
-    set (1.0.3)
+    set (1.0.4)
     shoulda-matchers (3.1.3)
       activesupport (>= 4.0.0)
     sidekiq (6.5.12)
@@ -2518,7 +2519,7 @@ GEM
       redis
     stimulus_reflex_testing (0.3.0)
       stimulus_reflex (>= 3.3.0)
-    symmetric-encryption (3.9.1)
+    symmetric-encryption (4.6.0)
       coercible (~> 1.0)
     temple (0.8.2)
     terminal-table (1.6.0)
@@ -2573,10 +2574,11 @@ GEM
       addressable (>= 2.3.6)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
-    webpacker (4.0.7)
-      activesupport (>= 4.2)
+    webpacker (5.4.4)
+      activesupport (>= 5.2)
       rack-proxy (>= 0.6.1)
-      railties (>= 4.2)
+      railties (>= 5.2)
+      semantic_range (>= 2.3.0)
     websocket-driver (0.7.6)
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.5)
@@ -2614,7 +2616,7 @@ DEPENDENCIES
   climate_control (~> 0.2.0)
   coffee-rails (~> 5.0.0)
   combine_pdf (~> 1.0)
-  config (~> 2.0)
+  config (~> 4.2.1)
   cucumber-rails (= 2.0)
   database_cleaner-mongoid (~> 2.0, >= 2.0.1)
   detest!
@@ -2654,6 +2656,7 @@ DEPENDENCIES
   loofah (~> 2.19.1)
   mail (~> 2.7)
   maskedinput-rails (~> 1.4)
+  matrix
   money-rails (~> 1.13)
   mongo (~> 2.6)
   mongo_session_store (~> 3.1)
@@ -2666,7 +2669,7 @@ DEPENDENCIES
   net-imap (>= 0.4.19)
   net-ssh (= 4.2.0)
   newrelic_rpm (~> 9.6)
-  nokogiri
+  nokogiri (~> 1.18.6)
   nokogiri-happymapper (~> 0.8.0)
   non-stupid-digest-assets
   notifier!
@@ -2716,7 +2719,7 @@ DEPENDENCIES
   spring-watcher-listen
   stimulus_reflex (= 3.4.2)
   stimulus_reflex_testing (~> 0.3.0)
-  symmetric-encryption (= 3.9.1)
+  symmetric-encryption (~> 4.6.0)
   test-prof (~> 1.3)
   transport_gateway!
   transport_profiles!
@@ -2731,7 +2734,7 @@ DEPENDENCIES
   web-console (>= 3)
   webdrivers (~> 5.3.1)
   webmock (~> 3.9.0)
-  webpacker (~> 4.0.2)
+  webpacker (~> 5.4.4)
   wicked_pdf (~> 1.1.0)
   wkhtmltopdf-binary-edge (~> 0.12.3.0)
   yard (>= 0.9.36)

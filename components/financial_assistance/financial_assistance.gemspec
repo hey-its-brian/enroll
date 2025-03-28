@@ -23,11 +23,11 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'mongoid', '~> 7.5.4'
   spec.add_dependency 'mongoid-autoinc',           '~> 6.0'
   spec.add_dependency "aasm",                      "~> 4.8"
-  spec.add_dependency 'config',                    '~> 2.0'
+  spec.add_dependency 'config',                    '~> 4.2.1'
   spec.add_dependency 'devise',                    '~> 4.5'
   spec.add_dependency 'money-rails',               '~> 1.13.3'
   spec.add_dependency "slim",                      "~> 3.0"
-  spec.add_dependency 'symmetric-encryption',      '3.9.1'
+  spec.add_dependency 'symmetric-encryption',      '~> 4.6.0'
   spec.add_dependency 'pundit',                    '~> 2.0'
   spec.add_dependency 'font-awesome-rails',        '~> 4.7'
   spec.add_dependency 'haml-rails'

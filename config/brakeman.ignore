@@ -1,6 +1,30 @@
 {
   "ignored_warnings": [
     {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "01c11614a6c75da49bc787c2ed58e2ae98e9e0d89270a8a044ac7754d6c5aa9f",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/model_events/plan_year.rb",
+      "line": 150,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ModelEvents::PlanYear::ClassMethods",
+        "method": "date_change_event"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
+    },
+    {
       "warning_type": "File Access",
       "warning_code": 16,
       "fingerprint": "021dc1028a18cbbf921ce7bedbe8f2e573e9ea81cd7e4b31c89122ddabd1bf87",
@@ -98,6 +122,30 @@
       "note": ""
     },
     {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "0a605cf214ee26870f78774760c75bb90e5dcd25302e1432039b2b78a1128aa8",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/special_enrollment_period.rb",
+      "line": 18,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::SpecialEnrollmentPeriod",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
+    },
+    {
       "warning_type": "Command Injection",
       "warning_code": 14,
       "fingerprint": "0d6e4d3e256f0c6ef196baa5ed9e68712d4bdffb7c9886ca5c7bae3e2687d624",
@@ -184,13 +232,37 @@
       "note": "Partial update via javascript - the used template has already been cleaned."
     },
     {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "154ca833ab60d8540069b1b2373e76f28fcba0124643cdae8cdbe0040d37a3b5",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/importers/conversion_employee_common.rb",
+      "line": 89,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "class_eval(\"      def dep_#{num}_zip=(val)\\n        if val.blank?\\n          @dep_#{num}_zip = nil\\n          return val\\n        else\\n          if val.strip.length == 9 \\n            @dep_#{num}_zip = val[0..4]\\n          else\\n            @dep_#{num}_zip = val.strip.rjust(5, \\\"0\\\")\\n          end \\n        end\\n      end\\n\\n          def dep_#{num}_relationship=(val)\\n            dep_rel = Maybe.new(val).strip.downcase.extract_value\\n            @dep_#{num}_relationship = RELATIONSHIP_MAP[dep_rel]\\n          end\\n\\n          def dep_#{num}_dob=(val)\\n            @dep_#{num}_dob = val.blank? ? nil : (Date.strptime(val, (\\\"%m/%d/%Y\\\")) rescue nil)\\n          end\\n\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ConversionEmployeeCommon",
+        "method": null
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "This code is ruby meta-programming and is not used to interpret user-provided input."
+    },
+    {
       "warning_type": "Usage of html_safe",
       "warning_code": 2,
       "fingerprint": "177c2cc4b576fa9f0afa31e593493fb91d1a93c3ffa861f25fd25863c5e00c9d",
       "check_name": "HtmlSafeUsage",
       "message": "Html_safe used",
       "file": "components/benefit_sponsors/app/views/benefit_sponsors/benefit_applications/benefit_applications/shared/_benefit_application_fields.html.slim",
-      "line": 107,
+      "line": 116,
       "link": "https://brakemanscanner.org/docs/warning_types/usage_of_html_safe/",
       "code": "@benefit_application_form.start_on_options.to_json.html_safe",
       "render_path": null,
@@ -210,7 +282,7 @@
       "check_name": "HtmlSafeUsage",
       "message": "Html_safe used",
       "file": "components/benefit_sponsors/app/views/benefit_sponsors/benefit_applications/benefit_applications/shared/_benefit_application_fields.html.slim",
-      "line": 166,
+      "line": 175,
       "link": "https://brakemanscanner.org/docs/warning_types/usage_of_html_safe/",
       "code": "@benefit_application_form.start_on_options.to_json.html_safe",
       "render_path": null,
@@ -222,6 +294,54 @@
       "confidence": "Medium",
       "cwe_id": null,
       "note": "JSON serialization already checks for XSS."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "1d011366c65112f24f39b6a6cc77ac4c928b17a4aa72b48728825c06597eb44b",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/benefit_application.rb",
+      "line": 93,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval(\"is_#{:BRAKEMAN_SAFE_LITERAL}\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::BenefitApplication",
+        "method": "notify_on_create"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "1ea29565432c5c00a8262d28213680ceeda99f91252511a2b490b2fdb40e7ac5",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/model_events/special_enrollment_period.rb",
+      "line": 15,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ModelEvents::SpecialEnrollmentPeriod",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
     },
     {
       "warning_type": "Command Injection",
@@ -245,6 +365,30 @@
         77
       ],
       "note": ""
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "230d8f9248587fc377744b6ca3ed7c914e7307127986b27a8c85109873ab2321",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/validations/us_date.rb",
+      "line": 6,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "klass.class_eval(\"          def __valid_US_date_property_#{prop_name}\\n            d_value = #{prop_name}\\n            begin\\n              Date.strptime(d_value, \\\"%m/%d/%Y\\\")\\n            rescue\\n              errors.add(:#{prop_name}, \\\"invalid date: \\\" + d_value.to_s)\\n            end\\n          end\\n\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "Validations::UsDate",
+        "method": "Validations::UsDate.on"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "This code does not accept user provided input."
     },
     {
       "warning_type": "Command Injection",
@@ -375,6 +519,30 @@
       "note": "Raw html image tag, no user input allowed."
     },
     {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "2fd5cbbd5f4b31b10d2f9db164a016475683b9f5de4de1d789616c49f1eb3cbd",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/broker_agency_profile.rb",
+      "line": 24,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::BrokerAgencyProfile",
+        "method": "notify_before_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
+    },
+    {
       "warning_type": "Usage of html_safe",
       "warning_code": 2,
       "fingerprint": "3291f33ffbcb6bb388bb080269a67bf3f4689c4afa88de149fd16e34b74986e5",
@@ -419,6 +587,54 @@
       "note": ""
     },
     {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "34b6396079de60e8178252f4af646a8dd501a909bd4bc4f66173b00332f18682",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/mongoid_support/association_proxies.rb",
+      "line": 10,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "class_eval(\"          def #{attr_name}\\n            return @__proxy_value_for_#{attr_name} if @__proxy_value_for_#{attr_name}\\n            return nil if self.#{key_name}.blank?\\n            @__proxy_value_for_#{attr_name} ||= #{kls_name}.find(self.#{key_name})\\n          end\\n\\n          def #{attr_name}=(val)\\n            @__proxy_value_for_#{attr_name} = val\\n            if val.nil?\\n              self.#{key_name} = nil\\n            else\\n              self.#{key_name} = val.id\\n            end\\n            val\\n          end\\n\\n          def __association_reload_on_#{attr_name}\\n            @__proxy_value_for_#{attr_name} = nil\\n          end\\n\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "MongoidSupport::AssociationProxies::ClassMethods",
+        "method": "associated_with_one"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "This code is ruby meta-programming and is not used to interpret user-provided input."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "362f350de528ce707a6761953aa304c3d51ecbd822d49af061afa5831f9a232a",
+      "check_name": "Evaluation",
+      "message": "Dynamic code evaluation",
+      "file": "lib/migration_task.rb",
+      "line": 6,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "eval(migrate)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "MigrationTask",
+        "method": "initialize"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "User-provided data is not passed to this code."
+    },
+    {
       "warning_type": "Usage of html_safe",
       "warning_code": 2,
       "fingerprint": "373cac33045cda16ef222ff154defec6951fca8bcaad1c7ddbaeb105b87953cc",
@@ -437,6 +653,30 @@
       "confidence": "Medium",
       "cwe_id": null,
       "note": "Partial update via javascript - the used template is already cleaned."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "382cfbdc39aea13923a55643c1f7eac64cc8e5528ad68226f7de2b0aac26d085",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/model_events/employer_profile.rb",
+      "line": 29,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ModelEvents::EmployerProfile",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
     },
     {
       "warning_type": "Mass Assignment",
@@ -519,6 +759,49 @@
       "note": ""
     },
     {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "4090f30e859d86b1eacd222f7197e6c98926651dc2bafa670744696409bf6df3",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/organization.rb",
+      "line": 18,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::Organization",
+        "method": "notify_on_create"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
+    },
+    {
+      "warning_type": "Unmaintained Dependency",
+      "warning_code": 123,
+      "fingerprint": "40be17ee84017c91503dab23873e24bdd71665ab665bf6f351cfc09ff83e6582",
+      "check_name": "EOLRuby",
+      "message": "Support for Ruby 3.1.6 ends on 2025-03-31",
+      "file": ".ruby-version",
+      "line": 1,
+      "link": "https://brakemanscanner.org/docs/warning_types/unmaintained_dependency/",
+      "code": null,
+      "render_path": null,
+      "location": null,
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        1104
+      ],
+      "note": "We can not currently afford to upgrade to ruby 3.2 due to several gems, without significant work."
+    },
+    {
       "warning_type": "Usage of html_safe",
       "warning_code": 2,
       "fingerprint": "4473a1774822ffd9f554afcea3c8aa5a79e3b490e7776313c6c62e2da3ff4fab",
@@ -538,6 +821,76 @@
       "confidence": "Medium",
       "cwe_id": null,
       "note": "Tables need to produce HTML - it is the responsibility of the table subclass to scrub."
+    },
+    {
+      "warning_type": "Remote Code Execution",
+      "warning_code": 25,
+      "fingerprint": "4490e8ade53b18042c22738e0872cd3ab74746522080b7e01b5b6fc593664d49",
+      "check_name": "Deserialize",
+      "message": "Use of `Marshal.load` may be dangerous",
+      "file": "app/models/transcripts/comparison_result.rb",
+      "line": 218,
+      "link": "https://brakemanscanner.org/docs/warning_types/unsafe_deserialization",
+      "code": "Marshal.load(File.open(\"#{Rails.root}/sample_file\"))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "Transcripts::Payload",
+        "method": "person"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        502
+      ],
+      "note": "This invocation of Marshal.load is used only on known inputs."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "4753be8347137b57cc573fc1da58a26f9392894e978df60b122d0bacefba7560",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/employee_role.rb",
+      "line": 17,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::EmployeeRole",
+        "method": "notify_on_create"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
+    },
+    {
+      "warning_type": "Remote Code Execution",
+      "warning_code": 25,
+      "fingerprint": "47c0f95095141a568adfb651ddb18e0882cd4c0e725934afc7c0323b65ce1041",
+      "check_name": "Deserialize",
+      "message": "Use of `Marshal.load` may be dangerous",
+      "file": "lib/transcript_generator.rb",
+      "line": 182,
+      "link": "https://brakemanscanner.org/docs/warning_types/unsafe_deserialization",
+      "code": "Marshal.load(File.open(file_path))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "TranscriptGenerator",
+        "method": "display_transcripts"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        502
+      ],
+      "note": "This invocation of Marshal.load is used only on known inputs."
     },
     {
       "warning_type": "File Access",
@@ -858,7 +1211,7 @@
       "check_name": "MassAssignment",
       "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
       "file": "app/controllers/application_controller.rb",
-      "line": 145,
+      "line": 146,
       "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
       "code": "params.permit!",
       "render_path": null,
@@ -930,6 +1283,30 @@
       "note": "Render update via javascript - the used template is already checked."
     },
     {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "5b93703a182577026c901fcff94fffc11825bceab6fb1d50db18b3bb296798ff",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/model_events/plan_year.rb",
+      "line": 95,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ModelEvents::PlanYear",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
+    },
+    {
       "warning_type": "Usage of html_safe",
       "warning_code": 2,
       "fingerprint": "5c38214552b23bdf7ff8dacc85962a04c885796d9ade832ca10afc13ca21d157",
@@ -948,6 +1325,30 @@
       "confidence": "Medium",
       "cwe_id": null,
       "note": "Partial update via javascript - the used template is already cleaned."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "5e659ba8a10fe25cfefdf91d3bce6e69e113357601beb5e90b6dd6022048263c",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/model_events/hbx_enrollment.rb",
+      "line": 35,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ModelEvents::HbxEnrollment",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
     },
     {
       "warning_type": "Cross-Site Scripting",
@@ -1005,6 +1406,30 @@
       "note": "Translations checked for user-created values."
     },
     {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "617c439d27a3ab34925831a76a0af9a21e95ec080e3a6ab4da3d462bdf5f4f66",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/importers/conversion_employee_policy_common.rb",
+      "line": 110,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "class_eval(\"      def dep_#{num}_zip=(val)\\n        if val.blank?\\n          @dep_#{num}_zip = nil\\n          return val\\n        else\\n          if val.strip.length == 9 \\n            @dep_#{num}_zip = val[0..4]\\n          else\\n            @dep_#{num}_zip = val.strip.rjust(5, \\\"0\\\")\\n          end \\n        end\\n      end\\n\\n      def dep_#{num}_relationship=(val)\\n        dep_rel = Maybe.new(val).strip.downcase.extract_value\\n        @dep_#{num}_relationship = RELATIONSHIP_MAP[dep_rel]\\n      end\\n\\n      def dep_#{num}_dob=(val)\\n        @dep_#{num}_dob = val.blank? ? nil : (Date.strptime(val, (\\\"%m/%d/%Y\\\")) rescue nil)\\n      end\\n\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ConversionEmployeePolicyCommon",
+        "method": null
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "This code is ruby meta-programming and is not used to interpret user-provided input."
+    },
+    {
       "warning_type": "Command Injection",
       "warning_code": 14,
       "fingerprint": "62029ab01040c08839c5dd6ee8d0b14dec3c167348d02f50b65c827384e27f45",
@@ -1026,6 +1451,30 @@
         77
       ],
       "note": ""
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "657bbf5d37cb9acad62260ddc5e6b94089e0dc2b5f79aed725d351d347581f83",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/model_events/census_employee.rb",
+      "line": 20,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ModelEvents::CensusEmployee",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
     },
     {
       "warning_type": "Remote Code Execution",
@@ -1070,6 +1519,30 @@
       "confidence": "Medium",
       "cwe_id": null,
       "note": "Translation checked for user-created values."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "6aa56788c2982563b9363cb1532bd34a6501833f0571359ffc07e3569311c39e",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/benefit_application.rb",
+      "line": 74,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval(\"is_#{:BRAKEMAN_SAFE_LITERAL}\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::BenefitApplication",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
     },
     {
       "warning_type": "Usage of html_safe",
@@ -1190,6 +1663,30 @@
         79
       ],
       "note": ""
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "6e35100c80dc9826f16079fab95a2644b26557528d21f2db105bbbbae9610722",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/assister_agency_profile.rb",
+      "line": 25,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval(\"is_#{:BRAKEMAN_SAFE_LITERAL}\", \"components/benefit_sponsors/app/models/benefit_sponsors/model_events/assister_agency_profile.rb\", 25)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::AssisterAgencyProfile",
+        "method": "notify_before_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
     },
     {
       "warning_type": "Usage of html_safe",
@@ -1318,6 +1815,30 @@
       "confidence": "Medium",
       "cwe_id": null,
       "note": "Already passed through json serialization."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "87c940b228e421ef2e85e72dcc36832f1f9c16622404e5f13b690066abbd8dc5",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/model_events/document.rb",
+      "line": 14,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ModelEvents::Document",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
     },
     {
       "warning_type": "Mass Assignment",
@@ -1480,6 +2001,54 @@
       "confidence": "Medium",
       "cwe_id": null,
       "note": "Partial update via javascript - the used template has already been cleaned."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "94c3b480c436396dff1c03c4dd09b0391f5b2b397df1efa546dc05e2c753ddea",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/composed_model.rb",
+      "line": 51,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "class_eval(\"          validate :#{name}_validation_steps\\n\\n          def #{name}_validation_steps\\n            objs_to_validate = #{name}\\n            validate_collection_and_propagate_errors(\\\"#{name}\\\",objs_to_validate)\\n          end\\n\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ComposedModel::ComposedModelClassMethods",
+        "method": "composed_of_many"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "This code is ruby meta-programming and is not used to interpret user-provided input."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "95009aac4337a86b9874ed8e1f069607f872116636272d7a29013dc53a9bf9c8",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/document.rb",
+      "line": 23,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::Document",
+        "method": "notify_on_create"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
     },
     {
       "warning_type": "Usage of html_safe",
@@ -1674,6 +2243,30 @@
       "note": "Already passed through JSON serialization."
     },
     {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "af716b0c4eddebdc90979eaffba94c3a38ee6b24b737e956f1a4d48405cce9d0",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/benefit_sponsorship.rb",
+      "line": 14,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + event.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::BenefitSponsorship",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
+    },
+    {
       "warning_type": "Command Injection",
       "warning_code": 14,
       "fingerprint": "b122d2f7957b4b965ade2855ead1eda0b76571257de543ed1ead416bd5a54418",
@@ -1695,6 +2288,30 @@
         77
       ],
       "note": ""
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "b9b46a029d5d17f549089592a030a29bd08ea434b1dfac9813beb0b001c7a0d8",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/concerns/value_parsers/optimistic_ssn_parser.rb",
+      "line": 14,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "Module.new do\n \n end.class_eval(\"        def #{method_name}=(val)\\n          @#{method_name} = __parse_ssn_value(val)\\n        end\\n\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ValueParsers::OptimisticSsnParser",
+        "method": "ValueParsers::OptimisticSsnParser.on"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "This code does not accept user-provided input."
     },
     {
       "warning_type": "Usage of html_safe",
@@ -1755,6 +2372,54 @@
       "confidence": "Medium",
       "cwe_id": null,
       "note": "Partial update via javascript - the used template has already been cleaned."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "c35c05d4dc4d946c719755f90e14408cdf8f3dbb3cb41c6e1db5e58330a5c76f",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/hbx_enrollment.rb",
+      "line": 34,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::HbxEnrollment",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "c4c2be4ccc4c3dd15ae73f2bf08db0c9484cf39766c2b4c4e567f012534dde1b",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/saml_information.rb",
+      "line": 32,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "self.instance_eval(\"      def self.#{key.to_s}\\n        self.instance.#{key.to_s}\\n      end\\n\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "SamlInformation",
+        "method": "SamlInformation.define_key"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming to create additional accessors.  Does not receive user input."
     },
     {
       "warning_type": "SQL Injection",
@@ -1855,6 +2520,30 @@
       "note": "XML format - no need for scrubbing."
     },
     {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "ca33176e4454b4a08ea7387ff39f82c07cdd6cfa335519a47b1ba60d0de117ab",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/assister_agency_account.rb",
+      "line": 21,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval(\"is_#{:BRAKEMAN_SAFE_LITERAL}\", \"components/benefit_sponsors/app/models/benefit_sponsors/model_events/assister_agency_account.rb\", 21)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::AssisterAgencyAccount",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
+    },
+    {
       "warning_type": "Usage of html_safe",
       "warning_code": 2,
       "fingerprint": "cb09d555db109145f5f7605bce9aaee4a6541dde8e5fe02fab5258df2380acec",
@@ -1873,6 +2562,30 @@
       "confidence": "Medium",
       "cwe_id": null,
       "note": "Partial update via javascript - the used template is already cleaned."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "cc729543b2a9332f9be1a3368ed0b45f6445e861aa51414c71fa33b34b292a49",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/profile.rb",
+      "line": 24,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + event.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::Profile",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
     },
     {
       "warning_type": "Command Injection",
@@ -1965,9 +2678,9 @@
       "warning_code": 120,
       "fingerprint": "d84924377155b41e094acae7404ec2e521629d86f97b0ff628e3d1b263f8101c",
       "check_name": "EOLRails",
-      "message": "Support for Rails 5.2.4.4 ended on 2022-06-01",
+      "message": "Support for Rails 6.1.7.9 ended on 2024-10-01",
       "file": "Gemfile.lock",
-      "line": 723,
+      "line": 2303,
       "link": "https://brakemanscanner.org/docs/warning_types/unmaintained_dependency/",
       "code": null,
       "render_path": null,
@@ -2055,6 +2768,54 @@
       "note": "Partial render update via javascript - used template is checked already."
     },
     {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "e4d63e1857afd8820d92a71b451310db99ebdb9bb7c93cc1ba92d826ebe61593",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/etl/value_parsers.rb",
+      "line": 43,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "self.class_eval(\"              def #{attribute_name}=(val)\\n                @#{attribute_name} = #{:BRAKEMAN_SAFE_LITERAL}(val)\\n              end\\n              attr_reader :#{attribute_name}\\n\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "Etl::ValueParsers::ClassMethods",
+        "method": "attr_converter"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "This code is ruby meta-programming and is not used to interpret user-provided input."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "e5e2bb5c04d1716bac077469a9888f8040017ea134824dace814cf4b584abaa2",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/benefit_application.rb",
+      "line": 163,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval(\"is_#{:BRAKEMAN_SAFE_LITERAL}\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::BenefitApplication::ClassMethods",
+        "method": "date_change_event"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
+    },
+    {
       "warning_type": "Usage of html_safe",
       "warning_code": 2,
       "fingerprint": "e67a15558b0ea585f2a4795d7ac2845607499df53160a552da6d20a536fc564e",
@@ -2125,6 +2886,30 @@
       "confidence": "Medium",
       "cwe_id": null,
       "note": "Partial update via javascript - the used template has already been cleaned."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "e7adf4a2961e29db776475debb398441c3c32f3b31a596070bb0de8fede01e59",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/broker_agency_account.rb",
+      "line": 25,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::BrokerAgencyAccount",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
     },
     {
       "warning_type": "Usage of html_safe",
@@ -2230,6 +3015,30 @@
       "note": "Already passed through JSON serialization."
     },
     {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "f086c20f37e191bb03479d30acc83aa45d98f2870dc8257acbfc2d4f646ddaaf",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/general_agency_account.rb",
+      "line": 19,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::GeneralAgencyAccount",
+        "method": "notify_before_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
+    },
+    {
       "warning_type": "Usage of html_safe",
       "warning_code": 2,
       "fingerprint": "f2d601a05b3ae0d031c34b87f7b3d891ef7467503cf018a142c18374501a3246",
@@ -2248,6 +3057,102 @@
       "confidence": "Medium",
       "cwe_id": null,
       "note": "Already passed through JSON serialization."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "f88a9c02f74cfe708b99c761db598e51e0742d1fda69c4c5b4bd84156b68b0e3",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/composed_model.rb",
+      "line": 24,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "class_eval(\"        def #{name}=(vals)\\n          @#{name} ||= []\\n          if !vals.nil?\\n             @#{name} = vals\\n          end\\n          @#{name}\\n        end\\n\\n        def #{name}\\n          @#{name} ||= []\\n        end\\n\\n        def #{name}_attributes\\n          #{name}.map(&:attributes)\\n        end\\n\\n        def #{name}_attributes=(vals)\\n          if vals.nil?\\n            @#{name} = []\\n            return []\\n          end\\n          @#{name} = vals.map { |v_attrs| #{klass_name}.new(v_attrs) }\\n          #{name}_attributes\\n        end\\n\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ComposedModel::ComposedModelClassMethods",
+        "method": "composed_of_many"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "This code is ruby meta-programming and is not used to interpret user-provided input."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "f8c075bbd5d1cce3288d0482bdd8c3863291d4fbd79b1a9e1eeb4d7230813f54",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/sponsored_benefits/app/models/sponsored_benefits/validations/us_date.rb",
+      "line": 7,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "klass.class_eval(\"          def __valid_US_date_property_#{prop_name}\\n            d_value = #{prop_name}\\n            begin\\n              Date.strptime(d_value, \\\"%m/%d/%Y\\\")\\n            rescue\\n              errors.add(:#{prop_name}, \\\"invalid date: \\\" + d_value.to_s)\\n            end\\n          end\\n\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "SponsoredBenefits::Validations::UsDate",
+        "method": "SponsoredBenefits::Validations::UsDate.on"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "This code does not accept user provided input."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "f9a9cf984129a8549f7f4aef20c372094b6b763b42741921f3fcce2ede4c06a0",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/models/importers/conversion_employer.rb",
+      "line": 174,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "class_eval(\"      def #{:BRAKEMAN_SAFE_LITERAL}_location_zip=(val)\\n        if val.blank?\\n          @#{:BRAKEMAN_SAFE_LITERAL}_location_zip = nil\\n          return val\\n        else\\n          if val.strip.length == 9\\n            @#{:BRAKEMAN_SAFE_LITERAL}_location_zip = val[0..4]\\n          else\\n            @#{:BRAKEMAN_SAFE_LITERAL}_location_zip = val.strip.rjust(5, \\\"0\\\")\\n          end\\n        end\\n      end\\n\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ConversionEmployer",
+        "method": null
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "This code is ruby meta-programming and is not used to interpret user-provided input."
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "fd5ecccfb9a0e7e21db0549070ff84e2db92908409cfe454c73b4507c7bbf5fc",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "components/benefit_sponsors/app/models/benefit_sponsors/model_events/census_employee.rb",
+      "line": 24,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "instance_eval((\"is_\" + :BRAKEMAN_SAFE_LITERAL.to_s))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BenefitSponsors::ModelEvents::CensusEmployee",
+        "method": "notify_on_save"
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Ruby meta-programming which does not receive user-provided input."
     },
     {
       "warning_type": "Dangerous Send",
@@ -2273,6 +3178,5 @@
       "note": ""
     }
   ],
-  "updated": "2024-09-25 16:04:14 +0000",
-  "brakeman_version": "6.1.2"
+  "brakeman_version": "7.0.0"
 }
