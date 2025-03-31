@@ -305,6 +305,31 @@ var PersonValidations = (function (window, undefined) {
     });
   }
 
+  function customValidityWithChangeEvent(element, message) {
+    // Set custom validity on all radio buttons in the group
+    element.each(function() {
+      this.setCustomValidity(message);
+    });
+
+    // One-time setup for the change event (if not already bound)
+    if (!element.data('validationBound')) {
+      element.data('validationBound', true);
+      element.on('change', function() {
+        // Clear the validity message on all radios in the group when any one changes
+        element.each(function() {
+          this.setCustomValidity('');
+        });
+      });
+    }
+  }
+
+  function reportValidityForRadioGroup(element) {
+    // Report validity on all radio buttons in the group
+    element.each(function() {
+      this.reportValidity();
+    });
+  }
+
   function validationForUsCitizenOrUsNational(e) {
     if (
       $('input[name="person[is_applying_coverage]"]').length > 0 &&
@@ -314,11 +339,11 @@ var PersonValidations = (function (window, undefined) {
       return true;
     }
     if ($('input[name="person[us_citizen]"]').not(':checked').length == 2) {
-      resetConfirmButton();
-      alert(
-        'Please provide an answer for question: Is this person a US Citizen or US National?'
-      );
+      var usCitizenRadios = $('input[name="person[us_citizen]"]');
+      customValidityWithChangeEvent(usCitizenRadios, "Please provide an answer for question: Is this person a US Citizen or US National?");
       PersonValidations.restoreRequiredAttributes(e);
+      reportValidityForRadioGroup(usCitizenRadios);
+      return false;
     }
   }
 
@@ -360,11 +385,11 @@ var PersonValidations = (function (window, undefined) {
     var tribe_member_visible = $('.no_coverage_tribe_details').is(':visible');
 
     if (!tribe_member_yes && !tribe_member_no && tribe_member_visible) {
-      resetConfirmButton();
-      alert(
-        "Please select the option for 'Are you a member of an American Indian or Alaska Native Tribe?'"
-      );
+      var indianTribeMemberRadios = $('input[name="person[indian_tribe_member]"]');
+      customValidityWithChangeEvent(indianTribeMemberRadios, "Please select the option for 'Are you a member of an American Indian or Alaska Native Tribe?'");
       PersonValidations.restoreRequiredAttributes(e);
+      reportValidityForRadioGroup(indianTribeMemberRadios);
+      return false;
     }
 
     if (tribe_member_no) {
@@ -376,17 +401,21 @@ var PersonValidations = (function (window, undefined) {
 
     if (tribe_member_yes) {
       if ($('#tribal-state').length > 0 && $('#tribal-state').val() == '') {
-        resetConfirmButton();
         var translations = getTribalTranslations();
-        alert(translations.tribal_state_alert);
+        var tribalState = $('#tribal-state');
+        customValidityWithChangeEvent(tribalState, translations.tribal_state_alert);
         PersonValidations.restoreRequiredAttributes(e);
+        tribalState[0].reportValidity();
+        return false;
       }
 
       if (isTribalNameRequired()) {
-        resetConfirmButton();
         var translations = getTribalTranslations();
-        alert(translations.tribal_name_alert);
+        var tribalNametext = $('input[name="person[tribal_name]"]');
+        customValidityWithChangeEvent(tribalNametext, translations.tribal_name_alert);
         PersonValidations.restoreRequiredAttributes(e);
+        tribalNametext[0].reportValidity();
+        return false;
       }
 
       if (
@@ -399,18 +428,22 @@ var PersonValidations = (function (window, undefined) {
           })
           .get();
         if (tribe_codes_array.length < 1) {
-          resetConfirmButton();
-          alert('At least one tribe must be selected.');
+          var tribeCodesboxes = $('input[name="person[tribe_codes][]"]');
+          customValidityWithChangeEvent(tribeCodesboxes, "At least one tribe must be selected.");
           PersonValidations.restoreRequiredAttributes(e);
+          tribeCodesboxes[1].reportValidity();
+          return false;
         }
 
         if (
           tribe_codes_array.includes('OT') &&
           $('input#tribal-name').val() == ''
         ) {
-          resetConfirmButton();
-          alert("Please provide an answer for 'Other' tribe name.");
+          var tribalNametext = $('input[name="person[tribal_name]"]');
+          customValidityWithChangeEvent(tribalNametext, "Please provide an answer for 'Other' tribe name.");
           PersonValidations.restoreRequiredAttributes(e);
+          tribalNametext[0].reportValidity();
+          return false;
         }
 
         if (!tribe_codes_array.includes('OT')) {
@@ -440,11 +473,11 @@ var PersonValidations = (function (window, undefined) {
     if (
       $('input[name="person[is_incarcerated]"]').not(':checked').length == 2
     ) {
-      resetConfirmButton();
-      alert(
-        'Please provide an answer for question: Is this person currently incarcerated?'
-      );
+      var incarceratedRadios = $('input[name="person[is_incarcerated]"]');
+      customValidityWithChangeEvent(incarceratedRadios, 'Please provide an answer for question: Is this person currently incarcerated?');
       PersonValidations.restoreRequiredAttributes(e);
+      reportValidityForRadioGroup(incarceratedRadios);
+      return false;
     }
   }
 
@@ -476,15 +509,12 @@ var PersonValidations = (function (window, undefined) {
     ) {
       return true;
     }
-    if (
-      $('#naturalized_citizen_container').is(':visible') &&
-      $('input[name="person[naturalized_citizen]"]').not(':checked').length == 2
-    ) {
-      resetConfirmButton();
-      alert(
-        'Please provide an answer for question: Is this person a naturalized or derived citizen?'
-      );
+    if ($('#naturalized_citizen_container').is(':visible') && $('input[name="person[naturalized_citizen]"]').not(":checked").length == 2) {
+      var naturalizedRadios = $('input[name="person[naturalized_citizen]"]');
+      customValidityWithChangeEvent(naturalizedRadios, 'Please provide an answer for question: Is this person a naturalized or derived citizen?');
       PersonValidations.restoreRequiredAttributes(e);
+      reportValidityForRadioGroup(naturalizedRadios);
+      return false;
     }
   }
 
@@ -744,31 +774,34 @@ var PersonValidations = (function (window, undefined) {
 
       if ($('#contact_type_email').prop('checked')) {
         if (!$('#person_emails_attributes_0_address').val()) {
-          alert(
-            'You must enter an email address to receive notices and updates by email.'
-          );
+          var personalEmailAddress = $('#person_emails_attributes_0_address');
+          customValidityWithChangeEvent(personalEmailAddress, "You must enter an email address to receive notices and updates by email.");
           PersonValidations.restoreRequiredAttributes(e);
+          personalEmailAddress.reportValidity();
         }
       }
 
       if ($('#contact_type_text').prop('checked')) {
-        const phoneInput = document.querySelector('.mobile-phone-number');
-        const phoneValue = phoneInput.value.replace(/\D/g, '');
+        const phoneInput = $('input[name="person[phones_attributes][1][full_phone_number]"]');
+        const phoneValue = phoneInput.val().replace(/\D/g, '');
 
         if (/^0+$/.test(phoneValue)) {
-          alert('Mobile Phone number cannot be all zeros.');
+          customValidityWithChangeEvent(phoneInput, "Mobile Phone number cannot be all zeros.");
           PersonValidations.restoreRequiredAttributes(e);
+          phoneInput[0].reportValidity();
         } else if (phoneValue.length < 1 || phoneValue.length < 10) {
-          alert('You must enter a mobile phone number to receive notices and updates by text.');
+          customValidityWithChangeEvent(phoneInput, "You must enter a mobile phone number to receive notices and updates by text.");
           PersonValidations.restoreRequiredAttributes(e);
+          phoneInput[0].reportValidity();
         }
 
-        const homePhoneInput = document.querySelector('.home-phone-number');
-        const homePhoneValue = homePhoneInput.value.replace(/\D/g, '');
+        const homePhoneInput = $('input[name="person[phones_attributes][0][full_phone_number]"]');
+        const homePhoneValue = homePhoneInput.val().replace(/\D/g, '');
 
         if (/^0+$/.test(homePhoneValue)) {
-          alert('Home Phone number cannot be all zeros.');
+          customValidityWithChangeEvent(homePhoneInput, "Home Phone number cannot be all zeros.");
           PersonValidations.restoreRequiredAttributes(e);
+          homePhoneInput[0].reportValidity();
         }
 
         if (
@@ -785,21 +818,23 @@ var PersonValidations = (function (window, undefined) {
       if (!$('#contact_type_text').prop('checked')) {
 
         // Check mobile phone number
-        const mobilePhoneInput = document.querySelector('.mobile-phone-number');
-        const mobilePhoneValue = mobilePhoneInput.value.replace(/\D/g, '');
+        const mobilePhoneInput = $('input[name="person[phones_attributes][1][full_phone_number]"]');
+        const mobilePhoneValue = mobilePhoneInput.val().replace(/\D/g, '');
 
         if (/^0+$/.test(mobilePhoneValue)) {
-          alert('Mobile Phone number cannot be all zeros.');
+          customValidityWithChangeEvent(mobilePhoneInput, "Mobile Phone number cannot be all zeros.");
           PersonValidations.restoreRequiredAttributes(e);
+          mobilePhoneInput[0].reportValidity();
         }
 
         // Check home phone number
-        const homePhoneInput = document.querySelector('.home-phone-number');
-        const homePhoneValue = homePhoneInput.value.replace(/\D/g, '');
+        const homePhoneInput = $('input[name="person[phones_attributes][0][full_phone_number]"]');
+        const homePhoneValue = homePhoneInput.val().replace(/\D/g, '');
 
         if (/^0+$/.test(homePhoneValue)) {
-          alert('Home Phone number cannot be all zeros.');
+          customValidityWithChangeEvent(homePhoneInput, "Home Phone number cannot be all zeros.");
           PersonValidations.restoreRequiredAttributes(e);
+          homePhoneInput[0].reportValidity();
         }
       }
     }

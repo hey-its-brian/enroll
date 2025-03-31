@@ -6,6 +6,16 @@ document.addEventListener('turbolinks:request-start', function (event) {
   );
 });
 
+function disableButton(button) {
+  button.attr('disabled', 'disabled')
+        .addClass('disabled');
+};
+
+function enableButton(button) {
+  button.removeAttr('disabled')
+        .removeClass('disabled');
+};
+
 $(document).on('click', '.remove-child-row-btn', function () {
   $('tr.child-row:visible').remove();
 });
@@ -20,7 +30,13 @@ $(document).on('click', '.expire-sep-type-end-on-col', function () {
 
 $(document).on('click', '.manage-person-validations-click', function () {
   var element = this;
+  var form = $('.edit_person')[0];
+
   PersonValidations.manageRequiredValidations($(element));
+
+  if (form.checkValidity()){
+    disableButton($(element));
+ }
 });
 
 $(document).on('keydown', '.manage-person-validations-click', function (event) {

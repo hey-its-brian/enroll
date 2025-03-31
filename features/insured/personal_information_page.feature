@@ -21,7 +21,7 @@ Feature: Insured Plan Shopping on Individual market
     Given Individual clicks on the Continue button of the Account Setup page
     Then Individual sees form to enter personal information but doesn't check every box
     And Individual clicks on continue
-    Then the user will have to accept alert pop up for missing field
+    Then Individual should see the custom validity message
 
   Scenario: Consumer clicks the personal match page continue button with contact preference text
     Given EnrollRegistry contact_method_via_dropdown feature is disabled
@@ -30,7 +30,7 @@ Feature: Insured Plan Shopping on Individual market
     And Individual sees form to enter personal information with invalid phone number
     And Individual selects contact text check box
     Then Individual clicks on continue
-    Then Individual should see an message warning about invalid phone
+    Then Individual should see a custom validity message for invalid mobile phone
 
   Scenario: Consumer clicks the personal match page continue button without contact preference text
     Given EnrollRegistry contact_method_via_dropdown feature is disabled
@@ -38,4 +38,4 @@ Feature: Insured Plan Shopping on Individual market
     And Individual clicks on the Continue button of the Family Information page
     And Individual sees form to enter personal information with invalid phone number
     Then Individual clicks on continue
-    Then Individual should see an message warning about invalid phone
+    Then Individual should see a custom validity message for invalid mobile phone

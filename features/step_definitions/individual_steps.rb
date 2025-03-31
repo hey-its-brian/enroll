@@ -130,6 +130,10 @@ And(/the user will have to accept alert pop up for missing field$/) do
   page.driver.browser.switch_to.alert.accept
 end
 
+And(/Individual should see the custom validity message$/) do
+  custom_message = page.evaluate_script("document.querySelector(\"input[name='person[indian_tribe_member]']\").validationMessage")
+  expect(custom_message).to eq("Please select the option for 'Are you a member of an American Indian or Alaska Native Tribe?'")
+end
 
 When(/^\w+ clicks? on the Continue button$/) do
   find(IvlPersonalInformation.continue_btn, :wait => 10).click
@@ -199,6 +203,11 @@ Then(/Individual should see an message warning about invalid phone/) do
   text = page.driver.browser.switch_to.alert.text
   expect(text).to eq 'Mobile Phone number cannot be all zeros.'
   # expect(page).to have_content 'Mobile Phone number cannot be all zeros.'
+end
+
+Then(/Individual should see a custom validity message for invalid mobile phone/) do
+  custom_message = page.evaluate_script("document.querySelector(\"input[name='person[phones_attributes][1][full_phone_number]']\").validationMessage")
+  expect(custom_message).to eq("Mobile Phone number cannot be all zeros.")
 end
 
 Then(/the continue button has data disabled attribute$/) do
