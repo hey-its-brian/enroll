@@ -19,7 +19,7 @@ module Operations
             valid_params = yield validate(params)
             subject      = yield find_subject(family: valid_params[:family], person_id: valid_params[:person_id])
             member       = yield find_member(family: valid_params[:family], subject: subject)
-            evidence     = yield find_evidence(valid_params, subject)
+            evidence     = find_evidence(valid_params, subject)
 
             Success(member: member, evidence: evidence)
           end
@@ -34,22 +34,33 @@ module Operations
             Success(params)
           end
 
+          def find_evidence_state(subject, eligibility_kind, evidence_key)
+            eligibility_state = subject.eligibility_states.by_type(eligibility_kind).first
+            eligibility_state_error_substring = "Eligibility \"#{eligibility_kind.gsub(/\W+/, '')&.titleize}\""
+            return Failure("#{eligibility_state_error_substring} not found for #{subject.full_name}") unless eligibility_state.present?
+
+            evidence = eligibility_state.evidence_states.by_key(evidence_key).first
+            return Failure("Evidence \"#{evidence_key.gsub(/\W+/, '')&.titleize}\" not found under #{eligibility_state_error_substring} for #{subject.full_name}") unless evidence.present?
+
+            Success(::Adapters::EvidenceAdapter.new(evidence))
+          end
+
+          def find_identity_verification(subject)
+            person = subject.person
+            return Failure("#{subject_error_substring} is not identity verified") unless person.consumer_role&.application_verified? || person.consumer_role&.identity_verified?
+            return Failure("Identity verification is not enabled") unless EnrollRegistry.feature_enabled?(:show_identity_verification)
+
+            Success(::Adapters::EvidenceAdapter.new(person))
+          end
+
           def find_evidence(valid_params, subject)
-            subject_error_substring = subject.full_name
-            if valid_params[:evidence_key] == 'identity'
-              return Failure("#{subject_error_substring} is not identity verified") unless subject.person.user&.consumer_identity_verified?
-              return Failure("Identity verification is not enabled") unless EnrollRegistry.feature_enabled?(:show_identity_verification)
-
-              Success(::Adapters::EvidenceAdapter.new(subject.person))
+            case valid_params[:eligibility_kind]
+            when 'ridp'
+              yield find_identity_verification(subject)
+            when 'aca_individual_market_eligibility', 'aptc_csr_credit'
+              yield find_evidence_state(subject, valid_params[:eligibility_kind], valid_params[:evidence_key])
             else
-              eligibility_state = subject.eligibility_states.by_type(valid_params[:eligibility_kind]).first
-              eligibility_state_error_substring = "Eligibility \"#{valid_params[:eligibility_kind].gsub(/\W+/, '')&.titleize}\""
-              return Failure("#{eligibility_state_error_substring} not found for #{subject_error_substring}") unless eligibility_state.present?
-
-              evidence = eligibility_state.evidence_states.by_key(valid_params[:evidence_key]).first
-              return Failure("Evidence \"#{valid_params[:evidence_key].gsub(/\W+/, '')&.titleize}\" not found under #{eligibility_state_error_substring} for #{subject_error_substring}") unless evidence.present?
-
-              Success(::Adapters::EvidenceAdapter.new(evidence))
+              yield Failure("Unsupported eligibility kind: #{valid_params[:eligibility_kind]}")
             end
           end
         end

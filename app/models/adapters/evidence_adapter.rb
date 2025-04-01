@@ -66,7 +66,7 @@ module Adapters
         @evidence_item_key = :identity
         @status = 'valid'
         @due_on = nil
-        @documents = ridp_documents_list(person, 'Identity')
+        @documents = ridp_documents_list(person, 'Identity') + ridp_documents_list(person, 'Application')
         @update_reason = nil
         @history = []
         @history_tracks = nil

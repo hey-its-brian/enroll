@@ -39,7 +39,8 @@ module Operations
             end
 
             person = subject.person
-            evidences << ::Adapters::EvidenceAdapter.new(person) if person.user&.consumer_identity_verified? && EnrollRegistry.feature_enabled?(:show_identity_verification)
+            ridp_verified = person.consumer_role&.application_verified? || person.consumer_role&.identity_verified?
+            evidences << ::Adapters::EvidenceAdapter.new(person) if ridp_verified && EnrollRegistry.feature_enabled?(:show_identity_verification)
 
             Success(evidences)
           end
