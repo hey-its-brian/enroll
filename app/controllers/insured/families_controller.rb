@@ -237,7 +237,10 @@ class Insured::FamiliesController < FamiliesController
     authorize @family, :verification?
 
     if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
-      result = Operations::Families::Verifications::Summary::HouseholdQuery.new.call(family: @family)
+      result = Operations::Families::Verifications::Summary::HouseholdQuery.new.call(
+        family: @family,
+        include_inactives: current_user.has_hbx_staff_role?
+      )
       if result.success?
         value = result.value!
 

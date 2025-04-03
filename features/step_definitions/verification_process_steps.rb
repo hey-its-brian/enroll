@@ -208,6 +208,17 @@ Then(/the consumer should (.*)see an outstanding member in the Household Members
   end
 end
 
+When(/the consumer has an inactive family member/) do
+  FactoryBot.create(:family_member,
+                    person: FactoryBot.create(:person, first_name: 'Inactive', last_name: 'Member'),
+                    family: user.person.families.first,
+                    is_active: false)
+end
+
+Then(/the consumer should see only active members in the Household Members table/) do
+  expect(page).not_to have_content('Inactive Member')
+end
+
 When(/the consumer selects the action item for the actionable verification/) do
   find("#{IvlDocumentsPage.action_items_section} tbody tr").click
 end

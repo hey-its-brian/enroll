@@ -13,12 +13,12 @@ module Operations
           include Dry::Monads[:do, :result]
 
           def call(params)
-            valid_params = yield validate(params)
-            family = valid_params[:family]
-            action_items = yield find_action_items_and_sort(family)
-            subjects     = yield find_subjects_items_and_sort(family)
+            valid_params    = yield validate(params)
+            subjects        = yield find_subjects(valid_params)
+            action_items    = yield find_action_items_and_sort(subjects)
+            sorted_subjects = yield find_subjects_items_and_sort(subjects)
 
-            Success(action_items: action_items, subjects: subjects)
+            Success(action_items: action_items, subjects: sorted_subjects)
           end
 
           private
@@ -29,9 +29,23 @@ module Operations
             Success(params)
           end
 
-          def find_action_items_and_sort(family)
+          def find_subjects(params)
+            family = params[:family]
             ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record) if family.eligibility_determination.nil?
-            uploadable_eligibilities = family.eligibility_determination.subjects.map do |subject|
+            all_subjects = family.eligibility_determination.subjects
+
+            return Success(all_subjects) if params[:include_inactives] && EnrollRegistry.feature_enabled?(:show_inactive_verification_members)
+
+            members = all_subjects.map { |subject| GlobalID::Locator.locate(subject.gid) }
+            return Failure("Family members not found") unless members.count == all_subjects.count
+
+            zipped_subjects = members.map(&:is_active).zip(all_subjects)
+            active_subjects = zipped_subjects.select { |active, _| active }.map(&:last)
+            Success(active_subjects)
+          end
+
+          def find_action_items_and_sort(subjects)
+            uploadable_eligibilities = subjects.map do |subject|
               subject.eligibility_states.by_type_uploadable
             end.flatten
             action_items = uploadable_eligibilities.map do |state|
@@ -42,8 +56,8 @@ module Operations
             Success(sorted_action_items.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) })
           end
 
-          def find_subjects_items_and_sort(family)
-            Success(family.eligibility_determination.subjects.sort_by do |subject|
+          def find_subjects_items_and_sort(subjects)
+            Success(subjects.sort_by do |subject|
               [subject.documents_outstanding? ? 0 : 1, subject.earliest_due_date || Float::INFINITY]
             end)
           end

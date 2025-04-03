@@ -23,7 +23,7 @@
       <dd><%= @member.full_name %></dd>
     </div>
   <% end %>
-  <% if summary_rows.include?(:member_status) && current_user.has_hbx_staff_role? %>
+  <% if summary_rows.include?(:member_status) && current_user.has_hbx_staff_role? && EnrollRegistry.feature_enabled?(:show_inactive_verification_members) %>
     <div class='d-flex align-items-center'>
       <dt class="<%= dt_class %>"><%= l10n('insured.families.verifications.detail.summary.member_status') %>:</dt>
       <dd class="admin-designation"><%= @member.is_active? ? l10n('active') : l10n('inactive') %></dd>

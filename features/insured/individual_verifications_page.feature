@@ -44,3 +44,11 @@ Feature: Individual Verifications Page
     And the consumer visits the verification tab
     And the consumer selects a household member
     Then the consumer should see the individual detail page
+
+  Scenario: Consumer goes to the Documents page with inactive members
+    Given show_new_verifications_household_summary feature is enabled
+    And EnrollRegistry show_inactive_verification_members feature is disabled
+    And the consumer has an inactive family member
+    And the determination for the family has been built
+    And the consumer visits the verification tab
+    Then the consumer should see only active members in the Household Members table

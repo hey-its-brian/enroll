@@ -67,3 +67,5 @@ registry:
         is_enabled: <%= ENV['SHOW_NEW_DOCUMENTS_TYPES_IS_ENABLED'] || false %>
       - key: :show_identity_verification
         is_enabled: <%= ENV['SHOW_IDENTITY_VERIFICATION_IS_ENABLED'] || false %>
+      - key: :show_inactive_verification_members
+        is_enabled: <%= ENV['SHOW_INACTIVE_VERIFICATION_MEMBERS_IS_ENABLED'] || false %>
