@@ -72,7 +72,7 @@ Given(/the consumer has a(?: (.+))? verification with (\w+) status/) do |type, s
 
   family = user.person.primary_family
   case type
-  when "Citizenship", "Immigration Status", "Social Security Number"
+  when "Citizenship", "Immigration Status", "Social Security Number", "Alive Status"
     FactoryBot.create(:verification_type, type_name: type, validation_status: status, update_reason: "Mock Reason", due_date: TimeKeeper.date_of_record, person: user.person)
   else
     case type
@@ -282,8 +282,9 @@ Then(/the consumer should (.*) the upload section/) do |negation|
   expect(page).send(is_visible ? :to : :not_to, have_selector(IvlDocumentsPage.upload_documents_section))
 end
 
-Then(/the consumer should see the Identity verification/) do
-  expect(page).to have_css('tr', text: 'Identity')
+Then(/the consumer (.*) see the (.*) verification row$/) do |negation, type|
+  is_visible = !negation.include?('not')
+  expect(page).send(is_visible ? :to : :not_to, have_css('tr', text: type))
 end
 
 When(/the consumer selects a household member/) do

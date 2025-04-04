@@ -76,6 +76,14 @@ function indicateAdminDesignatedElements() {
   });
 }
 
+function displayAdminDesignationDescriptor() {
+  var adminDesignationDescriptorContainer = $('.admin-designation').not('#admin-designation-descriptor > .admin-designation')
+  var adminDesignationDescriptor = $('#admin-designation-descriptor');
+  if (adminDesignationDescriptorContainer.length > 0) {
+    adminDesignationDescriptor.removeClass('hidden');
+  }
+}
+
 function controllerName() {
   const body = document.body;
   return body.dataset.controller;

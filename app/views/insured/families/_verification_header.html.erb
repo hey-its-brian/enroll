@@ -9,7 +9,7 @@
 <h1><%= title %></h1>
 
 <% if current_user.has_hbx_staff_role? %>
-  <aside class="mb-2">
+  <aside class="mb-2 hidden" id="admin-designation-descriptor">
     <span class="admin-designation"></span> 
     <%= l10n('admin.admin_designation_descriptor') %>
   </aside>
