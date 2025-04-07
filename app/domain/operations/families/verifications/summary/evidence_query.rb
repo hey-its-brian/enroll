@@ -30,6 +30,7 @@ module Operations
             return Failure('Family is missing') unless params[:family].present?
             return Failure('Person ID is missing') unless params[:person_id].present?
             return Failure('Evidence key is missing') unless params[:evidence_key].present?
+            return Failure('Eligibility kind is missing') unless params[:eligibility_kind].present?
 
             Success(params)
           end
@@ -53,12 +54,25 @@ module Operations
             Success(::Adapters::EvidenceAdapter.new(person))
           end
 
+          def find_inactive_verification(subject, evidence_key)
+            return Failure("Inactive verification display is not enabled") unless EnrollRegistry.feature_enabled?(:show_inactive_verifications)
+            type_name = evidence_key.gsub(/\W+/, ' ')&.titleize
+            verification = subject.person.verification_types.inactive.by_name(type_name).first
+            return Failure("Inactive verification \"#{type_name}\" not found for #{subject.full_name}") unless verification.present?
+
+            Success(::Adapters::EvidenceAdapter.new(verification))
+          end
+
           def find_evidence(valid_params, subject)
             case valid_params[:eligibility_kind]
             when 'ridp'
               yield find_identity_verification(subject)
             when 'aca_individual_market_eligibility', 'aptc_csr_credit'
-              yield find_evidence_state(subject, valid_params[:eligibility_kind], valid_params[:evidence_key])
+              if valid_params[:inactive] == "true"
+                yield find_inactive_verification(subject, valid_params[:evidence_key])
+              else
+                yield find_evidence_state(subject, valid_params[:eligibility_kind], valid_params[:evidence_key])
+              end
             else
               yield Failure("Unsupported eligibility kind: #{valid_params[:eligibility_kind]}")
             end

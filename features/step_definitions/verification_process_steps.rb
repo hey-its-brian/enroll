@@ -67,15 +67,13 @@ And(/^the user is RIDP verified$/) do
   user.person.consumer_role.move_identity_documents_to_verified
 end
 
-Given(/the consumer has a(?: (.+))? verification with (\w+) status/) do |type, status|
-  type ||= "Citizenship"
-
+def create_verification(type_name, validation_status:, inactive: false)
   family = user.person.primary_family
-  case type
+  case type_name
   when "Citizenship", "Immigration Status", "Social Security Number", "Alive Status"
-    FactoryBot.create(:verification_type, type_name: type, validation_status: status, update_reason: "Mock Reason", due_date: TimeKeeper.date_of_record, person: user.person)
+    FactoryBot.create(:verification_type, type_name: type_name, validation_status: validation_status, update_reason: "Mock Reason", due_date: TimeKeeper.date_of_record, person: user.person, inactive: inactive)
   else
-    case type
+    case type_name
     when "Income"
       type = "income"
     when "Coverage from a job"
@@ -98,9 +96,17 @@ Given(/the consumer has a(?: (.+))? verification with (\w+) status/) do |type, s
                       application: application,
                       is_primary_applicant: true,
                       family_member_id: user_family_member_id)
-    application.applicants.where(family_member_id: user_family_member_id).first.send(type).update_attributes(aasm_state: status)
+    application.applicants.where(family_member_id: user_family_member_id).first.send(type).update_attributes(aasm_state: validation_status)
   end
   ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family.reload, effective_date: TimeKeeper.date_of_record)
+end
+
+Given(/^that the consumer has inactive verifications/) do
+  create_verification('Immigration Status', validation_status: 'verified', inactive: true)
+end
+
+Given(/the consumer has a(?: (.+))? verification with (\w+) status/) do |type, status|
+  create_verification(type || "Citizenship", validation_status: status)
 end
 
 Given(/the alive_status feature is enabled/) do
@@ -219,6 +225,21 @@ Then(/the consumer should see only active members in the Household Members table
   expect(page).not_to have_content('Inactive Member')
 end
 
+Then(/the .* should see the Individual verifications table (.*) inactive verifications/) do |inactive_negation|
+  should_display_inactives = !inactive_negation.include?('out')
+  within IvlDocumentsPage.individual_verifications_section do
+    expect(page).to have_content "Verifications"
+    within 'table' do
+      within 'thead tr' do
+        headers = ['Document Name', 'Status', ('Active' if should_display_inactives), 'Due Date']
+        headers.compact.each_with_index do |header, index|
+          expect(find("th:nth-child(#{index + 1})")).to have_content(header)
+        end
+      end
+    end
+  end
+end
+
 When(/the consumer selects the action item for the actionable verification/) do
   find("#{IvlDocumentsPage.action_items_section} tbody tr").click
 end
@@ -232,7 +253,7 @@ When(/the (.*) vists the verification detail page for a(?: (.+))? verification w
   steps %(
     Given the consumer has a#{type_substring} verification with #{status} status
     And the #{user} visits the verification tab
-    And the consumer selects a household member
+    And the #{user} selects a household member
     And the consumer selects the#{type_substring} verification for the member
   )
 end
@@ -287,7 +308,7 @@ Then(/the consumer (.*) see the (.*) verification row$/) do |negation, type|
   expect(page).send(is_visible ? :to : :not_to, have_css('tr', text: type))
 end
 
-When(/the consumer selects a household member/) do
+When(/the .* selects a household member/) do
   find("#{IvlDocumentsPage.household_members_section} tbody tr").click
 end
 

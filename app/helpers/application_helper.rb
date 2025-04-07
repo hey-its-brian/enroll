@@ -1204,4 +1204,14 @@ module ApplicationHelper
     attrs[:data][:"admin-can-enable"] = true if admin_can_enable
     attrs
   end
+
+  def human_boolean(boolean)
+    if boolean
+      l10n('yes')
+    elsif boolean == false
+      l10n('no')
+    else
+      l10n('not_applicable')
+    end
+  end
 end

@@ -90,21 +90,26 @@ module VerificationHelper
     outstanding_status?(previous_states, previous_states_history, obj)
   end
 
+  def can_display_evidence_state_market?(evidence_state)
+    case evidence_state.evidence_item_key
+    when Eligibilities::EvidenceState::ALIVE_STATUS
+      EnrollRegistry.feature_enabled?(:alive_status) && had_outstanding_status?(evidence_state)
+    when Eligibilities::EvidenceState::AMERICAN_INDIAN_STATUS
+      !EnrollRegistry.feature_enabled?(:ai_an_self_attestation) || had_outstanding_status?(evidence_state)
+    when Eligibilities::EvidenceState::LOCATION_RESIDENCY
+      EnrollRegistry.feature_enabled?(:location_residency_verification_type)
+    else
+      true
+    end
+  end
+
   def can_display_evidence_state?(evidence_state, is_admin: current_user.has_hbx_staff_role?)
     return true if is_admin
+    return false if evidence_state.inactive
 
     case evidence_state.evidence_group
     when 'aca_individual_market_eligibility'
-      case evidence_state.evidence_item_key
-      when Eligibilities::EvidenceState::ALIVE_STATUS
-        EnrollRegistry.feature_enabled?(:alive_status) && had_outstanding_status?(evidence_state)
-      when Eligibilities::EvidenceState::AMERICAN_INDIAN_STATUS
-        !EnrollRegistry.feature_enabled?(:ai_an_self_attestation) || had_outstanding_status?(evidence_state)
-      when Eligibilities::EvidenceState::LOCATION_RESIDENCY
-        EnrollRegistry.feature_enabled?(:location_residency_verification_type)
-      else
-        true
-      end
+      can_display_evidence_state_market?(evidence_state)
     when 'aptc_csr_credit'
       !(evidence_state.evidence_item_key == :local_mec_evidence && !FinancialAssistanceRegistry.feature_enabled?(:mec_check))
     else
@@ -354,16 +359,18 @@ module VerificationHelper
   end
 
   def admin_actions(obj, f_member)
-    options_for_select(build_admin_actions_list(obj, f_member))
-  end
-
-  def admin_actions_allowed?(evidence)
-    true unless evidence.evidence_item_key == :identity
+    list = build_admin_actions_list(obj, f_member)
+    if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+      view_history = list.delete(::VlpDocument::VIEW_HISTORY)
+      {options: list, can_view_history: view_history.present?}
+    else
+      options_for_select(list)
+    end
   end
 
   def display_upload_for_verification?(obj)
     if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
-      %w[verified attested valid curam].exclude?(obj.status.to_s)
+      %w[verified attested valid curam].exclude?(obj.status.to_s) && !obj.inactive
     else
       obj.type_unverified?
     end
@@ -401,9 +408,9 @@ module VerificationHelper
   end
 
   def build_evidence_admin_actions_list_market(evidence, f_member)
-    rejections = []
-    return [] if EnrollRegistry.feature_enabled?(:ai_an_self_attestation) && evidence.evidence_item_key == Eligibilities::EvidenceState::AMERICAN_INDIAN_STATUS
+    return [::VlpDocument::VIEW_HISTORY] if evidence.inactive || (EnrollRegistry.feature_enabled?(:ai_an_self_attestation) && evidence.evidence_item_key == Eligibilities::EvidenceState::AMERICAN_INDIAN_STATUS)
 
+    rejections = []
     rejections << ::VlpDocument::CALL_HUB if f_member.consumer_role.aasm_state == 'unverified' || Eligibilities::EvidenceState::ADMIN_CALL_HUB_VERIFICATION_TYPES.exclude?(evidence.evidence_item_key)
     rejections << ::VlpDocument::REJECT if verification_type_status(evidence, f_member) == :outstanding
     rejections << ::VlpDocument::EXTEND unless !EnrollRegistry.feature_enabled?(:verification_due_on_options) || (evidence.is_action_needed? && pundit_allow(HbxProfile, :can_extend_due_date?))
@@ -412,6 +419,8 @@ module VerificationHelper
   end
 
   def build_evidence_admin_actions_list_aptc_csr(evidence)
+    return [Eligibilities::Evidence::VIEW_HISTORY] if evidence.inactive
+
     rejections = []
     rejections << Eligibilities::Evidence::REJECT if evidence.status == :outstanding
     rejections << Eligibilities::Evidence::EXTEND unless !EnrollRegistry.feature_enabled?(:verification_due_on_options) || (evidence.is_action_needed? && pundit_allow(HbxProfile, :can_extend_due_date?))

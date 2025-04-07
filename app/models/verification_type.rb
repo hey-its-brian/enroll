@@ -57,6 +57,7 @@ class VerificationType
                 :track_destroy => true
 
   scope :active, -> { where(:inactive.ne => true) }
+  scope :inactive, -> { where(:inactive => true) }
   scope :by_name, ->(type_name) { where(:type_name => type_name) }
   scope :ssn_type, -> { by_name("Social Security Number").active }
   scope :citizenship_type, -> { by_name("Citizenship").active }

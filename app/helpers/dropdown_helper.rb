@@ -20,9 +20,9 @@ module DropdownHelper
     when 'ridp'
       option_args = [[l10n('download'), "/insured/ridp_documents/download/#{doc_key}", :blank_target]]
     when 'aca_individual_market_eligibility'
-      option_args = [
-        [l10n('download'), "/insured/verification_documents/download/#{doc_key}", :blank_target],
-        [l10n('remove'), document_path(
+      option_args = [[l10n('download'), "/insured/verification_documents/download/#{doc_key}", :blank_target]]
+      unless verification.inactive
+        option_args << [l10n('remove'), document_path(
           document,
           :verification_type => GlobalID.parse(verification.evidence_gid).model_id,
           :doc_title => document.title&.titleize,
@@ -30,7 +30,7 @@ module DropdownHelper
           :eligibility_kind => verification.evidence_group,
           :evidence_key => verification.evidence_item_key
         ), :delete]
-      ]
+      end
     when 'aptc_csr_credit'
       application = fetch_latest_determined_application(@family.id)
       family_member = @family.find_family_member_by_person(verification.person)
@@ -51,7 +51,7 @@ module DropdownHelper
            :doc_title => document.title&.titleize,
            :person_id => verification.person.id,
            :eligibility_kind => verification.evidence_group,
-           :evidence_kind => verification.evidence_item_key
+           :evidence_kind => evidence_key
          ), :delete]
       ]
     end

@@ -97,21 +97,28 @@
   </section>
 <% end %>
 
-<% if current_user.has_hbx_staff_role? && admin_actions_allowed?(@evidence) %>
+<% admin_actions = admin_actions(@evidence, @member.person) %>
+<% if current_user.has_hbx_staff_role? && admin_actions.values.any?(&:present?) %>
+  <% can_view_history = admin_actions[:can_view_history] %>
+  <% options = admin_actions[:options] %>
   <section>
     <h2 class="admin-designation"><%= l10n('insured.families.verifications.detail.admin_tools') %></h2>
-    <section class="mb-3">
-      <% actions_hash = verification_admin_actions %>
-      <label class="v-type-actions">
-        <%= l10n('action') %>
-        <div><%= select_tag :verification_actions, admin_actions(@evidence, @member.person), {id: "v-action-#{actions_hash[:id]}", class: 'col-4', prompt: l10n("insured.consumer_roles.upload_ridp_documents.select_action")} %></div>
-      </label>            
-      <%= render actions_hash[:partial] %>
-    </section>
-    <section>
-      <h3><%= l10n('history') %></h3>
-      <%= link_to l10n('insured.families.verifications.detail.admin_tools.view_history'), verification_history_insured_families_path(person_id: @evidence.person.id, eligibility_kind: @evidence.evidence_group, evidence_key: @evidence.evidence_item_key) %>
-    </section>
+    <% if options.present? %>
+      <section class="mb-3">
+        <% actions_hash = verification_admin_actions %>
+        <label class="v-type-actions">
+          <%= l10n('action') %>
+          <div><%= select_tag :verification_actions, options_for_select(options), {id: "v-action-#{actions_hash[:id]}", class: 'col-4', prompt: l10n("insured.consumer_roles.upload_ridp_documents.select_action")} %></div>
+        </label>            
+        <%= render actions_hash[:partial] %>
+      </section>
+    <% end %>
+    <% if can_view_history %>
+      <section>
+        <h3><%= l10n('history') %></h3>
+        <%= link_to l10n('insured.families.verifications.detail.admin_tools.view_history'), verification_history_insured_families_path(@evidence.detail_params) %>
+      </section>
+    <% end %>
   </section>
 <% end %>
 

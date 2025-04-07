@@ -29,6 +29,19 @@ Feature: Individual Verification Individual Page
     And the consumer selects a household member
     Then the consumer should see Individual disclaimer
 
+  Scenario: Consumer has inactive and active verifications
+    And EnrollRegistry show_identity_verification feature is enabled
+    And EnrollRegistry show_inactive_verifications feature is enabled
+    And that the consumer has inactive verifications
+    And Hbx Admin exists
+    When the consumer selects a household member
+    Then the user should see the Individual verifications table without inactive verifications
+    And consumer logs out
+    And that a user with a HBX staff role with HBX staff subrole exists and is logged in
+    And the admin visits the verification tab
+    Then the admin selects a household member
+    Then the admin should see the Individual verifications table with inactive verifications
+
   Scenario: Consumer goes to the Verification Detail page from the Individual table
     And the consumer selects a household member
     When the consumer selects the verification for the member

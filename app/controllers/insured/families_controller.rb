@@ -289,7 +289,8 @@ class Insured::FamiliesController < FamiliesController
       family: @family,
       person_id: params[:person_id],
       evidence_key: params[:evidence_key],
-      eligibility_kind: params[:eligibility_kind]
+      eligibility_kind: params[:eligibility_kind],
+      inactive: params[:inactive]
     )
 
     if result.success?

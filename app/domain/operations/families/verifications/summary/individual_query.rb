@@ -6,7 +6,7 @@ module Operations
       module Summary
         # Retrieves and organizes verification evidence for a specific individual.
         # This query collects all verification evidence for a specific household member,
-        # including both eligibility evidence states and identity verification when available.
+        # including eligibility evidence states, inactive verifications, and identity verification when available.
         #
         # @see EvidenceAdapter Used to normalize different evidence types
         class IndividualQuery
@@ -34,11 +34,20 @@ module Operations
           end
 
           def find_all_evidences(subject)
+            # Collect all evidence states from the determination
             evidences = subject.eligibility_states.by_type_uploadable.flat_map do |state|
               state.evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
             end
 
             person = subject.person
+
+            # Inactive verifications are not available from the determination, fetch them directly
+            inactive_verifications = person.verification_types.inactive.map do |verification|
+              ::Adapters::EvidenceAdapter.new(verification)
+            end
+            evidences += inactive_verifications if EnrollRegistry.feature_enabled?(:show_inactive_verifications)
+
+            # Fetch identity verification if available
             ridp_verified = person.consumer_role&.application_verified? || person.consumer_role&.identity_verified?
             evidences << ::Adapters::EvidenceAdapter.new(person) if ridp_verified && EnrollRegistry.feature_enabled?(:show_identity_verification)
 

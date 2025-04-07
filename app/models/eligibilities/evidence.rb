@@ -20,8 +20,7 @@ module Eligibilities
     CALL_HUB = 'Call HUB'
     EXTEND = EnrollRegistry.feature_enabled?(:verification_due_on_options) ? 'Set due date' : 'Extend'
 
-    ADMIN_VERIFICATION_ACTIONS = [VERIFY, REJECT, VIEW_HISTORY, CALL_HUB, EXTEND] # rubocop:disable Style/MutableConstant
-    ADMIN_VERIFICATION_ACTIONS -= [VIEW_HISTORY] if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+    ADMIN_VERIFICATION_ACTIONS = [VERIFY, REJECT, VIEW_HISTORY, CALL_HUB, EXTEND].freeze
 
     VERIFY_REASONS = EnrollRegistry[:verification_reasons].item
     VERIFY_REASONS += EnrollRegistry[:non_applicant_verification_reason].item if EnrollRegistry.feature_enabled?(:non_applicant_verification_reason)

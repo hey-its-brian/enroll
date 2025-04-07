@@ -152,9 +152,7 @@ module NavigationHelper
     steps = {
       "verification" => {title: l10n('insured.families.verifications'), link: main_app.verification_insured_families_path(tab: 'verification')},
       "verification_individual" => {title: l10n('insured.families.verifications.individual'), link: verification_individual_insured_families_path(person_id: @member.person_id) },
-      "verification_detail" => {title: l10n('insured.families.verifications.detail'), link: main_app.verification_detail_insured_families_path(person_id: @member.person_id,
-                                                                                                                                               eligibility_kind: @evidence&.evidence_group,
-                                                                                                                                               evidence_key: @evidence&.evidence_item_key)},
+      "verification_detail" => {title: l10n('insured.families.verifications.detail'), link: main_app.verification_detail_insured_families_path(@evidence&.detail_params)},
       "verification_history" => {title: l10n('insured.families.verifications.history.verification_history'), link: '#'}
     }
 
