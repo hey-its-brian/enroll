@@ -75,7 +75,11 @@ class VlpDocument < Document
   VERIFICATION_REASONS += EnrollRegistry[:non_applicant_verification_reason].item if EnrollRegistry.feature_enabled?(:non_applicant_verification_reason)
 
   # reasons admin can provide when rejecting verification type. these reasons applied for all verification types
-  ALL_TYPES_REJECT_REASONS = ["Illegible", "Incomplete Doc", "Wrong Type", "Wrong Person"]
+  ALL_TYPES_REJECT_REASONS = if EnrollRegistry.feature_enabled?(:verifications_household_summary_text_update)
+                               ["Unclear/Not readable", "Incomplete document", "Wrong document type", "Wrong Person"]
+                             else
+                               ["Illegible", "Incomplete Doc", "Wrong Type", "Wrong Person"]
+                             end
   ALL_TYPES_REJECT_REASONS += ["Out of Income Threshold"] if EnrollRegistry.feature_enabled?("out_of_income_threshold_reject_reason")
 
   #additionla reasons for citizenship and immigartion verification types

@@ -302,6 +302,17 @@ Then(/the consumer should see the individual detail page/) do
   )
 end
 
+Then(/the consumer should see Individual disclaimer/) do
+  expect(page).to have_content(
+    "We verify the information you provide on your application using electronic data sources. A data matching inconsistency (DMI) occurs if the data " \
+    "sources do not match the information you provided. When this occurs your verification status will be 'Outstanding' and you will need to provide documents to prove what you told us."
+  )
+  expect(page).to have_content(
+    "We will send you reminder notices about which documents you must submit to verify the information. If you do not " \
+    "provide documentation or resolve your DMI by the due date, you could lose your coverage or access to financial assistance, such as APTC and CSR."
+  )
+end
+
 When("the consumer expands all accordions") do
   all('.accordion a[data-toggle="collapse"]').each do |accordion|
     accordion.click

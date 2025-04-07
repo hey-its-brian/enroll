@@ -24,6 +24,11 @@ Feature: Individual Verification Individual Page
     | verified    | should not |
     | outstanding | should     |
 
+  Scenario: Consumer sees the disclaimer
+    And EnrollRegistry verifications_household_summary_text_update feature is enabled
+    And the consumer selects a household member
+    Then the consumer should see Individual disclaimer
+
   Scenario: Consumer goes to the Verification Detail page from the Individual table
     And the consumer selects a household member
     When the consumer selects the verification for the member

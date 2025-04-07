@@ -300,13 +300,19 @@ module VerificationHelper
 
   def evidence_status(evidence)
     status = evidence.status.to_s
+    text_update_feature_enabled = EnrollRegistry.feature_enabled?(:verifications_household_summary_text_update)
+
     case status
     when "curam"
       current_user.has_hbx_staff_role? ? l10n('insured.families.verifications.statuses.external_source') : l10n('insured.families.verifications.statuses.verified')
     when "valid"
       l10n('insured.families.verifications.statuses.verified')
+    when "negative_response_received"
+      text_update_feature_enabled ? l10n('not_applicable') : status.titleize
+    when "review"
+      text_update_feature_enabled ? l10n('insured.families.verifications.statuses.in_review') : status.titleize
     else
-      status&.to_s&.titleize
+      status&.titleize
     end
   end
 

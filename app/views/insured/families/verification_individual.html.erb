@@ -7,7 +7,12 @@
     is_back_nav_primary: !@family.eligibility_determination.subjects.by_person(@member.person_id).first&.documents_outstanding?
   } %>
 
-<p><%= l10n('insured.families.verifications.individual.disclaimer') %></p>
+<% if EnrollRegistry.feature_enabled?(:verifications_household_summary_text_update) %>
+  <p><%= l10n('insured.families.verifications.individual.disclaimer_1') %></p>
+  <p><%= l10n('insured.families.verifications.individual.disclaimer_2') %></p>
+<% else %>
+  <p><%= l10n('insured.families.verifications.individual.disclaimer_old') %></p>
+<% end %>
 
 <% evidences = @evidences.select { |item| can_display_type?(item) } %>
 
