@@ -7,7 +7,7 @@ require 'dry/monads/do'
 # Operations::FinancialAssistance::ExtendEvidenceDueOn.new.call({evidence: income_evidence, extension_days: 66})
 module Operations
   module FinancialAssistance
-    # Bulk FedHubCalls for verification types
+    # Bulk ExtendEvidenceDueOn for evidence
     class ExtendEvidenceDueOn
       include Dry::Monads[:do, :result]
 
