@@ -5,6 +5,10 @@ require 'rails_helper'
 RSpec.describe TaxHouseholdEnrollment, type: :model do
   it { is_expected.to have_attributes(group_ehb_premium: nil) }
 
+  after :all do
+    DatabaseCleaner.clean
+  end
+
   describe "for reinstated enrollment" do
     let!(:site_key) { EnrollRegistry[:enroll_app].setting(:site_key).item.upcase }
     let!(:hbx_profile) {FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period)}

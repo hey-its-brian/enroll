@@ -1,0 +1,67 @@
+# frozen_string_literal: true
+
+# A model representing a person's name components in the system.
+# This class is embedded within different types of parent models using a polymorphic
+# association, allowing any model to have name information without duplicating code.
+#
+# @example Embedding in a IndividualMarket::Applicant model
+#   class IndividualMarket::Applicant
+#     include Mongoid::Document
+#     include Mongoid::Timestamps
+#
+#     embeds_one :person_name, class_name: 'PersonName', as: :person_nameable
+#   end
+#
+# @example Embedding in a Person model
+#   class Person
+#     include Mongoid::Document
+#     include Mongoid::Timestamps
+#
+#     embeds_many :names, class_name: 'PersonName', as: :person_nameable
+#   end
+#
+# @note The polymorphic association is used here because multiple models
+#   (like Person, Applicant, Employee, etc.) might need to store name information.
+#   The polymorphic approach allows any model to embed this document without
+#   having to create separate name classes for each parent model type.
+class PersonName
+  include Mongoid::Document
+  include Mongoid::Timestamps
+
+  # Defines the polymorphic relationship with the parent document
+  # This allows PersonName to be embedded in any model that sets itself as :person_nameable
+  embedded_in :person_nameable, polymorphic: true
+
+  # @!attribute given_name
+  #   @return [String] The person's given name
+  field :given_name, type: String
+
+  # @!attribute middle_name
+  #   @return [String] The person's middle name
+  field :middle_name, type: String
+
+  # @!attribute family_name
+  #   @return [String] The person's family name
+  field :family_name, type: String
+
+  # @!attribute name_sfx
+  #   @return [String] The suffix of the person's name (e.g., "Jr.", "Sr.", "III")
+  field :name_sfx, type: String
+
+  # @!attribute name_pfx
+  #   @return [String] The prefix of the person's name (e.g., "Dr.", "Mr.", "Mrs.")
+  field :name_pfx, type: String
+
+  # @!attribute alternate_name
+  #   @return [String] An alternate name or a nickname for the person, if any
+  field :alternate_name, type: String
+
+  # Combines all name components into a full name representation
+  #
+  # @return [String] The complete name with all present components joined with spaces
+  def full_name
+    return @full_name if defined?(@full_name)
+
+    @full_name = [name_pfx, given_name, middle_name, family_name, name_sfx].compact.join(' ')
+  end
+end

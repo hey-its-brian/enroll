@@ -336,10 +336,18 @@ module FinancialAssistance
     embeds_one :non_esi_evidence, class_name: "::Eligibilities::Evidence", as: :evidenceable, cascade_callbacks: true
     embeds_one :local_mec_evidence, class_name: "::Eligibilities::Evidence", as: :evidenceable, cascade_callbacks: true
 
+    # An eligibility can be individual_market_eligibility, magi_medicaid_eligibility, aptc_csr_eligibility, or osse_shop_eligibility
+    #
+    # @!attribute eligibilities
+    #   @return [Array<Eligibilities::V3::Eligibility>] Collection of different eligibility determinations for this applicant
+    embeds_many :eligibilities, class_name: 'Eligibilities::V3::Eligibility', as: :eligible
+
     accepts_nested_attributes_for :incomes, :deductions, :benefits, :income_evidence, :esi_evidence, :non_esi_evidence, :local_mec_evidence, :member_determinations
     accepts_nested_attributes_for :phones, :reject_if => proc { |addy| addy[:full_phone_number].blank? }, allow_destroy: true
     accepts_nested_attributes_for :addresses, :reject_if => proc { |addy| addy[:address_1].blank? && addy[:city].blank? && addy[:state].blank? && addy[:zip].blank? }, allow_destroy: true
     accepts_nested_attributes_for :emails, :reject_if => proc { |addy| addy[:address].blank? }, allow_destroy: true
+
+    validate :unique_eligibilities
 
     validate :presence_of_attr_tax_info, on: [:tax_info, :submission]
 
@@ -1545,7 +1553,26 @@ module FinancialAssistance
       naturalized_citizen.present? || eligible_immigration_status.present?
     end
 
+    def aptc_csr_eligibility
+      return @aptc_csr_eligibility if defined?(@aptc_csr_eligibility)
+
+      @aptc_csr_eligibility = eligibilities.where(_type: 'Eligibilities::V3::AptcCsrEligibility').first
+    end
+
+    def individual_market_eligibility
+      return @individual_market_eligibility if defined?(@individual_market_eligibility)
+
+      @individual_market_eligibility = eligibilities.where(_type: 'Eligibilities::V3::IndividualMarketEligibility').first
+    end
+
     private
+
+    # Adds to errors collection if duplicate eligibilities are found
+    # @return [void]
+    def unique_eligibilities
+      eligibility_types = eligibilities.pluck(:_type)
+      errors.add(:eligibilities, 'cannot have duplicate eligibilities types') if eligibility_types.uniq.length != eligibility_types.length
+    end
 
     def find_person
       match_criteria, records = ::Operations::People::Match.new.call({:dob => dob,

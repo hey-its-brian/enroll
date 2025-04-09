@@ -6,6 +6,14 @@ require File.join(Rails.root, 'spec/shared_contexts/benchmark_products')
 RSpec.describe Operations::Migrations::TaxHouseholdGroups::TaxHouseholds::CreateThhsForMembersNotOnFaa, dbclean: :around_each do
   include Dry::Monads[:do, :result]
 
+  before :all do
+    DatabaseCleaner.clean
+  end
+
+  after :all do
+    DatabaseCleaner.clean
+  end
+
   subject { described_class.new }
 
   let(:person1) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }

@@ -784,5 +784,3 @@ jobs:
         with:
           branch: coverage-artifacts
           folder: coverage-save/
-
-

@@ -58,6 +58,9 @@ class Family
   belongs_to :person, optional: true
   has_many :hbx_enrollments
 
+  # An application can be individual_market_application, financial_assistance_application, or shop_market_application
+  has_many :applications, class_name: 'Sbm::Application'
+
   # Collection of insured:  employees, consumers, residents
 
   # All current and former members of this group
@@ -1683,7 +1686,45 @@ class Family
     active_family_members.none?(&:is_applying_coverage)
   end
 
+  # Returns the most recently created determined application, whether it's an SBM or FAA application.
+  # If both SBM and FAA applications are present, returns the one with the latest creation date.
+  #
+  # @return [Sbm::Application, FinancialAssistance::Application, nil] The most recent determined application, or nil if none exists
+  def latest_determined_application
+    return @latest_determined_application if defined?(@latest_determined_application)
+
+    sbm_app = latest_determined_sbm_application
+    faa_app = latest_determined_faa_application
+    @latest_determined_application = if sbm_app.present? && faa_app.present?
+                                       sbm_app.created_at > faa_app.created_at ? sbm_app : faa_app
+                                     elsif sbm_app.present?
+                                       sbm_app
+                                     elsif faa_app.present?
+                                       faa_app
+                                     end
+  end
+
   private
+
+  # Retrieves the most recent determined SBM application for this family.
+  # Uses memoization to avoid redundant database queries.
+  #
+  # @return [Sbm::Application, nil] The newest determined SBM application, or nil if none exists
+  def latest_determined_sbm_application
+    return @latest_determined_sbm_application if defined?(@latest_determined_sbm_application)
+
+    @latest_determined_sbm_application = ::Sbm::Application.newest_determined_by_family_id(id).first
+  end
+
+  # Retrieves the most recent determined FAA (Financial Assistance Application) for this family.
+  # Uses memoization to avoid redundant database queries.
+  #
+  # @return [FinancialAssistance::Application, nil] The newest determined FAA application, or nil if none exists
+  def latest_determined_faa_application
+    return @latest_determined_faa_application if defined?(@latest_determined_faa_application)
+
+    @latest_determined_faa_application = ::FinancialAssistance::Application.newest_determined_by_family_id(id).first
+  end
 
   def build_household
     if households.size == 0

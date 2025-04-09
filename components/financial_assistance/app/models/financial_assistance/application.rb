@@ -127,6 +127,7 @@ module FinancialAssistance
     # The value of this field is only valid if the application is either in 'applicants_update_required' or 'income_verification_extension_required' state.
     field :renewal_draft_blocker_reasons, type: Array
 
+    # FinancialAssistance::EligibilityDetermination is the object that represents the TaxHousehold.
     embeds_many :eligibility_determinations, inverse_of: :application, class_name: '::FinancialAssistance::EligibilityDetermination', cascade_callbacks: true, validate: true
     embeds_many :relationships, inverse_of: :application, class_name: '::FinancialAssistance::Relationship', cascade_callbacks: true, validate: true
     embeds_many :applicants, inverse_of: :application, class_name: '::FinancialAssistance::Applicant', cascade_callbacks: true, validate: true
@@ -241,6 +242,19 @@ module FinancialAssistance
     index({ "applicants.esi_evidence.aasm_state" => 1 })
     index({ "applicants.non_esi_evidence.aasm_state" => 1 })
     index({ "applicants.local_mec_evidence.aasm_state" => 1 })
+
+    # @!index [Hash] Creates a compound index on aasm_state, family_id, and created_at fields
+    # @param aasm_state [Integer] The application state, with 1 indicating ascending order
+    # @param family_id [Integer] The family identifier, with 1 indicating ascending order
+    # @param created_at [Integer] The creation timestamp, with -1 indicating descending order
+    # @note This index improves queries that filter by state and family_id and sort by creation date
+    index({ aasm_state: 1, family_id: 1, created_at: -1 })
+
+    # @!scope class
+    # @return [Mongoid::Criteria] The most recent determined FinancialAssistance::Application based on creation timestamp
+    scope :newest_determined_by_family_id, lambda { |family_id|
+      where(aasm_state: 'determined', family_id: family_id).order(created_at: :desc).limit(1)
+    }
 
     scope :submitted, ->{ any_in(aasm_state: SUBMITTED_STATUS) }
     scope :determined, ->{ any_in(aasm_state: "determined") }

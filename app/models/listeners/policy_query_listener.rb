@@ -14,11 +14,11 @@ module Listeners
       case criteria_name
       when "all_outstanding_shop"
         lambda do |exclusions|
-          all_outstanding_shop(exclusions)          
+          all_outstanding_shop(exclusions)
         end
       else
         throw :processing_failure, ProcessingFailure.new("422", "Invalid query name specified.")
-      end 
+      end
     end
 
     def extract_exclusions(headers, payload)

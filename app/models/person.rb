@@ -189,6 +189,11 @@ class Person
   #   This is a polymorphic association that can be associated with any model that can have demographics information.
   embeds_one :demographics_group, as: :demographicable, class_name: 'DemographicsGroup'
 
+  # @!attribute [rw] contact_details
+  #   @return [ContactProfile::ContactDetail] The contact details for the person.
+  #   This is a polymorphic association that can be associated with any model that can have contact details.
+  embeds_one :contact_details, as: :contactable, class_name: 'ContactProfile::ContactDetail'
+
   attr_accessor :effective_date, :skip_person_updated_event_callback, :is_consumer_role, :is_resident_role
 
   accepts_nested_attributes_for :consumer_role, :resident_role, :broker_role, :hbx_staff_role, :assister_role,
