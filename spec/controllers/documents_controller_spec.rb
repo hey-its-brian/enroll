@@ -302,6 +302,24 @@ RSpec.describe DocumentsController, dbclean: :after_each, :type => :controller d
       sign_in admin_user
     end
 
+    context "verify immigration_type" do
+      before do
+        allow(consumer_person).to receive(:publish_updated_event)
+        controller.instance_variable_set(:@person, consumer_person)
+        allow(consumer_person).to receive(:consumer_role).and_return(consumer_role)
+        allow(consumer_role).to receive(:verification_types).and_return(double(active: [immigration_type]))
+        allow(controller).to receive(:update_documents_status)
+        allow(controller).to receive(:set_person).and_return(consumer_person)
+        allow(controller).to receive(:set_verification_type).and_return(immigration_type)
+        controller.instance_variable_set(:@verification_type, immigration_type)
+      end
+
+      it "should not trigger person callbacks" do
+        post :update_verification_type, params: { person_id: consumer_person.id, verification_type: send("immigration_type").id,verification_reason: "SAVE system",admin_action: "verify"}
+        expect(consumer_person).not_to have_received(:publish_updated_event)
+      end
+    end
+
     shared_examples_for "update verification type" do |type, reason, admin_action, attribute, result|
       it "updates #{attribute} for #{type} to #{result} with #{admin_action} admin action" do
         post :update_verification_type, params: { person_id: consumer_person.id,
