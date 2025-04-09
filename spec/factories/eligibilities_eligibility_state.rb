@@ -21,5 +21,13 @@ FactoryBot.define do
         state.evidence_states << build(:eligibilities_evidence_state, :verified)
       end
     end
+
+    trait :with_review_verification do
+      earliest_due_date { Date.today + 30.days }
+      after(:build) do |state|
+        state.evidence_states << build(:eligibilities_evidence_state, :review)
+        state.evidence_states << build(:eligibilities_evidence_state, :verified)
+      end
+    end
   end
 end

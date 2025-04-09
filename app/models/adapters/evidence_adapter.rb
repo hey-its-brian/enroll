@@ -27,6 +27,7 @@ module Adapters
       due_on
       documents
       is_action_needed?
+      grouped_status
       update_reason
       history
       history_tracks
@@ -99,8 +100,8 @@ module Adapters
           false
         end
 
-        def is_market_eligibility?
-          true
+        def grouped_status
+          :verified
         end
       end
 
@@ -131,6 +132,10 @@ module Adapters
 
         def is_action_needed?
           false
+        end
+
+        def grouped_status
+          :verified
         end
       end
 

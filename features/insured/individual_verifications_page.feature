@@ -15,22 +15,35 @@ Feature: Individual Verifications Page
     When the consumer visits the verification tab
     Then the consumer should see the old verifications documents page
 
-  Scenario Outline: Consumer goes to the Documents page with verifications of statuses
+  Scenario Outline: Consumer goes to the Documents page with varying verifications
     Given show_new_verifications_household_summary feature is enabled
-    And the consumer has a verification with <status> status
+    And the consumer has these verifications:
+      | Type         | Status        |
+      | <type_1>     | <status_1>    |
+      | <type_2>     | <status_2>    |
     When the consumer visits the verification tab
-    Then the consumer should <see_or_not_see> a <status> item in the Action Items table
-    And the consumer should <see_or_not_see> an outstanding member in the Household Members table <with_or_without_date> date
+    Then the consumer should have <action_items_count> items in the Action Items table
+    And the consumer should see a household member with <cumulative_status> status <with_or_without_date> date <with_or_without_warning>
 
-    Examples:
-      | status       | see_or_not_see | with_or_without_date |
-      | outstanding  | see            | with                 |
-      | rejected     | see            | with                 |
-      | review       | not see        | with                 |
-      | pending      | not see        | without              |
-      | verified     | not see        | without              |
-      | attested     | not see        | without              |
-      | curam        | not see        | without              | 
+  Examples:
+    | type_1                 | status_1    | type_2                 | status_2    | action_items_count | cumulative_status | with_or_without_date | with_or_without_warning |
+    # Single verification scenarios
+    | Citizenship            | outstanding | none                   | none        | 1                  | Unverified        | with                 | with warning            |
+    | Citizenship            | rejected    | none                   | none        | 1                  | Unverified        | with                 | with warning            |
+    | Citizenship            | review      | none                   | none        | 0                  | Review            | with                 | without warning         |
+    | Citizenship            | pending     | none                   | none        | 0                  | Verified          | without              | without warning         |
+    | Citizenship            | verified    | none                   | none        | 0                  | Verified          | without              | without warning         |
+    | Citizenship            | attested    | none                   | none        | 0                  | Verified          | without              | without warning         |
+    | Citizenship            | curam       | none                   | none        | 0                  | Verified          | without              | without warning         |
+    # Multiple verification scenarios
+    | Citizenship            | review      | Social Security Number | review      | 0                  | Review            | with                 | without warning         |
+    | Citizenship            | review      | Social Security Number | verified    | 0                  | Review            | with                 | without warning         |
+    | Citizenship            | review      | Social Security Number | outstanding | 1                  | Unverified        | with                 | with warning            |
+    | Citizenship            | verified    | Social Security Number | verified    | 0                  | Verified          | without              | without warning         |
+    | Citizenship            | outstanding | Social Security Number | verified    | 1                  | Unverified        | with                 | with warning            |
+    | Citizenship            | outstanding | Social Security Number | review      | 1                  | Unverified        | with                 | with warning            |
+    | Citizenship            | outstanding | Social Security Number | rejected    | 2                  | Unverified        | with                 | with warning            |
+    | Social Security Number | pending     | Immigration Status     | review      | 0                  | Review            | with                 | without warning         |
 
   Scenario: Consumer goes to the Verification Detail page from the Action Items table
     Given show_new_verifications_household_summary feature is enabled

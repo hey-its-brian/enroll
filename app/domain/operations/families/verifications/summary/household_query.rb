@@ -49,7 +49,7 @@ module Operations
               subject.eligibility_states.by_type_uploadable
             end.flatten
             action_items = uploadable_eligibilities.map do |state|
-              state.evidence_states.where_action_needed
+              state.evidence_states.select(&:is_action_needed?)
             end.flatten
 
             sorted_action_items = action_items.sort_by { |evidence| evidence.due_on || Float::INFINITY }
@@ -58,7 +58,7 @@ module Operations
 
           def find_subjects_items_and_sort(subjects)
             Success(subjects.sort_by do |subject|
-              [subject.documents_outstanding? ? 0 : 1, subject.earliest_due_date || Float::INFINITY]
+              [subject.cumulative_grouped_status.to_s, subject.earliest_due_date || Float::INFINITY]
             end)
           end
         end
@@ -66,3 +66,4 @@ module Operations
     end
   end
 end
+

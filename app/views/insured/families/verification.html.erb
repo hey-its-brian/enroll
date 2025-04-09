@@ -64,23 +64,25 @@
             </thead>
             <tbody>
               <% @subjects.each do |subject| %>
-                <% documents_outstanding = subject.documents_outstanding? %>
+                <% documents_action_needed = subject.documents_action_needed? %>
                 <tr data-href=<%= verification_individual_insured_families_path(person_id: subject.person_id) %>>
-                  <td><%= strong_if(is_strong: documents_outstanding) do subject.person.full_name end %></td>
-                  <td><%= strong_if(is_strong: documents_outstanding) do subject.person.hbx_id end %></td>
+                  <td><%= strong_if(is_strong: documents_action_needed) do subject.person.full_name end %></td>
+                  <td><%= strong_if(is_strong: documents_action_needed) do subject.person.hbx_id end %></td>
                   <td>
-                    <% if documents_outstanding %>
+                    <% if documents_action_needed %>
                       <div class="d-flex align-items-center" data-cuke="unverified-member-icon">
                         <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
                         <div class="my-1 pl-0 pr-2">
                           <strong><%= l10n('insured.families.verifications.members.unverified') %></strong>
                         </div>
                       </div>
+                    <% elsif subject.cumulative_grouped_status == :review %>
+                      <%= l10n('insured.families.verifications.members.in_review') %>
                     <% else %>
                       <%= l10n('insured.families.verifications.members.verified') %>
                     <% end %>
                   </td>
-                  <td><%= strong_if(is_strong: documents_outstanding) do subject.earliest_due_date&.to_s || l10n('not_applicable') end %></td>
+                  <td><%= strong_if(is_strong: documents_action_needed) do subject.earliest_due_date&.to_s || l10n('not_applicable') end %></td>
                 </tr>
               <% end %>
             </tbody>

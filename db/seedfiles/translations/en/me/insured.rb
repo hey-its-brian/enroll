@@ -431,6 +431,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.insured.families.verifications.action_items.outstanding_document' => "Outstanding Document",
   :'en.insured.families.verifications.members.earliest_due_date' => "Earliest Due Date",
   :'en.insured.families.verifications.members.verified' => "Verified",
+  :'en.insured.families.verifications.members.in_review' => "In Review",
   :'en.insured.families.verifications.members.unverified' => "Unverified",
   :'en.insured.families.verifications.individual' => "Individual",
   :'en.insured.families.verifications.individual.disclaimer_1' => "We verify the information you provide on your application using electronic data sources. A data matching inconsistency (DMI) occurs if the data sources do not match the information you provided. When this occurs your verification status will be 'Outstanding' and you will need to provide documents to prove what you told us.",

@@ -18,6 +18,13 @@ FactoryBot.define do
       end
     end
 
+    trait :with_review_verification do
+      outstanding_verification_status { 'review' }
+      after(:build) do |subject|
+        subject.eligibility_states << build(:eligibilities_eligibility_state, :with_review_verification)
+      end
+    end
+
     trait :as_primary do
       is_primary { true }
     end

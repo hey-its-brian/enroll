@@ -67,6 +67,17 @@ And(/^the user is RIDP verified$/) do
   user.person.consumer_role.move_identity_documents_to_verified
 end
 
+Given(/the consumer has these verifications:/) do |table|
+  table.hashes.each do |row|
+    type = row["Type"]
+    status = row["Status"]
+
+    next if type.downcase == "none" || status.downcase == "none"
+
+    step "the consumer has a #{type} verification with #{status} status"
+  end
+end
+
 def create_verification(type_name, validation_status:, inactive: false)
   family = user.person.primary_family
   case type_name
@@ -182,16 +193,17 @@ Then(/^the consumer should see the old verifications documents page$/) do
   expect(page).to have_content(l10n('verification_documents'))
 end
 
-Then(/the consumer should (.*)see a (.*) item in the Action Items table/) do |negation, status|
-  is_visible = !negation.present?
-  if is_visible
+Then(/the consumer should have (\d+) items? in the Action Items table/) do |count|
+  count = count.to_i
+
+  if count > 0
     within IvlDocumentsPage.action_items_section do
       expect(page).to have_content "Action Items"
-      expect(page).to have_content "1 Outstanding Document"
-      within('table tbody tr') do
+
+      expect(page).to have_content "#{count} Outstanding #{'Document'.pluralize(count.to_i)}"
+      expect(page).to have_selector('table tbody tr', count: count.to_i)
+      within('table tbody tr:first-child') do
         expect(find('td:nth-child(1)')).to have_content('John Smith')
-        expect(find('td:nth-child(2)')).to have_content('Citizenship')
-        expect(find('td:nth-child(3)')).to have_content(status.capitalize)
         expect(find('td:nth-child(4)')).to have_content(TimeKeeper.date_of_record)
       end
     end
@@ -200,15 +212,15 @@ Then(/the consumer should (.*)see a (.*) item in the Action Items table/) do |ne
   end
 end
 
-Then(/the consumer should (.*)see an outstanding member in the Household Members table (.*) date/) do |member_negation, date_negation|
-  is_member_outstanding = !member_negation.include?('not')
-  is_date_relevant = !date_negation.include?('out')
+Then(/the consumer should see a household member with (.*) status (.*) date (.*)/) do |cumulative_status, date_status, warning_status|
+  is_date_relevant = !date_status.include?('out')
+  has_warning = warning_status.include?('with warning')
   within IvlDocumentsPage.household_members_section do
     expect(page).to have_content "Household Members"
     within('table tbody tr') do
-      expect(page).send(is_member_outstanding ? :to : :not_to, have_selector(IvlDocumentsPage.unverified_member_icon))
+      expect(page).send(has_warning ? :to : :not_to, have_selector(IvlDocumentsPage.unverified_member_icon))
       expect(find('td:nth-child(1)')).to have_content('John Smith')
-      expect(find('td:nth-child(3)')).to have_content(is_member_outstanding ? 'Unverified' : 'Verified')
+      expect(find('td:nth-child(3)')).to have_content(cumulative_status)
       expect(find('td:nth-child(4)')).to have_content(is_date_relevant ? TimeKeeper.date_of_record : 'Not Applicable')
     end
   end

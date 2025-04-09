@@ -53,7 +53,7 @@ RSpec.describe Operations::Families::Verifications::Summary::HouseholdQuery do
                  :with_primary_family_member,
                  :with_eligibility_determination,
                  subject_count: 3,
-                 subjects_with_outstanding: 2)
+                 subjects_with_action_needed: 2)
         end
 
         it 'sorts subjects with outstanding documents first' do
@@ -79,7 +79,7 @@ RSpec.describe Operations::Families::Verifications::Summary::HouseholdQuery do
                  :with_primary_family_member,
                  :with_eligibility_determination,
                  subject_count: 2,
-                 subjects_with_outstanding: 2)
+                 subjects_with_action_needed: 2)
         end
 
         let(:all_evidence_states) do
@@ -98,6 +98,42 @@ RSpec.describe Operations::Families::Verifications::Summary::HouseholdQuery do
 
           due_dates = action_items.map(&:original_evidence).map(&:due_on).compact
           expect(due_dates).to eq(due_dates.sort)
+        end
+      end
+
+      context 'with evidence items that have varying statuses' do
+        let(:expected_status_counts) do
+          {
+            "action_needed" => 2,
+            "review" => 5,
+            "verified" => 3
+          }
+        end
+        let(:family) do
+          create(:family,
+                 :with_primary_family_member,
+                 :with_eligibility_determination,
+                 subject_count: expected_status_counts.values.sum,
+                 subjects_with_action_needed: expected_status_counts["action_needed"],
+                 subjects_with_review: expected_status_counts["review"])
+        end
+
+        it 'should return 2 action items' do
+          result = subject.call(params)
+          action_items = result.success[:action_items]
+          expect(action_items.size).to eq(2)
+        end
+
+        it 'should return subjects with statuses "action_needed", "review", and "verified"' do
+          result = subject.call(params)
+          subjects = result.success[:subjects]
+
+          statuses = subjects.reduce({}) do |acc, subject|
+            status_key = subject.cumulative_grouped_status.to_s
+            acc[status_key] = acc.fetch(status_key, 0) + 1
+            acc
+          end
+          expect(statuses).to eq(expected_status_counts)
         end
       end
     end

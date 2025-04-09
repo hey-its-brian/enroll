@@ -57,7 +57,7 @@ module Operations
           def sort_evidences(evidences)
             Success(evidences.sort_by do |evidence|
               [
-                evidence.is_action_needed? ? 0 : 1,
+                evidence.grouped_status.to_s,
                 evidence.due_on || Float::INFINITY,
                 display_verification_type_name(evidence.evidence_item_key)
               ]

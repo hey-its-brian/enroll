@@ -36,11 +36,17 @@ module Eligibilities
     field :visited_at, type: DateTime
     field :meta, type: Hash
 
-    scope :where_action_needed, -> { where(verification_outstanding: true).where.not(status: 'review') }
     scope :by_key, ->(key) { where(evidence_item_key: key.to_sym) }
 
     def is_action_needed?
-      verification_outstanding && status.to_s.downcase != 'review'
+      grouped_status == :action_needed
+    end
+
+    def grouped_status
+      return :action_needed if verification_outstanding && status.to_s.downcase != 'review'
+      return :review if status.to_s.downcase == 'review'
+
+      :verified
     end
 
     # seliarizable_cv_hash for evidence states

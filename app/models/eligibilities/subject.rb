@@ -45,10 +45,15 @@ module Eligibilities
       eligibility_states.by_type_uploadable.collect(&:earliest_due_date).compact.min
     end
 
-    def documents_outstanding?
-      eligibility_states.by_type_uploadable.any? do |eligibility_state|
-        eligibility_state.evidence_states.where_action_needed.any?
-      end
+    def documents_action_needed?
+      cumulative_grouped_status == :action_needed
+    end
+
+    def cumulative_grouped_status
+      return :action_needed if eligibility_states.any? { |es| es.cumulative_grouped_status == :action_needed }
+      return :review if eligibility_states.any? { |es| es.cumulative_grouped_status == :review }
+
+      :verified
     end
 
     # seliarizable_cv_hash for subject including eligibility states

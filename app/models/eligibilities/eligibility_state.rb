@@ -25,6 +25,13 @@ module Eligibilities
 
     accepts_nested_attributes_for :evidence_states, :grants
 
+    def cumulative_grouped_status
+      return :action_needed if evidence_states.any?(&:is_action_needed?)
+      return :review if evidence_states.any? { |es| es.grouped_status == :review }
+
+      :verified
+    end
+
     # seliarizable_cv_hash for eligibility states including evidence states
     # @return [Hash] hash of eligibility states
     def serializable_cv_hash
