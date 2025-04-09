@@ -5,15 +5,13 @@ module ContactProfile
   #
   # @example Create a new email record
   #   email = ContactProfile::Email.new
-  #   email.build_work_email(address: "example@work.com")
-  #   email.build_personal_email(address: "example@personal.com")
+  #   email.work_email = "example@work.com"
+  #   email.personal_email = "example@personal.com"
   #
   # @note This model is embedded in ContactDetail as a collection (embeds_many)
   #   to support tracking history of multiple versions of emails over time
   #
   # @see ContactProfile::ContactDetail
-  # @see ContactProfile::WorkEmail
-  # @see ContactProfile::PersonalEmail
   class Email
     include Mongoid::Document
     include Mongoid::Timestamps
@@ -23,12 +21,12 @@ module ContactProfile
     embedded_in :contact_detail, class_name: 'ContactProfile::ContactDetail'
 
     # @!attribute work_email
-    #   @return [ContactProfile::WorkEmail] The work email address information
-    embeds_one :work_email, class_name: 'ContactProfile::WorkEmail'
+    #   @return [String] The work email address
+    field :work_email, type: String
 
     # @!attribute personal_email
-    #   @return [ContactProfile::PersonalEmail] The personal email address information
-    embeds_one :personal_email, class_name: 'ContactProfile::PersonalEmail'
+    #   @return [String] The personal email address
+    field :personal_email, type: String
 
     # @!scope class
     # @return [Mongoid::Criteria] The most recent Email based on creation timestamp
