@@ -590,13 +590,11 @@ module VerificationHelper
         }
       }
     when 'aptc_csr_credit'
-      application = fetch_latest_determined_application(@family.id)
-      member = @family.find_family_member_by_person(person)
-      applicant = application.applicants.detect { |appl| appl.family_member_id == member.id }
-      return nil unless applicant.present? && application.present?
+      applicant = @evidence.locate_evidence&.evidenceable
+      return nil unless applicant.present?
 
       query = {
-        url: financial_assistance.application_applicant_verification_documents_upload_path(application, applicant),
+        url: financial_assistance.application_applicant_verification_documents_upload_path(applicant.application, applicant),
         params: {
           applicant_id: applicant.id,
           evidence: gid,
@@ -633,9 +631,8 @@ module VerificationHelper
         }
       }
     when 'aptc_csr_credit'
-      application = fetch_latest_determined_application(@family.id)
-      member = @family.find_family_member_by_person(person)
-      applicant = application.applicants.detect { |appl| appl.family_member_id == member.id }
+      applicant = @evidence.locate_evidence&.evidenceable
+      application = applicant&.application
       evidence_kind = @evidence.evidence_item_key.to_s.downcase
       {
         id: "#{applicant.id}-#{evidence_kind.split.join('-')}",

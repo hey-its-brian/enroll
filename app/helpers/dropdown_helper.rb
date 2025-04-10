@@ -32,11 +32,12 @@ module DropdownHelper
         ), :delete]
       end
     when 'aptc_csr_credit'
-      application = fetch_latest_determined_application(@family.id)
       family_member = @family.find_family_member_by_person(verification.person)
       return [] unless family_member.present?
 
-      applicant = application.applicants.detect { |appl| appl.family_member_id == family_member.id }
+      evidence_id = GlobalID.parse(verification.evidence_gid).model_id
+      applicant = verification.locate_evidence&.evidenceable
+      application = applicant.application
       return [] unless applicant.present?
 
       evidence_key = verification.evidence_item_key
@@ -46,7 +47,7 @@ module DropdownHelper
          financial_assistance.application_applicant_verification_documents_destroy_path(
            document,
            :applicant_id => applicant.id,
-           :evidence => GlobalID.parse(verification.evidence_gid).model_id,
+           :evidence => evidence_id,
            :doc_key => doc_key,
            :doc_title => document.title&.titleize,
            :person_id => verification.person.id,

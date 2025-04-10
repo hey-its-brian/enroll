@@ -81,8 +81,8 @@ module FinancialAssistance
           flash[:danger] = "All documents were deleted. Action needed"
         else
           flash[:success] = "Document deleted."
-          @success = true
         end
+        @success = true
       else
         flash[:danger] = "Document can not be deleted because type is verified."
       end
@@ -99,10 +99,10 @@ module FinancialAssistance
     private
 
     def build_determination
-      family = @applicant.application.family
+      family = @application.family
       return unless @success && family.present? && EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
 
-      ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
+      ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: @application.effective_date.to_date)
     end
 
     def record

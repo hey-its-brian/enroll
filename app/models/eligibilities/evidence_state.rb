@@ -58,5 +58,25 @@ module Eligibilities
 
       evidence_state_attributes
     end
+
+    # Locates the referenced evidence item.
+    # This method is a workaround for the fact that GlobalID does not provide a way to locate embedded documents.
+    # @return [Object] The referenced evidence object if found, otherwise nil.
+    def locate_evidence
+      parsed = GlobalID.parse(evidence_gid)
+      model_id = parsed.model_id
+      person = eligibility_state.subject.person
+      family_id = eligibility_state.subject.determination.determinable.id
+      case parsed.model_class
+      when VerificationType
+        person.verification_types.where(id: model_id).first
+      when Eligibilities::Evidence
+        determined_apps = ::FinancialAssistance::Application.where(family_id: family_id).determined
+        family_member_id = Family.find(family_id).family_members.where(person_id: person).first.id
+        applicant_for_apps = determined_apps.map { |app| app.applicants.where(family_member_id: family_member_id).first }.compact
+        evidences_for_applicant = applicant_for_apps.map { |applicant| applicant.fetch_evidence(evidence_item_key.to_s) }.compact
+        evidences_for_applicant.detect { |ev| ev.id.to_s == model_id }
+      end
+    end
   end
 end

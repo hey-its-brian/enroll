@@ -33,6 +33,7 @@ module Adapters
       history_tracks
       inactive
       detail_params
+      locate_evidence
     ].freeze
 
     INTERFACE_CONTRACT.each do |method|
@@ -155,7 +156,7 @@ module Adapters
         def initialize(evidence)
           super(evidence)
 
-          specific_evidence = derive_evidences(evidence)
+          specific_evidence = evidence.locate_evidence
           @person = evidence.eligibility_state.subject.person
           @evidence_group = evidence.eligibility_state.eligibility_item_key
           @update_reason = specific_evidence.update_reason
@@ -172,20 +173,6 @@ module Adapters
             @status = evidence.status
             @history = format_history(specific_evidence.verification_histories + specific_evidence.request_results)
             @history_tracks = nil
-          end
-        end
-
-        private
-
-        def derive_evidences(evidence)
-          parsed = GlobalID.parse(evidence.evidence_gid)
-          if parsed.model_class == VerificationType
-            evidence.eligibility_state.subject.person.verification_types.where(id: parsed.model_id).first
-          else
-            family = evidence.eligibility_state.subject.determination.determinable
-            application = fetch_latest_determined_application(family)
-            applicant = application.applicants.where(family_member_id: GlobalID.parse(evidence.eligibility_state.subject.gid).model_id).first
-            applicant.fetch_evidence(evidence.evidence_item_key.to_s)
           end
         end
       end
