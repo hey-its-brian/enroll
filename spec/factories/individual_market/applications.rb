@@ -11,5 +11,95 @@ FactoryBot.define do
     end
 
     _type { 'IndividualMarket::Application' }
+
+    hbx_id { SecureRandom.uuid }
+    effective_on { Date.today }
+    submitted_at { nil }
+    assistance_year { Date.today.year }
+    predecessor_id { nil }
+    origin_source { :user }
+    generation_reason { :manual }
+
+    # State traits
+    trait :initial do
+      current_state { :initial }
+    end
+
+    trait :submission_failed do
+      current_state { :submission_failed }
+
+      after(:create) do |app|
+        app.state_histories.create(
+          from_state: :initial,
+          to_state: :submission_failed,
+          transition_at: DateTime.now,
+          event: :failed_submission
+        )
+      end
+    end
+
+    trait :submitted do
+      current_state { :submitted }
+
+      after(:create) do |app|
+        app.state_histories.create(
+          from_state: :initial,
+          to_state: :submitted,
+          transition_at: DateTime.now,
+          event: :submit
+        )
+      end
+    end
+
+    trait :determination_failed do
+      current_state { :determination_failed }
+
+      after(:create) do |app|
+        app.state_histories.create(
+          from_state: :initial,
+          to_state: :submitted,
+          transition_at: DateTime.now - 1.hour,
+          event: :submit
+        )
+        app.state_histories.create(
+          from_state: :submitted,
+          to_state: :determination_failed,
+          transition_at: DateTime.now,
+          event: :failed_determination
+        )
+      end
+    end
+
+    trait :determined do
+      current_state { :determined }
+
+      after(:create) do |app|
+        app.state_histories.create(
+          from_state: :initial,
+          to_state: :submitted,
+          transition_at: DateTime.now - 1.hour,
+          event: :submit
+        )
+        app.state_histories.create(
+          from_state: :submitted,
+          to_state: :determined,
+          transition_at: DateTime.now,
+          event: :determine
+        )
+      end
+    end
+
+    trait :expired do
+      current_state { :expired }
+
+      after(:create) do |app|
+        app.state_histories.create(
+          from_state: :initial,
+          to_state: :expired,
+          transition_at: DateTime.now,
+          event: :expire
+        )
+      end
+    end
   end
 end
