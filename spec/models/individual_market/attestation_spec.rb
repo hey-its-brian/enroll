@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe IndividualMarket::Attestation, type: :model do
-  let(:application) { FactoryBot.create(:individual_market_application) }
+  let(:application) { FactoryBot.create(:individual_market_application, :with_primary) }
   let(:attestation) { FactoryBot.create(:individual_market_attestation, application: application) }
 
   describe 'fields' do

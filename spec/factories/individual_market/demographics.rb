@@ -8,5 +8,6 @@ FactoryBot.define do
     dob                 { Date.current - 25.years }
     is_incarcerated     { false }
     indian_tribe_member { false }
+    is_physically_disabled { false }
   end
 end

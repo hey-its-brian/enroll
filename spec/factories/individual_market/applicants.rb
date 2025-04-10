@@ -7,6 +7,16 @@ FactoryBot.define do
     family_member_id { BSON::ObjectId.new }
     person_id { BSON::ObjectId.new }
 
+    is_primary_applicant { true }
+    address_same_as_primary { false }
+    is_applying_coverage { true }
+    is_homeless { false }
+
+    trait :dependent do
+      is_primary_applicant { false }
+      address_same_as_primary { true }
+    end
+
     trait :with_person_name do
       after(:build) do |applicant|
         applicant.person_name = FactoryBot.build(:person_name)

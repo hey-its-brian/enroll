@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Eligibilities::V3::Basis, type: :model do
-  let(:applicant)   { FactoryBot.create(:individual_market_applicant) }
+  let(:applicant)   { FactoryBot.create(:individual_market_applicant, :dependent) }
   let(:eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
   let(:determination) { FactoryBot.create(:v3_determination, eligibility: eligibility) }
   let(:basis) { FactoryBot.create(:v3_basis, determination: determination) }

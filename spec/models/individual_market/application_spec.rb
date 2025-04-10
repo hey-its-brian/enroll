@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe IndividualMarket::Application, type: :model do
-  let(:application) { FactoryBot.create(:individual_market_application) }
+  let(:application) { FactoryBot.create(:individual_market_application, :with_primary) }
 
   describe 'associations' do
     it 'belongs to a family' do
@@ -39,8 +39,8 @@ RSpec.describe IndividualMarket::Application, type: :model do
 
   describe 'validations' do
     describe '#no_duplicate_relationships' do
-      let(:applicant1) { FactoryBot.build(:individual_market_applicant, id: BSON::ObjectId.new) }
-      let(:applicant2) { FactoryBot.build(:individual_market_applicant, id: BSON::ObjectId.new) }
+      let(:applicant1) { application.primary_applicant }
+      let(:applicant2) { FactoryBot.build(:individual_market_applicant, :dependent) }
       let(:relationship1) { FactoryBot.build(:individual_market_relationship, source_id: applicant1.id, relative_id: applicant2.id, kind: 'spouse') }
 
       before do
@@ -390,6 +390,44 @@ RSpec.describe IndividualMarket::Application, type: :model do
         application.submit # Move to submitted state
 
         expect { application.submit }.to raise_error(ArgumentError, /Cannot submit from state/)
+      end
+    end
+  end
+
+  describe '#only_one_primary_applicant' do
+    let(:primary_applicant) { FactoryBot.build(:individual_market_applicant, is_primary_applicant: true) }
+    let(:dependent_applicant) { FactoryBot.build(:individual_market_applicant, :dependent) }
+    let(:another_primary_applicant) { FactoryBot.build(:individual_market_applicant, is_primary_applicant: true) }
+
+    context 'without primary applicant' do
+      before do
+        application.applicants = [dependent_applicant]
+      end
+
+      it 'is invalid' do
+        expect(application.valid?).to be false
+        expect(application.errors[:applicants]).to include('must have exactly one primary applicant')
+      end
+    end
+
+    context 'with multiple primary applicants' do
+      before do
+        application.applicants = [primary_applicant, another_primary_applicant]
+      end
+
+      it 'is invalid' do
+        expect(application.valid?).to be false
+        expect(application.errors[:applicants]).to include('must have exactly one primary applicant')
+      end
+    end
+
+    context 'with one primary applicant' do
+      before do
+        application.applicants = [primary_applicant, dependent_applicant]
+      end
+
+      it 'is valid' do
+        expect(application.valid?).to be true
       end
     end
   end

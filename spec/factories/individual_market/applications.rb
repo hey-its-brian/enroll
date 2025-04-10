@@ -20,6 +20,25 @@ FactoryBot.define do
     origin_source { :user }
     generation_reason { :manual }
 
+    trait :with_primary do
+      after(:build) do |application|
+        application.applicants << FactoryBot.build(
+          :individual_market_applicant,
+          :with_person_name,
+          :with_demographics,
+          :with_eligibilities,
+          application: application
+        )
+      end
+    end
+
+    trait :with_applicants do
+      after(:build) do |application|
+        application.applicants << FactoryBot.build(:individual_market_applicant, :with_person_name, :with_demographics, application: application)
+        application.applicants << FactoryBot.build(:individual_market_applicant, :dependent, :with_person_name, :with_demographics, application: application)
+      end
+    end
+
     # State traits
     trait :initial do
       current_state { :initial }

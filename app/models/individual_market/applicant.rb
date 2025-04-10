@@ -50,6 +50,23 @@ module IndividualMarket
     #   @return [BSON::ObjectId] The ID of the person associated with this applicant
     field :person_id, type: BSON::ObjectId
 
+    # @!attribute is_primary_applicant
+    #   @return [Boolean] Indicates if this applicant is the primary applicant for the application
+    #   @note Only one applicant can be marked as the primary applicant in an application
+    field :is_primary_applicant, type: Boolean
+
+    # @!attribute address_same_as_primary
+    #   @return [Boolean] Indicates if this applicant's address is the same as the primary applicant's address
+    field :address_same_as_primary, type: Boolean
+
+    # @!attribute is_applying_coverage
+    #   @return [Boolean] Indicates if this applicant is applying for coverage
+    field :is_applying_coverage, type: Boolean
+
+    # @!attribute is_homeless
+    #   @return [Boolean] Indicates if this applicant is homeless
+    field :is_homeless, type: Boolean
+
     validate :unique_eligibilities
 
     # Finds and returns the family member associated with this applicant

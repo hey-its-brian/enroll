@@ -32,6 +32,15 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
     end
   end
 
+  describe 'fields' do
+    it { is_expected.to have_field(:family_member_id).of_type(BSON::ObjectId) }
+    it { is_expected.to have_field(:person_id).of_type(BSON::ObjectId) }
+    it { is_expected.to have_field(:is_primary_applicant).of_type(Mongoid::Boolean) }
+    it { is_expected.to have_field(:address_same_as_primary).of_type(Mongoid::Boolean) }
+    it { is_expected.to have_field(:is_applying_coverage).of_type(Mongoid::Boolean) }
+    it { is_expected.to have_field(:is_homeless).of_type(Mongoid::Boolean) }
+  end
+
   describe '#family_member' do
     it 'returns the associated family member' do
       expect(applicant.family_member).to eq(family_member)

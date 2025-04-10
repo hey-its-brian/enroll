@@ -40,6 +40,16 @@ module IndividualMarket
     # @return [void]
     validate :no_duplicate_relationships
 
+    # Validates that the application has one applicant marked as primary
+    # @note An application must have exactly one primary applicant
+    # @example Validation failing with no primary applicant
+    #   application = IndividualMarket::Application.new
+    #   application.applicants.build(is_primary_applicant: false)
+    #   application.valid? # => false
+    #   application.errors[:applicants] # => ["must have exactly one primary applicant"]
+    # @return [void]
+    validate :only_one_primary_applicant
+
     # @!attribute ORIGIN_SOURCE_KINDS
     # @return [Array<Symbol>] Collection of all possible origin source kinds
     ORIGIN_SOURCE_KINDS = %i[user system admin data_import migration].freeze
@@ -166,7 +176,25 @@ module IndividualMarket
       end
     end
 
+    # Finds and returns the applicant who is marked as the primary applicant
+    #
+    # @return [FamilyMember] The primary applicant associated with this application
+    def primary_applicant
+      applicants.where(is_primary_applicant: true).first
+    end
+
     private
+
+    # Validates that there is exactly one primary applicant in the application if there are any applicants
+    def only_one_primary_applicant
+      return if applicants.empty?
+
+      # Select applicants who are marked as primary
+      primary_applicants = applicants.select(&:is_primary_applicant)
+
+      # Check if there is exactly one primary applicant
+      errors.add(:applicants, 'must have exactly one primary applicant') if primary_applicants.size != 1
+    end
 
     # Handles state transitions with validation and state history tracking
     # @param event [Symbol] The event triggering the state transition

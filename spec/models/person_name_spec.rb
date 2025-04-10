@@ -17,7 +17,7 @@ RSpec.describe PersonName, type: :model do
   describe 'associations' do
     context 'when person_nameable is an applicant' do
       let(:person_name)     { FactoryBot.build(:person_name, person_nameable: person_nameable) }
-      let(:person_nameable) { FactoryBot.build(:individual_market_applicant) }
+      let(:person_nameable) { FactoryBot.build(:individual_market_applicant, :dependent) }
 
       it 'is embedded in applicant' do
         expect(person_name.person_nameable).to be_a(IndividualMarket::Applicant)

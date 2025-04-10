@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Eligibilities::V3::Exhibits::CallExhibit, type: :model do
-  let(:applicant) { FactoryBot.create(:individual_market_applicant) }
+  let(:applicant) { FactoryBot.create(:individual_market_applicant, :dependent) }
   let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, :with_evidence, eligible: applicant) }
   let(:evidence) { ivl_eligibility.evidences.first }
   let(:exhibit) { FactoryBot.create(:call_exhibit, :with_document, evidence: evidence) }

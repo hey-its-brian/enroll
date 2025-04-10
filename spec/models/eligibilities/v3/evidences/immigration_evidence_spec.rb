@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Eligibilities::V3::Evidences::ImmigrationEvidence, type: :model do
-  let(:applicant)       { FactoryBot.create(:individual_market_applicant) }
+  let(:applicant)       { FactoryBot.create(:individual_market_applicant, :dependent) }
   let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
   let(:evidence)        { FactoryBot.create(:immigration_evidence, eligibility: ivl_eligibility) }
 

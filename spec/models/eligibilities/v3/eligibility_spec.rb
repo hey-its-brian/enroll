@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Eligibilities::V3::Eligibility, type: :model do
-  let(:applicant) { FactoryBot.create(:individual_market_applicant) }
+  let(:applicant) { FactoryBot.create(:individual_market_applicant, :dependent) }
   let(:eligibility) { FactoryBot.create(:v3_eligibility, :individual_market_eligibility, eligible: applicant) }
 
   describe 'Mongoid attributes' do

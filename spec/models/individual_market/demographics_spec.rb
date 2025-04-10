@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe IndividualMarket::Demographics, type: :model do
-  let(:applicant)     { FactoryBot.build(:individual_market_applicant) }
+  let(:applicant)     { FactoryBot.build(:individual_market_applicant, :dependent) }
   let(:demographics)  { FactoryBot.build(:individual_market_demographics, applicant: applicant) }
 
   describe 'fields' do
@@ -19,6 +19,7 @@ RSpec.describe IndividualMarket::Demographics, type: :model do
     it { is_expected.to have_field(:language_code).of_type(String) }
     it { is_expected.to have_field(:ethnicity).of_type(Array) }
     it { is_expected.to have_field(:race).of_type(Array) }
+    it { is_expected.to have_field(:is_physically_disabled).of_type(Mongoid::Boolean) }
   end
 
   describe 'associations' do

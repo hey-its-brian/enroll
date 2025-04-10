@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Eligibilities::V3::RequestResult, type: :model do
-  let(:applicant)       { FactoryBot.create(:individual_market_applicant) }
+  let(:applicant)       { FactoryBot.create(:individual_market_applicant, :dependent) }
   let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
   let(:evidence)        { FactoryBot.create(:alive_evidence, eligibility: ivl_eligibility) }
   let(:request_result)  { FactoryBot.create(:v3_request_result, evidence: evidence) }

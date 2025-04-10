@@ -3,9 +3,9 @@
 require 'rails_helper'
 
 RSpec.describe IndividualMarket::Relationship, type: :model do
-  let(:application) { FactoryBot.create(:individual_market_application) }
-  let(:applicant1) { FactoryBot.create(:individual_market_applicant, application: application) }
-  let(:applicant2) { FactoryBot.create(:individual_market_applicant, application: application) }
+  let(:application) { FactoryBot.create(:individual_market_application, :with_primary) }
+  let(:applicant1) { application.primary_applicant }
+  let(:applicant2) { FactoryBot.create(:individual_market_applicant, :dependent, application: application) }
   let(:relationship) do
     FactoryBot.create(
       :individual_market_relationship,

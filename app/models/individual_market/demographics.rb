@@ -43,6 +43,10 @@ module IndividualMarket
     # @return [Boolean]
     field :is_incarcerated, type: Boolean
 
+    # @!attribute is_physically_disabled
+    #   @return [Boolean] Indicates if the applicant is physically disabled
+    field :is_physically_disabled, type: Boolean
+
     # Indicates if the applicant is a member of a recognized Indian tribe
     # @return [Boolean]
     field :indian_tribe_member, type: Boolean
