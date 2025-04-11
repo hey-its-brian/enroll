@@ -21,7 +21,7 @@
   <tbody>
     <% @evidence.history.each do |record| %>
       <tr data-target=<%="expandable-table.row" %>>
-        <td><div class='d-flex text-nowrap'><%= record.created_at.in_time_zone('Eastern Time (US & Canada)') %></div></td>
+        <td><div class='d-flex text-nowrap'><%= record.date_of_action.in_time_zone('Eastern Time (US & Canada)') %></div></td>
         <td><%= record.modifier_id %></td>
         <td><%= record.action.capitalize %></td>
         <td><%= record.update_reason %></td>
