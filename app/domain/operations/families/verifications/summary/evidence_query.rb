@@ -57,7 +57,7 @@ module Operations
           def find_inactive_verification(subject, evidence_key)
             return Failure("Inactive verification display is not enabled") unless EnrollRegistry.feature_enabled?(:show_inactive_verifications)
             type_name = evidence_key.gsub(/\W+/, ' ')&.titleize
-            verification = subject.person.verification_types.inactive.by_name(type_name).first
+            verification = subject.person.verification_types.inactive.select { |v_type| v_type.type_name.downcase == type_name.downcase }.first
             return Failure("Inactive verification \"#{type_name}\" not found for #{subject.full_name}") unless verification.present?
 
             Success(::Adapters::EvidenceAdapter.new(verification))

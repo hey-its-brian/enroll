@@ -43,7 +43,7 @@ Feature: Individual Verifications Page
     | Citizenship            | outstanding | Social Security Number | verified    | 1                  | Unverified        | with                 | with warning            |
     | Citizenship            | outstanding | Social Security Number | review      | 1                  | Unverified        | with                 | with warning            |
     | Citizenship            | outstanding | Social Security Number | rejected    | 2                  | Unverified        | with                 | with warning            |
-    | Social Security Number | pending     | Immigration Status     | review      | 0                  | Review            | with                 | without warning         |
+    | Social Security Number | pending     | Immigration status     | review      | 0                  | Review            | with                 | without warning         |
 
   Scenario: Consumer goes to the Verification Detail page from the Action Items table
     Given show_new_verifications_household_summary feature is enabled

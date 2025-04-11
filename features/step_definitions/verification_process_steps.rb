@@ -81,7 +81,7 @@ end
 def create_verification(type_name, validation_status:, inactive: false)
   family = user.person.primary_family
   case type_name
-  when "Citizenship", "Immigration Status", "Social Security Number", "Alive Status"
+  when "Citizenship", "Immigration status", "Social Security Number", "Alive Status"
     FactoryBot.create(:verification_type, type_name: type_name, validation_status: validation_status, update_reason: "Mock Reason", due_date: TimeKeeper.date_of_record, person: user.person, inactive: inactive)
   else
     case type_name
@@ -113,7 +113,7 @@ def create_verification(type_name, validation_status:, inactive: false)
 end
 
 Given(/^that the consumer has inactive verifications/) do
-  create_verification('Immigration Status', validation_status: 'verified', inactive: true)
+  create_verification('Immigration status', validation_status: 'verified', inactive: true)
 end
 
 Given(/the consumer has a(?: (.+))? verification with (\w+) status/) do |type, status|

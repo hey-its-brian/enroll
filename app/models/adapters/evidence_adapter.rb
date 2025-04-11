@@ -87,7 +87,7 @@ module Adapters
         def initialize(verification_type)
           @person = verification_type.person
           @evidence_group = 'aca_individual_market_eligibility'
-          @evidence_item_key = verification_type.type_name.downcase.to_sym
+          @evidence_item_key = verification_type.type_name.downcase.split.join('_').to_sym
           @status = verification_type.validation_status
           @due_on = verification_type.due_date
           @documents = verification_type.type_documents
