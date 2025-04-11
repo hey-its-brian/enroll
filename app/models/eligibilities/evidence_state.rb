@@ -43,7 +43,7 @@ module Eligibilities
     end
 
     def grouped_status
-      return :action_needed if verification_outstanding && status.to_s.downcase != 'review'
+      return :action_needed if ['outstanding', 'rejected'].include?(status.to_s.downcase)
       return :review if status.to_s.downcase == 'review'
 
       :verified
