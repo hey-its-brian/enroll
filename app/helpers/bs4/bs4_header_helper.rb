@@ -8,10 +8,11 @@ module Bs4
     include ApplicationHelper
 
     def bs4_portal_type(controller) # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+      genesys_cloud_messenger_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger)
       if current_user.nil?
         nil
       elsif current_user.try(:has_hbx_staff_role?)
-        link_to(l10n("layout.header.role.admin"), main_app.exchanges_hbx_profiles_root_path)
+        link_to(l10n("layout.header.role.admin"), main_app.exchanges_hbx_profiles_root_path, data: (genesys_cloud_messenger_enabled ? { turbolinks: false } : {}))
       elsif display_i_am_broker_for_consumer?(current_user.person) && controller_path.exclude?('general_agencies')
         link_to(l10n("layout.header.role.broker"), get_broker_profile_path)
       elsif display_i_am_assister_for_consumer?(current_user.person) && controller_path.exclude?('general_agencies')

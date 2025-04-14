@@ -7,9 +7,10 @@
 
   <% continue_to_account_text ||= l10n("insured.plan_shoppings.receipt.go_to_my_account") %>
   <% to_account_text = is_complete ? continue_to_account_text : l10n("back_to_my_account") %>
+  <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
 
   <% if show_account_button || is_complete %>
-    <%= h(link_to to_account_text, main_app.family_account_path, class: "button btn-block my-4 text-center #{is_complete ? 'btn-primary' : 'secondary outline'}", id: 'back-button') %>
+    <%= h(link_to to_account_text, main_app.family_account_path, class: "button btn-block my-4 text-center #{is_complete ? 'btn-primary' : 'secondary outline'}", id: 'back-button', data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
   <% end %>
 
   <div class=" d-flex flex-column mt-2">
@@ -56,7 +57,7 @@
   <% to_account_text = is_complete ? continue_to_account_text : l10n("back_to_my_account") %>
 
   <% if show_account_button || is_complete %>
-    <%= h(link_to to_account_text, family_account_path, class: "btn btn btn-md full_width #{is_complete ? 'btn-primary' : 'btn-default'}", id: 'back-button', style: 'width: 100%; margin-top: 16px;') %>
+    <%= h(link_to to_account_text, family_account_path, class: "btn btn btn-md full_width #{is_complete ? 'btn-primary' : 'btn-default'}", id: 'back-button', style: 'width: 100%; margin-top: 16px;', data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
   <% end %>
 
   <div style="display: flex; flex-direction: column;">

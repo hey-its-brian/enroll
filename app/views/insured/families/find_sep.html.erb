@@ -3,6 +3,7 @@
   <%= render partial: 'shared/plan_shopping_progress', locals: { current_page: :sep, nav_options: special_enrollment_period_hash } %>
 
   <%# Main Content (right) %>
+  <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
   <div>
     <div class="mb-4">
       <h1><%= l10n("insured.families.special_enrollment_period") %></h1>
@@ -82,7 +83,7 @@
         </div>
         <div class="d-flex align-items-center mt-4 justify-content-end">
           <button type="button" class="btn outline mr-2" data-dismiss="modal"> <%= l10n("close") %> </button>
-          <%= h(link_to l10n('back_to_my_account_title'), family_account_path, class: 'btn btn-primary') %>
+          <%= h(link_to l10n('back_to_my_account_title'), family_account_path, class: 'btn btn-primary', data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
         </div>
       </div>
     </div>
@@ -169,7 +170,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal"><%= l10n("close") %></button>
-          <%= link_to l10n('back_to_my_account_title'), family_account_path, class: 'btn btn-primary' %>
+          <%= link_to l10n('back_to_my_account_title'), family_account_path, class: 'btn btn-primary', data: genesys_feature_enabled ? {turbolinks: false} : {} %>
         </div>
       </div>
     </div>

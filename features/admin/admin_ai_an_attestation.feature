@@ -26,6 +26,7 @@ Feature: Admin attempts to view their American Indian or Alaska Native status
   Scenario: Admin adds a dependent with American Indian or Alaska Native status during the FAA process
     Given the ai_an_self_attestation feature is enabled
     When admin navigates to existing user who has attested to American Indian or Alaska Native tribe membership
+    And FAA application exists in determined state
     And admin navigates to the user's applications page
     And admin accesses the user's financial assistance application
     And admin adds a dependent to the user's family

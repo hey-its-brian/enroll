@@ -1,4 +1,5 @@
 <% if @bs4 %>
+  <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
   <% if @person.active_employee_roles.blank? %>
     <% options = {shop_for_plan: 'shop_for_plan'}
       options.merge!(person_id: @person.id) if @person.present?
@@ -12,7 +13,7 @@
         <% if !person_has_any_roles?%>
           <%= render 'no_role_navigation' %>
         <% elsif is_strictly_open_enrollment_case? %>
-          <%= h(link_to "#{l10n("insured.shop_for_plans")}", new_insured_group_selection_path(options), class: "btn w-100 ml-auto btn-default") %>
+          <%= h(link_to "#{l10n("insured.shop_for_plans")}", new_insured_group_selection_path(options), class: "btn w-100 ml-auto btn-default", data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
         <%else%>
           <button class="btn w-100 btn-default ml-auto pull-right" data-target="#choose_flow" data-toggle="modal" type="button">
             <%=  l10n("insured.shop_for_plans") %>

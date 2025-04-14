@@ -11,6 +11,7 @@
 <% dont_show_next_button = local_assigns[:dont_show_next_button] ? dont_show_next_button : false %>
 <% next_link = local_assigns[:next_link] ? next_link : "" %>
 <% disable_link = local_assigns[:disable_link] ? disable_link : false %>
+<% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
 
 
 <div class="d-flex align-items-center">
@@ -27,7 +28,7 @@
       <%= yield :submit_button %>
     <% else %>
       <% unless (action_name == "eligibility_results" || action_name == "review") && (params.keys.exclude?"cur") %>
-        <%= h(link_to_with_noopener_noreferrer(l10n("continue_next"), next_link, class: 'button btn-continue', id: 'btn-continue', disabled: disable_link)) %>
+        <%= h(link_to_with_noopener_noreferrer(l10n("continue_next"), next_link, class: 'button btn-continue', :'data-turbolinks' => "#{genesys_feature_enabled ? false : true}",  id: 'btn-continue', disabled: disable_link)) %>
       <% end %>
     <% end %>
   <% end %>

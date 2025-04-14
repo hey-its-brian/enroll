@@ -1,11 +1,12 @@
 <% if aca_recaptcha_enabled %>
   <%= render partial: 'devise/shared/captcha' %>
 <% end %>
+<% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
 <div class="container signin mt-5">
   <div class="row justify-content-md-center">
     <div class="col-md-6 col-sm-8 col-xs-12">
       <h1 class="heading-text text-center"><%= l10n('devise.shared.sign_in.heading') %></h1>
-      <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: {class: 'needs-validation', data: {controller: 'signup'}, novalidate: true }) do |f| %>
+      <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: {class: 'needs-validation', data: {controller: 'signup', turbolinks: (genesys_feature_enabled ? false : true)}, novalidate: true }) do |f| %>
         <div class="form-group required">
           <%= f.label :login, l10n('devise.shared.sign_in.username') %>
           <%= f.text_field :login, autofocus: true, class: "form-control", required: true %>

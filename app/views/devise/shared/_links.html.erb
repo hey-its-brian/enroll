@@ -1,20 +1,21 @@
 <div class="row">
   <div class="col-md-12">
+    <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
     <%- if controller_name != 'sessions' %>
       <%#= link_to "Sign in", new_session_path(resource_name), class: "btn btn-default btn-lg" %>
-      <%= link_to l10n(".sign_in"), root_path, class: "btn btn-outline-primary" %>
+      <%= link_to l10n(".sign_in"), root_path, class: "btn btn-outline-primary", data: genesys_feature_enabled ? {turbolinks: false} : {} %>
     <% end -%>
 
     <%- if devise_mapping.recoverable? && controller_name != 'passwords' && controller_name != 'registrations' %>
-      <%= link_to l10n(".forgot_your_password"), new_password_path(resource_name), class: "btn btn-outline-primary" %>
+      <%= link_to l10n(".forgot_your_password"), new_password_path(resource_name), class: "btn btn-outline-primary", data: genesys_feature_enabled ? {turbolinks: false} : {} %>
     <% end -%>
 
     <%- if devise_mapping.confirmable? && controller_name != 'confirmations' %>
-      <%= link_to l10n(".did_not_receive_confirmation_instructions"), new_confirmation_path(resource_name) %>
+      <%= link_to l10n(".did_not_receive_confirmation_instructions"), new_confirmation_path(resource_name), data: genesys_feature_enabled ? {turbolinks: false} : {} %>
     <% end -%>
 
     <%- if devise_mapping.registerable? && controller_name != 'registrations' && can_register_new_account %>
-      <%= link_to_with_noopener_noreferrer(l10n(".create_account"), site_registration_path(resource_name, params), class: "btn btn-outline-primary", data: { no_turbolink: true }) %>
+      <%= link_to_with_noopener_noreferrer(l10n(".create_account"), site_registration_path(resource_name, params), class: "btn btn-outline-primary", data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
     <% end -%>
 
     <%- if devise_mapping.lockable? && resource_class.unlock_strategy_enabled?(:email) && controller_name != 'unlocks' %>

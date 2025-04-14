@@ -15,7 +15,8 @@ module Effective
         table_column :name, :label => 'Name', :proc => proc { |row|
           link_to_with_noopener_noreferrer(
             h(row.primary_applicant.person.full_name),
-            resume_enrollment_exchanges_agents_path(person_id: row.primary_applicant.person.id)
+            resume_enrollment_exchanges_agents_path(person_id: row.primary_applicant.person.id),
+            data: (EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) ? { turbolinks: false } : {})
           )
         }, :filter => false, :sortable => false
         table_column :dob, :label => 'DOB', :proc => proc { |row| format_date(row.primary_applicant.person.dob)}, :filter => false, :sortable => false

@@ -1,10 +1,11 @@
 <% if @bs4 %>
   <%= render partial: '/financial_assistance/shared/faa_progress_options', locals: {step: 1} %>
+  <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
   <h1><%= l10n("faa.checklist.heading") %></h1>
   <p><%= l10n("faa.checklist.instructions1") %></p>
   <div class="my-4">
     <% content_for :submit_button do %>
-      <%= h(link_to_with_noopener_noreferrer(l10n("faa.checklist.begin_application"), financial_assistance.edit_application_path(@application), class: 'button btn-continue', id: 'btn-continue')) %>
+      <%= h(link_to_with_noopener_noreferrer(l10n("faa.checklist.begin_application"), financial_assistance.edit_application_path(@application), class: 'button btn-continue', data: genesys_feature_enabled ? {turbolinks: false} : {}, id: 'btn-continue')) %>
     <% end %>
     <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
         previous_link: application_checklist_previous_url(@application),

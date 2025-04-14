@@ -1,4 +1,5 @@
 <%= render partial: 'shared/plan_shopping_progress', locals: { current_page: :choose_plan, nav_options: plan_shopping_progress_hash } %>
+<% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
 <h1 id="chooseShoppingMethod"><%= l10n("plans.plan_shopping_options.header") %></h1>
 <p><%= l10n("plans.plan_shopping_options.description") %></p>
 <fieldset class="mb-4 d-block">
@@ -14,12 +15,12 @@
 </fieldset>
 <!-- logic for the next link: if yes, it should show appropriate modal, if no, go to plan shopping -->
 <% content_for :submit_button do %>
-  <%= link_to(l10n("continue_next"), insured_plan_shopping_path(:id => @hbx_enrollment.id, market_kind: @market_kind, coverage_kind: @hbx_enrollment.coverage_kind, enrollment_kind: @hbx_enrollment.enrollment_kind), class: "button hidden", id: "plan-shopping-link") %>
+  <%= link_to(l10n("continue_next"), insured_plan_shopping_path(:id => @hbx_enrollment.id, market_kind: @market_kind, coverage_kind: @hbx_enrollment.coverage_kind, enrollment_kind: @hbx_enrollment.enrollment_kind), class: "button hidden", id: "plan-shopping-link", data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
   <% if @market_kind == "individual" && @coverage_kind == "health" %>
-    <%= h(link_to l10n("continue_next"), "", data: {toggle: "modal", target: "#plan_match_redirection"}, class: "button", id: "checkbook-link") %>
+    <%= h(link_to l10n("continue_next"), "", data: {toggle: "modal", target: "#plan_match_redirection", turbolinks: (genesys_feature_enabled ? false : true) }, class: "button", id: "checkbook-link") %>
   <% end %>
   <% if @market_kind == "individual" && @coverage_kind == "dental" %>
-    <%= h(link_to l10n("continue_next"), '',data: {toggle: "modal", target: "#plan_match_dental_redirection"}, class: "button", id: "checkbook-link") %>
+    <%= h(link_to l10n("continue_next"), '',data: {toggle: "modal", target: "#plan_match_dental_redirection", turbolinks: (genesys_feature_enabled ? false : true)}, class: "button", id: "checkbook-link") %>
   <% end %>
 <% end %>
 <div class="my-4">

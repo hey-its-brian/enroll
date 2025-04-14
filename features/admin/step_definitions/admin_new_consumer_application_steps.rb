@@ -100,6 +100,17 @@ When(/^admin navigates to .+ user who has (.*) to American Indian or Alaska Nati
   find('[class^="interaction-click-control-patrick-smith"]').click
 end
 
+And(/^FAA application exists in determined state$/) do
+  FactoryBot.create(:financial_assistance_application, family_id: @family.id, aasm_state: 'determined')
+  FactoryBot.create(
+    :financial_assistance_applicant,
+    application: application,
+    is_primary_applicant: true,
+    family_member_id: @person.id,
+    person_hbx_id: @person.hbx_id
+  )
+end
+
 And(/^.+ navigates to the user's (.*) page$/) do |tab|
   sleep 2
   case tab
@@ -151,14 +162,6 @@ And(/^.+ adds a dependent to the user's family$/) do
 end
 
 And(/^admin accesses the user's financial assistance application$/) do
-  FactoryBot.create(:financial_assistance_application, family_id: @family.id, aasm_state: 'determined')
-  FactoryBot.create(
-    :financial_assistance_applicant,
-    application: application,
-    is_primary_applicant: true,
-    family_member_id: @person.id,
-    person_hbx_id: @person.hbx_id
-  )
   first('.interaction-click-control-actions').click
   find('.interaction-click-control-copy-to-new-application').click
 end

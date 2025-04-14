@@ -3,6 +3,7 @@
   <h1><%= l10n("family_information") %></h1>
   <h2><%= l10n("application_for_coverage", year: @application.assistance_year )%></h2>
   <p><%= l10n('insured.family_members.index.continue_to_get_insurance') %></p>
+  <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
 
   <div id="dependent_buttons" class="d-flex flex-column flex-md-row my-md-4 <%= pundit_class Family, :updateable?%> <%= 'hidden' if @family.active_family_members.empty? %>">
     <%= hidden_field_tag 'origin_source', @source %>
@@ -20,7 +21,7 @@
       <%= render partial: 'financial_assistance/shared/modal_support_text', locals: {key: "help_me_decide"} %>
     </div>
   </div>
-  
+
   <div id="primary-person" class="pt-3 pb-5">
     <% primary_person = @application.primary_applicant %>
     <div class="d-flex flex-row align-items-center">
@@ -49,9 +50,9 @@
 
     <div class="mt-3 member-<%= primary_person.id %>-buttons">
       <% if primary_person.applicant_validation_complete? %>
-        <%= h(link_to l10n('edit_income_coverage_info'), financial_assistance.go_to_step_application_applicant_path(@application, @application.primary_applicant, 1), class: "btn button button-primary outline mr-3") %>
+        <%= h(link_to l10n('edit_income_coverage_info'), financial_assistance.go_to_step_application_applicant_path(@application, @application.primary_applicant, 1), class: "btn button button-primary outline mr-3", data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
       <% else %>
-        <%= h(link_to l10n('add_income_coverage_info'), financial_assistance.go_to_step_application_applicant_path(@application, @application.primary_applicant, 1), class: "btn button button-primary add mr-3") %>
+        <%= h(link_to l10n('add_income_coverage_info'), financial_assistance.go_to_step_application_applicant_path(@application, @application.primary_applicant, 1), class: "btn button button-primary add mr-3", data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
       <% end %>
 
       <%= h(link_to l10n("edit_member"), edit_application_applicant_path(@application, @application.primary_applicant), remote: true, id: 'edit-primary-applicant', class: 'btn btn-tertiary outline close-2') %>

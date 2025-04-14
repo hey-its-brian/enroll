@@ -3,8 +3,9 @@
   <%= render partial: 'shared/plan_shopping_progress', locals: { current_page: :household_info, nav_options: plan_shopping_progress_hash } %>
 
   <%# Main Content (right) %>
+  <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
   <div id="choose-coverag-page">
-    <%= form_tag(:insured_group_selections, :id => "group-selection-form") do %>
+    <%= form_tag(:insured_group_selections, :id => "group-selection-form", data: genesys_feature_enabled ? {turbolinks: false} : {}) do %>
       <% effective_date_for_display = @effective_on_date || @new_effective_on %>
       <%= hidden_field_tag(:ivl_effective_on, @ivl_effective_on) %>
       <%= hidden_field_tag(:shop_effective_on, @shop_effective_on) %>
@@ -35,7 +36,7 @@
             <div class="info-icon icon" alt="info" aria-hidden="true">&nbsp;</div>
           </div>
           <div class="my-2">
-            <%= l10n("insured.group_selection.new.need_coverage_earlier_html" , link: link_to(l10n('insured.families.special_enrollment_period'), find_sep_insured_families_path, id: "find_sep_link" ))%>
+            <%= l10n("insured.group_selection.new.need_coverage_earlier_html" , link: link_to(l10n('insured.families.special_enrollment_period'), find_sep_insured_families_path, id: "find_sep_link", data: genesys_feature_enabled ? {turbolinks: false} : {} ))%>
           </div>
         </div>
 

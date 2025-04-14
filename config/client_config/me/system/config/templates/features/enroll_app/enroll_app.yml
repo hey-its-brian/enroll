@@ -792,6 +792,11 @@ registry:
       - key: :genesys_cloud_messenger
         item: :genesys_cloud_messenger
         is_enabled: <%= ENV['GENESYS_CLOUD_MESSENGER_IS_ENABLED'] || false %>
+        settings:
+          - key: :genesys_cloud_messenger_env
+            item: <%= ENV['GENESYS_CLOUD_MESSENGER_ENV'] || "prod-usw2" %>
+          - key: :genesys_cloud_messenger_deployment_id
+            item: <%= ENV['GENESYS_CLOUD_DEPLOYMENT_ID'] || "test" %>
       - key: :in_person_assister
         item: :in_person_assister
         is_enabled: false

@@ -6,12 +6,13 @@
 <% end %>
 
 <% if @bs4 %>
+  <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
   <div class="enrollment-details">
     <% if @hbx_enrollment.shopping? %>
-      <%= h(link_to l10n("plans.back_to_all"), request.referrer, class: 'btn secondary all-plans mb-4') %>
+      <%= h(link_to l10n("plans.back_to_all"), request.referrer, class: 'btn secondary all-plans mb-4', data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
     <% else %>
       <% back_btn_text = request.referrer&.include?('enrollment_history') ? l10n("back_to_enrollments") : l10n("back_to_my_account") %>
-      <%= h(link_to back_btn_text.to_s, request.referrer, class: 'btn btn-default all-plans mb-2') %>
+      <%= h(link_to back_btn_text.to_s, request.referrer, class: 'btn btn-default all-plans mb-2', data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
     <% end %>
     <% if qhp.present? %>
       <% unless @hbx_enrollment.shopping? %>
@@ -109,7 +110,7 @@
         <%= render partial: "shared/plan_shoppings/select_plan_button", locals: { plan: @plan } %>
       <% else %>
         <% back_btn_text = request.referrer&.include?('enrollment_history') ? l10n("back_to_enrollments") : l10n("back_to_my_account") %>
-        <%= h(link_to back_btn_text.to_s, request.referrer, class: 'btn btn-default all-plans mb-2') %>
+        <%= h(link_to back_btn_text.to_s, request.referrer, class: 'btn btn-default all-plans mb-2', data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
       <% end %>
 
     <% else %>
