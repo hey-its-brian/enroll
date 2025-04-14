@@ -161,14 +161,31 @@ RSpec.describe ::Operations::Transformers::PersonTo::Cv3Person, dbclean: :after_
 
 
   describe '#transform_verification_types' do
-    context 'due date is nil' do
+    context 'due date is nil with show_new_verifications flag off' do
       before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(false)
         person.verification_types.create(type_name: 'Alive Status')
         @subject = ::Operations::Transformers::PersonTo::Cv3Person.new.send(:transform_verification_types, person.verification_types)
       end
 
       it 'should populate the due date field' do
         expect(@subject.first[:due_date]).to eq person.verification_types.first.verif_due_date
+      end
+
+      it 'should have alive status' do
+        expect(@subject.pluck(:type_name).include?("Alive Status")).to eq true
+      end
+    end
+
+    context 'due date is nil' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(true)
+        person.verification_types.create(type_name: 'Alive Status')
+        @subject = ::Operations::Transformers::PersonTo::Cv3Person.new.send(:transform_verification_types, person.verification_types)
+      end
+
+      it 'should populate the due date field' do
+        expect(@subject.first[:due_date]).to be nil
       end
 
       it 'should have alive status' do

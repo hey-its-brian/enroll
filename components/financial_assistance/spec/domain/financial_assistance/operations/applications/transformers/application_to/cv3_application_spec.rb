@@ -2454,8 +2454,9 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Transformers::Ap
         expect(result_code_description).to be_nil
       end
     end
-    context 'with blank due date' do
+    context 'with blank due date and show_new_verifications flag off' do
       before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(false)
         applicant.local_mec_evidence.update_attributes!(due_on: nil)
       end
 
@@ -2464,6 +2465,19 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Transformers::Ap
 
       it 'should return a populated due on' do
         expect(local_mec_evidence_result).to eql(applicant.local_mec_evidence.verif_due_date)
+      end
+    end
+    context 'with blank due date' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(true)
+        applicant.local_mec_evidence.update_attributes!(due_on: nil)
+      end
+
+      let(:code_description) { nil }
+      let(:local_mec_evidence_result) { operation_result.value![:applicants].first[:local_mec_evidence][:due_on] }
+
+      it 'should return a populated due on' do
+        expect(local_mec_evidence_result).to be nil
       end
     end
   end
