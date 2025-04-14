@@ -468,6 +468,13 @@ When(/^the user selects the (.+) option from the extend due date dropdown/) do |
   find('#manual-due-on').find('input').set(TimeKeeper.date_of_record + 1.year) if option == 'manual'
 end
 
+Then(/^the user should see (.*) in the reasons dropdown$/) do |reasons|
+  sleep 1 # wait for fade
+  reasons.split(', ').each do |reason|
+    expect(page).to have_content(reason)
+  end
+end
+
 And(/^Admin clicks on esi evidence action dropdown$/) do
   find_all('.v-type-actions')[-3].click
 end

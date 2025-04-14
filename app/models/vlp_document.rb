@@ -75,7 +75,7 @@ class VlpDocument < Document
 
   # reasons admin can provide when rejecting verification type. these reasons applied for all verification types
   ALL_TYPES_REJECT_REASONS = if EnrollRegistry.feature_enabled?(:verifications_household_summary_text_update)
-                               ["Unclear/Not readable", "Incomplete document", "Wrong document type", "Wrong Person"]
+                               ["Unclear/Not Readable", "Incomplete Document", "Wrong Document Type", "Wrong Person"]
                              else
                                ["Illegible", "Incomplete Doc", "Wrong Type", "Wrong Person"]
                              end

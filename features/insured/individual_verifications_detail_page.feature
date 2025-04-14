@@ -66,6 +66,21 @@ Feature: Individual Verification Details Page
     | hbx_csr_tier2      | not see    |
     | hbx_tier3          | not see    |
 
+  Scenario Outline: Admin sees the admin verify/reject reasons
+    And EnrollRegistry verifications_household_summary_text_update feature is enabled
+    And a consumer exists
+    And Hbx Admin exists
+    And that a user with a HBX staff role with HBX staff subrole exists and is logged in
+    And the admin vists the verification detail page for a verification with outstanding status
+    And the user selects the <type> option from the actions dropdown
+    Then the user should see <reasons> in the reasons dropdown
+
+  Examples:
+    | type   | reasons                                                                                                 |
+    | Verify | Document in EnrollApp, Document in DIMS, SAVE system, E-Verified in Curam, Salesforce, Self-Attestation |
+    | Reject | Illegible, Incomplete Doc, Wrong Type, Wrong Person                                                     |
+
+
   Scenario Outline: Admin extends the verification due date
     And EnrollRegistry verification_due_on_options feature is enabled
     And a consumer exists

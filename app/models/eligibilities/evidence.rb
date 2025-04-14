@@ -26,7 +26,7 @@ module Eligibilities
     VERIFY_REASONS += EnrollRegistry[:non_applicant_verification_reason].item if EnrollRegistry.feature_enabled?(:non_applicant_verification_reason)
 
     REJECT_REASONS = if EnrollRegistry.feature_enabled?(:verifications_household_summary_text_update)
-                       ["Unclear/Not readable", "Incomplete document", "Wrong document type", "Wrong Person", "Expired", "Too old"]
+                       ["Unclear/Not Readable", "Incomplete Document", "Wrong Document Type", "Wrong Person", "Expired", "Too Old"]
                      else
                        ["Illegible", "Incomplete Doc", "Wrong Type", "Wrong Person", "Expired", "Too old"]
                      end
