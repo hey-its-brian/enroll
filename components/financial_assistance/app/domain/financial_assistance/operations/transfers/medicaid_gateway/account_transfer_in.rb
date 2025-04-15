@@ -35,6 +35,13 @@ module FinancialAssistance
 
           private
 
+          def applicant_is_incarcerated(family_member, applicant_hash)
+            person = family_member.person
+            return person.is_incarcerated unless person.is_incarcerated.nil?
+            return applicant_hash['is_incarcerated'] unless applicant_hash['is_incarcerated'].nil?
+            false
+          end
+
           def auto_submit(application)
             Rails.logger.info "Calling automatic submission operation for application #{application.id}"
             FinancialAssistance::Operations::Transfers::MedicaidGateway::AutomaticSubmission.new.call(application)
@@ -361,7 +368,7 @@ module FinancialAssistance
                 is_veteran_or_active_military: applicant_hash['demographic']['is_veteran_or_active_military'],
                 is_vets_spouse_or_child: applicant_hash['demographic']['is_vets_spouse_or_child'],
                 same_with_primary: address_result.value!,
-                is_incarcerated: family_member.person.is_incarcerated,
+                is_incarcerated: applicant_is_incarcerated(family_member, applicant_hash),
                 is_physically_disabled: applicant_hash['attestation']['is_self_attested_disabled'],
                 is_self_attested_disabled: applicant_hash['attestation']['is_self_attested_disabled'],
                 is_self_attested_blind: applicant_hash['attestation']['is_self_attested_blind'],

@@ -297,6 +297,48 @@ RSpec.describe ::FinancialAssistance::Operations::Transfers::MedicaidGateway::Ac
         expect(family_member["person"]["person_demographics"]["is_incarcerated"]).not_to eq matching_person.is_incarcerated
       end
     end
+
+    context "when existing incarceration status is nil" do
+      let!(:person) do
+        FactoryBot.create(:person, first_name: "Junior", last_name: "Banfield",
+                                   dob: Date.new(2014,1,1), is_incarcerated: nil)
+      end
+
+      let(:document) do
+        document = Nokogiri::XML(xml)
+        document.xpath('//ns4:IncarcerationIndicator', 'ns4' => "http://hix.cms.gov/0.1/hix-core").each do |node|
+          node.content = 'true'
+        end
+        document
+      end
+
+      it "sets applicant incarceration status to applicant hash incarceration status" do
+        record = serializer.parse(document.root.canonicalize, :single => true)
+        @transformed = transformer.transform(record.to_hash(identifier: true))
+        @result = subject.call(@transformed)
+        applicant = @transformed["family"]["magi_medicaid_applications"].first[:applicants].first
+        application = FinancialAssistance::Application.last
+        expect(application.applicants.where(first_name: person.first_name).first.is_incarcerated).to eq applicant[:is_incarcerated]
+      end
+    end
+
+    context "when family member does not exist and payload incarceration status is nil" do
+
+      let(:document) do
+        document = Nokogiri::XML(xml)
+        document.xpath('//ns5:InsuranceApplicantIncarceration').each(&:remove)
+        document
+      end
+
+      it "defaults incarceration status to false" do
+        record = serializer.parse(document.root.canonicalize, :single => true)
+        @transformed = transformer.transform(record.to_hash(identifier: true))
+        subject.call(@transformed)
+        FinancialAssistance::Application.last.applicants.each do |applicant|
+          expect(applicant.is_incarcerated).to eq false
+        end
+      end
+    end
   end
 
   context 'AI/AN status' do
