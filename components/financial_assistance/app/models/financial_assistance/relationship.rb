@@ -3,6 +3,7 @@
 module FinancialAssistance
   class Relationship
 
+    include ::ResourceRegistryHelper
     include Mongoid::Document
     include Mongoid::Timestamps
 
@@ -116,8 +117,10 @@ module FinancialAssistance
     end
 
     def propagate_applicant
+      return if qhp_application_feature_enabled?
       return unless application.draft?
       return if callback_update
+
       FinancialAssistance::Operations::Application::RelationshipHandler.new.call({relationship: self})
     end
 

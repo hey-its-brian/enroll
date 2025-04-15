@@ -222,6 +222,37 @@ describe FamilyMember, 'call back deactivate_tax_households on update', dbclean:
   end
 end
 
+describe '#family_member_updated' do
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member)}
+  let(:relationship) { "spouse" }
+  let(:person) { FactoryBot.build(:person) }
+  subject { FactoryBot.build(:family_member, person: person, family: family) }
+
+  context 'when qhp_application_feature_enabled is true' do
+    before do
+      allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:financial_assistance).and_return(true)
+    end
+
+    it 'returns early without calling Operations::FinancialAssistance::PersonCreateOrUpdateHandler' do
+      expect(::Operations::FinancialAssistance::CreateOrUpdateApplicant).not_to receive(:new)
+      subject.send(:family_member_updated)
+    end
+  end
+
+  context 'when qhp_application_feature_enabled is false' do
+    before do
+      allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(false)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:financial_assistance).and_return(true)
+    end
+
+    it 'returns early without calling Operations::FinancialAssistance::PersonCreateOrUpdateHandler' do
+      expect(::Operations::FinancialAssistance::CreateOrUpdateApplicant).to receive(:new).at_least(:once)
+      subject.send(:family_member_updated)
+    end
+  end
+end
+
 describe '#deactivate_tax_households' do
   let(:person) { FactoryBot.create(:person) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }

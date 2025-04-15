@@ -91,6 +91,65 @@ RSpec.describe Person, type: :model do
     end
   end
 
+  describe '#person_create_or_update_handler' do
+    let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+
+    context 'when qhp_application_feature_enabled is true' do
+      before do
+        allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(true)
+      end
+
+      it 'returns early without calling Operations::FinancialAssistance::PersonCreateOrUpdateHandler' do
+        expect(::Operations::FinancialAssistance::PersonCreateOrUpdateHandler).not_to receive(:new)
+        person.person_create_or_update_handler
+      end
+    end
+
+    context 'when qhp_application_feature_enabled is false' do
+      before do
+        allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(false)
+      end
+
+      context 'when financial_assistance feature is enabled' do
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:financial_assistance).and_return(true)
+        end
+
+        it 'calls Operations::FinancialAssistance::PersonCreateOrUpdateHandler' do
+          handler_instance = instance_double(::Operations::FinancialAssistance::PersonCreateOrUpdateHandler)
+          expect(::Operations::FinancialAssistance::PersonCreateOrUpdateHandler).to receive(:new).and_return(handler_instance)
+          expect(handler_instance).to receive(:call).with({person: person, event: :person_updated})
+          person.person_create_or_update_handler
+        end
+      end
+
+      context 'when financial_assistance feature is not enabled' do
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:financial_assistance).and_return(false)
+        end
+
+        it 'does not call Operations::FinancialAssistance::PersonCreateOrUpdateHandler' do
+          expect(::Operations::FinancialAssistance::PersonCreateOrUpdateHandler).not_to receive(:new)
+          person.person_create_or_update_handler
+        end
+      end
+    end
+
+    context 'when an exception is raised' do
+      before do
+        allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(false)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:financial_assistance).and_return(true)
+        allow(::Operations::FinancialAssistance::PersonCreateOrUpdateHandler).to receive(:new).and_raise(StandardError.new("Test error"))
+        allow(Rails.logger).to receive(:error)
+      end
+
+      it 'rescues the exception and logs an error' do
+        expect { person.person_create_or_update_handler }.not_to raise_error
+        expect(Rails.logger).to have_received(:error)
+      end
+    end
+  end
+
   describe '#add_new_verification_type' do
     let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
 

@@ -102,10 +102,37 @@ RSpec.describe FinancialAssistance::Relationship, type: :model, dbclean: :after_
       allow(FinancialAssistance::Operations::Application::RelationshipHandler).to receive(:new).and_call_original
     end
 
+    context 'when qhp_application feature is enabled and application is in draft' do
+      before do
+        application.reload
+        allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(true)
+        application.update_or_build_relationship(applicant1, applicant2, 'spouse')
+      end
+
+      it 'should not trigger relationship handler operation' do
+        expect(FinancialAssistance::Operations::Application::RelationshipHandler).not_to have_received(:new)
+      end
+    end
+
+    context 'when qhp_application feature is disabled and application is in draft' do
+      context 'when application is in draft state' do
+        before do
+          application.reload
+          allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(false)
+          application.update_or_build_relationship(applicant1, applicant2, 'spouse')
+        end
+
+        it 'should trigger relationship handler operation' do
+          expect(FinancialAssistance::Operations::Application::RelationshipHandler).to have_received(:new)
+        end
+      end
+    end
+
     context 'application is in draft' do
       before do
         application.reload
         application.update_or_build_relationship(applicant1, applicant2, 'spouse')
+        allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(false)
       end
 
       it 'should trigger operation call as application is in draft state' do

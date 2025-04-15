@@ -1016,6 +1016,94 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
       end
     end
 
+    describe '#qhp_application_feature_enabled?' do
+      let!(:application) do
+        FactoryBot.create(:financial_assistance_application,
+                          family_id: BSON::ObjectId.new,
+                          aasm_state: 'draft',
+                          assistance_year: TimeKeeper.date_of_record.year,
+                          effective_date: Date.today)
+      end
+
+      let!(:applicant) do
+        FactoryBot.create(:financial_assistance_applicant,
+                          application: application,
+                          dob: Date.today - 40.years,
+                          is_primary_applicant: true,
+                          family_member_id: BSON::ObjectId.new,
+                          is_active: true)
+      end
+
+      context 'when qhp_application feature is enabled' do
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        end
+
+        it 'returns true' do
+          expect(applicant.qhp_application_feature_enabled?).to be_truthy
+        end
+      end
+
+      context 'when qhp_application feature is disabled' do
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+        end
+
+        it 'returns false' do
+          expect(applicant.qhp_application_feature_enabled?).to be_falsey
+        end
+      end
+    end
+
+    context 'propagate_applicant with qhp_application feature' do
+      let!(:application) do
+        FactoryBot.create(:financial_assistance_application,
+                          family_id: BSON::ObjectId.new,
+                          aasm_state: 'draft',
+                          assistance_year: TimeKeeper.date_of_record.year,
+                          effective_date: Date.today)
+      end
+
+      let!(:applicant) do
+        FactoryBot.create(:financial_assistance_applicant,
+                          application: application,
+                          dob: Date.today - 40.years,
+                          is_primary_applicant: true,
+                          family_member_id: BSON::ObjectId.new,
+                          is_active: true)
+      end
+
+      context 'when qhp_application feature is enabled' do
+        before do
+          allow(applicant).to receive(:qhp_application_feature_enabled?).and_return(true)
+          allow(::FinancialAssistance::Operations::Families::CreateOrUpdateMember).to receive(:new).and_call_original
+        end
+
+        it 'should exit early without calling CreateOrUpdateMember' do
+          applicant.send(:propagate_applicant)
+          expect(::FinancialAssistance::Operations::Families::CreateOrUpdateMember).not_to have_received(:new)
+        end
+      end
+
+      context 'when qhp_application feature is disabled' do
+        before do
+          allow(applicant).to receive(:qhp_application_feature_enabled?).and_return(false)
+          allow(::FinancialAssistance::Operations::Families::CreateOrUpdateMember).to receive(:new).and_call_original
+        end
+
+        it 'should continue with the normal propagation flow' do
+          operation_double = instance_double(::FinancialAssistance::Operations::Families::CreateOrUpdateMember)
+          result_double = double(success?: true, success: { family_member_id: 'test_family_member_id' })
+
+          allow(::FinancialAssistance::Operations::Families::CreateOrUpdateMember).to receive(:new).and_return(operation_double)
+          allow(operation_double).to receive(:call).and_return(result_double)
+
+          applicant.send(:propagate_applicant)
+          expect(::FinancialAssistance::Operations::Families::CreateOrUpdateMember).to have_received(:new)
+        end
+      end
+    end
+
     context "when primary address changes" do
       let!(:application2) do
         FactoryBot.create(:application,
@@ -1101,6 +1189,52 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
       applicant.callback_update = true
       applicant.destroy!
       expect(::Operations::Families::DropFamilyMember).to_not have_received(:new)
+    end
+
+    describe '#propagate_destroy with qhp_application feature' do
+      let(:family_id) { BSON::ObjectId.new }
+      let(:application) do
+        FactoryBot.create(:financial_assistance_application,
+                          family_id: family_id,
+                          aasm_state: 'draft')
+      end
+
+      let(:applicant) do
+        FactoryBot.create(:financial_assistance_applicant,
+                          application: application,
+                          person_hbx_id: '123456789',
+                          is_primary_applicant: true,
+                          family_member_id: BSON::ObjectId.new,
+                          is_active: true)
+      end
+
+      context 'when qhp_application feature is enabled' do
+        before do
+          allow(applicant).to receive(:qhp_application_feature_enabled?).and_return(true)
+          allow(::Operations::Families::DropFamilyMember).to receive(:new).and_return(double(call: double))
+        end
+
+        it 'should exit early without calling DropFamilyMember' do
+          expect(::Operations::Families::DropFamilyMember).not_to receive(:new)
+          applicant.send(:propagate_destroy)
+        end
+      end
+
+      context 'when qhp_application feature is disabled' do
+        before do
+          allow(applicant).to receive(:qhp_application_feature_enabled?).and_return(false)
+          application.aasm_state = 'draft'
+          operation_double = instance_double(::Operations::Families::DropFamilyMember)
+          result_double = double(success?: true)
+          allow(::Operations::Families::DropFamilyMember).to receive(:new).and_return(operation_double)
+          allow(operation_double).to receive(:call).and_return(result_double)
+        end
+
+        it 'should continue with the normal destroy flow' do
+          expect(::Operations::Families::DropFamilyMember).to receive(:new)
+          applicant.send(:propagate_destroy)
+        end
+      end
     end
 
     context 'application is in draft' do

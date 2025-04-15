@@ -10,6 +10,9 @@ class FamilyMember
   # includes TimeHelper module for time related helper methods
   include TimeHelper
 
+  # includes ResourceRegistryHelper module to handle feature flags
+  include ResourceRegistryHelper
+
   embedded_in :family
 
   # Responsible for updating eligibility when family member is created/updated
@@ -173,8 +176,8 @@ class FamilyMember
   private
 
   def family_member_created
-    deactivate_tax_households
-    create_financial_assistance_applicant
+    deactivate_tax_households unless qhp_application_feature_enabled?
+    create_financial_assistance_applicant unless qhp_application_feature_enabled?
     publish_private_family_member_created_event if EnrollRegistry.feature_enabled?(:async_publish_updated_families)
   end
 
@@ -201,6 +204,8 @@ class FamilyMember
   end
 
   def family_member_updated
+    return if qhp_application_feature_enabled?
+
     deactivate_tax_households
     delete_financial_assistance_applicant
     create_financial_assistance_applicant

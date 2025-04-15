@@ -11,6 +11,7 @@ module FinancialAssistance
     include ::L10nHelper
     include Eligibilities::Visitors::Visitable
     include GlobalID::Identification
+    include ::ResourceRegistryHelper
 
     embedded_in :application, class_name: "::FinancialAssistance::Application", inverse_of: :applicants
 
@@ -1776,6 +1777,7 @@ module FinancialAssistance
 
     # Changes should flow to Main App only when application is in draft state.
     def propagate_applicant
+      return if qhp_application_feature_enabled?
       # return if incomes_changed? || benefits_changed? || deductions_changed?
       return unless application.draft?
       if is_active && !callback_update
@@ -1804,6 +1806,7 @@ module FinancialAssistance
 
     # Changes should flow to Main App only when application is in draft state.
     def propagate_destroy
+      return if qhp_application_feature_enabled?
       return unless application.draft?
       return if callback_update
       delete_params = {:family_id => application.family_id, :person_hbx_id => person_hbx_id}

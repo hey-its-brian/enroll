@@ -34,6 +34,9 @@ class Person
   # includes TimeHelper module for time related helper methods
   include TimeHelper
 
+  # includes ResourceRegistryHelper module to handle feature flags
+  include ResourceRegistryHelper
+
   track_history :on => [:first_name,
                         :middle_name,
                         :last_name,
@@ -583,6 +586,8 @@ class Person
   end
 
   def person_create_or_update_handler
+    return if qhp_application_feature_enabled?
+
     ::Operations::FinancialAssistance::PersonCreateOrUpdateHandler.new.call({person: self, event: :person_updated}) if ::EnrollRegistry.feature_enabled?(:financial_assistance)
   rescue StandardError => e
     Rails.logger.error {"FAA Engine: Unable to do action Operations::FinancialAssistance::PersonCreateOrUpdateHandler for person with object_id: #{self.id} due to #{e.message}"}
