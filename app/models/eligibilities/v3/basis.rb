@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 
 module Eligibilities
-  # @title Eligibilities V3 Module
-  # @description This module represents version 3.0 of the Eligibility Evidence pattern.
-  #   It contains models and functionality for processing eligibility, evidence, and determination
-  #   using the latest standards and requirements.
-  # @since 3.0.0
   module V3
     # Represents a specific basis that needs to be verified for eligibility determination
     #

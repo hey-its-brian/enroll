@@ -68,7 +68,7 @@ module Eligibilities
       # and version details
       # embeds_one :chronicle, class_name: "Time::Chronicle"
 
-      # TODO: This needs to be implemented.
+      # TODO: This needs to be implemented when we start using grants.
       # embeds_many :grants, class_name: "::Eligibilities::V3::Grant", as: :grantable
 
       EVIDENCES = [].freeze # Should be listing the evidences in the child classes.

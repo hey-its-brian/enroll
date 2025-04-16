@@ -46,10 +46,6 @@ module IndividualMarket
     #   @return [BSON::ObjectId] The ID of the family member associated with this applicant
     field :family_member_id, type: BSON::ObjectId
 
-    # @!attribute person_id
-    #   @return [BSON::ObjectId] The ID of the person associated with this applicant
-    field :person_id, type: BSON::ObjectId
-
     # @!attribute is_primary_applicant
     #   @return [Boolean] Indicates if this applicant is the primary applicant for the application
     #   @note Only one applicant can be marked as the primary applicant in an application
@@ -76,15 +72,6 @@ module IndividualMarket
       return @family_member if defined?(@family_member)
 
       @family_member = FamilyMember.find(family_member_id)
-    end
-
-    # Finds and returns the person associated with this applicant
-    #
-    # @return [Person] The person associated with this applicant
-    def person
-      return @person if defined?(@person)
-
-      @person = Person.find(person_id)
     end
 
     def aptc_csr_eligibility

@@ -5,8 +5,6 @@ FactoryBot.define do
     association :application, factory: :individual_market_application
 
     family_member_id { BSON::ObjectId.new }
-    person_id { BSON::ObjectId.new }
-
     is_primary_applicant { true }
     address_same_as_primary { false }
     is_applying_coverage { true }

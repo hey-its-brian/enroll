@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ContactProfile
-  # Contact details for an entity in the contact center
+  # Contact details for an entity in the contact profile
   # Manages phone numbers, email addresses, and communication preferences
   class ContactDetail
     include Mongoid::Document

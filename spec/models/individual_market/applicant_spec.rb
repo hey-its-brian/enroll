@@ -5,7 +5,6 @@ require 'rails_helper'
 RSpec.describe IndividualMarket::Applicant, type: :model do
   let(:application)   { FactoryBot.create(:individual_market_application) }
   let(:family_member) { application.family.family_members.first }
-  let(:person)        { family_member.person }
   let(:applicant) do
     FactoryBot.create(
       :individual_market_applicant,
@@ -13,8 +12,7 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
       :with_demographics,
       :with_eligibilities,
       application: application,
-      family_member_id: family_member.id,
-      person_id: person.id
+      family_member_id: family_member.id
     )
   end
 
@@ -34,7 +32,6 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
 
   describe 'fields' do
     it { is_expected.to have_field(:family_member_id).of_type(BSON::ObjectId) }
-    it { is_expected.to have_field(:person_id).of_type(BSON::ObjectId) }
     it { is_expected.to have_field(:is_primary_applicant).of_type(Mongoid::Boolean) }
     it { is_expected.to have_field(:address_same_as_primary).of_type(Mongoid::Boolean) }
     it { is_expected.to have_field(:is_applying_coverage).of_type(Mongoid::Boolean) }
@@ -44,12 +41,6 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
   describe '#family_member' do
     it 'returns the associated family member' do
       expect(applicant.family_member).to eq(family_member)
-    end
-  end
-
-  describe '#person' do
-    it 'returns the associated person' do
-      expect(applicant.person).to eq(person)
     end
   end
 

@@ -2,7 +2,7 @@
 
 module Eligibilities
   module V3
-    # Stores the history of each transaction a user or admin has performed on an evidence
+    # Stores the history of each transaction a user, admin, or automated process has performed on an evidence
     class VerificationHistory
       include Mongoid::Document
       include Mongoid::Timestamps
@@ -24,7 +24,6 @@ module Eligibilities
       private
 
       def set_date_of_action
-        # write_attribute(:date_of_action, DateTime.now)
         self.date_of_action = DateTime.now
       end
     end

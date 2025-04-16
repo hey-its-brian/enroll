@@ -23,7 +23,6 @@ module Eligibilities
       private
 
       def set_date_of_action
-        # write_attribute(:date_of_action, DateTime.now)
         self.date_of_action = DateTime.now
       end
     end
