@@ -42,6 +42,13 @@ module FinancialAssistance
             false
           end
 
+          def applicant_indian_tribe_member(family_member, applicant_hash)
+            person = family_member.person
+            return person.indian_tribe_member unless person.indian_tribe_member.nil?
+            return applicant_hash['indian_tribe_member'] unless applicant_hash['indian_tribe_member'].nil?
+            false
+          end
+
           def auto_submit(application)
             Rails.logger.info "Calling automatic submission operation for application #{application.id}"
             FinancialAssistance::Operations::Transfers::MedicaidGateway::AutomaticSubmission.new.call(application)
@@ -459,7 +466,7 @@ module FinancialAssistance
                 had_prior_insurance: applicant_hash['had_prior_insurance'],
                 age_of_applicant: applicant_hash['age_of_applicant'],
                 hours_worked_per_week: applicant_hash['hours_worked_per_week'],
-                indian_tribe_member: family_member.person.indian_tribe_member,
+                indian_tribe_member: applicant_indian_tribe_member(family_member, applicant_hash),
                 tribal_id: family_member.person.tribal_id,
                 tribal_name: family_member.person.tribal_name,
                 tribal_state: family_member.person.tribal_state,

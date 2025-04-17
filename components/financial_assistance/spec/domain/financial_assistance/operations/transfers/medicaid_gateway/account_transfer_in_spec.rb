@@ -448,6 +448,11 @@ RSpec.describe ::FinancialAssistance::Operations::Transfers::MedicaidGateway::Ac
       it "should set tribe_codes to empty array" do
         expect(@person.tribe_codes).to eq []
       end
+
+      it "should set applicant indian_tribe_member status to false" do
+        app = FinancialAssistance::Application.find(@result.value!)
+        expect(app.applicants.where(first_name: 'Junior').first.indian_tribe_member).to eql(@person.indian_tribe_member)
+      end
     end
 
     context "when person records exits and the payload is missing PersonAmericanIndianOrAlaskaNativeIndicator element" do
@@ -457,17 +462,24 @@ RSpec.describe ::FinancialAssistance::Operations::Transfers::MedicaidGateway::Ac
                                    tribal_name: "Tribe name", tribal_state: "ME", indian_tribe_member: true)
       end
 
+      let!(:consumer_role) { FactoryBot.create(:consumer_role, lawful_presence_determination: lawful_presence_determination, person: person) }
+      let!(:lawful_presence_determination) { FactoryBot.build(:lawful_presence_determination, citizen_status: 'us_citizen') }
+
+
       let(:document) do
         document = Nokogiri::XML(xml)
         document.xpath('//ns4:PersonAmericanIndianOrAlaskaNativeIndicator', 'ns4' => "http://hix.cms.gov/0.1/hix-core")[1].remove
         document
       end
 
-      it "should not override the existing tribal_name/tribal_state/indian_tribe_member values" do
+      before do
         allow(EnrollRegistry[:indian_alaskan_tribe_details].feature).to receive(:is_enabled).and_return(true)
         record = serializer.parse(document.root.canonicalize, :single => true)
         @transformed = transformer.transform(record.to_hash(identifier: true))
         @result = subject.call(@transformed)
+      end
+
+      it "should not override the existing tribal_name/tribal_state/indian_tribe_member values" do
         family_member = @transformed["family"]["family_members"].detect do |member|
           member if member["person"]["person_name"]["first_name"] == person.first_name
         end
@@ -479,6 +491,36 @@ RSpec.describe ::FinancialAssistance::Operations::Transfers::MedicaidGateway::Ac
         expect(family_member["person"]["person_demographics"]["tribal_name"]).not_to eq matching_person.tribal_name
         expect(family_member["person"]["person_demographics"]["tribal_state"]).not_to eq matching_person.tribal_state
         expect(family_member["person"]["person_demographics"]["indian_tribe_member"]).not_to eq matching_person.indian_tribe_member
+      end
+
+      it "sets Financial Assistance Applicant Indian tribe member status to the existing person value" do
+        applicant = FinancialAssistance::Application.first.applicants.where(first_name: "Junior").first
+        expect(applicant.indian_tribe_member).to eq person.indian_tribe_member
+      end
+    end
+
+    context "When payload is missing PersonAmericanIndianOrAlaskaNativeIndicator element" do
+      let(:document) do
+        document = Nokogiri::XML(xml)
+        document.xpath('//ns4:PersonAmericanIndianOrAlaskaNativeIndicator', 'ns4' => "http://hix.cms.gov/0.1/hix-core")[1].remove
+        document
+      end
+
+      before do
+        allow(EnrollRegistry[:indian_alaskan_tribe_details].feature).to receive(:is_enabled).and_return(true)
+        record = serializer.parse(document.root.canonicalize, :single => true)
+        @transformed = transformer.transform(record.to_hash(identifier: true))
+        @result = subject.call(@transformed)
+        @person = Person.all.where(first_name: "Junior").first
+        @applicant = FinancialAssistance::Application.first.applicants.where(first_name: "Junior").first
+      end
+
+      it "sets person indian tribe member status to false" do
+        expect(@applicant.indian_tribe_member).to eq @person.indian_tribe_member
+      end
+
+      it "sets Financial Assistance Applicant Indian tribe member status to the existing person value" do
+        expect(@applicant.indian_tribe_member).to eq @person.indian_tribe_member
       end
     end
 
