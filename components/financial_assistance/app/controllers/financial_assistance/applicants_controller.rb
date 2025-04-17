@@ -4,10 +4,12 @@ module FinancialAssistance
   # Applicant controller for Financial Assistance
   class ApplicantsController < FinancialAssistance::ApplicationController
 
-    before_action :find, :find_application, :except => [:age_of_applicant] #except the ajax requests
+    before_action :set_current_person, :set_family, only: [:index]
+    before_action :find, :except => [:index, :age_of_applicant]
+    before_action :find_application, :except => [:age_of_applicant]
     before_action :find_applicant, only: [:age_of_applicant]
     before_action :set_cache_headers, only: [:other_questions, :tax_info]
-    before_action :enable_bs4_layout, only: [:edit, :other_questions, :tax_info]
+    before_action :enable_bs4_layout, only: [:index, :edit, :other_questions, :tax_info]
 
     # This is a before_action that checks if the application is a renewal draft and if it is, it sets a flash message and redirects to the applications_path
     # This before_action needs to be called after finding the application
@@ -15,6 +17,16 @@ module FinancialAssistance
     # @before_action
     # @private
     before_action :check_for_uneditable_application
+
+    layout :resolve_layout, only: [:index]
+
+    def index
+      authorize @application, :index?
+
+      respond_to do |format|
+        format.html
+      end
+    end
 
     def new
       authorize @application, :new?
@@ -37,7 +49,12 @@ module FinancialAssistance
 
       respond_to do |format|
         if success
-          format.js { render js: "window.location = '#{edit_application_path(@application)}'"}
+          link = if EnrollRegistry.feature_enabled?(:qhp_application)
+                   application_applicants_path(@application)
+                 else
+                   edit_application_path(@application)
+                 end
+          format.js { render js: "window.location = '#{link}'"}
         else
           load_support_texts
           format.js { render 'new' }
@@ -72,7 +89,12 @@ module FinancialAssistance
         @applicant.applicant_id = params[:id]
         @applicant.save
 
-        redirect_to edit_application_path(@application)
+        redirect_link = if EnrollRegistry.feature_enabled?(:qhp_application)
+                          application_applicants_path(@application)
+                        else
+                          edit_application_path(@application)
+                        end
+        redirect_to redirect_link
       end
     end
 
@@ -179,10 +201,32 @@ module FinancialAssistance
     def destroy
       authorize @applicant, :destroy?
       ::FinancialAssistance::Operations::Applicants::Destroy.new.call(@applicant)
-      redirect_to edit_application_path(@application)
+      redirect_link = if EnrollRegistry.feature_enabled?(:qhp_application)
+                        application_applicants_path(@application)
+                      else
+                        edit_application_path(@application)
+                      end
+      redirect_to redirect_link
     end
 
     private
+
+    def resolve_layout
+      EnrollRegistry.feature_enabled?(:bs4_consumer_flow) ? "financial_assistance_progress" : "financial_assistance_nav"
+    end
+
+    def set_family
+      @family = @person.primary_family
+    end
+
+    def set_current_person(required: true) # rubocop:disable Naming/AccessorMethodName
+      @person = if current_user.try(:person).try(:agent?) && session[:person_id].present?
+                  Person.find(session[:person_id])
+                else
+                  current_user&.person
+                end
+      redirect_to logout_saml_index_path if required && !set_current_person_succeeded?
+    end
 
     def sanitized_applicant_params
       applicant_params = params.permit(:applicant => {})[:applicant].to_h

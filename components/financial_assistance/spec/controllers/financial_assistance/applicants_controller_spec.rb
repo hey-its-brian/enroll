@@ -67,6 +67,44 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
     sign_in(user)
   end
 
+  context "GET index" do
+    before do
+      allow_any_instance_of(FinancialAssistance::ApplicantsController).to receive(:authorize).and_return(true)
+    end
+
+    it "should assign the application" do
+      get :index, params: { application_id: application.id }
+      expect(assigns(:application)).to eq application
+    end
+
+    it "should render the index template" do
+      get :index, params: { application_id: application.id }
+      expect(response).to render_template(:index)
+    end
+
+    context "when using bs4_consumer_flow" do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:bs4_consumer_flow).and_return(true)
+      end
+
+      it "should use the financial_assistance_progress layout" do
+        get :index, params: { application_id: application.id }
+        expect(response).to render_template(layout: "layouts/financial_assistance_progress")
+      end
+    end
+
+    context "when not using bs4_consumer_flow" do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:bs4_consumer_flow).and_return(false)
+      end
+
+      it "should use the financial_assistance_nav layout" do
+        get :index, params: { application_id: application.id }
+        expect(response).to render_template(layout: "layouts/financial_assistance_nav")
+      end
+    end
+  end
+
   context "GET other questions" do
     it "should assign applications", dbclean: :after_each do
       get :other_questions, params: { application_id: application.id, id: applicant.id }

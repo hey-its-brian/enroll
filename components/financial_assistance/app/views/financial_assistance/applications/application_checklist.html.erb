@@ -4,13 +4,14 @@
   <h1><%= l10n("faa.checklist.heading") %></h1>
   <p><%= l10n("faa.checklist.instructions1") %></p>
   <div class="my-4">
+    <% next_link = EnrollRegistry.feature_enabled?(:qhp_application) ? financial_assistance.application_applicants_path(@application) : financial_assistance.edit_application_path(@application) %>
     <% content_for :submit_button do %>
-      <%= h(link_to_with_noopener_noreferrer(l10n("faa.checklist.begin_application"), financial_assistance.edit_application_path(@application), class: 'button btn-continue', data: genesys_feature_enabled ? {turbolinks: false} : {}, id: 'btn-continue')) %>
+      <%= h(link_to_with_noopener_noreferrer(l10n("faa.checklist.begin_application"), next_link, class: 'button btn-continue', id: 'btn-continue')) %>
     <% end %>
     <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
-        previous_link: application_checklist_previous_url(@application),
-        next_link: financial_assistance.edit_application_path(@application)
-      } %>
+      previous_link: application_checklist_previous_url(@application),
+      next_link: next_link
+    } %>
   </div>
   <p class="b"><%= l10n("faa.checklist.instructions2") %></p>
   <div class="d-flex sm-block my-4">

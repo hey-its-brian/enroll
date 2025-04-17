@@ -316,7 +316,14 @@ class Insured::ConsumerRolesController < ApplicationController
       @shop_coverage_result ||= params[:shop_coverage_result]
 
       draft_application = @person.primary_family&.most_recent_and_draft_financial_assistance_application if EnrollRegistry.feature_enabled?(:draft_application_after_ridp)
-      redirect_to financial_assistance.edit_application_path(id: draft_application.id) if draft_application.present?
+      if draft_application.present?
+        next_path = if EnrollRegistry.feature_enabled?(:qhp_application)
+                      financial_assistance.application_applicants_path(draft_application)
+                    else
+                      financial_assistance.edit_application_path(id: draft_application.id)
+                    end
+        redirect_to next_path
+      end
     else
       render(:file => "#{Rails.root}/public/404.html", layout: false, status: :not_found)
     end
