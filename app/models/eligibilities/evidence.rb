@@ -22,7 +22,7 @@ module Eligibilities
 
     ADMIN_VERIFICATION_ACTIONS = [VERIFY, REJECT, VIEW_HISTORY, CALL_HUB, EXTEND].freeze
 
-    VERIFY_REASONS = EnrollRegistry[:verification_reasons].item
+    VERIFY_REASONS = EnrollRegistry[EnrollRegistry.feature_enabled?(:verifications_household_summary_text_update) ? :verification_reasons_new : :verification_reasons].item
     VERIFY_REASONS += EnrollRegistry[:non_applicant_verification_reason].item if EnrollRegistry.feature_enabled?(:non_applicant_verification_reason)
 
     REJECT_REASONS = if EnrollRegistry.feature_enabled?(:verifications_household_summary_text_update)

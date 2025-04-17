@@ -110,8 +110,12 @@ registry:
         item: ["Document in EnrollApp", "Electronic data source", "State Medicaid Agency",
                 "CRM document management system", "Self-attestation"]
         is_enabled: true
+      - key: :verification_reasons_new
+        item: ["Document in EnrollApp", "Electronic Data Source", "State Medicaid Agency",
+                "CRM Document Management System", "Self-Attestation"]
+        is_enabled: true
       - key: :non_applicant_verification_reason
-        item: ["Non-applicant"]
+        item: ["Non-Applicant"]
         is_enabled: <%= ENV['NON_APPLICANT_VERIFICATION_REASON_IS_ENABLED'] || false %>
       - key: :out_of_income_threshold_reject_reason
         item: :out_of_income_threshold_reject_reason

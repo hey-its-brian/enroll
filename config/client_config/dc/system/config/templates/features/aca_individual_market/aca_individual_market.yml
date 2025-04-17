@@ -107,6 +107,9 @@ registry:
       - key: :verification_reasons
         item: ["Document in EnrollApp", "Document in DIMS", "SAVE system", "E-Verified in Curam", "Salesforce", "Self-Attestation"]
         is_enabled: true
+      - key: :verification_reasons_new
+        item: ["Document in EnrollApp", "Document in DIMS", "SAVE system", "E-Verified in Curam", "Salesforce", "Self-Attestation"]
+        is_enabled: true
       - key: :non_applicant_verification_reason
         item: ["Non-applicant"]
         is_enabled: <%= ENV['NON_APPLICANT_VERIFICATION_REASON_IS_ENABLED'] || false %>

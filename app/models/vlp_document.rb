@@ -70,7 +70,7 @@ class VlpDocument < Document
   ADMIN_VERIFICATION_ACTIONS = [VERIFY, REJECT, VIEW_HISTORY, CALL_HUB, EXTEND].freeze
 
   # reasons admin can provide when verifying type
-  VERIFICATION_REASONS = EnrollRegistry[:verification_reasons].item
+  VERIFICATION_REASONS = EnrollRegistry[EnrollRegistry.feature_enabled?(:verifications_household_summary_text_update) ? :verification_reasons_new : :verification_reasons].item
   VERIFICATION_REASONS += EnrollRegistry[:non_applicant_verification_reason].item if EnrollRegistry.feature_enabled?(:non_applicant_verification_reason)
 
   # reasons admin can provide when rejecting verification type. these reasons applied for all verification types
