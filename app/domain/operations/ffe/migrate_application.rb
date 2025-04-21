@@ -252,6 +252,8 @@ module Operations
         application.save!
       end
 
+      # TODO: We need to expire all the existing applications that are in draft state if we reuse this migration
+      # See cancel_previous_applications method in the operation Operations::FinancialAssistance::Apply
       def build_iap(iap_hash)
         sanitize_iap_hash = sanitize_applicant_params(iap_hash)
         ::FinancialAssistance::Operations::Application::Create.new.call(params: sanitize_iap_hash)

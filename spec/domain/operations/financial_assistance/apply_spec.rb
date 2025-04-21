@@ -2,6 +2,10 @@
 
 require 'rails_helper'
 RSpec.describe Operations::FinancialAssistance::Apply, type: :model, dbclean: :after_each do
+  after :all do
+    DatabaseCleaner.clean
+  end
+
   let!(:hbx_profile)   { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
   let!(:person)        { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
   let!(:person2) do
@@ -67,6 +71,40 @@ RSpec.describe Operations::FinancialAssistance::Apply, type: :model, dbclean: :a
       result = subject.call({family_id: family.id})
       applicants = FinancialAssistance::Application.where(id: result.success).first.applicants
       expect(applicants.map(&:is_living_in_state)).to eq [false,true]
+    end
+  end
+
+  describe 'for QHP application feature' do
+    let(:draft_app) { FactoryBot.create(:financial_assistance_application, :draft, family_id: family.id) }
+
+    before do
+      draft_app
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(enabled)
+      @result = subject.call({ family_id: family.id })
+    end
+
+    context 'when enabled' do
+      let(:enabled) { true }
+
+      it 'creates a new application' do
+        expect(@result.success).to be_a_kind_of(BSON::ObjectId)
+      end
+
+      it 'cancels previous draft application' do
+        expect(draft_app.reload.cancelled?).to be_truthy
+      end
+    end
+
+    context 'when disabled' do
+      let(:enabled) { false }
+
+      it 'creates a new application' do
+        expect(@result.success).to be_a_kind_of(BSON::ObjectId)
+      end
+
+      it 'does not cancel previous draft application' do
+        expect(draft_app.reload.cancelled?).to be_falsey
+      end
     end
   end
 end

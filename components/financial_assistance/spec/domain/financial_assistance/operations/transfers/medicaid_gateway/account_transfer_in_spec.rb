@@ -26,6 +26,52 @@ RSpec.describe ::FinancialAssistance::Operations::Transfers::MedicaidGateway::Ac
       allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:load_county_on_inbound_transfer).and_return(true)
     end
 
+    context 'for QHP application feature' do
+      let(:draft_app) do
+        FinancialAssistance::Application.find(
+          subject.call(transformer.transform(serializer.parse(xml).to_hash(identifier: true))).success
+        )
+      end
+
+      before do
+        draft_app
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(enabled)
+        record = serializer.parse(xml)
+        @transformed = transformer.transform(record.to_hash(identifier: true))
+        @result = subject.call(@transformed)
+      end
+
+      context 'when enabled' do
+        let(:enabled) { true }
+
+        it 'creates a new findable application' do
+          expect(@result.success).to be_a_kind_of(BSON::ObjectId)
+          expect(
+            FinancialAssistance::Application.find(@result.value!)
+          ).to be_a_kind_of(FinancialAssistance::Application)
+        end
+
+        it 'cancels previous draft application' do
+          expect(draft_app.reload.cancelled?).to be_truthy
+        end
+      end
+
+      context 'when disabled' do
+        let(:enabled) { false }
+
+        it 'creates a new findable application' do
+          expect(@result.success).to be_a_kind_of(BSON::ObjectId)
+          expect(
+            FinancialAssistance::Application.find(@result.value!)
+          ).to be_a_kind_of(FinancialAssistance::Application)
+        end
+
+        it 'does not cancel previous draft application' do
+          expect(draft_app.reload.cancelled?).to be_falsey
+        end
+      end
+    end
+
     context 'with valid payload' do
       before do
         record = serializer.parse(xml)

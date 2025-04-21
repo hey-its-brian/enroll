@@ -11,6 +11,11 @@ FactoryBot.define do
     aasm_state {"determined"}
     parent_living_out_of_home_terms { false }
 
+    trait :draft do
+      aasm_state { 'draft' }
+      submitted_at { nil }
+    end
+
     trait :with_applicants do
       applicants do
         [

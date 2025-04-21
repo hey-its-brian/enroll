@@ -14,6 +14,7 @@ module FinancialAssistance
         class AccountTransferIn
           include ::FinancialAssistance::MeCountyHelper
           include Dry::Monads[:result, :do, :try]
+          include ::ResourceRegistryHelper
 
           PersonCandidate = Struct.new(:ssn, :dob, :first_name, :last_name)
 
@@ -26,6 +27,7 @@ module FinancialAssistance
             family = yield build_family(payload["family"])
             application_id = yield build_application(payload, family)
             application = yield find_application(application_id)
+            _cancelled = yield cancel_previous_applications(application)
             _apps = yield build_applicants(payload, application, family)
             _applicants = yield fill_applicants_form(payload, application)
             _record = yield record(application)
@@ -554,6 +556,22 @@ module FinancialAssistance
             applications = FinancialAssistance::Application.where(id: id)
             return Failure("Application with id #{id} not found") unless applications.any?
             Success(applications.first)
+          end
+
+          # Cancels previous draft applications when a new one is created
+          # @param [FinancialAssistance::Application] application The newly created draft application
+          # @return [Dry::Monads::Result::Success] Success monad with a message
+          def cancel_previous_applications(application)
+            if qhp_application_feature_enabled?
+              ::FinancialAssistance::Operations::Applications::CancelPreviousApplications.new.call(
+                application: application
+              )
+              Success('Previous applications cancelled successfully')
+            else
+              # Returns success as we don't want to block the account transfer in
+              # when the feature flag is disabled
+              Success('Cannot cancel applications as feature flag is disabled')
+            end
           end
 
           def fill_applicants_form(payload, application) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength

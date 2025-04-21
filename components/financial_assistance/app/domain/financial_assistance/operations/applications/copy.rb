@@ -11,6 +11,7 @@ module FinancialAssistance
         include Dry::Monads[:do, :result]
         include AddressValidator
         include I18n
+        include ::ResourceRegistryHelper
 
         VALID_APPLICATION_STATES = ['submitted', 'determination_response_error', 'determined', 'imported', 'income_verification_extension_required', 'applicants_update_required'].freeze
 
@@ -25,6 +26,7 @@ module FinancialAssistance
           active_fms_applicant_params = yield fetch_active_fms_applicant_params(application)
           _reader                     = yield set_attribute_reader(application, active_fms_applicant_params)
           draft_app                   = yield copy_application(application, active_fms_applicant_params)
+          _cancelled                  = yield cancel_previous_applications(draft_app)
 
           Success(draft_app)
         end
@@ -264,6 +266,22 @@ module FinancialAssistance
                                                                   :five_year_bar_applies, :five_year_bar_met, :qualified_non_citizen)
 
           source_appli_params.merge(applicant_mergable_params).deep_symbolize_keys
+        end
+
+        # Cancels previous draft applications when a new one is created
+        # @param [FinancialAssistance::Application] draft_app The newly created draft application
+        # @return [Dry::Monads::Result::Success] Success monad with a message
+        def cancel_previous_applications(draft_app)
+          if qhp_application_feature_enabled?
+            ::FinancialAssistance::Operations::Applications::CancelPreviousApplications.new.call(
+              application: draft_app
+            )
+            Success('Previous applications cancelled successfully')
+          else
+            # Returns success as we don't want to modify the application creation result
+            # when the feature flag is disabled
+            Success('Cannot cancel applications as feature flag is disabled')
+          end
         end
       end
     end

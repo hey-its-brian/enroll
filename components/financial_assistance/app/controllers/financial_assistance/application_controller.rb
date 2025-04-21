@@ -43,13 +43,11 @@ module FinancialAssistance
       end
     end
 
-    # Checks if the application is a renewal draft and, if so, sets a flash message and redirects to the applications path.
+    # Checks if the application is in an uneditable state and, if so, sets a flash message and redirects to the applications path.
     #
     # @return [void]
     def check_for_uneditable_application
-      # If the application is a renewal draft, the user should not be able to edit it.
-      # The below line could be refactored to read from a constant or a setting in the future if we want to add more states where the application should not be editable.
-      return unless @application&.renewal_draft?
+      return if ::FinancialAssistance::Application::UNEDITABLE_STATES.exclude?(@application.aasm_state)
 
       flash[:alert] = l10n('faa.flash_alerts.uneditable_application')
       redirect_to(applications_path) and return

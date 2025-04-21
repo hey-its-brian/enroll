@@ -8,6 +8,10 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
     DatabaseCleaner.clean
   end
 
+  after :all do
+    DatabaseCleaner.clean
+  end
+
   let!(:person1) { FactoryBot.create(:person, :with_consumer_role, first_name: 'Person_11')}
   let!(:person2) do
     per = FactoryBot.create(:person, :with_consumer_role, dob: Date.today - 30.years)
@@ -1444,6 +1448,47 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
       it 'should have esi_evidence request_result date_of_action present' do
         request_result = result.success.applicants.first.esi_evidence.request_results.first
         expect(request_result.date_of_action).not_to be_nil
+      end
+    end
+  end
+
+  describe 'for QHP application feature' do
+    let(:first_draft_app) { FactoryBot.create(:application, family_id: family.id) }
+
+    let(:second_draft_app) do
+      FactoryBot.create(:financial_assistance_application, :draft, family_id: family.id)
+    end
+
+    before do
+      first_draft_app
+      second_draft_app
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(enabled)
+      @result = subject.call(application_id: application.id)
+    end
+
+    context 'when enabled' do
+      let(:enabled) { true }
+
+      it 'creates a new application' do
+        expect(@result.success).to be_a(FinancialAssistance::Application)
+      end
+
+      it 'cancels previous draft applications' do
+        expect(first_draft_app.reload.cancelled?).to be_truthy
+        expect(second_draft_app.reload.cancelled?).to be_truthy
+      end
+    end
+
+    context 'when disabled' do
+      let(:enabled) { false }
+
+      it 'creates a new application' do
+        expect(@result.success).to be_a(FinancialAssistance::Application)
+      end
+
+      it 'does not cancel previous draft applications' do
+        expect(first_draft_app.reload.cancelled?).to be_falsey
+        expect(second_draft_app.reload.cancelled?).to be_falsey
       end
     end
   end

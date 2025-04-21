@@ -43,4 +43,81 @@ RSpec.describe ::FinancialAssistance::Application, type: :model do
       end
     end
   end
+
+  describe '#record_transition' do
+    let(:application) { FactoryBot.create(:financial_assistance_application, aasm_state: 'draft', family_id: family.id) }
+    let(:latest_wfst) { application.workflow_state_transitions.order_by(:created_at.desc).first }
+
+    context 'when additional arguments are passed' do
+      let(:reason) { 'Cancelled by the system due to new application creation' }
+
+      context 'when both reason and comment are passed' do
+        before do
+          application.cancel!({ reason: reason, comment: reason })
+        end
+
+        it 'creates a new transition record' do
+          expect(application.cancelled?).to be_truthy
+          expect(latest_wfst.to_state).to eq('cancelled')
+          expect(latest_wfst.from_state).to eq('draft')
+        end
+
+        it 'sets the additional transition attributes correctly' do
+          expect(latest_wfst.reason).to eq(reason)
+          expect(latest_wfst.comment).to eq(reason)
+        end
+      end
+
+      context 'when only reason is passed' do
+        before do
+          application.cancel!({ reason: reason })
+        end
+
+        it 'creates a new transition record' do
+          expect(application.cancelled?).to be_truthy
+          expect(latest_wfst.to_state).to eq('cancelled')
+          expect(latest_wfst.from_state).to eq('draft')
+        end
+
+        it 'sets the additional transition attributes correctly' do
+          expect(latest_wfst.reason).to eq(reason)
+          expect(latest_wfst.comment).to be_nil
+        end
+      end
+
+      context 'when only comment is passed' do
+        before do
+          application.cancel!({ comment: reason })
+        end
+
+        it 'creates a new transition record' do
+          expect(application.cancelled?).to be_truthy
+          expect(latest_wfst.to_state).to eq('cancelled')
+          expect(latest_wfst.from_state).to eq('draft')
+        end
+
+        it 'sets the additional transition attributes correctly' do
+          expect(latest_wfst.reason).to be_nil
+          expect(latest_wfst.comment).to eq(reason)
+        end
+      end
+    end
+
+    context 'when no additional arguments are passed' do
+      before do
+        application.cancel!
+      end
+
+      it 'creates a new transition record' do
+        expect(application.cancelled?).to be_truthy
+        expect(latest_wfst.to_state).to eq('cancelled')
+        expect(latest_wfst.from_state).to eq('draft')
+      end
+
+      it 'sets the additional transition attributes correctly' do
+        expect(latest_wfst.reason).to be_nil
+        expect(latest_wfst.comment).to be_nil
+      end
+    end
+  end
 end

@@ -47,6 +47,8 @@ module FinancialAssistance
 
     INVERSE_RELATIONSHIPS_MAP = ::FinancialAssistance::Relationship::INVERSE_MAP
 
+    UNEDITABLE_STATES = %w[cancelled renewal_draft].freeze
+
     # TODO: Need enterprise ID assignment call for Assisted Application
     field :hbx_id, type: String
 
@@ -754,6 +756,9 @@ module FinancialAssistance
       # states when request build fails(to generate request for Haven/Mitc)
       state :mitc_magi_medicaid_eligibility_request_errored
       state :haven_magi_medicaid_eligibility_request_errored
+      # :cancelled is the state where the application is cancelled and cannot be used for submission
+      # An application can be in the cancelled state if a new application is created.
+      state :cancelled
 
       event :set_magi_medicaid_eligibility_request_errored, :after => :record_transition do
         if FinancialAssistanceRegistry.feature_enabled?(:haven_determination)
@@ -820,8 +825,7 @@ module FinancialAssistance
       end
 
       event :cancel, :after => :record_transition do
-        transitions from: [:draft],
-                    to: :cancelled
+        transitions from: [:draft], to: :cancelled
       end
 
       # Currently, this event will be used during renewal generations
@@ -1696,12 +1700,24 @@ module FinancialAssistance
     # Example: application.determine will change the aasm_state in-memory, data is not persisted at this point.
     # When trying to find latest determine application in subsequent after call methods, previous application is fetched instead of current application.
     # Persisting the application right after the aasm_state change will avoid issues reated the fetching the latest application.
-    def record_transition
+    #
+    # Args can be passed to the method to record the transition.
+    # Example: application.record_transition(comment: "This is a comment", reason: "This is a reason")
+    # @param args [Hash] optional arguments to pass to the transition
+    # @option args [String] :comment comment to be recorded
+    # @option args [String] :reason reason to be recorded
+    # @return [void]
+    def record_transition(*args)
       self.save if self.aasm_state_changed?
-      self.workflow_state_transitions << WorkflowStateTransition.new(
-        from_state: aasm.from_state,
-        to_state: aasm.to_state
-      )
+
+      wfst_params = { from_state: aasm.from_state, to_state: aasm.to_state }
+
+      if args.present? && args.first.is_a?(Hash)
+        wfst_params[:comment] = args.first[:comment] if args.first[:comment].present?
+        wfst_params[:reason] = args.first[:reason] if args.first[:reason].present?
+      end
+
+      self.workflow_state_transitions << WorkflowStateTransition.new(wfst_params)
     end
 
     def verification_update_for_applicants

@@ -9,7 +9,7 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
   let(:user) { FactoryBot.create(:user, person: person) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
   let(:primary_family_member) { family.primary_applicant }
-  let(:application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: 'renewal_draft') }
+  let(:application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: application_aasm_state) }
   let(:applicant) do
     FactoryBot.create(
       :financial_assistance_applicant,
@@ -20,6 +20,8 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
     )
   end
 
+  let(:application_aasm_state) { 'renewal_draft' }
+
   before do
     person.consumer_role.move_identity_documents_to_verified
     sign_in(user)
@@ -28,6 +30,16 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
   # new
   describe 'GET #new' do
     context 'when application is in renewal_draft state' do
+      it 'redirects to applications index page' do
+        get :new, params: { application_id: application.id }
+        expect(response).to redirect_to(applications_path)
+        expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
+      end
+    end
+
+    context 'when application is in cancelled state' do
+      let(:application_aasm_state) { 'cancelled' }
+
       it 'redirects to applications index page' do
         get :new, params: { application_id: application.id }
         expect(response).to redirect_to(applications_path)
@@ -45,11 +57,31 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
         expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
       end
     end
+
+    context 'when application is in cancelled state' do
+      let(:application_aasm_state) { 'cancelled' }
+
+      it 'redirects to applications index page' do
+        post :create, params: { application_id: application.id }
+        expect(response).to redirect_to(applications_path)
+        expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
+      end
+    end
   end
 
   # edit
   describe 'GET #edit' do
     context 'when application is in renewal_draft state' do
+      it 'redirects to applications index page' do
+        get :edit, params: { application_id: application.id, id: applicant.id }
+        expect(response).to redirect_to(applications_path)
+        expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
+      end
+    end
+
+    context 'when application is in cancelled state' do
+      let(:application_aasm_state) { 'cancelled' }
+
       it 'redirects to applications index page' do
         get :edit, params: { application_id: application.id, id: applicant.id }
         expect(response).to redirect_to(applications_path)
@@ -67,11 +99,31 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
         expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
       end
     end
+
+    context 'when application is in cancelled state' do
+      let(:application_aasm_state) { 'cancelled' }
+
+      it 'redirects to applications index page' do
+        put :update, params: { application_id: application.id, id: applicant.id }
+        expect(response).to redirect_to(applications_path)
+        expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
+      end
+    end
   end
 
   # other_questions
   describe 'GET #other_questions' do
     context 'when application is in renewal_draft state' do
+      it 'redirects to applications index page' do
+        get :other_questions, params: { application_id: application.id, id: applicant.id }
+        expect(response).to redirect_to(applications_path)
+        expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
+      end
+    end
+
+    context 'when application is in cancelled state' do
+      let(:application_aasm_state) { 'cancelled' }
+
       it 'redirects to applications index page' do
         get :other_questions, params: { application_id: application.id, id: applicant.id }
         expect(response).to redirect_to(applications_path)
@@ -89,6 +141,16 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
         expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
       end
     end
+
+    context 'when application is in cancelled state' do
+      let(:application_aasm_state) { 'cancelled' }
+
+      it 'redirects to applications index page' do
+        post :save_questions, params: { application_id: application.id, id: applicant.id }
+        expect(response).to redirect_to(applications_path)
+        expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
+      end
+    end
   end
 
   # step
@@ -100,11 +162,35 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
         expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
       end
     end
+
+    context 'when application is in cancelled state' do
+      let(:application_aasm_state) { 'cancelled' }
+
+      it 'redirects to applications index page' do
+        get :step, params: { application_id: application.id, id: applicant.id, step: 'step' }
+        expect(response).to redirect_to(applications_path)
+        expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
+      end
+    end
   end
 
   # age_of_applicant
   describe 'GET #age_of_applicant' do
     context 'when application is in renewal_draft state' do
+      it 'redirects to applications index page' do
+        get :age_of_applicant, params: {
+          application_id: application.id,
+          applicant_id: applicant.id,
+          format: :js
+        }, xhr: true
+        expect(response).to redirect_to(applications_path)
+        expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
+      end
+    end
+
+    context 'when application is in cancelled state' do
+      let(:application_aasm_state) { 'cancelled' }
+
       it 'redirects to applications index page' do
         get :age_of_applicant, params: {
           application_id: application.id,
@@ -130,6 +216,20 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
         expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
       end
     end
+
+    context 'when application is in cancelled state' do
+      let(:application_aasm_state) { 'cancelled' }
+
+      it 'redirects to applications index page' do
+        get :applicant_is_eligible_for_joint_filing, params: {
+          application_id: application.id,
+          applicant_id: applicant.id,
+          format: :text
+        }
+        expect(response).to redirect_to(applications_path)
+        expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
+      end
+    end
   end
 
   # immigration_document_options
@@ -141,11 +241,31 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
         expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
       end
     end
+
+    context 'when application is in cancelled state' do
+      let(:application_aasm_state) { 'cancelled' }
+
+      it 'redirects to applications index page' do
+        get :immigration_document_options, params: { application_id: application.id }
+        expect(response).to redirect_to(applications_path)
+        expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
+      end
+    end
   end
 
   # destroy
   describe 'DELETE #destroy' do
     context 'when application is in renewal_draft state' do
+      it 'redirects to applications index page' do
+        delete :destroy, params: { application_id: application.id, id: applicant.id }
+        expect(response).to redirect_to(applications_path)
+        expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
+      end
+    end
+
+    context 'when application is in cancelled state' do
+      let(:application_aasm_state) { 'cancelled' }
+
       it 'redirects to applications index page' do
         delete :destroy, params: { application_id: application.id, id: applicant.id }
         expect(response).to redirect_to(applications_path)

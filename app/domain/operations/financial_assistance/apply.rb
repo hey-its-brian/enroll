@@ -11,6 +11,7 @@ module Operations
     # gets back FinancialAssistance::Application object_id
     class Apply
       include Dry::Monads[:do, :result]
+      include ResourceRegistryHelper
 
       # @param [ FamilyId ] family_id bson_id of a family
       # @return [ FinancialAssistance::Application ] application_id
@@ -18,6 +19,8 @@ module Operations
         family_id                    = yield validate(params)
         financial_application_params = yield parse_family(family_id)
         application_id               = yield apply(financial_application_params)
+        new_application              = yield fetch_application(application_id)
+        _cancelled                   = yield cancel_previous_applications(new_application)
 
         Success(application_id)
       end
@@ -83,6 +86,37 @@ module Operations
         end
 
         home_address.present?
+      end
+
+      # Finds a financial assistance application by its ID
+      # @param [BSON::ObjectId] application_id The ID of the application to retrieve
+      # @return [Dry::Monads::Result::Success] Success monad with the application if found
+      # @return [Dry::Monads::Result::Failure] Failure monad with error message if not found
+      def fetch_application(application_id)
+        application = ::FinancialAssistance::Application.where(id: application_id).first
+
+        if application
+          Success(application)
+        else
+          Rails.logger.error("FAA - Application with id #{application_id} not found.")
+          Failure("Application with id #{application_id} not found.")
+        end
+      end
+
+      # Cancels previous applications when a new one is created
+      # @param [FinancialAssistance::Application] new_application The newly created application
+      # @return [Dry::Monads::Result::Success] Success monad with a message
+      def cancel_previous_applications(new_application)
+        if qhp_application_feature_enabled?
+          ::FinancialAssistance::Operations::Applications::CancelPreviousApplications.new.call(
+            application: new_application
+          )
+          Success('Previous applications cancelled successfully')
+        else
+          # Returns success as we don't want to modify the application creation result
+          # when the feature flag is disabled
+          Success('Cannot cancel applications as feature flag is disabled')
+        end
       end
     end
   end
