@@ -78,12 +78,18 @@ FactoryBot.define do
         subject_count { 3 }
         subjects_with_action_needed { 1 }
         subjects_with_review { 1 }
+        verification_status { 'outstanding' }
+        verification_due_date { TimeKeeper.date_of_record }
+        verification_document_status { 'pending' }
       end
 
       after(:build) do |family, evaluator|
         family.eligibility_determination = build(
           :eligibilities_determination,
           subject_count: evaluator.subject_count,
+          outstanding_verification_status: evaluator.verification_status,
+          outstanding_verification_earliest_due_date: evaluator.verification_due_date,
+          outstanding_verification_document_status: evaluator.verification_document_status,
           subjects_with_action_needed: evaluator.subjects_with_action_needed,
           subjects_with_review: evaluator.subjects_with_review
         )

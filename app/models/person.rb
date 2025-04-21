@@ -279,6 +279,7 @@ class Person
   index({"consumer_role._id" => 1})
   index({"consumer_role.aasm_state" => 1})
   index({"consumer_role.is_active" => 1})
+  index({ "consumer_role.is_applying_coverage" => 1 }, { name: "consumer_role_is_applying_coverage_index" })
 
   # Employee child model indexes
   index({"employee_roles._id" => 1})
