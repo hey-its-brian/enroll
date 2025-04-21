@@ -37,10 +37,7 @@ module Subscribers
       person = GlobalID::Locator.locate(payload[:gid])
 
       person.families.each do |family|
-        ::Operations::Eligibilities::BuildFamilyDetermination.new.call(
-          family: family,
-          effective_date: TimeKeeper.date_of_record
-        )
+        ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
       end
     end
 

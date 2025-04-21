@@ -120,15 +120,13 @@ RSpec.describe ::Operations::Eligibilities::BuildEvidenceState,
 
   let(:evidence_item) { eligibility_item.evidence_items.first }
 
-  let(:effective_date) { Date.today }
   let(:subjects) { family.family_members.map(&:to_global_id) }
 
   let(:required_params) do
     {
       subject: subject_ref,
       eligibility_item: eligibility_item,
-      evidence_item: evidence_item,
-      effective_date: effective_date
+      evidence_item: evidence_item
     }
   end
 

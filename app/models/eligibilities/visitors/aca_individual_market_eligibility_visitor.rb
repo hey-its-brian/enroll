@@ -4,7 +4,7 @@ module Eligibilities
   module Visitors
     # Individual market eligibility visitor
     class AcaIndividualMarketEligibilityVisitor < Visitor
-      attr_accessor :evidence, :subject, :evidence_item, :effective_date
+      attr_accessor :evidence, :subject, :evidence_item
 
       OUTSTANDING_STATES = %w[outstanding review rejected].freeze
       PENDING_STATES = %w[pending unverified negative_response_received].freeze

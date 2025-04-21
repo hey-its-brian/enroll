@@ -137,10 +137,9 @@ RSpec.describe ::Operations::Eligibilities::BuildFamilyDetermination,
 
   let(:eligibility_items) { [:aptc_csr_credit] }
 
-  let(:effective_date) { Date.today }
   let(:subjects) { family.family_members.map(&:to_global_id) }
 
-  let(:required_params) { { family: family, effective_date: effective_date } }
+  let(:required_params) { { family: family } }
 
   before do
     allow(EnrollRegistry).to receive(:feature_enabled?).and_call_original
@@ -218,7 +217,7 @@ RSpec.describe ::Operations::Eligibilities::BuildFamilyDetermination,
       end
 
       let(:migration_params_without_consumer) do
-        { family: family_without_consumer, effective_date: effective_date, is_migrating: true }
+        { family: family_without_consumer, is_migrating: true }
       end
 
       it 'should build and persist determination for migration' do

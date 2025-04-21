@@ -333,7 +333,7 @@ class MigrateHouseholdThhsToThhGroupThhs < MongoidMigrationTask
     if family.save!
       @logger.info "----- Successfully created TaxHouseholdGroups for family with family_hbx_assigned_id: #{family.hbx_assigned_id}"
       is_migrating = family.enrollments.present?
-      determination = ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family.reload, effective_date: TimeKeeper.date_of_record, is_migrating: is_migrating)
+      determination = ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family.reload, is_migrating: is_migrating)
       if determination.success?
         @logger.info "----- Successfully created FamilyDetermination: #{determination.success} for family with family_hbx_assigned_id: #{family.hbx_assigned_id}"
 

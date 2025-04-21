@@ -149,6 +149,6 @@ class Insured::VerificationDocumentsController < ApplicationController
     family = Family.where(id: params[:family]).first
     return unless @success && family.present? && EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
 
-    ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
+    ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
   end
 end

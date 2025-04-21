@@ -31,7 +31,7 @@ module Subscribers
       log_info(subscriber_logger, result, 'create_tax_household_group_on_fa_determination')
       if result.success?
         family = result.success.family
-        ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: application.effective_date.to_date)
+        ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
       end
     rescue StandardError => e
       log_error(subscriber_logger, nil, :create_tax_household_group_on_fa_determination, e)

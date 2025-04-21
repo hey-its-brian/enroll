@@ -251,7 +251,8 @@ module FinancialAssistance
     # @param created_at [Integer] The creation timestamp, with -1 indicating descending order
     # @note This index improves queries that filter by state and family_id and sort by creation date
     index({ aasm_state: 1, family_id: 1, created_at: -1 })
-
+    # @!index [Hash] An analogous index which allows for querying by submitted_at instead of created_at
+    index({ aasm_state: 1, family_id: 1, submitted_at: -1 })
     # @!scope class
     # @return [Mongoid::Criteria] The most recent determined FinancialAssistance::Application based on creation timestamp
     scope :newest_determined_by_family_id, lambda { |family_id|
@@ -999,7 +1000,7 @@ module FinancialAssistance
 
       rt_transfer
 
-      family_determination = ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: self.family.reload, effective_date: self.effective_date.to_date)
+      family_determination = ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: self.family.reload)
 
       if family_determination.success?
         apply_aggregate_to_enrollment

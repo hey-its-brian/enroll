@@ -31,7 +31,7 @@ module Operations
 
           def find_subjects(params)
             family = params[:family]
-            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record) if family.eligibility_determination.nil?
+            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family) if family.eligibility_determination.nil?
             all_subjects = family.eligibility_determination.subjects
 
             return Success(all_subjects) if params[:include_inactives] && EnrollRegistry.feature_enabled?(:show_inactive_verification_members)

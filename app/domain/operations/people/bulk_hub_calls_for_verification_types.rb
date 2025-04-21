@@ -99,7 +99,7 @@ module Operations
             update_reason: "Bulk Process: #{verification_type.type_name} Request Failed due to #{message}"
           )
           person.families.each do |family|
-            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
+            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
           end
         end
 

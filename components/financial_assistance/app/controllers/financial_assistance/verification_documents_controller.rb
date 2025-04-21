@@ -102,7 +102,7 @@ module FinancialAssistance
       family = @application.family
       return unless @success && family.present? && EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
 
-      ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: @application.effective_date.to_date)
+      ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
     end
 
     def record

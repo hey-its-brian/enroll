@@ -116,13 +116,11 @@ RSpec.describe ::Operations::Eligibilities::BuildEligibilityState,
       .success
   end
 
-  let(:effective_date) { Date.today }
   let(:subjects) { family.family_members.map(&:to_global_id) }
 
   let(:required_params) do
     {
       subject: family_member.to_global_id,
-      effective_date: effective_date,
       eligibility_item: eligibility_item
     }
   end

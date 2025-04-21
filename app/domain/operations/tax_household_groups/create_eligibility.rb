@@ -54,7 +54,7 @@ module Operations
       end
 
       def create_family_determination
-        ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: @family.reload, effective_date: @effective_date)
+        ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: @family.reload)
       end
 
       def create_new_enrollments

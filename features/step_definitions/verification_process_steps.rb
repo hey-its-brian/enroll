@@ -35,7 +35,7 @@ And(/^.+ lands in the Verifications page$/) do
 end
 
 And(/the determination for the family has been built/) do
-  ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: user.person.primary_family.reload, effective_date: TimeKeeper.date_of_record)
+  ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: user.person.primary_family.reload)
 end
 
 And(/^.+ clicks on member with verified status$/) do
@@ -109,7 +109,7 @@ def create_verification(type_name, validation_status:, inactive: false)
                       family_member_id: user_family_member_id)
     application.applicants.where(family_member_id: user_family_member_id).first.send(type).update_attributes(aasm_state: validation_status)
   end
-  ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family.reload, effective_date: TimeKeeper.date_of_record)
+  ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family.reload)
 end
 
 Given(/^that the consumer has inactive verifications/) do

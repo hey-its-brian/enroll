@@ -108,7 +108,7 @@ module Subscribers
       end
 
       family.update_due_dates_on_vlp_docs_and_evidences(assistance_year)
-      ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: enrollment.effective_on.to_date)
+      ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
     end
 
     private

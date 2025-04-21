@@ -260,6 +260,8 @@ class HbxEnrollment
        },
        {name: "kind_and_aasm_state_and_is_any_enrollment_member_outstanding_and_effective_on"})
 
+  index({ family_id: 1, kind: 1, coverage_kind: 1, aasm_state: 1, effective_on: -1 })
+
   index({"kind" => 1,
          "aasm_state" => 1,
          "coverage_kind" => 1,

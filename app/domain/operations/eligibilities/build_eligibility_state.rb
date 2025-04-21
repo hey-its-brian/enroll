@@ -13,7 +13,6 @@ module Operations
       # @option opts [GlobalID] :subject required
       # @option opts [AcaEntities::Eligibilities::EligibilityItem] :eligibility_item required
       # @option opts [Array<Symbol>] :evidence_item_keys optional
-      # @option opts [Date] :effective_date required
       # @return [Dry::Monad] result
       def call(params)
         values = yield validate(params)
@@ -27,7 +26,6 @@ module Operations
       def validate(params)
         errors = []
         errors << 'subject missing' unless params[:subject]
-        errors << 'effective date missing' unless params[:effective_date]
         errors << 'eligibility item missing' unless params[:eligibility_item]
 
         errors.empty? ? Success(params) : Failure(errors)
@@ -45,7 +43,7 @@ module Operations
       def evidence_states_for(values)
         evidence_items_for(values)
           .collect do |evidence_item|
-            attrs = values.slice(:subject, :effective_date, :eligibility_item).merge(evidence_item: evidence_item)
+            attrs = values.slice(:subject, :eligibility_item).merge(evidence_item: evidence_item)
             evidence_state = Operations::Eligibilities::BuildEvidenceState.new.call(attrs)
             evidence_state.success? ? evidence_state.success : {}
           end
@@ -66,7 +64,7 @@ module Operations
 
         if values[:eligibility_item].key == 'aptc_csr_credit'
           subject = GlobalID::Locator.locate(values[:subject])
-          grants = build_csr_grants(subject, values[:effective_date]).success
+          grants = build_csr_grants(subject).success
           eligibility_state.merge!(grants: grants)
         end
 
@@ -83,12 +81,11 @@ module Operations
         Success(eligibility_state)
       end
 
-      def build_csr_grants(family_member, effective_date)
+      def build_csr_grants(family_member)
         Operations::Eligibilities::BuildGrant.new.call(
           family_member: family_member,
           family: family_member.family,
-          type: 'CsrAdjustmentGrant',
-          effective_date: effective_date
+          type: 'CsrAdjustmentGrant'
         )
       end
 

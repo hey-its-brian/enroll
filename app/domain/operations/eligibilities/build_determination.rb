@@ -18,7 +18,6 @@ module Operations
       # @param [Hash] opts Options to build determination
       # @option opts [Array<GlobalID>] :subjects required
       # @option opts [Array<Hash>] :eligibility_items_requested optional
-      # @option opts [Date] :effective_date required
       # @return [Dry::Monad] result
       def call(params)
         values = yield validate(params)
@@ -34,7 +33,6 @@ module Operations
       def validate(params)
         errors = []
         errors << 'subject ref missing' unless params[:subjects]
-        errors << 'effective_date ref missing' unless params[:effective_date]
         errors << 'family ref missing' unless params[:family]
 
         errors.empty? ? Success(params) : Failure(errors)
@@ -83,7 +81,7 @@ module Operations
           end
           .reduce(:merge)
 
-        grants = build_aptc_grants(values[:family], values[:effective_date]).success
+        grants = build_aptc_grants(values[:family]).success
 
         determination = {
           effective_date: TimeKeeper.date_of_record, # Since this is only being used for eligibility determination effective date
@@ -100,8 +98,8 @@ module Operations
         )
       end
 
-      def build_aptc_grants(family, effective_date)
-        Operations::Eligibilities::BuildGrant.new.call(family: family, type: 'AdvancePremiumAdjustmentGrant', effective_date: effective_date)
+      def build_aptc_grants(family)
+        Operations::Eligibilities::BuildGrant.new.call(family: family, type: 'AdvancePremiumAdjustmentGrant')
       end
 
       # rubocop:disable Metrics/CyclomaticComplexity
@@ -205,7 +203,6 @@ module Operations
 
             eligibility_state =
               BuildEligibilityState.new.call(
-                effective_date: values[:effective_date],
                 subject: subject,
                 eligibility_item: eligibility_item,
                 evidence_item_keys: evidence_item_keys

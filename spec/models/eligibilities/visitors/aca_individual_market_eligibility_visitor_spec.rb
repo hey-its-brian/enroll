@@ -46,16 +46,7 @@ RSpec.describe ::Eligibilities::Visitors::AcaIndividualMarketEligibilityVisitor,
       .success
   end
 
-  let(:effective_date) { Date.today }
   let(:subjects) { family.family_members.map(&:to_global_id) }
-
-  let(:required_params) do
-    {
-      subject: family_member.to_global_id,
-      effective_date: effective_date,
-      eligibility_item: eligibility_item
-    }
-  end
 
   let(:evidence_item) { eligibility_item.evidence_items[1] }
   let(:subject_member) { family.primary_applicant }
@@ -64,7 +55,6 @@ RSpec.describe ::Eligibilities::Visitors::AcaIndividualMarketEligibilityVisitor,
     visitor = described_class.new
     visitor.subject = subject_member
     visitor.evidence_item = evidence_item
-    visitor.effective_date = effective_date
     visitor
   end
 

@@ -1669,7 +1669,7 @@ class Family
     if deactivated.failure?
       Rails.logger.error { "Failed to deactivate tax household groups for family with hbx_id: #{hbx_assigned_id}, Failure: #{deactivated.failure}" }
     else
-      build_determination = ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: self.reload, effective_date: effective_date)
+      build_determination = ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: self.reload)
       return if build_determination.success?
 
       Rails.logger.error { "Failed to build family determination for family with hbx_id: #{hbx_assigned_id}, Failure: #{build_determination.failure}" }

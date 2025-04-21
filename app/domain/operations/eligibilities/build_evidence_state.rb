@@ -21,7 +21,6 @@ module Operations
       # @option opts [GlobalID] :subject required
       # @option opts [AcaEntities::Elgibilities::EligibilityItem] :eligibility_item required
       # @option opts [AcaEntities::Elgibilities::EvidenceItem] :evidence_item required
-      # @option opts [Date] :effective_date required
       # @return [Dry::Monad] result
       def call(params)
         values = yield validate(params)
@@ -38,7 +37,6 @@ module Operations
         errors << 'subject missing' unless params[:subject]
         errors << 'eligibility item missing' unless params[:eligibility_item]
         errors << 'evidence item missing' unless params[:evidence_item]
-        errors << 'effective date missing' unless params[:effective_date]
 
         errors.empty? ? Success(params) : Failure(errors)
       end
@@ -53,7 +51,6 @@ module Operations
         visitor = visitor_klass(values[:eligibility_item]).new
         visitor.subject = subject
         visitor.evidence_item = values[:evidence_item]
-        visitor.effective_date = values[:effective_date]
         visitor.call
 
         evidence = visitor.evidence

@@ -203,7 +203,7 @@ module Operations
           end
 
           def trigger_family_determination(family)
-            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
+            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
           end
         end
       end

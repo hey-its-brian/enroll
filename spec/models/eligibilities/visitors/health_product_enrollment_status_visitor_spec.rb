@@ -80,8 +80,6 @@ RSpec.describe ::Eligibilities::Visitors::HealthProductEnrollmentStatusVisitor,
       .success
   end
 
-  let(:effective_date) { TimeKeeper.date_of_record }
-
   let(:evidence_item) { eligibility_item.evidence_items.first }
   let(:visitor_subject) { family.primary_applicant }
 
@@ -89,7 +87,6 @@ RSpec.describe ::Eligibilities::Visitors::HealthProductEnrollmentStatusVisitor,
     visitor = described_class.new
     visitor.subject = visitor_subject
     visitor.evidence_item = evidence_item
-    visitor.effective_date = effective_date
     visitor
   end
 
@@ -122,12 +119,23 @@ RSpec.describe ::Eligibilities::Visitors::HealthProductEnrollmentStatusVisitor,
 
   context "when the enrollment is in the future" do
     before do
-      hbx_enrollment1.update_attributes(effective_on: hbx_enrollment1.effective_on + 2.months)
+      hbx_enrollment1.update_attributes(effective_on: hbx_enrollment1.effective_on + 4.months)
     end
 
     it 'should build evidence state for the given eligibility item' do
       subject.call
       expect(subject.evidence.key?(evidence_item.key.to_sym)).to be_truthy
+    end
+  end
+
+  context "when the enrollment is inactive" do
+    before do
+      hbx_enrollment1.expire_coverage!
+    end
+
+    it 'should not build evidence state for the given eligibility item' do
+      subject.call
+      expect(subject.evidence.key?(evidence_item.key.to_sym)).to be_falsey
     end
   end
 

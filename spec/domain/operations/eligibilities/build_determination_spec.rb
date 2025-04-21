@@ -104,11 +104,10 @@ RSpec.describe ::Operations::Eligibilities::BuildDetermination,
 
   let(:eligibility_items) { [:aptc_csr_credit] }
 
-  let(:effective_date) { Date.today }
   let(:subjects) { family.family_members.map(&:to_global_id) }
 
   let(:required_params) do
-    { subjects: subjects, effective_date: effective_date, family: family }
+    { subjects: subjects, family: family }
   end
 
   before do
@@ -144,7 +143,6 @@ RSpec.describe ::Operations::Eligibilities::BuildDetermination,
     let(:required_params) do
       {
         subjects: subjects,
-        effective_date: effective_date,
         family: family,
         eligibility_items_requested: eligibility_items_requested
       }
@@ -164,7 +162,6 @@ RSpec.describe ::Operations::Eligibilities::BuildDetermination,
     let(:required_params) do
       {
         subjects: subjects,
-        effective_date: effective_date,
         family: family,
         eligibility_items_requested: eligibility_items_requested
       }
@@ -175,9 +172,9 @@ RSpec.describe ::Operations::Eligibilities::BuildDetermination,
       @result = subject.call(required_params)
     end
 
-    it 'should not build aptc_csr_credit evidences' do
+    it 'should build aptc_csr_credit evidences' do
       expect(@result.success?).to be_truthy
-      expect(@result.value!.subjects.values.last.dig(:eligibility_states, :aptc_csr_credit, :evidence_states)).to be_empty
+      expect(@result.value!.subjects.values.last.dig(:eligibility_states, :aptc_csr_credit, :evidence_states)).to be_present
     end
 
     it 'should have eligibility determination effective date as system date' do
@@ -197,7 +194,6 @@ RSpec.describe ::Operations::Eligibilities::BuildDetermination,
     let(:required_params) do
       {
         subjects: subjects,
-        effective_date: effective_date,
         family: family,
         eligibility_items_requested: eligibility_items_requested
       }
@@ -227,7 +223,6 @@ RSpec.describe ::Operations::Eligibilities::BuildDetermination,
     let(:required_params) do
       {
         subjects: subjects,
-        effective_date: effective_date,
         family: family,
         eligibility_items_requested: eligibility_items_requested
       }

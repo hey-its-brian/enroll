@@ -11,7 +11,6 @@ module Operations
 
       # @param [Hash] opts Options to build determination
       # @option opts [Family] :family required
-      # @option opts [Date] :effective_date required
       # @return [Dry::Monad] result
       def call(params)
         values = yield validate(params)
@@ -26,7 +25,6 @@ module Operations
       def validate(params)
         errors = []
         errors << 'family missing' unless params[:family]
-        errors << 'effective date missing' unless params[:effective_date]
 
         errors.empty? ? Success(params) : Failure(errors)
       end
@@ -37,7 +35,7 @@ module Operations
         family = values[:family]
         primary_person = family&.primary_applicant&.person
         if primary_person.consumer_role.present? || values[:is_migrating]
-          BuildDetermination.new.call(subjects: subjects, effective_date: values[:effective_date], family: family)
+          BuildDetermination.new.call(subjects: subjects, family: family)
         else
           Failure(
             "Determination cannot be built as Primary person's Consumer Role is missing."

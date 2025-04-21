@@ -83,7 +83,7 @@ RSpec.describe ::Operations::Eligibilities::BuildGrant, type: :model, dbclean: :
     let(:is_ia_eligible_2) { true }
 
     it "create grants for both tax_households in the group" do
-      result = subject.call(family: family, type: 'AdvancePremiumAdjustmentGrant', effective_date: TimeKeeper.date_of_record)
+      result = subject.call(family: family, type: 'AdvancePremiumAdjustmentGrant')
       expect(result.success.count).to eq 2
     end
   end
@@ -92,7 +92,7 @@ RSpec.describe ::Operations::Eligibilities::BuildGrant, type: :model, dbclean: :
     let(:is_ia_eligible_1) { true }
     let(:is_ia_eligible_2) { false }
     it "create grants for only eligible tax_household" do
-      result = subject.call(family: family, type: 'AdvancePremiumAdjustmentGrant', effective_date: TimeKeeper.date_of_record)
+      result = subject.call(family: family, type: 'AdvancePremiumAdjustmentGrant')
       expect(result.success.count).to eq 1
     end
   end
@@ -103,7 +103,7 @@ RSpec.describe ::Operations::Eligibilities::BuildGrant, type: :model, dbclean: :
 
     it 'should not return any grants' do
       family.tax_household_groups.each { |thhg| thhg.update_attribute(:end_on, tax_household_group_params[:start_on]) }
-      result = subject.call(family: family.reload, type: 'AdvancePremiumAdjustmentGrant', effective_date: TimeKeeper.date_of_record)
+      result = subject.call(family: family.reload, type: 'AdvancePremiumAdjustmentGrant')
       expect(result.success).to be_empty
     end
   end

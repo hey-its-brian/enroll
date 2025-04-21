@@ -159,7 +159,7 @@ class DocumentsController < ApplicationController
                                                   modifier: "System",
                                                   update_reason: "#{@verification_type.type_name} Request Failed due to #{message}")
       @person.families.each do |family|
-        ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
+        ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
       end
     end
 
@@ -360,6 +360,6 @@ class DocumentsController < ApplicationController
     family = Family.where(id: params[:family]).first
     return unless family.present? && EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
 
-    ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
+    ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
   end
 end

@@ -98,7 +98,7 @@ module Operations
         # @return [void]
         def build_family_determination(families)
           families.each do |family|
-            result = ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family, effective_date: TimeKeeper.date_of_record)
+            result = ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
             return Failure(result.errors) if result.failure?
           end
 

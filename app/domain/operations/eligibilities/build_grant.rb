@@ -22,7 +22,6 @@ module Operations
         errors = []
         errors << 'family or family_member is missing' unless params[:family] || params[:family_member]
         errors << 'grant_type is missing' unless params[:type]
-        errors << 'effective_date is missing' unless params[:effective_date]
 
         errors.empty? ? Success(params) : Failure(errors)
       end
