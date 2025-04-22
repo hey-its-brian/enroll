@@ -1704,6 +1704,22 @@ class Family
                                      end
   end
 
+  # Retrieves the IDs of copyable Financial Assistance applications for this family
+  #
+  # This method finds determined applications, groups them by assistance year,
+  # and returns the ID of the most recently submitted application for each year.
+  #
+  # @return [Array<BSON::ObjectId>] Array of application IDs - one per assistance year
+  def fetch_copyable_application_ids
+    ::FinancialAssistance::Application
+      .where(aasm_state: 'determined', family_id: id)
+      .only(:id, :family_id, :assistance_year, :submitted_at, :aasm_state)
+      .order_by(submitted_at: :desc)
+      .group_by(&:assistance_year)
+      .transform_values { |apps| apps.first.id }
+      .values
+  end
+
   private
 
   # Retrieves the most recent determined SBM application for this family.

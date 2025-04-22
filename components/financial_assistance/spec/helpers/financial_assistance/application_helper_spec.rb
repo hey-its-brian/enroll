@@ -503,4 +503,28 @@ RSpec.describe ::FinancialAssistance::ApplicationHelper, :type => :helper, dbcle
       expect(helper.sanitize_insurance_kind('child_health_insurance_plan').downcase).not_to include('child_health_insurance_plan')
     end
   end
+
+  describe '#do_not_allow_copy?' do
+    let(:copyable_application_ids) { [1, 2, 3, 4] }
+
+    let(:input_app) do
+      double('FinancialAssistance::Application', assistance_year: TimeKeeper.date_of_record.year, id: app_id)
+    end
+
+    context 'application is not in the copyable list' do
+      let(:app_id) { 5 }
+
+      it 'returns true' do
+        expect(helper.do_not_allow_copy?(input_app, copyable_application_ids)).to be_truthy
+      end
+    end
+
+    context 'application is in the copyable list' do
+      let(:app_id) { 1 }
+
+      it 'returns false' do
+        expect(helper.do_not_allow_copy?(input_app, copyable_application_ids)).to be_falsy
+      end
+    end
+  end
 end

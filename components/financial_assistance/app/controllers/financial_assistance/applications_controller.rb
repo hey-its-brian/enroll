@@ -56,6 +56,7 @@ module FinancialAssistance
     def index
       authorize @family, :index?
 
+      @copyable_application_ids = @family.fetch_copyable_application_ids
       @applications = FinancialAssistance::Application.where("family_id" => @family.id)
 
       respond_to :html
@@ -63,6 +64,8 @@ module FinancialAssistance
 
     def index_with_filter
       authorize @family, :index?
+
+      @copyable_application_ids = @family.fetch_copyable_application_ids
 
       result = FinancialAssistance::Operations::Applications::QueryFilteredApplications.new.call(
         {

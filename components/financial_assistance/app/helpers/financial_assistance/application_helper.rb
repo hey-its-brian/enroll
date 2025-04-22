@@ -353,10 +353,10 @@ module FinancialAssistance
       end
     end
 
-    def do_not_allow_copy?(application, current_user)
+    def do_not_allow_copy?(application, copyable_application_ids)
       return true if prospective_year_application?(application)
 
-      application.is_draft? || application.is_closed? || (application.imported? ? !current_user.has_hbx_staff_role? : false)
+      !copyable_application_ids.include?(application.id)
     end
 
     # Restrict the ability to copy prospective year applications until the start of OE for all users, consumers, admin, brokers, etc.
