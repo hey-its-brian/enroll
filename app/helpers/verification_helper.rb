@@ -370,7 +370,7 @@ module VerificationHelper
 
   def display_upload_for_verification?(obj)
     if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
-      %w[verified attested valid curam].exclude?(obj.status.to_s) && !obj.inactive
+      obj.grouped_status != :verified && !obj.inactive
     else
       obj.type_unverified?
     end

@@ -18,7 +18,7 @@ Feature: Individual Verification Details Page
       | outstanding  | outstanding        | with                   | see                              | see                           |
       | rejected     | rejected           | with                   | see                              | see                           |
       | review       | review             | without                | not see                          | see                           |
-      | pending      | pending            | without                | not see                          | see                           |
+      | pending      | pending            | without                | not see                          | not_see                       |
       | verified     | verified           | without                | not see                          | not see                       |
       | attested     | attested           | without                | not see                          | not see                       |
       | curam        | verified           | without                | not see                          | not see                       |
