@@ -182,6 +182,8 @@ module VerificationHelper
   end
 
   def enrollment_group_unverified?(person)
+    return person.primary_family.eligibility_determination&.subjects_action_needed? if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+
     is_unverified_verification_type?(person) || is_unverified_evidences?(person) || is_family_has_unverified_verifications?(person)
   end
 

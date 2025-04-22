@@ -50,8 +50,9 @@ module Eligibilities
     end
 
     def cumulative_grouped_status
-      return :action_needed if eligibility_states.any? { |es| es.cumulative_grouped_status == :action_needed }
-      return :review if eligibility_states.any? { |es| es.cumulative_grouped_status == :review }
+      uploadable_eligibility_states = eligibility_states.by_type_uploadable
+      return :action_needed if uploadable_eligibility_states.any? { |es| es.cumulative_grouped_status == :action_needed }
+      return :review if uploadable_eligibility_states.any? { |es| es.cumulative_grouped_status == :review }
 
       :verified
     end

@@ -17,6 +17,10 @@ module Eligibilities
 
     accepts_nested_attributes_for :subjects, :grants
 
+    def subjects_action_needed?
+      subjects.any?(&:documents_action_needed?)
+    end
+
     # seliarizable_cv_hash for family determination including subjects
     # @return [Hash] hash of family determination
     # Used in family cv3 payload
