@@ -16,7 +16,12 @@
 
 <div class="d-flex align-items-center">
   <% if @application && show_back_to_household_button %>
-    <%= h(link_to_with_noopener_noreferrer(l10n('faa.tax_info.back'), financial_assistance.edit_application_path(@application), class: 'button outline mr-2', :'data-turbolinks' => false)) %>
+    <% household_link = if EnrollRegistry.feature_enabled?(:qhp_application)
+                          financial_assistance.application_applicants_path(@application)
+                        else
+                          financial_assistance.edit_application_path(@application)
+                        end %>
+    <%= h(link_to_with_noopener_noreferrer(l10n('faa.tax_info.back'), household_link, class: 'button outline mr-2', :'data-turbolinks' => false)) %>
   <% end %>
 
   <% unless dont_show_prev_button || @no_previous_button %>

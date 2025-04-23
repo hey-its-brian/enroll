@@ -76,6 +76,10 @@
     padding-left: $spacer * 0.75;
     padding-right: $spacer;
   }
+
+  &.alert-rounded {
+    border-radius: 24px;
+  }
 }
 
 //notice is just an alert without a border

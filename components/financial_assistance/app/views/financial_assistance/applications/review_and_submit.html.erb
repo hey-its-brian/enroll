@@ -1,6 +1,7 @@
 <% if @bs4 %>
   <%# Left Nav %>
-  <%= render partial: 'financial_assistance/shared/faa_progress_options', locals: {step: @application.applicants.count > 1 ? 3 : 2} %>
+  <% step_number = calculate_step_number(@application, "review_page") %>
+  <%= render partial: 'financial_assistance/shared/faa_progress_options', locals: {step: step_number } %>
 
   <%# Main Content (right) %>
   <div>

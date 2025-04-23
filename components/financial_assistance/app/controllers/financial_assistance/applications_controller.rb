@@ -17,6 +17,7 @@ module FinancialAssistance
     include ActionView::Helpers::SanitizeHelper
     include Acapi::Notifiers
     include ::FileUploadHelper
+    include ::ResourceRegistryHelper
     include FinancialAssistance::NavigationHelper
     require 'securerandom'
 
@@ -172,10 +173,13 @@ module FinancialAssistance
         copy_result = ::FinancialAssistance::Operations::Applications::Copy.new.call(application_id: params[:id])
         if copy_result.success?
           @application = copy_result.success
-
           @application.configure_assistance_year
           assistance_year_page = EnrollRegistry.feature_enabled?(:iap_year_selection) && (HbxProfile.current_hbx.under_open_enrollment? || EnrollRegistry.feature_enabled?(:iap_year_selection_form))
-          redirect_path = assistance_year_page ? application_year_selection_application_path(@application) : edit_application_path(@application)
+          redirect_path = if assistance_year_page
+                            application_year_selection_application_path(@application)
+                          else
+                            qhp_application_feature_enabled? ? application_applicants_path : edit_application_path(@application)
+                          end
 
           redirect_to redirect_path
         else

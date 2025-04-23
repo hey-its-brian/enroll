@@ -1,5 +1,6 @@
 <% if @bs4 %>
-  <%= render partial: '/financial_assistance/shared/faa_progress_options', locals: {step: 3} %>
+  <% step_number = calculate_step_number(@application, "review_page") %>
+  <%= render partial: '/financial_assistance/shared/faa_progress_options', locals: {step: step_number} %>
   <h1><%= l10n("faa.publish_error.title") %></h1>
   <div class="my-4">
     <%= render_flash use_bs4: @bs4 %>

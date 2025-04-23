@@ -2,6 +2,8 @@
 
 module FinancialAssistance
   module ApplicationHelper
+    include ::ResourceRegistryHelper
+
     def to_est(datetime)
       datetime.in_time_zone("Eastern Time (US & Canada)") if datetime.present?
     end
@@ -10,12 +12,14 @@ module FinancialAssistance
       eds = FinancialAssistance::Application.find(application_id).eligibility_determinations
       eds.map(&:max_aptc).flat_map(&:to_f).inject(:+)
     end
+
     def eligible_applicants(application_id, eligibility_flag)
       application = FinancialAssistance::Application.find(application_id)
       full_names = application.active_applicants.where(eligibility_flag => true).map(&:full_name)
       # capitalize each name of full name individually, as titleize will cause spacing issues if multiple capital letters already in applicant name
       full_names.map{ |full_name| capitalize_full_name(full_name) }
     end
+
     def any_csr_ineligible_applicants?(application_id)
       application = FinancialAssistance::Application.find(application_id)
       application.eligibility_determinations.inject([]) do |csr_eligible, ed_obj|
@@ -156,7 +160,7 @@ module FinancialAssistance
     end
 
     def income_and_deductions_edit(application, applicant, embedded_document)
-      if embedded_document.class == FinancialAssistance::Deduction
+      if embedded_document.instance_of?(FinancialAssistance::Deduction)
         application_applicant_deductions_path(application, applicant)
       elsif [FinancialAssistance::Income::JOB_INCOME_TYPE_KIND, FinancialAssistance::Income::NET_SELF_EMPLOYMENT_INCOME_KIND].include? embedded_document.kind
         application_applicant_incomes_path(application, applicant)
@@ -397,14 +401,19 @@ module FinancialAssistance
 
     def faa_nav_options(step, application, applicant)
       nav = {}
+      qhp_enabled = qhp_application_feature_enabled?
 
       nav[:nav_options] = applicant.present? ? applicant_faa_nav_options(application, applicant) : no_applicant_faa_nav_options(application)
       nav[:links] = true
       nav[:step] = step
       view_applications = (applicant.present? || step != 1) && application.is_draft?
       nav[:title] = view_applications ? l10n("faa.nav.my_household") : l10n("faa.results.view_my_applications").titleize
-      nav[:title_link] = view_applications ? edit_application_path(application) : financial_assistance.applications_path
-      nav[:subheading] = l10n("faa.nav.applicant_subheader")
+      nav[:title_link] = if view_applications
+                           qhp_enabled ? financial_assistance.application_applicants_path(application) : financial_assistance.edit_application_path(application)
+                         else
+                           financial_assistance.applications_path
+                         end
+      nav[:subheading] = l10n("faa.nav.applicant_subheader") unless qhp_enabled
 
       nav[:show_help_button] = true
       nav[:show_exit_button] = true
@@ -427,21 +436,65 @@ module FinancialAssistance
     end
 
     def no_applicant_faa_nav_options(application)
-      step1_link = (application.present? && application.is_draft?) ? financial_assistance.edit_application_path(application) : "javascript:void(0);"
-      links = [
-        {step: 1, label: l10n('faa.nav.family_info'), link: step1_link}
-      ]
-      relationship_step = {step: 2, label: l10n('faa.nav.family_relationships'), link: "javascript:void(0);"}
-      review_step = {step: 2, label: l10n('faa.nav.review'), link: "javascript:void(0);"}
+      links = []
+      # Determine the proper edit path for step 1 based on the feature flag.
+      step1_path = if qhp_application_feature_enabled?
+                     financial_assistance.application_applicants_path(application)
+                   else
+                     financial_assistance.edit_application_path(application)
+                   end
+      step1_link = application.present? && application.is_draft? ? step1_path : "javascript:void(0);"
 
-      if application&.applicants && application.applicants.count > 1
-        relationship_step[:link] = financial_assistance.application_relationships_path(application) if application.is_draft?
-        links << relationship_step
-        review_step[:step] = 3
+      # Add step 1: Family Information.
+      links << { step: 1, label: l10n('faa.nav.family_info'), link: step1_link }
+
+      # Determine if there are multiple applicants.
+      multiple_applicants = application&.applicants && application.applicants.count > 1
+
+      # If there are multiple applicants, build the family relationships step.
+      if multiple_applicants
+        relationship_link = application.is_draft? ? financial_assistance.application_relationships_path(application) : "javascript:void(0);"
+        links << { step: 2, label: l10n('faa.nav.family_relationships'), link: relationship_link }
       end
-      review_step[:link] = financial_assistance.review_and_submit_application_path(application) if application.present? && application.ready_for_attestation? && application.is_draft?
 
-      links << review_step
+      if qhp_application_feature_enabled?
+        # For feature enabled, include an income and coverage step.
+        income_step = { step: multiple_applicants ? 3 : 2, label: l10n('faa.nav.applicant_subheader'),
+                        link: application.present? && application.is_draft? ? financial_assistance.edit_application_path(application) : "javascript:void(0);"}
+        review_step = { step: multiple_applicants ? 4 : 3, label: l10n('faa.nav.review'),
+                        link: "javascript:void(0);"}
+        # Set the review step link only if the application is ready for attestation.
+        review_step[:link] = financial_assistance.review_and_submit_application_path(application) if application.present? && application.ready_for_attestation? && application.is_draft?
+        links.push(income_step, review_step)
+      else
+        # Without the feature flag, there is no income step.
+        review_step = { step: multiple_applicants ? 3 : 2, label: l10n('faa.nav.review'), link: "javascript:void(0);" }
+        review_step[:link] = financial_assistance.review_and_submit_application_path(application) if application.present? && application.ready_for_attestation? && application.is_draft?
+        links << review_step
+      end
+
+      links
+    end
+
+    def calculate_step_number(application, page_title)
+      applicants_count = application.applicants.count
+      has_multiple_applicants = applicants_count > 1
+      qhp_feature_enabled = qhp_application_feature_enabled?
+
+      case page_title
+      when "review_page"
+        if qhp_feature_enabled
+          has_multiple_applicants ? 4 : 3
+        else
+          (has_multiple_applicants ? 3 : 2)
+        end
+      when "income_page"
+        if qhp_feature_enabled
+          has_multiple_applicants ? 3 : 2
+        else
+          1
+        end
+      end
     end
 
     def other_questions_prompt(key, use_applicant_name: false)

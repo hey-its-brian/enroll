@@ -1,6 +1,11 @@
 <% if @bs4 %>
-  <%= render partial: 'financial_assistance/shared/faa_progress_options', locals: {step: 1} %>
-  <%= render partial: 'financial_assistance/applicants/applicants' %>
+  <% step_number = calculate_step_number(@application, "income_page") %>
+  <%= render partial: 'financial_assistance/shared/faa_progress_options', locals: {step: step_number} %>
+  <% if EnrollRegistry.feature_enabled?(:qhp_application) %>
+    <%= render partial: 'financial_assistance/applicants/applicants_income_and_coverage_info' %>
+  <% else %>
+    <%= render partial: 'financial_assistance/applicants/applicants' %>
+  <% end %>
 <% else %>
   <div class="col-lg-10 col-md-10 col-sm-10 col-xs-12" >
     <div class='col-md-9'>

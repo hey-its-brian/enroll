@@ -218,6 +218,7 @@ How to find the SEVIS ID: On the DS-2019, the number is on the top right hand si
   :'en.tax_covering_applicant_not_present' => "Tax covering applicant not present",
   :'en.information_complete' => "Information Complete",
   :'en.add_member_to_household' => "Add New Member",
+  :'en.add_new_member_to_household' => "Add New Member to Household",
   :'en.relationship_to_primary_member' => "Relationship to primary account member",
   :'en.application_for_coverage' => "%{year} Application for Coverage",
   :'en.edit_income_coverage_info' => "Edit Income & Coverage Info",
