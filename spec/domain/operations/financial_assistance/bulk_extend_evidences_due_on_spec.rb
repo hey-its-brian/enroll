@@ -149,26 +149,79 @@ RSpec.describe ::Operations::FinancialAssistance::BulkExtendEvidencesDueOn, type
           applicant_income_evidence_due_on
           applicant2_income_evidence_due_on
 
-          @result = subject.call({application_hash: {"#{application.hbx_id}": [applicant.person_hbx_id, applicant2.person_hbx_id]}, evidence_types: ["income_evidence"], extension_days: extension_days})
         end
 
-        it 'should return a success object' do
-          expect(@result).to be_a(Dry::Monads::Result::Success)
+        context "for all applicants" do
+          before do
+            @result = subject.call({application_hash: {"#{application.hbx_id}": [applicant.person_hbx_id, applicant2.person_hbx_id]}, evidence_types: ["income_evidence"], extension_days: extension_days})
+          end
+
+          it 'should return a success object' do
+            expect(@result).to be_a(Dry::Monads::Result::Success)
+          end
+
+          it 'should create a csv file' do
+            expect(File.exist?("#{Rails.root}/bulk_extend_evidence_due_on_report_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.csv")).to be_truthy
+          end
+
+          it 'should have the correct data in the csv file' do
+            applicant.income_evidence.reload
+            applicant2.income_evidence.reload
+            csv_data = CSV.read("#{Rails.root}/bulk_extend_evidence_due_on_report_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.csv", headers: true)
+            expect(csv_data.size).to eq(2)
+            expect(csv_data[0]["Applicant Person HBX ID"]).to eq(person.hbx_id)
+            expect(csv_data[0]["Status"]).to eq("#{applicant.income_evidence.key} due date extended from #{applicant_income_evidence_due_on.strftime('%m/%d/%Y')} to #{applicant.income_evidence.due_on.strftime('%m/%d/%Y')}")
+            expect(csv_data[1]["Applicant Person HBX ID"]).to eq(dependent.hbx_id)
+            expect(csv_data[1]["Status"]).to eq("#{applicant2.income_evidence.key} due date extended from #{applicant2_income_evidence_due_on.strftime('%m/%d/%Y')} to #{applicant2.income_evidence.due_on.strftime('%m/%d/%Y')}")
+          end
         end
 
-        it 'should create a csv file' do
-          expect(File.exist?("#{Rails.root}/bulk_extend_evidence_due_on_report_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.csv")).to be_truthy
+        context "for one non enrolled applicant" do
+          before do
+            enrollment.hbx_enrollment_members[1].delete
+            @result = subject.call({application_hash: {"#{application.hbx_id}": [applicant2.person_hbx_id]}, evidence_types: ["income_evidence"], extension_days: extension_days})
+          end
+
+          it 'should return a success object' do
+            expect(@result).to be_a(Dry::Monads::Result::Success)
+          end
+
+          it 'should create a csv file' do
+            expect(File.exist?("#{Rails.root}/bulk_extend_evidence_due_on_report_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.csv")).to be_truthy
+          end
+
+          it 'should have the correct data in the csv file' do
+            applicant2.income_evidence.reload
+            csv_data = CSV.read("#{Rails.root}/bulk_extend_evidence_due_on_report_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.csv", headers: true)
+            expect(csv_data.size).to eq(1)
+            expect(csv_data[0]["Applicant Person HBX ID"]).to eq(dependent.hbx_id)
+            expect(csv_data[0]["Status"]).to eq("Applicant not found in active enrollment")
+          end
         end
 
-        it 'should have the correct data in the csv file' do
-          applicant.income_evidence.reload
-          applicant2.income_evidence.reload
-          csv_data = CSV.read("#{Rails.root}/bulk_extend_evidence_due_on_report_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.csv", headers: true)
-          expect(csv_data.size).to eq(2)
-          expect(csv_data[0]["Applicant Person HBX ID"]).to eq(person.hbx_id)
-          expect(csv_data[0]["Status"]).to eq("#{applicant.income_evidence.key} due date extended from #{applicant_income_evidence_due_on.strftime('%m/%d/%Y')} to #{applicant.income_evidence.due_on.strftime('%m/%d/%Y')}")
-          expect(csv_data[1]["Applicant Person HBX ID"]).to eq(dependent.hbx_id)
-          expect(csv_data[1]["Status"]).to eq("#{applicant2.income_evidence.key} due date extended from #{applicant2_income_evidence_due_on.strftime('%m/%d/%Y')} to #{applicant2.income_evidence.due_on.strftime('%m/%d/%Y')}")
+        context "syntax2: for one non enrolled applicant" do
+          before do
+            applicant.income_evidence.update_attributes!(due_on: TimeKeeper.date_of_record + 2.day, aasm_state: 'outstanding')
+            @result = subject.call({application_hbx_ids: [application.hbx_id], evidence_types: ["income_evidence"], extension_days: extension_days})
+          end
+
+          it 'should return a success object' do
+            expect(@result).to be_a(Dry::Monads::Result::Success)
+          end
+
+          it 'should create a csv file' do
+            expect(File.exist?("#{Rails.root}/bulk_extend_evidence_due_on_report_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.csv")).to be_truthy
+          end
+
+          it 'should have the correct data in the csv file' do
+            applicant2.income_evidence.reload
+            csv_data = CSV.read("#{Rails.root}/bulk_extend_evidence_due_on_report_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.csv", headers: true)
+            expect(csv_data.size).to eq(2)
+            expect(csv_data[0]["Applicant Person HBX ID"]).to eq(person.hbx_id)
+            expect(csv_data[0]["Status"]).to eq("evidence due date is blank or greater than today")
+            expect(csv_data[1]["Applicant Person HBX ID"]).to eq(dependent.hbx_id)
+            expect(csv_data[1]["Status"]).to eq("#{applicant2.income_evidence.key} due date extended from #{applicant2_income_evidence_due_on.strftime('%m/%d/%Y')} to #{applicant2.income_evidence.due_on.strftime('%m/%d/%Y')}")
+          end
         end
       end
     end

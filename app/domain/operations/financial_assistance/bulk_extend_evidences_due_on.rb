@@ -48,8 +48,8 @@ module Operations
       end
 
       def process_application_hbx_ids(application_hbx_ids, evidence_types, extension_days)
-        applications = ::FinancialAssistance::Application.where(hbx_id: application_hbx_ids)
-        return Failure("Applications not found for hbx_ids: #{application_hbx_ids}") unless applications.present?
+        applications = ::FinancialAssistance::Application.where(:hbx_id.in => application_hbx_ids)
+        return Failure("No Applications was found for given hbx_ids: #{application_hbx_ids}") unless applications.present?
 
         applications.each do |application|
           process_application(application, evidence_types, extension_days)
@@ -92,13 +92,13 @@ module Operations
 
       def process_applicants(applicants, evidence_types, extension_days, hbx_enrollments)
         family_member_ids = hbx_enrollments.map(&:hbx_enrollment_members).flatten.map(&:applicant_id).flatten.uniq
-        primary_applicant = applicants.find(&:is_primary_applicant?)
+        primary_applicant = applicants.first.application.primary_applicant
 
         applicants.each do |applicant|
           if family_member_ids.include?(applicant.family_member_id)
             extend_due_date(applicant, evidence_types, extension_days)
           else
-            log_csv(primary_applicant.person_hbx_id, applicant.application.hbx_id, applicant.person_hbx_id, evidence_types, "Applicant not found in active enrollment")
+            log_csv(primary_applicant&.person_hbx_id, applicant.application.hbx_id, applicant.person_hbx_id, evidence_types, "Applicant not found in active enrollment")
           end
         end
 
