@@ -57,6 +57,10 @@ module FinancialAssistance
       applicants.ineligible
     end
 
+    def applicants_not_applying_coverage
+      applicants.not_applying_coverage
+    end
+
     # is_eligible_for_non_magi_reasons, is_non_magi_medicaid_eligible
     def applicants_with_non_magi_reasons
       applicants.eligible_for_non_magi_reasons

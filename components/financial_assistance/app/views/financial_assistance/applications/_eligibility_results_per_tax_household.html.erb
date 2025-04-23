@@ -131,6 +131,21 @@
       <% end %>
       <!-- End: Section for Ineligible / Totally Ineligible Applicants -->
 
+      <% if EnrollRegistry.feature_enabled?(:qhp_application) %>
+        <!-- Start: Section for Non applying coverage Applicants -->
+        <% not_applying_coverage_applicants = ed.applicants_not_applying_coverage %>
+        <% if not_applying_coverage_applicants.present? %>
+          <h3 data-cuke='not_applying_coverage_heading'><%= l10n("faa.results.not_applying_coverage_heading") %></h3>
+          <p data-cuke='not_applying_coverage_text'><%= l10n("faa.results.not_applying_coverage_text") %></p>
+          <ul>
+            <% not_applying_coverage_applicants.each do |applicant| %>
+              <li><b><%= full_name(applicant) %></b></li>
+            <% end %>
+          </ul>
+        <% end %>
+        <!-- End: Section for Non applying coverage Applicants -->
+      <% end %>
+
       <!-- Display only if the RR configuration is enabled and atleast one member is eligible for Non-MAGI Reasons -->
       <!-- Start: Section for Applicants with Non-MAGI Reasons -->
       <% applicants_with_non_magi_reasons = ed.applicants_with_non_magi_reasons %>

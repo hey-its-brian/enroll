@@ -207,3 +207,7 @@ end
 Then(/^the user will navigate to the Eligibility Results page and should not see tax household heading$/) do
   expect(page.has_css?(IvlIapEligibilityResults.tax_household)).to eq false
 end
+
+Then(/^the user will navigate to the Eligibility Results page and should see not applying coverage heading$/) do
+  expect(page.has_css?(IvlIapEligibilityResults.not_applying_coverage_heading)).to eq true
+end

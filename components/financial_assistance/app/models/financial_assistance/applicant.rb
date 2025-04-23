@@ -394,6 +394,7 @@ module FinancialAssistance
     scope :csr_100,                       -> { where(csr_percent_as_integer: 100) }
     scope :csr_nal,                       -> { where(csr_percent_as_integer: -1) }
     scope :applying_coverage,             -> { where(is_applying_coverage: true) }
+    scope :not_applying_coverage,         -> { where(is_applying_coverage: false) }
 
     def generate_hbx_id
       return unless person_hbx_id.blank?

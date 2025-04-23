@@ -125,3 +125,14 @@ Feature: A dedicated page that visit the eligibility determination page
     And clicks the "Action" dropdown corresponding to the "determined" application
     And clicks the "View Eligibility Determination" link
     Then the user will navigate to the Eligibility Results page and should not see tax household heading
+
+  Scenario: FAA Elibility results with combined eligibility results for Non-Applicants when QHP is enabled
+    Given bs4_consumer_flow feature is enabled
+    And qhp_application feature is enabled
+    And that a user with a family has a Financial Assistance application with tax households
+    And FAA display_eligibility_results_per_tax_household feature is enabled
+    And the application has non-applicants with no determination
+    And the user navigates to the "Help Paying For Coverage" portal
+    And clicks the "Action" dropdown corresponding to the "determined" application
+    And clicks the "View Eligibility Determination" link
+    Then the user will navigate to the Eligibility Results page and should see not applying coverage heading

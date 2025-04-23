@@ -37,6 +37,13 @@ RSpec.describe ::FinancialAssistance::EligibilityDetermination, type: :model, db
     end
   end
 
+  describe '#applicants_not_applying_coverage' do
+    it 'returns only ineligible applicants_not_applying_coverage' do
+      applicant1.update_attributes!(is_applying_coverage: false)
+      expect(ed1.applicants_not_applying_coverage).to match([applicant1])
+    end
+  end
+
   describe '#applicants_with_non_magi_reasons' do
     it 'returns only eligible_for_non_magi_reasons applicants' do
       applicant2.update_attributes!(is_eligible_for_non_magi_reasons: true)

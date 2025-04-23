@@ -93,4 +93,8 @@ class IvlIapEligibilityResults
   def self.other_actions
     "[data-cuke='other_actions']"
   end
+
+  def self.not_applying_coverage_heading
+    "[data-cuke='not_applying_coverage_heading']"
+  end
 end
