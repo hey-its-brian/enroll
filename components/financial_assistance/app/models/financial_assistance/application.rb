@@ -245,18 +245,17 @@ module FinancialAssistance
     index({ "applicants.non_esi_evidence.aasm_state" => 1 })
     index({ "applicants.local_mec_evidence.aasm_state" => 1 })
 
-    # @!index [Hash] Creates a compound index on aasm_state, family_id, and created_at fields
+    # @!index [Hash] Creates a compound index on aasm_state, family_id, assistance_year, and submitted_at fields.
     # @param aasm_state [Integer] The application state, with 1 indicating ascending order
     # @param family_id [Integer] The family identifier, with 1 indicating ascending order
-    # @param created_at [Integer] The creation timestamp, with -1 indicating descending order
+    # @param assistance_year [Integer] The assistance year, with -1 indicating descending order
+    # @param submitted_at [Date] The submission timestamp, with -1 indicating descending order
     # @note This index improves queries that filter by state and family_id and sort by creation date
-    index({ aasm_state: 1, family_id: 1, created_at: -1 })
-    # @!index [Hash] An analogous index which allows for querying by submitted_at instead of created_at
-    index({ aasm_state: 1, family_id: 1, submitted_at: -1 })
+    index({ aasm_state: 1, family_id: 1, assistance_year: -1, submitted_at: -1 })
     # @!scope class
-    # @return [Mongoid::Criteria] The most recent determined FinancialAssistance::Application based on creation timestamp
+    # @return [Mongoid::Criteria] The most recent determined FinancialAssistance::Application based on assistance year and submitted_at
     scope :newest_determined_by_family_id, lambda { |family_id|
-      where(aasm_state: 'determined', family_id: family_id).order(created_at: :desc).limit(1)
+      for_determined_family(family_id).order_by(assistance_year: -1, submitted_at: -1).limit(1)
     }
 
     scope :submitted, ->{ any_in(aasm_state: SUBMITTED_STATUS) }

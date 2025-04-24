@@ -198,6 +198,43 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
       end
     end
 
+    context 'newest_determined_by_family_id' do
+      let!(:current_application_1) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family_id,
+          assistance_year: TimeKeeper.date_of_record.year,
+          aasm_state: 'determined',
+          submitted_at: TimeKeeper.date_of_record - 1.month,
+          created_at: TimeKeeper.date_of_record + 1.year
+        )
+      end
+      let!(:current_application_2) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family_id,
+          assistance_year: TimeKeeper.date_of_record.year,
+          aasm_state: 'determined',
+          submitted_at: TimeKeeper.date_of_record - 2.month
+        )
+      end
+      let!(:prior_application_1) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family_id,
+          assistance_year: TimeKeeper.date_of_record.year - 1,
+          aasm_state: 'determined',
+          submitted_at: TimeKeeper.date_of_record,
+          created_at: TimeKeeper.date_of_record + 1.year
+        )
+      end
+
+      it 'should return only the most recently submitted determined application with the greatest assistance year' do
+        application = FinancialAssistance::Application.newest_determined_by_family_id(family_id).first
+        expect(application).to eq current_application_1
+      end
+    end
+
     context 'determined_and_submitted_within_range' do
       it 'should return only determined and submitted applications' do
         FinancialAssistance::Application.update_all(submitted_at: TimeKeeper.date_of_record)

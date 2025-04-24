@@ -1720,6 +1720,16 @@ class Family
       .values
   end
 
+  # Retrieves the most recent determined FAA (Financial Assistance Application) for this family.
+  # Uses memoization to avoid redundant database queries.
+  #
+  # @return [FinancialAssistance::Application, nil] The newest determined FAA application, or nil if none exists
+  def latest_determined_faa_application
+    return @latest_determined_faa_application if defined?(@latest_determined_faa_application)
+
+    @latest_determined_faa_application = ::FinancialAssistance::Application.newest_determined_by_family_id(id).first
+  end
+
   private
 
   # Retrieves the most recent determined SBM application for this family.
@@ -1730,16 +1740,6 @@ class Family
     return @latest_determined_sbm_application if defined?(@latest_determined_sbm_application)
 
     @latest_determined_sbm_application = ::Sbm::Application.newest_determined_by_family_id(id).first
-  end
-
-  # Retrieves the most recent determined FAA (Financial Assistance Application) for this family.
-  # Uses memoization to avoid redundant database queries.
-  #
-  # @return [FinancialAssistance::Application, nil] The newest determined FAA application, or nil if none exists
-  def latest_determined_faa_application
-    return @latest_determined_faa_application if defined?(@latest_determined_faa_application)
-
-    @latest_determined_faa_application = ::FinancialAssistance::Application.newest_determined_by_family_id(id).first
   end
 
   def build_household

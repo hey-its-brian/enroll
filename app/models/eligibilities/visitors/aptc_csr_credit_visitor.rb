@@ -33,12 +33,7 @@ module Eligibilities
       private
 
       def application_instance_for(subject)
-        ::FinancialAssistance::Application.where(
-          :family_id => subject.family.id,
-          :aasm_state => 'determined'
-        ).order_by(
-          :submitted_at => :desc
-        ).first
+        subject.family.latest_determined_faa_application
       end
 
       def evidence_state_for(evidence_record)
