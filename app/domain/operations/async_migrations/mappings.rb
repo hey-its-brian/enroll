@@ -16,7 +16,8 @@ module Operations
       #
       # @return [Hash] The mapping of event handler names to their corresponding classes.
       EVENT_HANDLER_MAP = {
-        '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility
+        '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility,
+        '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally
       }.freeze
     end
   end
