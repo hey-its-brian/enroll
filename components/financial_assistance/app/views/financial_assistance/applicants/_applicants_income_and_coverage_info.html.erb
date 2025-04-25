@@ -1,9 +1,12 @@
 <%= javascript_pack_tag 'benefit_sponsors', 'data-turbolinks-track': 'reload' %>
-<h1><%= l10n("family_information") %></h1>
-<h2><%= l10n("application_for_coverage", year: @application.assistance_year )%></h2>
-<p><%= l10n('insured.family_members.index.continue_to_get_insurance') %></p>
-
-<div id="primary-person" class="pt-3 pb-5">
+<% if EnrollRegistry.feature_enabled?(:qhp_application) %>
+  <h1><%= l10n("faa.nav.applicant_subheader") %></h1>
+<% else %>
+  <h1><%= l10n("family_information") %></h1>
+  <h2><%= l10n("application_for_coverage", year: @application.assistance_year )%></h2>
+  <p><%= l10n('insured.family_members.index.continue_to_get_insurance') %></p>
+<% end %>
+<div id="primary-person" class="py-3">
   <% primary_person = @application.primary_applicant %>
   <div class="d-flex flex-row align-items-center">
     <h2 class="mb-0"><%= l10n('member') %> 1</h2>
