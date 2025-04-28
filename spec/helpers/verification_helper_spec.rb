@@ -933,6 +933,32 @@ describe '#display_upload_for_verification?' do
   let(:person) {FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role)}
   let(:verification_type) { person.verification_types.first }
 
+  context 'when using the old verifications view' do
+    before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(false)
+    end
+
+    context 'when document upload is not required' do
+      before do
+        allow(verification_type).to receive(:no_document_upload_required?).and_return(true)
+      end
+
+      it 'should return false' do
+        expect(helper.display_upload_for_verification?(verification_type)).to eq false
+      end
+    end
+
+    context 'when document upload is required' do
+      before do
+        allow(verification_type).to receive(:no_document_upload_required?).and_return(false)
+      end
+
+      it 'should return true' do
+        expect(helper.display_upload_for_verification?(verification_type)).to eq true
+      end
+    end
+  end
+
   context 'person applying for coverage' do
     it 'should return true as verification_type is unverified' do
       expect(helper.display_upload_for_verification?(verification_type)).to eq true

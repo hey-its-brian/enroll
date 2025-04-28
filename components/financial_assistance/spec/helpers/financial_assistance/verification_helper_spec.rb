@@ -34,4 +34,32 @@ RSpec.describe ::FinancialAssistance::VerificationHelper, :type => :helper, dbcl
       expect(helper.display_upload_for_evidence?(evidence)).to eq true
     end
   end
+
+  context 'with evidence in different states' do
+    shared_examples_for 'evidence upload requirements' do |state, expected_result|
+      let(:evidence) do
+        applicant.create_income_evidence(
+          key: :income,
+          title: 'Income',
+          aasm_state: state,
+          is_satisfied: state == 'verified',
+          verification_outstanding: state == 'outstanding'
+        )
+      end
+
+      before do
+        allow(evidence).to receive(:no_document_upload_required?).and_return(!expected_result)
+      end
+
+      it "returns #{expected_result} for #{state} evidence" do
+        expect(helper.display_upload_for_evidence?(evidence)).to eq expected_result
+      end
+    end
+
+    it_behaves_like 'evidence upload requirements', 'outstanding', true
+    it_behaves_like 'evidence upload requirements', 'verified', false
+    it_behaves_like 'evidence upload requirements', 'pending', true
+    it_behaves_like 'evidence upload requirements', 'rejected', true
+    it_behaves_like 'evidence upload requirements', 'negative_response_received', false
+  end
 end

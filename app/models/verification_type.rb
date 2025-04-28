@@ -89,6 +89,10 @@ class VerificationType
     SATISFIED_STATES.include? validation_status
   end
 
+  def no_document_upload_required?
+    %w[verified attested negative_response_received].include?(validation_status)
+  end
+
   def is_type_outstanding?
     OUTSTANDING_STATES.include?(validation_status)
   end

@@ -903,6 +903,35 @@ RSpec.describe ::Eligibilities::Evidence, type: :model, dbclean: :after_each do
     end
   end
 
+  describe '#no_document_upload_required?' do
+    let(:evidence) do
+      applicant.create_income_evidence(
+        key: :income,
+        title: 'Income',
+        aasm_state: 'pending',
+        is_satisfied: true
+      )
+    end
+
+    context 'when aasm_state is in the list of states not requiring document upload' do
+      %w[verified attested negative_response_received].each do |state|
+        it "returns true for state '#{state}'" do
+          evidence.aasm_state = state
+          expect(evidence.no_document_upload_required?).to be true
+        end
+      end
+    end
+
+    context 'when aasm_state is not in the list of states not requiring document upload' do
+      %w[pending review outstanding unverified rejected].each do |state|
+        it "returns false for state '#{state}'" do
+          evidence.aasm_state = state
+          expect(evidence.no_document_upload_required?).to be false
+        end
+      end
+    end
+  end
+
   context "rejection reasons" do
     context "out of income threshold reason enabled" do
       before do

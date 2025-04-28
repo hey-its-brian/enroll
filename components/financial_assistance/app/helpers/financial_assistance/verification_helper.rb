@@ -39,7 +39,7 @@ module FinancialAssistance
     end
 
     def display_upload_for_evidence?(evidence)
-      evidence.type_unverified?
+      !evidence.no_document_upload_required?
     end
 
     def build_actions_list(evidence)

@@ -224,6 +224,29 @@ RSpec.describe VerificationType, :type => :model, dbclean: :after_each do
     end
   end
 
+  describe '#no_document_upload_required?' do
+    let!(:person) { FactoryBot.create(:person, :with_consumer_role) }
+    let!(:ver_type) { person.verification_types.create!(type_name: VerificationType::CITIZENSHIP, validation_status: 'unverified') }
+
+    context 'when aasm_state is in the list of states not requiring document upload' do
+      %w[verified attested negative_response_received].each do |state|
+        it "returns true for state '#{state}'" do
+          ver_type.validation_status = state
+          expect(ver_type.no_document_upload_required?).to be true
+        end
+      end
+    end
+
+    context 'when aasm_state is not in the list of states not requiring document upload' do
+      %w[pending review outstanding unverified rejected].each do |state|
+        it "returns false for state '#{state}'" do
+          ver_type.validation_status = state
+          expect(ver_type.no_document_upload_required?).to be false
+        end
+      end
+    end
+  end
+
   describe '#type_history_elements' do
     let(:alive_status) do
       person.add_new_verification_type(VerificationType::ALIVE_STATUS)
