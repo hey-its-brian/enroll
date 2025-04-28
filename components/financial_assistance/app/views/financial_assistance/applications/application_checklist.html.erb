@@ -6,7 +6,7 @@
   <div class="my-4">
     <% next_link = EnrollRegistry.feature_enabled?(:qhp_application) ? financial_assistance.application_applicants_path(@application) : financial_assistance.edit_application_path(@application) %>
     <% content_for :submit_button do %>
-      <%= h(link_to_with_noopener_noreferrer(l10n("faa.checklist.begin_application"), next_link, class: 'button btn-continue', id: 'btn-continue')) %>
+      <%= h(link_to_with_noopener_noreferrer(l10n("faa.checklist.begin_application"), next_link, class: 'button btn-continue', id: 'btn-continue', data: genesys_feature_enabled ? {turbolinks: false} : {})) %>
     <% end %>
     <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
       previous_link: application_checklist_previous_url(@application),

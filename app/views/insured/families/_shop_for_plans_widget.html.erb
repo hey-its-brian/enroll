@@ -91,11 +91,11 @@
                     <% if @employee_role.present? && @employee_role.try(:is_under_open_enrollment?)  && is_shop_or_fehb_market_enabled? %>
                       <% new_options = @employee_role&.has_multiple_shop_oe_periods? ? options.merge(shop_under_future: true) : options %>
                       <%= l10n('plans.if_you') %>
-                      <%= h(link_to "#{l10n('insured.enroll_today')}", new_insured_group_selection_path(new_options)) %>
+                      <%= h(link_to "#{l10n('insured.enroll_today')}", new_insured_group_selection_path(new_options), data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
                       <%= ", #{l10n('insured.coverage_will_begin', date: format_date(@employee_role.benefit_begin_date))}." %>
                     <%elsif (@person.consumer_role.present? || @person.resident_role.present?) && is_under_open_enrollment? %>
                       <%= l10n('plans.if_you') %>
-                      <%= h(link_to "#{l10n('insured.enroll_today')}", new_insured_group_selection_path(options)) %>
+                      <%= h(link_to "#{l10n('insured.enroll_today')}", new_insured_group_selection_path(options), data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
                       <%= ", #{l10n('insured.coverage_will_begin', date: format_date(ivl_enrollment_effective_date))}." %>
                     <% end %>
                   <% end %>

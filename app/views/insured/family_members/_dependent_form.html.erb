@@ -1,5 +1,6 @@
 <% if @bs4 %>
 <% readonly_status = @person.is_a?(Person) %>
+  <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
   <div id="<%= employee_dependent_form_id(dependent) %>" class="dependent_list">
     <% is_editing = dependent.id.present? %>
     <% member_id = is_editing ? dependent&.family_member&.person&.id : '' %>
@@ -148,13 +149,14 @@
           <%= f.hidden_field :family_id %>
           <div id="remove_confirm" class="hidden"></div>
           <div id="add_info_buttons_<%= dependent.id %>" style="padding-top: 20px;">
+            <% link = genesys_feature_enabled ? manage_family_insured_families_path(tab: 'family') : "#" %>
             <% if !dependent.persisted? %>
-              <a href="#" class="btn outline remove-new-employee-dependent mr-2" data-target="#new_employee_dependent_form">
+              <%= link_to(link, class: 'btn outline remove-new-employee-dependent mr-2', data: {target: "#new_employee_dependent_form", turbolinks: (genesys_feature_enabled ? false : true)} ) do %>
                 <%= l10n("cancel") %>
-              </a>
+              <% end %>
             <% else %>
-              <%= h(link_to l10n('remove_member_from_household'), insured_family_member_path(dependent, {bs4: @bs4}), class: 'btn button-error outline mr-2', :method => :delete, :remote => true, data: {confirm: l10n("confirm_remove_dependent"), ok: l10n("yes"), cancel: l10n("no")}) %>
-              <%= link_to('#', class: 'btn outline mr-2') do %>
+              <%= h(link_to l10n('remove_member_from_household'), insured_family_member_path(dependent, {bs4: @bs4}), class: 'btn button-error outline mr-2', :method => :delete, :remote => true, data: {confirm: l10n("confirm_remove_dependent"), ok: l10n("yes"), cancel: l10n("no"), turbolinks: (genesys_feature_enabled ? false : true)}) %>
+              <%= link_to(link, class: 'btn outline mr-2', data: { turbolinks: (genesys_feature_enabled ? false : true)} ) do %>
                 <%= l10n("discard_changes") %>
               <% end %>
             <% end %>

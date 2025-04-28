@@ -1,4 +1,5 @@
 <% person_id = member.person.id %>
+<% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
 <tr class="member-<%= person_id %>-row">
   <td><%= member.full_name.titleize %></td>
   <td><%= member.person.hbx_id %></td>
@@ -10,13 +11,14 @@
     <span class="d-flex">
       <%= h(link_to l10n("edit_member"), edit_url, remote: true, class: 'edit-member btn button outline close-2') %>
       <span class="d-flex hidden edit-buttons">
-          <%= link_to('#', class: 'btn outline mr-2 text-nowrap') do %>
+        <% link = genesys_feature_enabled ? manage_family_insured_families_path(tab: 'family') : "#" %>
+        <%= link_to(link, class: 'btn outline mr-2 text-nowrap', data: genesys_feature_enabled ? {turbolinks: false} : {}) do %>
             <%= l10n("cancel_edit") %>
-          <% end %>
-          <% confirm_id = "member-#{person_id}-confirm" %>
-          <span tabindex="0" data-keydown-id="<%= confirm_id %>" id=<%= confirm_id %> class="confirm-member btn btn-primary text-nowrap">
-            <%= l10n("save_changes") %>
-          </span>
+        <% end %>
+        <% confirm_id = "member-#{person_id}-confirm" %>
+        <span tabindex="0" data-keydown-id="<%= confirm_id %>" id=<%= confirm_id %> class="confirm-member btn btn-primary text-nowrap">
+          <%= l10n("save_changes") %>
+        </span>
       </span>
     </span>
   </td>

@@ -13,7 +13,9 @@
   </div>
 
   <div class="mt-4 mb-1" id="inbox-nav-tabs">
-    <a class="text-decoration-none tabs tab tab-content <%= 'active' if @folder.try(:capitalize) == 'Inbox' %>" href="<%= inbox_insured_families_path(@provider) %>">
+    <a class="text-decoration-none tabs tab tab-content <%= 'active' if @folder.try(:capitalize) == 'Inbox' %>"
+       href="<%= inbox_insured_families_path(@provider) %>"
+       <%= 'data-turbolinks=false' if EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>>
       <% if @folder == 'Inbox' %>
         <strong><%= l10n("inbox") %></strong>
       <% else %>
@@ -21,7 +23,9 @@
       <% end %>
     </a>
 
-    <a class="text-decoration-none tabs tab tab-content <%= 'active' if @folder.try(:capitalize) == 'Deleted' %>" href="<%= inbox_insured_families_path(@provider, folder: 'Deleted') %>">
+    <a class="text-decoration-none tabs tab tab-content <%= 'active' if @folder.try(:capitalize) == 'Deleted' %>"
+       href="<%= inbox_insured_families_path(@provider, folder: 'Deleted') %>"
+       <%= 'data-turbolinks=false' if EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>>
       <% if @folder == 'Deleted' %>
         <strong><%= l10n("deleted") %></strong>
       <% else %>

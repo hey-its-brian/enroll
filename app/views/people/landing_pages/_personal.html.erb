@@ -1,4 +1,5 @@
 <% if @bs4 %>
+  <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
   <%= form_for @person do |f| %>
     <%= hidden_field_tag :bs4, true %>
     <div id="personal_info" class="module new_person_wrapper">
@@ -120,7 +121,8 @@
     <% end %>
 
     <div class="mb-5 <%= pundit_class Family, :updateable? %>">
-      <%= link_to l10n("discard_changes"), '#', class: "btn button outline remove-personal-form mr-2" %>
+      <% link = genesys_feature_enabled ? manage_family_insured_families_path(tab: 'family') : "#" %>
+      <%= link_to l10n("discard_changes"), link, class: "btn button outline remove-personal-form mr-2", data: {turbolinks: (genesys_feature_enabled ? false : true)} %>
 
       <button type="submit" class="btn btn-primary btn-br hidden"><%= l10n("confirm_member") %></button>
       <span tabindex="0" id="save_personal" class='btn btn-primary btn-br manage-person-validations-click' data-cuke="personal-save">
