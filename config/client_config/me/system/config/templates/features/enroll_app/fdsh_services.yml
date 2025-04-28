@@ -73,4 +73,6 @@ registry:
         is_enabled: <%= ENV['SHOW_INACTIVE_VERIFICATION_MEMBERS_IS_ENABLED'] || false %>
       - key: :verifications_household_summary_text_update
         is_enabled: <%= ENV['VERIFICATIONS_HOUSEHOLD_SUMMARY_TEXT_UPDATE_IS_ENABLED'] || false %>
+      - key: :ifsv_income_nrr
+        is_enabled: <%= ENV['IFSV_INCOME_NRR_IS_ENABLED'] || false %>
         

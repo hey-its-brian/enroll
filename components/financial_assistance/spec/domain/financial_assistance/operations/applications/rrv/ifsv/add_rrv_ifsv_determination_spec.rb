@@ -130,35 +130,52 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::Ifsv::AddRr
       end
     end
 
-    context 'Negative Response Received logic update' do
-      RSpec.shared_examples_for "enrollment with csr_variant_id" do |csr_variant_id, is_aptc_zero, expected_evidence_status|
-        before :each do
-          product = FactoryBot.create(:benefit_markets_products_health_products_health_product, csr_variant_id: csr_variant_id)
-          FactoryBot.create(:hbx_enrollment, :with_enrollment_members, family: family, enrollment_members: family.family_members, product: product, applied_aptc_amount: is_aptc_zero ? 0.00 : 100.00)
-          @applicant = application.applicants.first
-          @applicant.build_income_evidence(key: :income, title: "Income")
-          @applicant.save!
-          response_payload[:tax_households].first[:is_ifsv_eligible] = false
-          @result = subject.call(payload: response_payload)
-          @application = ::FinancialAssistance::Application.by_hbx_id(response_payload[:hbx_id]).first.reload
-          @app_entity = ::AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(response_payload).success
-          @applicant.reload
-        end
-
-        it 'should return success' do
-          expect(@result).to be_success
-        end
-
-        it 'should set the aasm_state on local mec evidence to outstanding when csr is income based and has aptc' do
-          expect(@applicant.reload.income_evidence.aasm_state).to eq expected_evidence_status
-        end
+    RSpec.shared_examples_for "enrollment with csr_variant_id" do |csr_variant_id, is_aptc_zero, expected_evidence_status|
+      before :each do
+        product = FactoryBot.create(:benefit_markets_products_health_products_health_product, csr_variant_id: csr_variant_id)
+        FactoryBot.create(:hbx_enrollment, :with_enrollment_members, family: family, enrollment_members: family.family_members, product: product, applied_aptc_amount: is_aptc_zero ? 0.00 : 100.00)
+        @applicant = application.applicants.first
+        @applicant.build_income_evidence(key: :income, title: "Income")
+        @applicant.save!
+        response_payload[:tax_households].first[:is_ifsv_eligible] = false
+        @result = subject.call(payload: response_payload)
+        @application = ::FinancialAssistance::Application.by_hbx_id(response_payload[:hbx_id]).first.reload
+        @app_entity = ::AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(response_payload).success
+        @applicant.reload
       end
 
+      it 'should return success' do
+        expect(@result).to be_success
+      end
+
+      it 'should set the aasm_state on local mec evidence to outstanding when csr is income based and has aptc' do
+        expect(@applicant.reload.income_evidence.aasm_state).to eq expected_evidence_status
+      end
+    end
+
+    context 'Negative Response Received logic update with flag on' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:ifsv_income_nrr).and_return(true)
+      end
       it_behaves_like "enrollment with csr_variant_id", "01", false, "outstanding"
       it_behaves_like "enrollment with csr_variant_id", "01", true, "negative_response_received"
       it_behaves_like "enrollment with csr_variant_id", "02", true, "outstanding"
       it_behaves_like "enrollment with csr_variant_id", "03", false, "outstanding"
       it_behaves_like "enrollment with csr_variant_id", "03", true, "negative_response_received"
+      it_behaves_like "enrollment with csr_variant_id", "04", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "05", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "06", true, "outstanding"
+    end
+
+    context 'Negative Response Received logic update with flag off' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:ifsv_income_nrr).and_return(false)
+      end
+      it_behaves_like "enrollment with csr_variant_id", "01", false, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "01", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "02", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "03", false, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "03", true, "outstanding"
       it_behaves_like "enrollment with csr_variant_id", "04", true, "outstanding"
       it_behaves_like "enrollment with csr_variant_id", "05", true, "outstanding"
       it_behaves_like "enrollment with csr_variant_id", "06", true, "outstanding"

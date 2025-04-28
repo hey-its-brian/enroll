@@ -68,7 +68,7 @@ module FinancialAssistance
               when "verified"
                 applicant.set_income_evidence_verified
               when "outstanding"
-                if income_evidence.enrolled_in_any_aptc_csr_enrollments?(enrollments)
+                if !EnrollRegistry.feature_enabled?(:ifsv_income_nrr) || income_evidence.enrolled_in_any_aptc_csr_enrollments?(enrollments)
                   applicant.set_evidence_outstanding(income_evidence)
                 else
                   applicant.set_evidence_to_negative_response(income_evidence)
