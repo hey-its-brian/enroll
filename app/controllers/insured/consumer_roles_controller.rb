@@ -4,6 +4,7 @@ class Insured::ConsumerRolesController < ApplicationController
   include ApplicationHelper
   include VlpDoc
   include ErrorBubble
+  include ::ResourceRegistryHelper
 
   layout :resolve_layout
 
@@ -336,7 +337,7 @@ class Insured::ConsumerRolesController < ApplicationController
       redirect_to help_paying_coverage_insured_consumer_role_index_path
     elsif params["is_applying_for_assistance"] == "true"
       begin
-        result = Operations::FinancialAssistance::Apply.new.call(family_id: @person.primary_family.id)
+        result = Operations::FinancialAssistance::Apply.new.call(apply_params(@person, current_user))
         if result.success?
           redirect_to help_paying_coverage_redirect_path(result)
         else
@@ -354,6 +355,23 @@ class Insured::ConsumerRolesController < ApplicationController
   end
 
   private
+
+  # Prepares parameters for financial assistance application
+  #
+  # @param person [Person] The person applying for financial assistance
+  # @param current_user [User] The current user making the request
+  # @return [Hash] Parameters to pass to the financial assistance application creation
+  def apply_params(person, current_user)
+    if qhp_application_feature_enabled?
+      {
+        family_id: person.primary_family.id,
+        origin: fetch_origin(person, current_user),
+        generation_reason: :manual
+      }
+    else
+      { family_id: person.primary_family.id }
+    end
+  end
 
   def redirect_path_for_update
     if staff_and_paper_or_in_person_application?

@@ -38,8 +38,25 @@ module FinancialAssistance
           application = ::FinancialAssistance::Application.where(id: params[:application_id]).first
           return Failure({simple_error_message: I18n.t('faa.errors.unable_to_find_application_error')}) if application.blank?
           return Failure({simple_error_message: I18n.t('faa.errors.given_application_is_not_submitted_error', valid_states: VALID_APPLICATION_STATES)}) unless VALID_APPLICATION_STATES.include?(application.aasm_state)
+          return Failure({ simple_error_message: I18n.t('faa.errors.invalid_origin_source_error') }) if invalid_origin_source?(params)
+          return Failure({ simple_error_message: I18n.t('faa.errors.invalid_generation_reason_error') }) if invalid_generation_reason?(params)
+
 
           Success(application)
+        end
+
+        def invalid_origin_source?(params)
+          return false unless qhp_application_feature_enabled?
+
+          @origin = params[:origin]
+          ::FinancialAssistance::Application::ORIGIN_KINDS.exclude?(params[:origin])
+        end
+
+        def invalid_generation_reason?(params)
+          return false unless qhp_application_feature_enabled?
+
+          @generation_reason = params[:generation_reason]
+          ::FinancialAssistance::Application::GENERATION_REASONS.exclude?(params[:generation_reason])
         end
 
         def fetch_active_fms_applicant_params(application)
@@ -230,6 +247,11 @@ module FinancialAssistance
           source_app_params = source_application.attributes.deep_symbolize_keys.slice(:family_id, :is_renewal_authorized, :years_to_renew, :is_requesting_voter_registration_application_in_mail,
                                                                                       :benchmark_product_id, :medicaid_terms, :medicaid_insurance_collection_terms, :report_change_terms,
                                                                                       :parent_living_out_of_home_terms, :attestation_terms, :submission_terms, :request_full_determination)
+
+          if qhp_application_feature_enabled?
+            source_app_params[:origin] = @origin
+            source_app_params[:generation_reason] = @generation_reason
+          end
 
           source_app_params.merge({ aasm_state: 'draft',
                                     hbx_id: FinancialAssistance::HbxIdGenerator.generate_application_id })

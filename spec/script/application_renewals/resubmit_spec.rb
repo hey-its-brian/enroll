@@ -25,7 +25,6 @@ RSpec.describe 'resubmit', dbclean: :after_each do
   end
   let!(:application) do
     FactoryBot.create(:financial_assistance_application,
-                      hbx_id: '111000222',
                       family_id: family.id,
                       is_renewal_authorized: false,
                       is_requesting_voter_registration_application_in_mail: true,
@@ -42,7 +41,6 @@ RSpec.describe 'resubmit', dbclean: :after_each do
   end
   let!(:renewal_draft_application) do
     FactoryBot.create(:financial_assistance_application,
-                      hbx_id: '111222333',
                       family_id: family.id,
                       is_renewal_authorized: false,
                       is_requesting_voter_registration_application_in_mail: true,

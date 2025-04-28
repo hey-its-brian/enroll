@@ -176,4 +176,102 @@ RSpec.describe Insured::ConsumerRolesController do
       end
     end
   end
+
+  describe 'GET #help_paying_coverage_response' do
+    let(:primary_person) { FactoryBot.create(:person, :with_consumer_role) }
+    let(:new_family) { FactoryBot.create(:family, :with_primary_family_member, person: primary_person) }
+    let(:application) { FinancialAssistance::Application.where(family_id: new_family.id, aasm_state: 'draft').first }
+    let(:hbx_profile) do
+      FactoryBot.create(
+        :hbx_profile,
+        :normal_ivl_open_enrollment,
+        us_state_abbreviation: EnrollRegistry[:enroll_app].setting(:state_abbreviation).item,
+        cms_id: "#{EnrollRegistry[:enroll_app].setting(:state_abbreviation).item.upcase}0"
+      )
+    end
+    let(:ivl_product) { FactoryBot.create(:benefit_markets_products_health_products_health_product, benefit_market_kind: :aca_individual) }
+
+    before :each do
+      sign_in user
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      hbx_profile.benefit_sponsorship.benefit_coverage_periods.each {|bcp| bcp.update_attributes!(slcsp_id: ivl_product.id)}
+      new_family
+      allow(new_family).to receive(:benchmark_product_id).and_return(ivl_product.id)
+      session[:person_id] = primary_person.id
+    end
+
+    context 'when the logged in user is same as the consumer' do
+      let(:user) { FactoryBot.create(:user, person: primary_person) }
+
+      before do
+        get :help_paying_coverage_response, params: {
+          id: primary_person.id, is_applying_for_assistance: true
+        }
+      end
+
+      it 'returns success' do
+        expect(response).to have_http_status(:redirect)
+      end
+
+      it 'creates a financial assistance application' do
+        expect(application).to be_present
+        expect(application.origin).to eq(:user)
+        expect(application.generation_reason).to eq(:manual)
+      end
+    end
+
+    context 'when the logged in user is Hbx Staff' do
+      let(:hbx_person) { FactoryBot.create(:person) }
+      let(:permission) { FactoryBot.create(:permission, :super_admin) }
+      let(:hbx_staff) { FactoryBot.create(:hbx_staff_role, person: hbx_person, permission_id: permission.id) }
+      let(:user) { FactoryBot.create(:user, person: hbx_staff.person) }
+
+      before do
+        get :help_paying_coverage_response, params: {
+          id: primary_person.id, is_applying_for_assistance: true
+        }
+      end
+
+      it 'returns success' do
+        expect(response).to have_http_status(:redirect)
+      end
+
+      it 'creates a financial assistance application' do
+        expect(application).to be_present
+        expect(application.origin).to eq(:admin)
+        expect(application.generation_reason).to eq(:manual)
+      end
+    end
+
+    context 'when the logged in user is an active broker' do
+      let(:broker_role) { FactoryBot.create(:broker_role, aasm_state: 'active', benefit_sponsors_broker_agency_profile_id: BSON::ObjectId.new) }
+      let(:user) { FactoryBot.create(:user, person: broker_role.person) }
+
+      before do
+        new_family.broker_agency_accounts.create!(
+          is_active: true,
+          writing_agent_id: broker_role.id,
+          start_on: TimeKeeper.date_of_record,
+          benefit_sponsors_broker_agency_profile_id: BSON::ObjectId.new
+        )
+
+        get :help_paying_coverage_response, params: {
+          id: primary_person.id, is_applying_for_assistance: true
+        }
+      end
+
+      it 'returns success' do
+        expect(response).to have_http_status(:redirect)
+      end
+
+      it 'creates a financial assistance application' do
+        expect(application).to be_present
+        expect(application.origin).to eq(:broker)
+        expect(application.generation_reason).to eq(:manual)
+      end
+    end
+
+    # context 'when the logged in user is an active assister' do
+    # end
+  end
 end

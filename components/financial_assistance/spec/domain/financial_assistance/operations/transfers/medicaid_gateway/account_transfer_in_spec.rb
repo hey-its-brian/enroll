@@ -34,8 +34,8 @@ RSpec.describe ::FinancialAssistance::Operations::Transfers::MedicaidGateway::Ac
       end
 
       before do
-        draft_app
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(enabled)
+        draft_app
         record = serializer.parse(xml)
         @transformed = transformer.transform(record.to_hash(identifier: true))
         @result = subject.call(@transformed)
@@ -54,6 +54,17 @@ RSpec.describe ::FinancialAssistance::Operations::Transfers::MedicaidGateway::Ac
         it 'cancels previous draft application' do
           expect(draft_app.reload.cancelled?).to be_truthy
         end
+
+        it 'sets origin and generation_reason for draft_app' do
+          expect(draft_app.origin).to eq :data_import
+          expect(draft_app.generation_reason).to eq :manual
+        end
+
+        it 'sets origin and generation_reason' do
+          app = FinancialAssistance::Application.find(@result.value!)
+          expect(app.origin).to eq :data_import
+          expect(app.generation_reason).to eq :manual
+        end
       end
 
       context 'when disabled' do
@@ -68,6 +79,17 @@ RSpec.describe ::FinancialAssistance::Operations::Transfers::MedicaidGateway::Ac
 
         it 'does not cancel previous draft application' do
           expect(draft_app.reload.cancelled?).to be_falsey
+        end
+
+        it 'does not set origin and generation_reason for draft_app' do
+          expect(draft_app.origin).to be_nil
+          expect(draft_app.generation_reason).to be_nil
+        end
+
+        it 'does not set origin and generation_reason' do
+          app = FinancialAssistance::Application.find(@result.value!)
+          expect(app.origin).to be_nil
+          expect(app.generation_reason).to be_nil
         end
       end
     end

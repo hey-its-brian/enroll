@@ -3,6 +3,7 @@
 module FinancialAssistance
   module Validators
     class ApplicationContract < Dry::Validation::Contract
+      include ::ResourceRegistryHelper
 
       params do
         required(:family_id).filled(Types::Bson)
@@ -20,6 +21,22 @@ module FinancialAssistance
         optional(:parent_living_out_of_home_terms).maybe(:bool)
         optional(:report_change_terms).maybe(:bool)
         optional(:attestation_terms).maybe(:bool)
+        optional(:origin).maybe(:symbol)
+        optional(:generation_reason).maybe(:symbol)
+      end
+
+      rule(:origin) do
+        if qhp_application_feature_enabled?
+          key.failure('origin is required') unless key?
+          key.failure('origin is invalid') if key? && ::FinancialAssistance::Application::ORIGIN_KINDS.exclude?(value)
+        end
+      end
+
+      rule(:generation_reason) do
+        if qhp_application_feature_enabled?
+          key.failure('generation_reason is required') unless key?
+          key.failure('generation_reason is invalid') if key? && ::FinancialAssistance::Application::GENERATION_REASONS.exclude?(value)
+        end
       end
 
       rule(:years_to_renew, :renewal_consent_through_year, :is_renewal_authorized) do

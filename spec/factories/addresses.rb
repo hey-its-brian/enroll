@@ -8,6 +8,14 @@ FactoryBot.define do
     zip { '01001' }
     county { 'Hampden' }
 
+    before(:create) do |address|
+      ::BenefitMarkets::Locations::CountyZip.find_or_create_by!(
+        county_name: address.county,
+        state: address.state,
+        zip: address.zip
+      )
+    end
+
     trait :work_kind do
       kind { 'work' }
     end

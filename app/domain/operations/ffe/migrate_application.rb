@@ -252,8 +252,10 @@ module Operations
         application.save!
       end
 
-      # TODO: We need to expire all the existing applications that are in draft state if we reuse this migration
-      # See cancel_previous_applications method in the operation Operations::FinancialAssistance::Apply
+      # TODO: When qhp_application_feature is enabled, we need to do the following:
+      #   1. We need to expire all the existing applications that are in draft state if we reuse this migration.
+      #      See cancel_previous_applications method in the operation Operations::FinancialAssistance::Apply
+      #   2. We need to pass origin and generation_reason to the application create operation.
       def build_iap(iap_hash)
         sanitize_iap_hash = sanitize_applicant_params(iap_hash)
         ::FinancialAssistance::Operations::Application::Create.new.call(params: sanitize_iap_hash)

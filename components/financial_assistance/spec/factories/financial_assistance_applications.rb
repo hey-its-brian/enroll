@@ -10,6 +10,8 @@ FactoryBot.define do
     submitted_at {2.months.ago}
     aasm_state {"determined"}
     parent_living_out_of_home_terms { false }
+    origin { :user }
+    generation_reason { :manual }
 
     trait :draft do
       aasm_state { 'draft' }

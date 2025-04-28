@@ -120,4 +120,107 @@ RSpec.describe ::FinancialAssistance::Application, type: :model do
       end
     end
   end
+
+  describe 'fields' do
+    it { is_expected.to have_field(:origin).of_type(Symbol) }
+    it { is_expected.to have_field(:generation_reason).of_type(Symbol) }
+  end
+
+  describe 'validations' do
+    before :each do
+      allow(EnrollRegistry).to receive(:feature_enabled?).and_return(enabled)
+    end
+
+    describe 'validates origin' do
+      let(:app) { FactoryBot.build(:financial_assistance_application, origin: origin, family_id: family.id) }
+
+      context 'when qhp application feature is not enabled' do
+        let(:enabled) { false }
+
+        context 'when origin is not present' do
+          let(:origin) { nil }
+
+          it 'is valid' do
+            expect(app.valid?).to be_truthy
+          end
+        end
+      end
+
+      context 'when qhp application feature is enabled' do
+        let(:enabled) { true }
+
+        context 'when origin is not present' do
+          let(:origin) { nil }
+
+          it 'is not valid' do
+            expect(app.valid?).to be_falsey
+            expect(app.errors[:origin]).to include("can't be blank")
+          end
+        end
+
+        context 'when origin is not valid' do
+          let(:origin) { 'invalid_source' }
+
+          it 'is not valid' do
+            expect(app.valid?).to be_falsey
+            expect(app.errors[:origin]).to include("is not included in the list")
+          end
+        end
+
+        context 'when origin is valid' do
+          let(:origin) { :user }
+
+          it 'is valid' do
+            expect(app.valid?).to be_truthy
+          end
+        end
+      end
+    end
+
+    describe 'validates generation_reason' do
+      let(:app) { FactoryBot.build(:financial_assistance_application, generation_reason: generation_reason, family_id: family.id) }
+
+      context 'when qhp application feature is not enabled' do
+        let(:enabled) { false }
+
+        context 'when generation_reason is not present' do
+          let(:generation_reason) { nil }
+
+          it 'is valid' do
+            expect(app.valid?).to be_truthy
+          end
+        end
+      end
+
+      context 'when qhp application feature is enabled' do
+        let(:enabled) { true }
+
+        context 'when generation_reason is not present' do
+          let(:generation_reason) { nil }
+
+          it 'is not valid' do
+            expect(app.valid?).to be_falsey
+            expect(app.errors[:generation_reason]).to include("can't be blank")
+          end
+        end
+
+        context 'when generation_reason is not valid' do
+          let(:generation_reason) { 'invalid_reason' }
+
+          it 'is not valid' do
+            expect(app.valid?).to be_falsey
+            expect(app.errors[:generation_reason]).to include("is not included in the list")
+          end
+        end
+
+        context 'when generation_reason is valid' do
+          let(:generation_reason) { :manual }
+
+          it 'is valid' do
+            expect(app.valid?).to be_truthy
+          end
+        end
+      end
+    end
+  end
 end

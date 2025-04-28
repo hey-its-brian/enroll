@@ -50,16 +50,16 @@ module IndividualMarket
     # @return [void]
     validate :only_one_primary_applicant
 
-    # @!attribute ORIGIN_SOURCE_KINDS
-    # @return [Array<Symbol>] Collection of all possible origin source kinds
-    ORIGIN_SOURCE_KINDS = %i[user system admin data_import migration].freeze
+    # @!attribute ORIGIN_KINDS
+    # @return [Array<Symbol>] Collection of all possible origin kinds
+    ORIGIN_KINDS = %i[admin assister broker data_import migration system user].freeze
 
     # @!attribute GENERATION_REASONS
     # @return [Array<Symbol>] Collection of all possible generation reasons
-    GENERATION_REASONS = %i[manual rop_expiration renewal].freeze
+    GENERATION_REASONS = %i[manual renewal rop_expiration].freeze
 
-    # Validates the origin_source field to ensure it is a valid kind
-    validates :origin_source, inclusion: { in: ORIGIN_SOURCE_KINDS }
+    # Validates the origin field to ensure it is a valid kind
+    validates :origin, inclusion: { in: ORIGIN_KINDS }
 
     # Validates the generation_reason field to ensure it is a valid reason
     validates :generation_reason, inclusion: { in: GENERATION_REASONS }
@@ -89,14 +89,14 @@ module IndividualMarket
     field :predecessor_id, type: BSON::ObjectId
 
     # Indicates if the application was created by a user or system process
-    # @!attribute origin_source
+    # @!attribute origin
     # @return [Symbol] The source that created this application
     # @option user [Symbol] Created by a user through the UI
     # @option system [Symbol] Created automatically by the system
     # @option admin [Symbol] Created by an admin user
     # @option data_import [Symbol] Created through a data import process
     # @option migration [Symbol] Created by a migration script
-    field :origin_source, type: Symbol
+    field :origin, type: Symbol
 
     # Specifies the reason for system-generated applications
     # @!attribute generation_reason

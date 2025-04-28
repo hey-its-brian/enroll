@@ -47,6 +47,13 @@ RSpec.configure do |config|
     mocks.verify_partial_doubles = true
   end
 
+  # Stubbing EnrollRegistry here so it behaves like normal when some feature is stubbed specifically in a spec.
+  # This avoids having to stub EnrollRegistry this way in each spec individually.
+  config.before :each do
+    allow(EnrollRegistry).to receive(:[]).and_call_original
+    allow(EnrollRegistry).to receive(:feature_enabled?).and_call_original
+  end
+
   # This option will default to `:apply_to_host_groups` in RSpec 4 (and will
   # have no way to turn it off -- the option exists only for backwards
   # compatibility in RSpec 3). It causes shared context metadata to be

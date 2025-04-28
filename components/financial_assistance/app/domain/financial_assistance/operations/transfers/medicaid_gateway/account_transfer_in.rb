@@ -209,6 +209,11 @@ module FinancialAssistance
             app = payload["family"]['magi_medicaid_applications'].first
             # years_to_renew needs to be merged with a hash rocket to properly merge with the existing years_to_renew key
             app_params = app.merge!(family_id: family.id, benchmark_product_id: BSON::ObjectId.new, "years_to_renew" => 5)
+
+            if qhp_application_feature_enabled?
+              app_params[:origin] = :data_import
+              app_params[:generation_reason] = :manual
+            end
             app_params["assistance_year"] = FinancialAssistanceRegistry[:enrollment_dates].setting(:application_year).item.constantize.new.call.value!.to_s
             ::FinancialAssistance::Operations::Application::Create.new.call(params: app_params.except('applicants').merge(applicants: []))
           rescue StandardError => e

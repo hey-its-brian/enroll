@@ -11,7 +11,7 @@ module Operations
     # gets back FinancialAssistance::Application object_id
     class Apply
       include Dry::Monads[:do, :result]
-      include ResourceRegistryHelper
+      include ::ResourceRegistryHelper
 
       # @param [ FamilyId ] family_id bson_id of a family
       # @return [ FinancialAssistance::Application ] application_id
@@ -28,11 +28,28 @@ module Operations
       private
 
       def validate(params)
+        return Failure(I18n.t('faa.errors.invalid_origin_source_error')) if invalid_origin_source?(params)
+        return Failure(I18n.t('faa.errors.invalid_generation_reason_error')) if invalid_generation_reason?(params)
+
         if params[:family_id]&.is_a?(BSON::ObjectId)
           Success(params[:family_id])
         else
           Failure('family_id is expected in BSON format')
         end
+      end
+
+      def invalid_origin_source?(params)
+        return false unless qhp_application_feature_enabled?
+
+        @origin = params[:origin]
+        ::FinancialAssistance::Application::ORIGIN_KINDS.exclude?(params[:origin])
+      end
+
+      def invalid_generation_reason?(params)
+        return false unless qhp_application_feature_enabled?
+
+        @generation_reason = params[:generation_reason]
+        ::FinancialAssistance::Application::GENERATION_REASONS.exclude?(params[:generation_reason])
       end
 
       def parse_family(family_id)
@@ -59,6 +76,11 @@ module Operations
                              assistance_year: family.application_applicable_year,
                              benchmark_product_id: family.benchmark_product_id,
                              is_ridp_verified: family&.primary_person&.consumer_role&.identity_verified?}
+
+        if qhp_application_feature_enabled?
+          application_attrs[:origin] = @origin
+          application_attrs[:generation_reason] = @generation_reason
+        end
 
         application_attrs.merge!({applicants: applicants_attributes(family)})
         application_attrs

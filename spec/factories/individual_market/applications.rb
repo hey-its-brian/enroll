@@ -17,7 +17,7 @@ FactoryBot.define do
     submitted_at { nil }
     assistance_year { Date.today.year }
     predecessor_id { nil }
-    origin_source { :user }
+    origin { :user }
     generation_reason { :manual }
 
     trait :with_primary do

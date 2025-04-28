@@ -12,6 +12,7 @@ module FinancialAssistance
     include GlobalID::Identification
     include I18n
     include Transmittable::Subject
+    include ::ResourceRegistryHelper
 
     # belongs_to :family, class_name: "Family"
 
@@ -48,6 +49,35 @@ module FinancialAssistance
     INVERSE_RELATIONSHIPS_MAP = ::FinancialAssistance::Relationship::INVERSE_MAP
 
     UNEDITABLE_STATES = %w[cancelled renewal_draft].freeze
+
+    # @!attribute ORIGIN_KINDS
+    # @return [Array<Symbol>] Collection of all possible origin kinds
+    ORIGIN_KINDS = %i[admin assister broker data_import migration system user].freeze
+
+    # @!attribute GENERATION_REASONS
+    # @return [Array<Symbol>] Collection of all possible generation reasons
+    GENERATION_REASONS = %i[manual renewal rop_expiration].freeze
+
+    # Indicates if the application was created by a user or system process
+    # @!attribute origin
+    # @return [Symbol] The source that created this application
+    # @option user [Symbol] Created by a user through the UI
+    # @option system [Symbol] Created automatically by the system
+    # @option admin [Symbol] Created by an admin user
+    # @option data_import [Symbol] Created through a data import process
+    # @option migration [Symbol] Created by a migration script
+    field :origin, type: Symbol
+
+    # Specifies the reason for system-generated applications
+    # @!attribute generation_reason
+    # @return [Symbol] The specific reason why the system generated this application
+    # @option manual [Symbol] Manually created (default for user applications)
+    # @option rop_expiration [Symbol] Created due to Reasonable Opportunity Period (ROP) expiration
+    # @option renewal [Symbol] Created as part of the annual renewal process
+    field :generation_reason, type: Symbol
+
+    # Validates the origin and generation_reason
+    validate :origin_source_and_generation_reason_validity
 
     # TODO: Need enterprise ID assignment call for Assisted Application
     field :hbx_id, type: String
@@ -1481,6 +1511,30 @@ module FinancialAssistance
     end
 
     private
+
+    # Validates that origin and generation_reason have permitted values
+    #
+    # This method ensures that:
+    # 1. Both origin and generation_reason are present
+    # 2. The values are included in the allowed lists defined by ORIGIN_KINDS and GENERATION_REASONS
+    #
+    # @return [void]
+    # @note Only runs validation if the qhp_application_feature is enabled
+    def origin_source_and_generation_reason_validity
+      return unless qhp_application_feature_enabled?
+
+      if origin.blank?
+        errors.add(:origin, "can't be blank")
+      elsif ORIGIN_KINDS.exclude?(origin)
+        errors.add(:origin, "is not included in the list")
+      end
+
+      if generation_reason.blank?
+        errors.add(:generation_reason, "can't be blank")
+      elsif GENERATION_REASONS.exclude?(generation_reason)
+        errors.add(:generation_reason, "is not included in the list")
+      end
+    end
 
     # If MemberA is parent to MemberB,
     # and MemberB is Spouse to MemberC,

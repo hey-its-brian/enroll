@@ -1463,7 +1463,13 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
       first_draft_app
       second_draft_app
       allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(enabled)
-      @result = subject.call(application_id: application.id)
+      @result = subject.call(
+        {
+          application_id: application.id,
+          generation_reason: :manual,
+          origin: :user
+        }
+      )
     end
 
     context 'when enabled' do

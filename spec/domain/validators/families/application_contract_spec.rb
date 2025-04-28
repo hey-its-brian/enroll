@@ -57,4 +57,82 @@ RSpec.describe ::Validators::Families::ApplicationContract,  dbclean: :after_eac
       end
     end
   end
+
+  describe 'with origin and generation_reason' do
+    before :each do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+    end
+
+    context 'with both params' do
+      let(:input_params) do
+        all_params[:origin] = :user
+        all_params[:generation_reason] = :manual
+        all_params
+      end
+
+      it 'passes validation' do
+        result = subject.call(input_params)
+        expect(result.success?).to be_truthy
+        expect(result.to_h).to eq input_params
+      end
+    end
+
+    context 'with only origin' do
+      let(:input_params) do
+        all_params[:origin] = :user
+        all_params
+      end
+
+      it 'fails validation' do
+        result = subject.call(input_params)
+        expect(result.success?).to be_falsey
+        expect(result.errors.to_h.keys).to match_array [:generation_reason]
+        expect(result.errors.to_h[:generation_reason]).to include('generation_reason is required')
+      end
+    end
+
+    context 'with only generation_reason' do
+      let(:input_params) do
+        all_params[:generation_reason] = :manual
+        all_params
+      end
+
+      it 'fails validation' do
+        result = subject.call(input_params)
+        expect(result.success?).to be_falsey
+        expect(result.errors.to_h.keys).to match_array [:origin]
+        expect(result.errors.to_h[:origin]).to include('origin is required')
+      end
+    end
+
+    context 'with invalid origin' do
+      let(:input_params) do
+        all_params[:origin] = :invalid_source
+        all_params[:generation_reason] = :manual
+        all_params
+      end
+
+      it 'fails validation' do
+        result = subject.call(input_params)
+        expect(result.success?).to be_falsey
+        expect(result.errors.to_h.keys).to match_array [:origin]
+        expect(result.errors.to_h[:origin]).to include('origin is invalid')
+      end
+    end
+
+    context 'with invalid generation_reason' do
+      let(:input_params) do
+        all_params[:origin] = :user
+        all_params[:generation_reason] = :invalid_reason
+        all_params
+      end
+
+      it 'fails validation' do
+        result = subject.call(input_params)
+        expect(result.success?).to be_falsey
+        expect(result.errors.to_h.keys).to match_array [:generation_reason]
+        expect(result.errors.to_h[:generation_reason]).to include('generation_reason is invalid')
+      end
+    end
+  end
 end

@@ -80,23 +80,44 @@ RSpec.describe Operations::FinancialAssistance::Apply, type: :model, dbclean: :a
     before do
       draft_app
       allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(enabled)
-      @result = subject.call({ family_id: family.id })
+      @result = subject.call(paraams)
     end
 
     context 'when enabled' do
       let(:enabled) { true }
 
-      it 'creates a new application' do
-        expect(@result.success).to be_a_kind_of(BSON::ObjectId)
+      context 'with valid params' do
+        let(:paraams) { { family_id: family.id, origin: :user, generation_reason: :manual } }
+
+        it 'creates a new application' do
+          expect(@result.success).to be_a_kind_of(BSON::ObjectId)
+        end
+
+        it 'cancels previous draft application' do
+          expect(draft_app.reload.cancelled?).to be_truthy
+        end
       end
 
-      it 'cancels previous draft application' do
-        expect(draft_app.reload.cancelled?).to be_truthy
+      context 'with missing origin params' do
+        let(:paraams) { { family_id: family.id, generation_reason: :manual } }
+
+        it 'returns a failure' do
+          expect(@result.failure).to eq(I18n.t('faa.errors.invalid_origin_source_error'))
+        end
+      end
+
+      context 'with missing generation_reason params' do
+        let(:paraams) { { family_id: family.id, origin: :user } }
+
+        it 'returns a failure' do
+          expect(@result.failure).to eq(I18n.t('faa.errors.invalid_generation_reason_error'))
+        end
       end
     end
 
     context 'when disabled' do
       let(:enabled) { false }
+      let(:paraams) { { family_id: family.id } }
 
       it 'creates a new application' do
         expect(@result.success).to be_a_kind_of(BSON::ObjectId)

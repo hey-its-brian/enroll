@@ -138,6 +138,47 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  # Determines the source of the action based on the relationship between logged_in user and applicant
+  #
+  # @param person [Person] The person applying for financial assistance
+  # @param logged_in_user [User] The current user making the request
+  # @return [Symbol] The source of the action (:user, :admin, :broker, :assister, or :unknown)
+  #
+  # @note This method applies for the Individual market only.
+  def fetch_origin(person, logged_in_user)
+    current_user_person = logged_in_user.person
+    return :user if current_user_person == person
+    return :admin if current_user_person.hbx_staff_role.present?
+
+    writing_agent_id = person.primary_family.active_broker_agency_account&.writing_agent_id
+    return :unknown unless writing_agent_id.present?
+
+    return :broker if broker_match?(current_user_person, writing_agent_id)
+    return :assister if assister_match?(current_user_person, writing_agent_id)
+
+    :unknown
+  end
+
+  # Checks if the user person matches the family's broker
+  #
+  # @param user_person [Person] The person associated with the current user
+  # @param writing_agent_id [String] The ID of the writing agent from the family's broker agency account
+  # @return [Boolean] True if the user is an active broker matching the writing agent
+  def broker_match?(user_person, writing_agent_id)
+    user_person.broker_role&.active? &&
+      user_person.broker_role.id == writing_agent_id
+  end
+
+  # Checks if the user person matches the family's assister
+  #
+  # @param user_person [Person] The person associated with the current user
+  # @param writing_agent_id [String] The ID of the writing agent from the family's broker agency account
+  # @return [Boolean] True if the user is an active assister matching the writing agent
+  def assister_match?(user_person, writing_agent_id)
+    user_person.assister_role&.active? &&
+      user_person.assister_role.id == writing_agent_id
+  end
+
   def redirect_if_prod
     redirect_to root_path, :flash => { :error => "Unable to run seeds on prod environment." } unless ENV['ENROLL_REVIEW_ENVIRONMENT'] == 'true' || !Rails.env.production?
   end

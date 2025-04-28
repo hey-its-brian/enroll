@@ -33,7 +33,7 @@ RSpec.describe IndividualMarket::Application, type: :model do
     it { is_expected.to have_field(:submitted_at).of_type(DateTime) }
     it { is_expected.to have_field(:assistance_year).of_type(Integer) }
     it { is_expected.to have_field(:predecessor_id).of_type(BSON::ObjectId) }
-    it { is_expected.to have_field(:origin_source).of_type(Symbol) }
+    it { is_expected.to have_field(:origin).of_type(Symbol) }
     it { is_expected.to have_field(:generation_reason).of_type(Symbol) }
   end
 
@@ -105,8 +105,8 @@ RSpec.describe IndividualMarket::Application, type: :model do
         end
       end
 
-      context 'origin_source validation' do
-        it_behaves_like 'an enumeration field', :origin_source, %i[user system admin data_import migration]
+      context 'origin validation' do
+        it_behaves_like 'an enumeration field', :origin, %i[user system admin data_import migration]
       end
 
       context 'generation_reason validation' do
