@@ -12,7 +12,8 @@ Feature: Consumer disagrees RIDP verification process
     And the individual clicks on the Continue button of the Account Setup page
     Then Individual sees form to enter personal information
     And the individual clicks continue on the personal information page
- 
+    And application_validation_in_identity_verification feature is enabled
+
   Scenario: Application is verified by admin
     Given that the consumer has “Disagreed” to AUTH & CONSENT
     And the consumer is on the DOCUMENT UPLOAD page

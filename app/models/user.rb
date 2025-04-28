@@ -88,6 +88,7 @@ class User
   index({email: 1},  {sparse: true, unique: true})
   index({oim_id: 1}, {sparse: true, unique: true})
   index({created_at: 1 })
+  index({identity_response_code: 1 })
 
   track_history :on => [:oim_id, :email],
                 :modifier_field => :modifier,

@@ -9,9 +9,10 @@ Feature: Consumer agrees RIDP verification process with Admin intervention
     Then Individual should see a successful sign up message
     And Individual sees Your Information page
     When user registers as an individual
-    And the individual clicks on the Continue button of the Account Setup page 
+    And the individual clicks on the Continue button of the Account Setup page
     Then Individual sees form to enter personal information
     When the individual clicks continue on the personal information page
+    And application_validation_in_identity_verification feature is enabled
 
   Scenario: New insured user chooses I Agree on Auth and Consent Page and uploaded documents for both identity and application and both are verified
     Given that the consumer has navigated to the AUTH & CONSENT page

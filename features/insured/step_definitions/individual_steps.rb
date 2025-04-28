@@ -206,6 +206,10 @@ When(/^bs4_consumer_flow feature is enabled$/) do
   enable_feature :contrast_level_aa
 end
 
+And(/^application_validation_in_identity_verification feature is enabled$/) do
+  allow(EnrollRegistry[:application_validation_in_identity_verification].feature).to receive(:is_enabled).and_return(true)
+end
+
 And(/^qhp_application feature is enabled$/) do
   allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(true)
   enable_feature :qhp_application

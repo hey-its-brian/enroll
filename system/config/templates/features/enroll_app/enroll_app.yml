@@ -879,6 +879,9 @@ registry:
       - key: :show_people_with_no_evidence
         item: :show_people_with_no_evidence
         is_enabled: <%= ENV['SHOW_PEOPLE_WITH_NO_EVIDENCE_IS_ENABLED'] || true %>
+      - key: :application_validation_in_identity_verification
+        item: :application_validation_in_identity_verification
+        is_enabled: <%= ENV['APPLICATION_VALIDATION_IN_IDENTITY_VERIFICATION_IS_ENABLED'] || false %>
       - key: :ivl_tax_form_notice
         item: :ivl_tax_form_notice
         is_enabled: <%= ENV['IVL_TAX_FORM_NOTICE_IS_ENABLED'] || false %>
