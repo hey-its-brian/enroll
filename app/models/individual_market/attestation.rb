@@ -19,13 +19,53 @@ module IndividualMarket
     #   @return [IndividualMarket::Application] The application this attestation belongs to
     embedded_in :application, class_name: 'IndividualMarket::Application'
 
-    # Examples of terms that a primary person/applicant must attest to. Change these as needed.
-    field :enrollment_terms, type: Boolean
-    # field :medicaid_terms, type: Boolean
-    # field :medicaid_insurance_collection_terms, type: Boolean
-    # field :report_change_terms, type: Boolean
-    # field :parent_living_out_of_home_terms, type: Boolean
-    # field :attestation_terms, type: Boolean
-    # field :submission_terms, type: Boolean
+    # @!attribute SIGNER_ROLE_KINDS
+    # @return [Array<String>] Collection of all possible signer roles
+    SIGNER_ROLE_KINDS = %w[admin assister broker consumer].freeze
+
+    # @!attribute signer_role
+    #   @return [String] The role of the person who signed (consumer, admin, broker)
+    field :signer_role, type: String
+
+    # @!attribute signer_id
+    #   @return [BSON::ObjectId] The ID of the user who signed
+    field :signer_id, type: BSON::ObjectId
+
+    # @!attribute signed_at
+    #   @return [DateTime] The date and time when the attestation was signed
+    field :signed_at, type: DateTime
+
+    # Verifies that the signer_role is present and is one of the defined roles
+    validates :signer_role, presence: true, inclusion: { in: SIGNER_ROLE_KINDS }
+
+    # Verifies that the signer_id is present and is a valid BSON::ObjectId
+    validates :signer_id, presence: true
+
+    # Verifies that the signed_at is present and is a valid DateTime
+    validates :signed_at, presence: true
+
+    # Returns the User who signed this attestation
+    #
+    # @return [User, nil] The user who signed the attestation, or nil if no signer_id is present
+    def signed_user
+      return @signed_user if defined?(@signed_user)
+
+      @signed_user = signer_id ? User.find(signer_id) : nil
+    end
+
+    # @return [Boolean] Whether the attestation was signed by a consumer
+    def signed_by_consumer?
+      signer_role == :consumer
+    end
+
+    # @return [Boolean] Whether the attestation was signed by an admin
+    def signed_by_admin?
+      signer_role == :admin
+    end
+
+    # @return [Boolean] Whether the attestation was signed by a broker
+    def signed_by_broker?
+      signer_role == :broker
+    end
   end
 end
