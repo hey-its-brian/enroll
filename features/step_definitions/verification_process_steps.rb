@@ -45,6 +45,7 @@ end
 Given(/^I should see page for documents verification$/) do
   expect(page).to have_content "Documents We Accept"
   expect(page).to have_content('Social Security Number')
+  expect(page).to have_content('We verify the information you provide us using electronic data sources')
   find('.btn', text: 'Documents We Accept').click
   expect(page).to have_content('DC Residency')
   link = find_link('https://dmv.dc.gov/page/proof-dc-residency-certifications')
