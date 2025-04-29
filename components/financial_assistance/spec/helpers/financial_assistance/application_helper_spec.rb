@@ -508,22 +508,65 @@ RSpec.describe ::FinancialAssistance::ApplicationHelper, :type => :helper, dbcle
     let(:copyable_application_ids) { [1, 2, 3, 4] }
 
     let(:input_app) do
-      double('FinancialAssistance::Application', assistance_year: TimeKeeper.date_of_record.year, id: app_id)
+      double(
+        'FinancialAssistance::Application',
+        assistance_year: TimeKeeper.date_of_record.year,
+        id: app_id,
+        determined?: determined
+      )
     end
 
-    context 'application is not in the copyable list' do
-      let(:app_id) { 5 }
+    let(:app_id) { 1 }
 
-      it 'returns true' do
-        expect(helper.do_not_allow_copy?(input_app, copyable_application_ids)).to be_truthy
+    let(:determined) { true }
+
+    context 'logged in user is not an hbx_admin' do
+      let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+      let(:user) { FactoryBot.create(:user, person: person) }
+
+      context 'application is not in the copyable list' do
+        let(:app_id) { 5 }
+
+        it 'returns true' do
+          expect(
+            helper.do_not_allow_copy?(input_app, user, copyable_application_ids)
+          ).to be_truthy
+        end
+      end
+
+      context 'application is in the copyable list' do
+        it 'returns false' do
+          expect(
+            helper.do_not_allow_copy?(input_app, user, copyable_application_ids)
+          ).to be_falsy
+        end
       end
     end
 
-    context 'application is in the copyable list' do
-      let(:app_id) { 1 }
+    context 'logged in user is an hbx_admin' do
+      let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+      let(:user) { FactoryBot.create(:user, person: person) }
 
-      it 'returns false' do
-        expect(helper.do_not_allow_copy?(input_app, copyable_application_ids)).to be_falsy
+      before do
+        FactoryBot.create(:hbx_staff_role, person: person)
+      end
+
+      context 'application is in determined state' do
+        it 'returns false' do
+          expect(
+            helper.do_not_allow_copy?(input_app, user, copyable_application_ids)
+          ).to be_falsy
+        end
+      end
+
+      context 'application is not in determined state' do
+        let(:determined) { false }
+
+        it 'returns true' do
+          expect(
+            helper.do_not_allow_copy?(input_app, user, copyable_application_ids)
+          ).to be_truthy
+        end
       end
     end
   end

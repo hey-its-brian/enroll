@@ -357,10 +357,20 @@ module FinancialAssistance
       end
     end
 
-    def do_not_allow_copy?(application, copyable_application_ids)
+    # Determines if copying an application should be disallowed
+    #
+    # @param [FinancialAssistance::Application] application The application being evaluated for copy eligibility
+    # @param [User] logged_in_user The current user attempting to copy the application
+    # @param [Array<BSON::ObjectId>] copyable_application_ids Array of application IDs that are eligible for copying
+    # @return [Boolean] Returns true if copying should be disallowed, false if copying is allowed
+    def do_not_allow_copy?(application, logged_in_user, copyable_application_ids)
       return true if prospective_year_application?(application)
 
-      !copyable_application_ids.include?(application.id)
+      if logged_in_user.person.hbx_staff_role.present?
+        !application.determined?
+      else
+        !copyable_application_ids.include?(application.id)
+      end
     end
 
     # Restrict the ability to copy prospective year applications until the start of OE for all users, consumers, admin, brokers, etc.

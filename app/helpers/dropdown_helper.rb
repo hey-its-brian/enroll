@@ -10,7 +10,7 @@ module DropdownHelper
           FinancialAssistanceRegistry.feature_enabled?(:qhp_application) ? application_applicants_path(application) : edit_application_path(application),
           :default]
        end),
-      ([l10n('faa.applications.actions.copy'), copy_application_path(application), :default] unless do_not_allow_copy?(application, copyable_application_ids)),
+      ([l10n('faa.applications.actions.copy'), copy_application_path(application), :default] unless do_not_allow_copy?(application, current_user, copyable_application_ids)),
       ([l10n('faa.applications.actions.view_eligibility'), eligibility_results_application_path(application), :default] if application.is_determined? || application.is_terminated?),
       ([l10n('faa.applications.actions.review'), review_application_path(application), :default] if application.is_reviewable?)
     ]
