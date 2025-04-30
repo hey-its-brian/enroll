@@ -20,9 +20,7 @@ RSpec.describe Eligibilities::V3::Evidences::AliveEvidence, type: :model do
 
     it 'includes attributes from EvidenceUtils' do
       # Check fields from EvidenceUtils
-      expect(evidence).to respond_to(:received_at)
       expect(evidence).to respond_to(:verification_outstanding)
-      expect(evidence).to respond_to(:update_reason)
       expect(evidence).to respond_to(:due_on)
       expect(evidence).to respond_to(:external_service)
       expect(evidence).to respond_to(:updated_by)

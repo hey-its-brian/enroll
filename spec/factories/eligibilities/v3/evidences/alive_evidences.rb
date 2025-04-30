@@ -11,7 +11,6 @@ FactoryBot.define do
     current_state { :initial }
 
     # Fields from EvidenceUtils
-    received_at { Time.now }
     verification_outstanding { false }
     external_service { 'death_master_file' }
 

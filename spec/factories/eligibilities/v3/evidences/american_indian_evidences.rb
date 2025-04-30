@@ -11,7 +11,6 @@ FactoryBot.define do
     current_state { :initial }
 
     # Fields from EvidenceUtils
-    received_at { Time.now }
     verification_outstanding { false }
 
     # Different states the evidence can be in

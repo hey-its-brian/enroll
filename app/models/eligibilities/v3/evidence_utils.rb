@@ -101,9 +101,7 @@ module Eligibilities
         embeds_many :verification_histories, class_name: 'Eligibilities::V3::VerificationHistory', cascade_callbacks: true
         embeds_many :request_results, class_name: 'Eligibilities::V3::RequestResult', cascade_callbacks: true
 
-        field :received_at, type: DateTime, default: -> { Time.now }
         field :verification_outstanding, type: Mongoid::Boolean, default: false
-        field :update_reason, type: String
         field :due_on, type: Date
         field :external_service, type: String
         field :updated_by, type: String

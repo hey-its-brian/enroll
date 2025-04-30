@@ -47,9 +47,7 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
   end
 
   describe 'included fields and associations' do
-    it { expect(dummy_evidence).to respond_to(:received_at) }
     it { expect(dummy_evidence).to respond_to(:verification_outstanding) }
-    it { expect(dummy_evidence).to respond_to(:update_reason) }
     it { expect(dummy_evidence).to respond_to(:due_on) }
     it { expect(dummy_evidence).to respond_to(:external_service) }
     it { expect(dummy_evidence).to respond_to(:updated_by) }

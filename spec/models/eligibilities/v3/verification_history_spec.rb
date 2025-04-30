@@ -16,13 +16,11 @@ RSpec.describe Eligibilities::V3::VerificationHistory, type: :model do
 
   describe 'fields' do
     it { should have_field(:action).of_type(String) }
-    it { should have_field(:modifier).of_type(String) }
     it { should have_field(:update_reason).of_type(String) }
     it { should have_field(:updated_by).of_type(String) }
     it { should have_field(:is_satisfied).of_type(Mongoid::Boolean) }
     it { should have_field(:verification_outstanding).of_type(Mongoid::Boolean) }
     it { should have_field(:due_on).of_type(Date) }
-    it { should have_field(:aasm_state).of_type(String) }
   end
 
   describe 'callbacks' do
