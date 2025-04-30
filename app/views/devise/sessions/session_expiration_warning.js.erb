@@ -40,6 +40,12 @@ $('#stay-logged-in').on('click', function() {
       },
       error: function(response){
         window.location.replace('<%= site_redirect_on_timeout_route %>');
+      },
+      complete: function(xhr) {
+        // If the backend returns a session expired, reload the page
+        if (xhr && xhr.responseText && xhr.responseText.indexOf('window.location.reload()') !== -1) {
+          window.location.reload();
+        }
       }
     });
 

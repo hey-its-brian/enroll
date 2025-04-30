@@ -125,5 +125,10 @@
       });
     }
     var logout_check_timer = setTimeout(check_time_until_logout, 100);
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) {
+        check_time_until_logout();
+      }
+    });
   </script>
 <% end %>
