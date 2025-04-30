@@ -54,6 +54,7 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
     it { expect(dummy_evidence).to respond_to(:state_histories) }
     it { expect(dummy_evidence).to respond_to(:verification_histories) }
     it { expect(dummy_evidence).to respond_to(:request_results) }
+    it { expect(dummy_evidence).to respond_to(:is_active) }
   end
 
   describe 'for state predicate methods' do

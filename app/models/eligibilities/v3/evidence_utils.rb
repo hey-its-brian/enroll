@@ -106,6 +106,16 @@ module Eligibilities
         field :external_service, type: String
         field :updated_by, type: String
 
+        # @!attribute [rw] is_active
+        #   @return [Boolean] Indicates whether the evidence is currently active.
+        #   @note This field is primarily used to track the active status of verification types.
+        #   @deprecated This field is deprecated and will not be used in future implementations.
+        #   @details
+        #     - This field allows toggling between active and inactive states for certain verification types, such as citizenship or immigration status.
+        #     - Both active and inactive statuses are stored for a person, along with historical verification information.
+        #     - It will be used for migration of all verification types to an application but is no longer relevant for subsequent applications.
+        field :is_active, type: Mongoid::Boolean, default: true
+
         # Define state predicate methods for all states
         # @example
         #   evidence.attested? # Returns true if current_state is :attested
