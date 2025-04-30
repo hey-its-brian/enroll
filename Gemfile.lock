@@ -1984,7 +1984,7 @@ GEM
     database_cleaner-mongoid (2.0.1)
       database_cleaner-core (~> 2.0.0)
       mongoid
-    date (3.3.4)
+    date (3.4.1)
     deep_merge (1.2.2)
     descendants_tracker (0.0.4)
       thread_safe (~> 0.3, >= 0.3.1)
@@ -2245,7 +2245,7 @@ GEM
     multipart-post (2.3.0)
     mustermann (2.0.2)
       ruby2_keywords (~> 0.0.1)
-    net-imap (0.4.19)
+    net-imap (0.5.8)
       date
       net-protocol
     net-pop (0.1.2)
@@ -2666,7 +2666,7 @@ DEPENDENCIES
   mongoid-rspec (~> 4)
   mongoid_rails_migrations (~> 1.2)
   mongoid_userstamp (~> 0.4)!
-  net-imap (>= 0.4.19)
+  net-imap (>= 0.4.20)
   net-ssh (= 4.2.0)
   newrelic_rpm (~> 9.6)
   nokogiri (~> 1.18.8)
