@@ -12,6 +12,10 @@
   - Review origin_source and generation_reason fields of application model.
   - Update the scope newest_determined_by_family_id in Sbm::Application model to sort by assistance_year and then submitted_at instead of created_at.
   - More aasm_states/current_states for QHP Application. An application can be in draft, cancelled,  errored_during_submission, submitted (waiting for preliminary determination), preliminary_determined, finalized (all the eligible verifications are either in verified or rop_expired)
+  - Create release notes to include the following:
+    - Feature Flag
+    - All the Indexes that needs to be created
+    - All the data migrations and their detailed execution steps
 
 ### Dev Onboarding Documentation
   - Why ContactProfile is separate?

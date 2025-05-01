@@ -11,22 +11,24 @@ module Sbm
   class Application
     include Mongoid::Document
     include Mongoid::Timestamps
+    include GlobalID::Identification
 
     # @!attribute family
     #   @return [Family] The family this application belongs to
     belongs_to :family, class_name: 'Family', index: true
 
-    # @!index [Hash] Creates a compound index on aasm_state, family_id, and created_at fields
+    # @!index [Hash] Creates a compound index on current_state, family_id, assistance_year, and submitted_at fields.
     # @param current_state [Integer] The application state, with 1 indicating ascending order
     # @param family_id [Integer] The family identifier, with 1 indicating ascending order
-    # @param created_at [Integer] The creation timestamp, with -1 indicating descending order
+    # @param assistance_year [Integer] The assistance year, with -1 indicating descending order
+    # @param submitted_at [Date] The submission timestamp, with -1 indicating descending order
     # @note This index improves queries that filter by state and family_id and sort by creation date
-    index({ current_state: 1, family_id: 1, created_at: -1 })
+    index({ current_state: 1, family_id: 1, assistance_year: -1, submitted_at: -1 })
 
     # @!scope class
-    # @return [Mongoid::Criteria] The most recent determined Sbm::Application based on creation timestamp
+    # @return [Mongoid::Criteria] The most recent determined IndividualMarket::Application based on assistance year and submitted_at
     scope :newest_determined_by_family_id, lambda { |family_id|
-      where(current_state: 'determined', family_id: family_id).order(created_at: :desc).limit(1)
+      where(current_state: :determined, family_id: family_id).order_by(assistance_year: -1, submitted_at: -1).limit(1)
     }
 
     # @!scope class

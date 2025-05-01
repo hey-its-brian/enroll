@@ -282,6 +282,7 @@ module FinancialAssistance
     # @param submitted_at [Date] The submission timestamp, with -1 indicating descending order
     # @note This index improves queries that filter by state and family_id and sort by creation date
     index({ aasm_state: 1, family_id: 1, assistance_year: -1, submitted_at: -1 })
+
     # @!scope class
     # @return [Mongoid::Criteria] The most recent determined FinancialAssistance::Application based on assistance year and submitted_at
     scope :newest_determined_by_family_id, lambda { |family_id|

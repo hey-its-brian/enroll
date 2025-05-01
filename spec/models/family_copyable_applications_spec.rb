@@ -27,10 +27,10 @@ RSpec.describe Family, type: :model do
     faa_app1
   end
 
-  describe '#fetch_copyable_application_ids' do
+  describe '#fetch_copyable_faa_application_ids' do
     context 'when there is only one determined application for a year' do
       it 'returns the application ID for that year' do
-        result = family.fetch_copyable_application_ids
+        result = family.fetch_copyable_faa_application_ids
 
         expect(result).to eq([faa_app1.id])
       end
@@ -63,7 +63,7 @@ RSpec.describe Family, type: :model do
       end
 
       it 'returns only the most recently submitted application ID for each year' do
-        result = family.fetch_copyable_application_ids
+        result = family.fetch_copyable_faa_application_ids
 
         expect(result).to eq([latest_app.id])
         expect(result).not_to include(earlier_app.id)
@@ -98,7 +98,7 @@ RSpec.describe Family, type: :model do
       end
 
       it 'returns one application ID per year' do
-        result = family.fetch_copyable_application_ids
+        result = family.fetch_copyable_faa_application_ids
 
         expect(result).to include(faa_app1.id)
         expect(result).to include(previous_year_app.id)
@@ -132,7 +132,7 @@ RSpec.describe Family, type: :model do
       end
 
       it 'only returns applications in determined state' do
-        result = family.fetch_copyable_application_ids
+        result = family.fetch_copyable_faa_application_ids
 
         expect(result).to include(faa_app1.id)
         expect(result).not_to include(draft_app.id)
@@ -147,7 +147,7 @@ RSpec.describe Family, type: :model do
       end
 
       it 'returns an empty array' do
-        result = family.fetch_copyable_application_ids
+        result = family.fetch_copyable_faa_application_ids
 
         expect(result).to be_empty
       end
@@ -171,7 +171,7 @@ RSpec.describe Family, type: :model do
       end
 
       it 'only returns applications for the specified family' do
-        result = family.fetch_copyable_application_ids
+        result = family.fetch_copyable_faa_application_ids
 
         expect(result).to include(faa_app1.id)
         expect(result).not_to include(other_family_app.id)

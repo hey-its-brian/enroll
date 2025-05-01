@@ -55,6 +55,12 @@ class Family
   field :cv3_payload, type: Hash, default: {}
   field :crm_notifiction_needed, type: Boolean
 
+  # @!attribute latest_application_gid
+  #   @return [String] The global ID of the latest application associated with this family.
+  #
+  # @note The latest application GlobalID URI is persisted for performance reasons.
+  field :latest_application_gid, type: String
+
   belongs_to :person, optional: true
   has_many :hbx_enrollments
 
@@ -1709,31 +1715,13 @@ class Family
     active_family_members.none?(&:is_applying_coverage)
   end
 
-  # Returns the most recently created determined application, whether it's an SBM or FAA application.
-  # If both SBM and FAA applications are present, returns the one with the latest creation date.
-  #
-  # @return [Sbm::Application, FinancialAssistance::Application, nil] The most recent determined application, or nil if none exists
-  def latest_determined_application
-    return @latest_determined_application if defined?(@latest_determined_application)
-
-    sbm_app = latest_determined_sbm_application
-    faa_app = latest_determined_faa_application
-    @latest_determined_application = if sbm_app.present? && faa_app.present?
-                                       sbm_app.created_at > faa_app.created_at ? sbm_app : faa_app
-                                     elsif sbm_app.present?
-                                       sbm_app
-                                     elsif faa_app.present?
-                                       faa_app
-                                     end
-  end
-
   # Retrieves the IDs of copyable Financial Assistance applications for this family
   #
   # This method finds determined applications, groups them by assistance year,
   # and returns the ID of the most recently submitted application for each year.
   #
   # @return [Array<BSON::ObjectId>] Array of application IDs - one per assistance year
-  def fetch_copyable_application_ids
+  def fetch_copyable_faa_application_ids
     ::FinancialAssistance::Application
       .where(aasm_state: 'determined', family_id: id)
       .only(:id, :family_id, :assistance_year, :submitted_at, :aasm_state)
@@ -1741,6 +1729,49 @@ class Family
       .group_by(&:assistance_year)
       .transform_values { |apps| apps.first.id }
       .values
+  end
+
+  # Retrieves the type of the latest application for this family
+  #
+  # This method checks the class of the latest application and returns a string
+  # representing its type: 'faa' for Financial Assistance applications, 'qhp' for
+  # Individual Market applications, or 'unknown' if the type is not recognized.
+  #
+  # @return [String, nil] The type of the latest application ('faa', 'qhp', or 'unknown')
+  def latest_application_type
+    return nil unless latest_application_gid
+
+    case latest_application.class
+    when FinancialAssistance::Application
+      'faa'
+    when IndividualMarket::Application
+      'qhp'
+    end
+  end
+
+  # Retrieves the latest determined application for this family depending on the latest_application_gid
+  # This method uses memoization to avoid redundant database queries.
+  #
+  # @return [FinancialAssistance::Application, IndividualMarket::Application, nil] The latest determined application or nil if none exists
+  def latest_application
+    return @latest_application if defined?(@latest_application)
+
+    @latest_application = GlobalID::Locator.locate(latest_application_gid) if latest_application_gid.present?
+  end
+
+  # Updates the family with information about its latest determined application
+  #
+  # This method sets a field on the family:
+  # 1. The Global ID (GID) of the latest determined application
+  #
+  # These values are persisted for performance reasons to avoid repeatedly
+  # querying for the latest application when the GlobalID URI is needed.
+  #
+  # @return [void]
+  def assign_latest_application_gid
+    return unless fetch_latest_determined_application
+
+    self.latest_application_gid = fetch_latest_determined_application.to_global_id.uri.to_s
   end
 
   # Retrieves the most recent determined FAA (Financial Assistance Application) for this family.
@@ -1755,14 +1786,34 @@ class Family
 
   private
 
-  # Retrieves the most recent determined SBM application for this family.
-  # Uses memoization to avoid redundant database queries.
+  # Fetches the most recently determined application (either QHP or FAA) for this family
   #
-  # @return [Sbm::Application, nil] The newest determined SBM application, or nil if none exists
-  def latest_determined_sbm_application
-    return @latest_determined_sbm_application if defined?(@latest_determined_sbm_application)
+  # When multiple applications exist, this method compares their submission dates
+  # and returns the one with the most recent submission.
+  #
+  # @return [IndividualMarket::Application, FinancialAssistance::Application, nil]
+  #   The most recently determined application or nil if no determined applications exist
+  # @note Uses memoization to prevent redundant database queries
+  def fetch_latest_determined_application
+    return @fetch_latest_determined_application if defined?(@fetch_latest_determined_application)
 
-    @latest_determined_sbm_application = ::Sbm::Application.newest_determined_by_family_id(id).first
+    qhp_app = ::IndividualMarket::Application.newest_determined_by_family_id(id).only(
+      :assistance_year, :current_state, :family_id, :id, :submitted_at
+    ).first
+
+    faa_app = ::FinancialAssistance::Application.newest_determined_by_family_id(id).only(
+      :aasm_state, :assistance_year, :family_id, :id, :submitted_at
+    ).first
+
+    @fetch_latest_determined_application = if qhp_app && faa_app
+                                             if qhp_app.assistance_year == faa_app.assistance_year
+                                               qhp_app.submitted_at > faa_app.submitted_at ? qhp_app : faa_app
+                                             else
+                                               qhp_app.assistance_year > faa_app.assistance_year ? qhp_app : faa_app
+                                             end
+                                           else
+                                             qhp_app || faa_app
+                                           end
   end
 
   def build_household
