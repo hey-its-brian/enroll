@@ -2323,3 +2323,146 @@ describe Family, "with index definitions" do
     expect(indexes.map(&:key)).to include(expected_index)
   end
 end
+
+describe Family, type: :model, dbclean: :after_each do
+  describe '#current_enrolled_products_by_subscriber' do
+    let(:subscriber_person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+    let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: subscriber_person) }
+    let(:household) { FactoryBot.create(:household, family: family) }
+    let(:coverage_kind) { 'health' }
+    let(:subscriber) { family.primary_applicant }
+    let(:effective_on) { Date.new(2025, 3, 1) }
+
+    let(:product1) do
+      FactoryBot.create(:benefit_markets_products_health_products_health_product,
+                        benefit_market_kind: :aca_individual,
+                        kind: :health,
+                        csr_variant_id: '01')
+    end
+
+    let(:product2) do
+      FactoryBot.create(:benefit_markets_products_health_products_health_product,
+                        benefit_market_kind: :aca_individual,
+                        kind: :health,
+                        csr_variant_id: '02')
+    end
+
+    let(:reference_enrollment1) do
+      FactoryBot.create(
+        :hbx_enrollment,
+        household: household,
+        family: family,
+        coverage_kind: coverage_kind,
+        kind: 'individual',
+        effective_on: effective_on,
+        aasm_state: 'shopping',
+        product: product1,
+        hbx_enrollment_members: [
+          FactoryBot.build(:hbx_enrollment_member,
+                           applicant_id: family.primary_applicant.id,
+                           eligibility_date: effective_on,
+                           coverage_start_on: effective_on,
+                           is_subscriber: true)
+        ]
+      )
+    end
+
+    let(:reference_enrollment2) do
+      FactoryBot.create(
+        :hbx_enrollment,
+        household: household,
+        family: family,
+        coverage_kind: coverage_kind,
+        kind: 'individual',
+        effective_on: effective_on,
+        aasm_state: 'coverage_selected',
+        product: product2,
+        hbx_enrollment_members: [
+          FactoryBot.build(:hbx_enrollment_member,
+                           applicant_id: family.primary_applicant.id,
+                           eligibility_date: effective_on,
+                           coverage_start_on: effective_on,
+                           is_subscriber: true)
+        ]
+      )
+    end
+
+    let!(:existing_enrollment_same_subscriber) do
+      FactoryBot.create(
+        :hbx_enrollment,
+        household: household,
+        family: family,
+        coverage_kind: coverage_kind,
+        effective_on: Date.new(2025, 1, 15),
+        aasm_state: 'coverage_selected',
+        product: product2,
+        hbx_enrollment_members: [
+          FactoryBot.build(:hbx_enrollment_member,
+                           applicant_id: family.primary_applicant.id,
+                           eligibility_date: Date.new(2025, 1, 15),
+                           coverage_start_on: Date.new(2025, 1, 15),
+                           is_subscriber: true)
+        ]
+      )
+    end
+
+    let!(:existing_enrollment_different_year) do
+      FactoryBot.create(
+        :hbx_enrollment,
+        household: household,
+        family: family,
+        coverage_kind: coverage_kind,
+        effective_on: Date.new(2024, 12, 31),
+        aasm_state: 'coverage_selected',
+        product: FactoryBot.create(:benefit_markets_products_health_products_health_product),
+        hbx_enrollment_members: [
+          FactoryBot.build(:hbx_enrollment_member,
+                           applicant_id: family.primary_applicant.id,
+                           eligibility_date: Date.new(2024, 12, 31),
+                           coverage_start_on: Date.new(2024, 12, 31),
+                           is_subscriber: true)
+        ]
+      )
+    end
+
+    before do
+      family.active_household.hbx_enrollments << reference_enrollment1
+      family.active_household.hbx_enrollments << reference_enrollment2
+    end
+
+    it 'returns the product from a matching enrollment (same subscriber and year)' do
+      result = family.current_enrolled_products_by_subscriber(reference_enrollment1)
+      expect(result).to eq(product2)
+    end
+
+    it 'excludes the reference enrollment itself from matching' do
+      result = family.current_enrolled_products_by_subscriber(reference_enrollment1)
+      expect(result).not_to eq(reference_enrollment1.product)
+      expect(result).to eq(reference_enrollment2.product)
+    end
+
+    it 'returns nil if no enrollments match the subscriber' do
+      existing_enrollment_same_subscriber.destroy
+      reference_enrollment2.destroy
+      result = family.current_enrolled_products_by_subscriber(reference_enrollment1)
+      expect(result).to be_nil
+    end
+
+    it 'returns nil if coverage kind does not match' do
+      existing_enrollment_same_subscriber.update!(coverage_kind: 'dental')
+      reference_enrollment2.update!(coverage_kind: 'dental')
+      result = family.current_enrolled_products_by_subscriber(reference_enrollment1)
+      expect(reference_enrollment1.aasm_state).to eq('shopping')
+      expect(reference_enrollment2.coverage_kind).to eq('dental')
+      expect(existing_enrollment_same_subscriber.coverage_kind).to eq('dental')
+      expect(result).to be_nil
+    end
+
+    it 'returns nil if effective_on is out of year range' do
+      existing_enrollment_same_subscriber.update!(effective_on: Date.new(2024, 12, 31))
+      reference_enrollment2.update!(effective_on: Date.new(2024, 12, 31))
+      result = family.current_enrolled_products_by_subscriber(reference_enrollment1)
+      expect(result).to be_nil
+    end
+  end
+end

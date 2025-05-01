@@ -470,6 +470,29 @@ class Family
     end.map(&:product)
   end
 
+  def current_enrolled_products_by_subscriber(enrollment)
+    current_enrolled_coverages(enrollment)
+      .select { |enr| enr.subscriber.applicant_id == enrollment.subscriber.applicant_id }
+      .map(&:product)
+      .first
+  end
+
+  def current_enrolled_coverages(enrollment)
+    active_household.hbx_enrollments
+                    .where(
+                      "$and" => [
+                        { "_id" => { "$ne" => enrollment.id } },
+                        { "effective_on" => {
+                          "$gte" => enrollment.effective_on.beginning_of_year,
+                          "$lte" => enrollment.effective_on.end_of_year
+                        } },
+                        { "coverage_kind" => enrollment.coverage_kind },
+                        { "aasm_state" => { "$in" => HbxEnrollment::ENROLLED_AND_RENEWAL_STATUSES } }
+                      ]
+                    )
+                    .order_by(effective_on: :desc)
+  end
+
   def current_enrolled_or_termed_products(enrollment)
     current_enrolled_or_termed_coverages(enrollment).map(&:product)
   end

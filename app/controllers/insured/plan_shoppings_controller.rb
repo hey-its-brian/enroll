@@ -274,8 +274,8 @@ class Insured::PlanShoppingsController < ApplicationController
     set_admin_bookmark_url(family_account_path)
     set_plans_by(hbx_enrollment_id: params.require(:id))
 
-    @current_plan_id = @hbx_enrollment.family.current_plan_for_badge(@hbx_enrollment)
-    @enrolled_hbx_enrollment_plan_ids = [@current_plan_id] if @current_plan_id.present? && @enrolled_hbx_enrollment_plan_ids.blank?
+    @current_plan_id = @hbx_enrollment.family.current_enrolled_products_by_subscriber(@hbx_enrollment)&.id
+    # @enrolled_hbx_enrollment_plan_ids = [@current_plan_id] if @current_plan_id.present? && @enrolled_hbx_enrollment_plan_ids.blank?
 
     if EnrollRegistry.feature_enabled?(:temporary_configuration_enable_multi_tax_household_feature)
       aptc_grants(@hbx_enrollment.family, @hbx_enrollment.effective_on.year) if @person.present?
@@ -298,7 +298,7 @@ class Insured::PlanShoppingsController < ApplicationController
       sort_by_standard_plans(@plans)
     end
 
-    @plans = @plans.partition{ |a| @enrolled_hbx_enrollment_plan_ids.include?(a[:id]) }.flatten
+    @plans = @plans.partition{ |a| [@current_plan_id].include?(a[:id]) }.flatten
     @plan_hsa_status = Products::Qhp.plan_hsa_status_map(@plans)
     @change_plan = params[:change_plan].present? ? params[:change_plan] : ''
     @enrollment_kind = params[:enrollment_kind].present? ? params[:enrollment_kind] : ''
@@ -607,7 +607,7 @@ class Insured::PlanShoppingsController < ApplicationController
   def set_plans_by(hbx_enrollment_id:)
     Caches::MongoidCache.allocate(CarrierProfile)
 
-    @enrolled_hbx_enrollment_plan_ids = @hbx_enrollment.family.current_enrolled_or_termed_products_by_subscriber(@hbx_enrollment).map(&:id)
+    @enrolled_hbx_enrollment_plan_ids = @hbx_enrollment.family.current_enrolled_products_by_subscriber(@hbx_enrollment)&.id
 
     if @hbx_enrollment.blank?
       @plans = []
