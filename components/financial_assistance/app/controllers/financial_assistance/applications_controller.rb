@@ -170,7 +170,9 @@ module FinancialAssistance
     def copy
       authorize @application, :copy?
       begin
-        copy_result = ::FinancialAssistance::Operations::Applications::Copy.new.call(application_id: params[:id])
+        copy_result = ::FinancialAssistance::Operations::Applications::Copy.new.call(
+          copy_params(params[:id], @person, current_user)
+        )
         if copy_result.success?
           @application = copy_result.success
           @application.configure_assistance_year
@@ -178,7 +180,7 @@ module FinancialAssistance
           redirect_path = if assistance_year_page
                             application_year_selection_application_path(@application)
                           else
-                            qhp_application_feature_enabled? ? application_applicants_path : edit_application_path(@application)
+                            qhp_application_feature_enabled? ? application_applicants_path(application_id: @application.id) : edit_application_path(@application)
                           end
 
           redirect_to redirect_path
@@ -374,6 +376,24 @@ module FinancialAssistance
     end
 
     private
+
+    # Prepares parameters for copying an existing financial assistance application
+    #
+    # @param application_id [String] The ID of the application to copy
+    # @param person [Person] The person applying for financial assistance
+    # @param current_user [User] The current user making the request
+    # @return [Hash] Parameters to pass to the financial assistance application creation
+    def copy_params(application_id, person, logged_in_user)
+      if qhp_application_feature_enabled?
+        {
+          application_id: application_id,
+          origin: fetch_origin(person, logged_in_user),
+          generation_reason: :manual
+        }
+      else
+        { application_id: application_id }
+      end
+    end
 
     def transfer_direction(application)
       return 'In' unless application.transfer_id.nil?

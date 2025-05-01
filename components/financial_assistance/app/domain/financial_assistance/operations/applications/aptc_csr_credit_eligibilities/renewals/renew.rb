@@ -15,6 +15,7 @@ module FinancialAssistance
           class Renew
             include Dry::Monads[:result, :do, :try]
             include EventSource::Command
+            include ::ResourceRegistryHelper
 
             attr_reader :renewal_application
 
@@ -65,6 +66,21 @@ module FinancialAssistance
               application
             end
 
+            # Prepares parameters for copying an application
+            # @param application_id [BSON::ObjectId] The ID of the application to be copied
+            # @return [Hash] Parameters used by the Copy operation
+            def copy_params(application_id)
+              if qhp_application_feature_enabled?
+                {
+                  application_id: application_id,
+                  origin: :system,
+                  generation_reason: :renewal
+                }
+              else
+                { application_id: application_id }
+              end
+            end
+
             # I agree + 5 years
             ### Copy application via UI: I agree, 5 years to renew
             ### Copy application via renewal - I agree, -1 years to renew
@@ -80,7 +96,7 @@ module FinancialAssistance
               Try() do
                 ::FinancialAssistance::Operations::Applications::Copy.new
               end.bind do |renewal_application_factory|
-                copied_result = renewal_application_factory.call(application_id: application.id)
+                copied_result = renewal_application_factory.call(copy_params(application.id))
                 return Failure(copied_result.failure[:detailed_error_message]) if copied_result.failure?
 
                 @renewal_application = copied_result.success

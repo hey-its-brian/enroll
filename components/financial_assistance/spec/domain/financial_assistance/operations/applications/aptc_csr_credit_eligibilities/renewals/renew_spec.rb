@@ -219,6 +219,36 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
         expect(@renewal_draft_app.renewal_base_year).to eq(application.renewal_base_year)
       end
     end
+
+    context 'when: qhp_application is enabled' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        application.update_attributes!(
+          {
+            aasm_state: 'determined',
+            years_to_renew: 4,
+            renewal_base_year: TimeKeeper.date_of_record.year + 4,
+            is_renewal_authorized: true
+          }
+        )
+        result = subject.call({ family_id: application.family_id, renewal_year: application.assistance_year.next })
+        @renewal_draft_app = result.success
+      end
+
+      it 'generates renewal draft application' do
+        expect(
+          @renewal_draft_app
+        ).to be_a(::FinancialAssistance::Application)
+      end
+
+      it 'sets origin for newly generated application' do
+        expect(@renewal_draft_app.origin).to eq(:system)
+      end
+
+      it 'sets generation_reason for newly generated application' do
+        expect(@renewal_draft_app.generation_reason).to eq(:renewal)
+      end
+    end
   end
 
   context 'failure' do

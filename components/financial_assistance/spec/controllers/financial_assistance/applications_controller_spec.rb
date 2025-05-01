@@ -153,6 +153,99 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       end
     end
   end
+
+  describe 'GET #copy' do
+    let(:primary_person) { FactoryBot.create(:person, :with_consumer_role) }
+    let(:new_family) { FactoryBot.create(:family, :with_primary_family_member, person: primary_person) }
+    let(:application) { FactoryBot.create(:financial_assistance_application, family_id: new_family.id) }
+    let(:hbx_profile) do
+      FactoryBot.create(
+        :hbx_profile,
+        :normal_ivl_open_enrollment,
+        us_state_abbreviation: EnrollRegistry[:enroll_app].setting(:state_abbreviation).item,
+        cms_id: "#{EnrollRegistry[:enroll_app].setting(:state_abbreviation).item.upcase}0"
+      )
+    end
+    let(:ivl_product) { FactoryBot.create(:benefit_markets_products_health_products_health_product, benefit_market_kind: :aca_individual) }
+
+    let(:new_application) { FinancialAssistance::Application.where(family_id: new_family.id, :id.ne => application.id).first }
+
+    before :each do
+      primary_person.consumer_role.update_attributes!(identity_validation: 'valid')
+      sign_in user
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      hbx_profile.benefit_sponsorship.benefit_coverage_periods.each {|bcp| bcp.update_attributes!(slcsp_id: ivl_product.id)}
+      new_family
+      allow(new_family).to receive(:benchmark_product_id).and_return(ivl_product.id)
+      session[:person_id] = primary_person.id
+    end
+
+    context 'when the logged in user is same as the consumer' do
+      let(:user) { FactoryBot.create(:user, person: primary_person) }
+
+      before do
+        get :copy, params: { :id => application.id }
+      end
+
+      it 'returns success' do
+        expect(response).to have_http_status(:redirect)
+      end
+
+      it 'creates a financial assistance application' do
+        expect(new_application).to be_present
+        expect(new_application.origin).to eq(:user)
+        expect(new_application.generation_reason).to eq(:manual)
+      end
+    end
+
+    context 'when the logged in user is Hbx Staff' do
+      let(:hbx_person) { FactoryBot.create(:person) }
+      let(:permission) { FactoryBot.create(:permission, :super_admin) }
+      let(:hbx_staff) { FactoryBot.create(:hbx_staff_role, person: hbx_person, permission_id: permission.id) }
+      let(:user) { FactoryBot.create(:user, person: hbx_staff.person) }
+
+      before do
+        get :copy, params: { :id => application.id }
+      end
+
+      it 'returns success' do
+        expect(response).to have_http_status(:redirect)
+      end
+
+      it 'creates a financial assistance application' do
+        expect(new_application).to be_present
+        expect(new_application.origin).to eq(:admin)
+        expect(new_application.generation_reason).to eq(:manual)
+      end
+    end
+
+    context 'when the logged in user is an active broker' do
+      let(:bap_id) { BSON::ObjectId.new }
+      let(:broker_role) { FactoryBot.create(:broker_role, aasm_state: 'active', benefit_sponsors_broker_agency_profile_id: bap_id) }
+      let(:user) { FactoryBot.create(:user, person: broker_role.person) }
+
+      before do
+        new_family.broker_agency_accounts.create!(
+          is_active: true,
+          writing_agent_id: broker_role.id,
+          start_on: TimeKeeper.date_of_record,
+          benefit_sponsors_broker_agency_profile_id: bap_id
+        )
+        allow(broker_role).to receive(:individual_market?).and_return(true)
+        get :copy, params: { :id => application.id }
+      end
+
+      it 'returns success' do
+        expect(response).to have_http_status(:redirect)
+      end
+
+      it 'creates a financial assistance application' do
+        expect(new_application).to be_present
+        expect(new_application.origin).to eq(:broker)
+        expect(new_application.generation_reason).to eq(:manual)
+      end
+    end
+  end
 end
 
 RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each, type: :controller do
