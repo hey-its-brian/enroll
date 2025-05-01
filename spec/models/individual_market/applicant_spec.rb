@@ -11,6 +11,7 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
       :with_person_name,
       :with_demographics,
       :with_eligibilities,
+      :with_home_address,
       application: application,
       family_member_id: family_member.id
     )
@@ -27,6 +28,10 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
 
     it 'embeds many eligibilities' do
       expect(applicant.eligibilities.first).to be_a(Eligibilities::V3::Eligibility)
+    end
+
+    it 'embeds many addresses' do
+      expect(applicant.addresses.first).to be_a(Locations::Address)
     end
   end
 

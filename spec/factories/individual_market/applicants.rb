@@ -45,5 +45,23 @@ FactoryBot.define do
         applicant.eligibilities << FactoryBot.build(:aptc_csr_eligibility)
       end
     end
+
+    trait :with_work_address do
+      after(:build) do |applicant|
+        applicant.addresses << FactoryBot.build(:location_address, :work_kind)
+      end
+    end
+
+    trait :with_mailing_address do
+      after(:build) do |applicant|
+        applicant.addresses << FactoryBot.build(:location_address, :mailing_kind)
+      end
+    end
+
+    trait :with_home_address do
+      after(:build) do |applicant|
+        applicant.addresses << FactoryBot.build(:location_address)
+      end
+    end
   end
 end

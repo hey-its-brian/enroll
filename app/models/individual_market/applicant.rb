@@ -42,6 +42,10 @@ module IndividualMarket
     #   @return [IndividualMarket::ImmigrationInformation] Applicant's immigration information if applicable
     embeds_one :immigration_information, class_name: 'IndividualMarket::ImmigrationInformation', cascade_callbacks: true
 
+    # @!attribute addresses
+    #   @return [Array<Locations::Address>] Collection of addresses associated with this applicant
+    embeds_many :addresses, class_name: 'Locations::Address', as: :addressable, cascade_callbacks: true
+
     # @!attribute family_member_id
     #   @return [BSON::ObjectId] The ID of the family member associated with this applicant
     field :family_member_id, type: BSON::ObjectId
