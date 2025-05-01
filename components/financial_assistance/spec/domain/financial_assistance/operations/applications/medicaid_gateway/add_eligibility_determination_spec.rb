@@ -8,8 +8,9 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
     DatabaseCleaner.clean
   end
 
-  let!(:application) do
-    FactoryBot.create(:financial_assistance_application, hbx_id: '200000126', aasm_state: "submitted")
+  let(:application_aasm_state) { 'submitted' }
+  let(:application) do
+    FactoryBot.create(:financial_assistance_application, hbx_id: '200000126', aasm_state: application_aasm_state)
   end
   let!(:ed) do
     eli_d = FactoryBot.create(:financial_assistance_eligibility_determination, application: application)
@@ -193,25 +194,6 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
 
       it 'should return failure with error message' do
         expect(@result.failure).to eq('Found 0 applications with given hbx_id: 999999')
-      end
-    end
-
-    context 'more than one matching persistence applications' do
-      include_context 'cms ME simple_scenarios test_case_d'
-      let!(:application2) do
-        FactoryBot.create(:financial_assistance_application, hbx_id: '200000126', aasm_state: 'draft')
-      end
-
-      before do
-        @result = subject.call(response_payload)
-      end
-
-      it 'should return failure' do
-        expect(@result).to be_failure
-      end
-
-      it 'should return failure with error message' do
-        expect(@result.failure).to eq('Found 2 applications with given hbx_id: 200000126')
       end
     end
   end

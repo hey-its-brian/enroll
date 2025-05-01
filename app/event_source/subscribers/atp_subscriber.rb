@@ -10,7 +10,11 @@ module Subscribers
     subscribe(:on_transfer_in) do |delivery_info, _metadata, response|
       logger.info "AtpSubscriber: invoked on_magi_medicaid_atp_enroll with delivery_info: #{delivery_info}, response: #{response}"
       payload = JSON.parse(response, :symbolize_names => true)
-      result = FinancialAssistance::Operations::Transfers::MedicaidGateway::AccountTransferIn.new.call(payload)
+      result  = if EnrollRegistry.feature_enabled?(:qhp_application)
+                  FinancialAssistance::Operations::Transfers::MedicaidGateway::V2::AccountTransferIn.new.call(payload)
+                else
+                  FinancialAssistance::Operations::Transfers::MedicaidGateway::AccountTransferIn.new.call(payload)
+                end
       transfer_details = {}
       details = payload["family"]["magi_medicaid_applications"][0]["transfer_id"]
       transfer_details[:transfer_id] = details || payload
