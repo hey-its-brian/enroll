@@ -7,5 +7,11 @@ FactoryBot.define do
     signer_role { 'consumer' }
     signer_id { BSON::ObjectId.new }
     signed_at { DateTime.now }
+
+    trait :system do
+      signer_role { 'system' }
+      signer_id { nil }
+      signed_at { nil }
+    end
   end
 end

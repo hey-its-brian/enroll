@@ -21,7 +21,12 @@ module IndividualMarket
 
     # @!attribute SIGNER_ROLE_KINDS
     # @return [Array<String>] Collection of all possible signer roles
-    SIGNER_ROLE_KINDS = %w[admin assister broker consumer].freeze
+    SIGNER_ROLE_KINDS = %w[admin assister broker consumer system].freeze
+
+    # SignerID and SignerAt are only required for certain roles. The below is a list if roles that require a signer_id
+    # @!attribute SIGNER_ROLE_KINDS_WITH_USER_SIGNER_INFO
+    # @return [Array<String>] Collection of signer roles that require a signer_id and signed_at
+    SIGNER_ROLE_KINDS_WITH_USER_SIGNER_INFO = %w[admin assister broker consumer].freeze
 
     # @!attribute signer_role
     #   @return [String] The role of the person who signed (consumer, admin, broker)
@@ -38,11 +43,8 @@ module IndividualMarket
     # Verifies that the signer_role is present and is one of the defined roles
     validates :signer_role, presence: true, inclusion: { in: SIGNER_ROLE_KINDS }
 
-    # Verifies that the signer_id is present and is a valid BSON::ObjectId
-    validates :signer_id, presence: true
-
-    # Verifies that the signed_at is present and is a valid DateTime
-    validates :signed_at, presence: true
+    # Validates that the signer_id and signed_at fields are present or absent based on the signer_role
+    validate :verify_signer_id_and_signed_at
 
     # Returns the User who signed this attestation
     #
@@ -66,6 +68,21 @@ module IndividualMarket
     # @return [Boolean] Whether the attestation was signed by a broker
     def signed_by_broker?
       signer_role == :broker
+    end
+
+    private
+
+    # Validates the presence of signer_id and signed_at based on the signer_role
+    #
+    # @return [void]
+    def verify_signer_id_and_signed_at
+      if SIGNER_ROLE_KINDS_WITH_USER_SIGNER_INFO.include?(signer_role)
+        errors.add(:signer_id, 'must be present') if signer_id.blank?
+        errors.add(:signed_at, 'must be present') if signed_at.blank?
+      else
+        errors.add(:signer_id, 'must not be present') if signer_id.present?
+        errors.add(:signed_at, 'must not be present') if signed_at.present?
+      end
     end
   end
 end
