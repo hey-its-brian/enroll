@@ -35,6 +35,7 @@ FactoryBot.define do
     association :application
 
     is_active { true }
+    is_csr_eligible { false }
     is_ia_eligible { false }
     is_medicaid_chip_eligible { false }
     is_without_assistance { false }

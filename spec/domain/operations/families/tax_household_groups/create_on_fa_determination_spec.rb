@@ -49,6 +49,7 @@ RSpec.describe Operations::Families::TaxHouseholdGroups::CreateOnFaDetermination
                       net_annual_income: 10_078.90,
                       is_post_partum_period: false,
                       is_ia_eligible: true,
+                      is_csr_eligible: true,
                       family_member_id: family.primary_applicant.id,
                       eligibility_determination_id: eligibility_determination.id,
                       member_determinations: member_determinations)
@@ -83,6 +84,11 @@ RSpec.describe Operations::Families::TaxHouseholdGroups::CreateOnFaDetermination
 
     it 'should create Tax Household Member object' do
       expect(@result.value!.tax_households.first.tax_household_members.first.applicant_id).to eq(family.primary_applicant.id)
+    end
+
+    it 'populates CSR eligibility' do
+      thhm = @result.value!.tax_households.first.tax_household_members.first
+      expect(thhm.is_csr_eligible).to be_truthy
     end
 
     it 'should create Member Determination object' do

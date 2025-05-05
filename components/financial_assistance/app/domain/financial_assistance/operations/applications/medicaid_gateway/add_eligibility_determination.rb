@@ -97,6 +97,7 @@ module FinancialAssistance
                                             magi_medicaid_monthly_household_income: ped_entity.magi_medicaid_monthly_household_income,
                                             is_without_assistance: ped_entity.is_uqhp_eligible,
                                             csr_percent_as_integer: get_csr_value(ped_entity),
+                                            is_csr_eligible: ped_entity.is_csr_eligible,
                                             is_ia_eligible: ped_entity.is_ia_eligible,
                                             is_medicaid_chip_eligible: ped_entity.is_medicaid_chip_eligible || ped_entity.is_magi_medicaid,
                                             is_gap_filling: ped_entity.is_gap_filling,

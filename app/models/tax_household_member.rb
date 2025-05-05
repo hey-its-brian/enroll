@@ -13,7 +13,15 @@ class TaxHouseholdMember
   accepts_nested_attributes_for :member_determinations
 
   field :applicant_id, type: BSON::ObjectId
+
+  # @!attribute [rw] is_ia_eligible
+  #   @return [Boolean] Advanced Premium Tax Credit eligibility of the Tax Household Member
   field :is_ia_eligible, type: Boolean, default: false
+
+  # @!attribute [rw] is_csr_eligible
+  #   @return [Boolean] Cost Sharing Reduction eligibility of the Tax Household Member
+  field :is_csr_eligible, type: Boolean, default: false
+
   field :is_medicaid_chip_eligible, type: Boolean, default: false
   field :is_totally_ineligible, type: Boolean, default: false
   field :is_uqhp_eligible, type: Boolean, default: false

@@ -104,6 +104,10 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
           expect(@applicant.is_ia_eligible).to eq(true)
         end
 
+        it 'is expected to update is_csr_eligible' do
+          expect(@applicant.is_csr_eligible).to eq(true)
+        end
+
         it 'should set is_ia_eligible to false if is_ia_eligible is nil' do
           # Without recreating the application were trying to resubmit a determined application and cannot transition from determined to submitted
           application.destroy

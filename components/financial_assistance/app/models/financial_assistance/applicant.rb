@@ -195,8 +195,16 @@ module FinancialAssistance
     field :is_claimed_as_tax_dependent, type: Boolean
     field :claimed_as_tax_dependent_by, type: BSON::ObjectId
 
-    field :is_ia_eligible, type: Boolean, default: false
     field :is_physically_disabled, type: Boolean
+
+    # @!attribute [rw] is_ia_eligible
+    #   @return [Boolean] Advanced Premium Tax Credit eligibility of the applicant
+    field :is_ia_eligible, type: Boolean, default: false
+
+    # @!attribute [rw] is_csr_eligible
+    #   @return [Boolean] Cost Sharing Reduction eligibility of the applicant
+    field :is_csr_eligible, type: Boolean, default: false
+
     field :is_medicaid_chip_eligible, type: Boolean, default: false
     field :is_non_magi_medicaid_eligible, type: Boolean, default: false
     field :is_gap_filling, type: Boolean
@@ -520,21 +528,48 @@ module FinancialAssistance
       is_ia_eligible && !is_medicaid_chip_eligible && !is_without_assistance && !is_totally_ineligible
     end
 
-    # Checks if applicant is eligible for 73, 87 or 94.
+    # Checks if applicant is eligible for CSR 73, 87, or 94.
+    #
+    # Eligibility is determined based on the presence of CSR eligibility flag and
+    # the CSR percentage value (73, 87, or 94).
+    # The logic changes based on whether the qhp_application feature is enabled.
+    #
+    # @return [Boolean] true if applicant is eligible for CSR 73, 87, or 94, false otherwise
     def is_csr_73_87_or_94?
-      is_ia_eligible? && [73, 87, 94].include?(csr_percent_as_integer)
+      if qhp_application_feature_enabled?
+        is_csr_eligible? && [73, 87, 94].include?(csr_percent_as_integer)
+      else
+        is_ia_eligible? && [73, 87, 94].include?(csr_percent_as_integer)
+      end
     end
 
-    # Checks if applicant is eligible for 100.
+    # Checks if applicant is eligible for 100% CSR.
+    #
+    # Eligibility is determined based on whether the CSR eligibility flag is true
+    # and the CSR percentage value is 100.
+    # The logic changes based on whether the qhp_application feature is enabled.
+    #
+    # @return [Boolean] true if applicant is eligible for CSR 100, false otherwise
     def is_csr_100?
-      is_ia_eligible? && csr_percent_as_integer == 100
+      if qhp_application_feature_enabled?
+        is_csr_eligible? && csr_percent_as_integer == 100
+      else
+        is_ia_eligible? && csr_percent_as_integer == 100
+      end
     end
 
     # Checks if applicant is eligible for CSR limited.
-    # Applicant is eligible for limited CSR if attested for AI/AN status if csr is not 100,
-    # as csr 100 is better than csr limited
+    #
+    # Applicant is eligible for limited CSR if attested for AI/AN status and the CSR percentage value is -1.
+    # The logic changes based on whether the qhp_application feature is enabled.
+    #
+    # @return [Boolean] true if applicant is eligible for CSR limited, false otherwise
     def is_csr_limited?
-      (is_ia_eligible? && csr_percent_as_integer == -1) || (!is_medicaid_chip_eligible? && indian_tribe_member && csr_percent_as_integer != 100)
+      if qhp_application_feature_enabled?
+        is_csr_eligible? && csr_percent_as_integer == -1
+      else
+        (is_ia_eligible? && csr_percent_as_integer == -1) || (!is_medicaid_chip_eligible? && indian_tribe_member && csr_percent_as_integer != 100)
+      end
     end
 
     def non_ia_eligible?

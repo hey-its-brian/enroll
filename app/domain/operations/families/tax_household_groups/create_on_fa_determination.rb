@@ -78,7 +78,8 @@ module Operations
             is_medicaid_chip_eligible: applicant.is_medicaid_chip_eligible,
             is_non_magi_medicaid_eligible: applicant.is_non_magi_medicaid_eligible,
             is_totally_ineligible: applicant.is_totally_ineligible,
-            csr_percent_as_integer: applicant.is_ia_eligible ? applicant.csr_percent_as_integer : 0,
+            is_csr_eligible: applicant.is_csr_eligible,
+            csr_percent_as_integer: applicant.csr_percent_as_integer,
             member_determinations: member_determinations(applicant)}
         end
 

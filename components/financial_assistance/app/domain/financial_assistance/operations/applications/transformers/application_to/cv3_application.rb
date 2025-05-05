@@ -895,6 +895,8 @@ module FinancialAssistance
                 next result unless app.eligibility_determination_id.to_s == eligibility.id.to_s
                 result << {applicant_reference: applicant_reference(app),
                            product_eligibility_determination: {is_ia_eligible: app.is_ia_eligible?,
+                                                               is_csr_eligible: app.is_csr_eligible?,
+                                                               csr: fetch_csr(app),
                                                                is_medicaid_chip_eligible: app.is_medicaid_chip_eligible,
                                                                is_totally_ineligible: app.is_totally_ineligible,
                                                                is_magi_medicaid: app.is_magi_medicaid,
@@ -907,6 +909,18 @@ module FinancialAssistance
                                                                magi_medicaid_category: app.magi_medicaid_category}}
                 result
               end
+            end
+
+            # Fetch CSR eligibility kind from applicant
+            # CSR eligibility kind is stored in the format of 'csr_*'
+            # * is the CSR level
+            # Example: csr_73, csr_87, csr_94, csr_100, and csr_limited
+            #
+            # @return [String, nil] CSR level
+            def fetch_csr(applicant)
+              return unless applicant.csr_eligibility_kind
+
+              applicant.csr_eligibility_kind.split('_').last
             end
 
             def applicant_reference(applicant)

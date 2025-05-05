@@ -55,6 +55,9 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Transformers::Ap
                                   net_annual_income: 10_078.90,
                                   is_post_partum_period: false,
                                   is_gap_filling: true,
+                                  is_csr_eligible: true,
+                                  csr_percent_as_integer: 87,
+                                  csr_eligibility_kind: 'csr_87',
                                   is_veteran_or_active_military: true)
     applicant
   end
@@ -103,6 +106,12 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Transformers::Ap
       expect(result.success?).to be_truthy
       expect(result).to be_a(Dry::Monads::Result::Success)
       expect(result.value!).to be_a(Hash)
+    end
+
+    it 'returns CSR information' do
+      ped = result.value![:tax_households].first[:tax_household_members].first[:product_eligibility_determination]
+      expect(ped[:csr]).to eq '87'
+      expect(ped[:is_csr_eligible]).to be_truthy
     end
 
     it 'should have oe date for year before effective date' do
