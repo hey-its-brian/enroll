@@ -295,4 +295,23 @@ class IvlIapFamilyInformation
     end
   end
 
+  def self.edit_dependent_btn
+    '#edit-dependent-person'
+  end
+
+  def self.remove_member_btn
+    '#delete_applicant_button'
+  end
+
+  def self.remove_member_confirm_btn
+    '#destroy-confirm'
+  end
+
+  def self.continue_to_next_step_btn
+    '#continue_button'
+  end
+
+  def self.start_new_application_btn
+    '.interaction-click-control-start-new-application'
+  end
 end

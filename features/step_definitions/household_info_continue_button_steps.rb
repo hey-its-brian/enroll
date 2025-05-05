@@ -260,3 +260,95 @@ end
 Then(/^the user will navigate to Family Relationships page$/) do
   expect(page).to have_content('Family Relationships')
 end
+
+Given(/^the user is on FAA Family Information page$/) do
+  login_as consumer, scope: :user
+  hbx_profile = FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period)
+  hbx_profile.benefit_sponsorship.benefit_coverage_periods.each do |bcp|
+    ivl_product = FactoryBot.create(:benefit_markets_products_health_products_health_product, :ivl_product, application_period: (bcp.start_on..bcp.end_on))
+    bcp.update_attributes!(slcsp_id: ivl_product.id)
+  end
+  visit root_path
+  click_link 'Consumer/Family Portal'
+  find(IvlAuthorizationAndConsent.continue_btn).click
+  find(IvlVerifyIdentity.pick_answer_a).click
+  find(IvlVerifyIdentity.pick_answer_c).click
+  find(IvlVerifyIdentity.submit_btn).click
+  find(IvlVerifyIdentity.continue_btn).click
+  find(IvlIapHelpPayingForCoverage.yes_radiobtn).click
+  find(IvlIapHelpPayingForCoverage.continue_btn).click
+  find_all(IvlIapApplicationChecklist.begin_application_btn).first.click
+  expect(page).to have_content(l10n('add_new_member_to_household'))
+  expect(page).to have_content(l10n('edit_member'))
+end
+
+Given(/^user clicks on add new member to household$/) do
+  find(IvlIapFamilyInformation.add_new_person).click
+end
+
+When(/^user completes the required fields$/) do
+  steps %(
+    And user enters applicant name, ssn, gender and dob
+    And user selects no for applicant's coverage requirement
+    And user selects no for applicant's incarcerated status
+    And user selects no for applicant's indian_tribe_member status
+    And user selects yes for applicant's us_citizen status
+    And user selects no for applicant's naturalized_citizen status
+    And user fills in the missing relationship
+    And user clicks comfirm member
+  )
+end
+
+When(/^the user should see the new member added to the household$/) do
+  expect(page).to have_content('Member 2')
+  expect(page).to have_content('Edit Member', count: 2)
+end
+
+When(/^more than one member exists in the household$/) do
+  step 'user clicks on add new member to household'
+  step 'user completes the required fields'
+end
+
+When(/^user clicks on remove member from household$/) do
+  find(IvlIapFamilyInformation.edit_dependent_button).click
+  find(IvlIapFamilyInformation.remove_member_btn).click
+  sleep 2
+  find(IvlIapFamilyInformation.remove_member_confirm_btn).click
+  sleep 2
+end
+
+Then(/^the user should see the new member removed from the household$/) do
+  expect(page).not_to have_content('Member 2')
+  expect(page).to have_content('Edit Member', count: 1)
+end
+
+When(/^user clicks continue to next step$/) do
+  find(IvlIapFamilyInformation.continue_to_next_step_btn).click
+end
+
+Then(/^user should see income and coverage information page$/) do
+  expect(page).to have_content(l10n('faa.nav.applicant_subheader'))
+  expect(page).to have_content(l10n('add_income_coverage_info'))
+end
+
+Then(/^user should see family relationships page$/) do
+  expect(page).to have_content(l10n('faa.nav.family_relationships'))
+end
+
+When(/^the user clicks on Add income and coverage info$/) do
+  find(IvlIapFamilyInformation.add_income_and_coverage_info_btn).click
+end
+
+And(/^the user clicks on Start New Application$/) do
+  find(IvlIapFamilyInformation.start_new_application_btn).click
+  find_all(IvlIapFamilyInformation.start_new_application_btn).last.click
+end
+
+Then(/^user should see application in cancelled status$/) do
+  expect(page).to have_content('Cancelled')
+  expect(page).to have_content('Draft', count: 1)
+end
+
+Then(/^user should only see one application in draft status$/) do
+  expect(page).not_to have_content('Draft', count: 2)
+end

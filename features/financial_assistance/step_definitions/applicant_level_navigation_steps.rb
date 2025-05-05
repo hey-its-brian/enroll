@@ -79,3 +79,8 @@ Then(/^the user will navigate to the Other Questions page for the corresponding 
     expect(page).to have_content(IvlIapOtherQuestions.primary_caretaker_question_text)
   end
 end
+
+Then(/^the user will navigate to the FAA Family Information page$/) do
+  expect(page).to have_css('[data-cuke="family_information"]')
+  expect(page).to have_css('[data-cuke="add_new_member_to_household"]')
+end

@@ -1,12 +1,12 @@
 <%= javascript_pack_tag 'benefit_sponsors', 'data-turbolinks-track': 'reload' %>
-<h1><%= l10n("family_information") %></h1>
+<h1 data-cuke="family_information"><%= l10n("family_information") %></h1>
 <h2><%= l10n("application_for_coverage", year: @application.assistance_year )%></h2>
 <p><%= l10n('insured.family_members.index.continue_to_get_insurance') %></p>
 <div id="dependent_buttons" class="d-flex flex-column flex-md-row my-md-4 <%= pundit_class Family, :updateable?%> <%= 'hidden' if @family.active_family_members.empty? %>">
   <%= hidden_field_tag 'origin_source', @source %>
   <%= h(link_to(new_application_applicant_path(@application, bs4: @bs4), :remote => true, :id => "household_info_add_member", class:"button outline d-flex") do %>
     <span class="add-button-icon secondary"><span class="sr-only">+</span></span>
-    <span class="ml-2"><%= l10n("add_new_member_to_household") %></span>
+    <span class="ml-2" data-cuke="add_new_member_to_household"><%= l10n("add_new_member_to_household") %></span>
   <% end) %>
 
   <div class="help-to-decide align-content-around ml-3">
