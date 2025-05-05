@@ -962,6 +962,93 @@ RSpec.describe ::Eligibilities::Evidence, type: :model, dbclean: :after_each do
     end
   end
 
+  context '.can_be_extended?' do
+    let(:action) { 'extend_due_date' }
+    let(:income_evidence) do
+      applicant.create_income_evidence(
+        key: :income,
+        title: 'Income',
+        aasm_state: 'pending',
+        due_on: nil,
+        verification_outstanding: false,
+        is_satisfied: true
+      )
+    end
+
+    context 'when evidence is not in rejected or outstanding state' do
+      before do
+        income_evidence.update_attributes!(aasm_state: 'pending')
+      end
+
+      it 'returns false' do
+        expect(income_evidence.can_be_extended?(action)).to be_falsey
+      end
+    end
+
+    context 'when evidence is in rejected state' do
+      before do
+        income_evidence.update_attributes!(aasm_state: 'rejected')
+      end
+
+      it 'returns true when no prior extensions exist' do
+        expect(income_evidence.can_be_extended?(action)).to be_truthy
+      end
+
+      context 'with prior extensions' do
+        before do
+          income_evidence.verification_histories.create(action: action, updated_by: 'system')
+        end
+
+        context 'with date_of_action' do
+          before do
+            income_evidence.verification_histories.first.update_attributes!(date_of_action: TimeKeeper.date_of_record - 10.days)
+          end
+
+          it 'returns false when no state transitions after extension' do
+            expect(income_evidence.can_be_extended?(action)).to be_falsey
+          end
+
+          it 'returns true when verified after extension' do
+            income_evidence.workflow_state_transitions.create(
+              to_state: 'verified',
+              from_state: 'rejected',
+              transition_at: TimeKeeper.date_of_record - 5.days
+            )
+            expect(income_evidence.can_be_extended?(action)).to be_truthy
+          end
+
+          it 'returns true when attested after extension' do
+            income_evidence.workflow_state_transitions.create(
+              to_state: 'attested',
+              from_state: 'rejected',
+              transition_at: TimeKeeper.date_of_record - 5.days
+            )
+            expect(income_evidence.can_be_extended?(action)).to be_truthy
+          end
+
+          it 'returns false when transitions occurred before extension' do
+            income_evidence.workflow_state_transitions.create(
+              to_state: 'verified',
+              from_state: 'rejected',
+              transition_at: TimeKeeper.date_of_record - 15.days
+            )
+            expect(income_evidence.can_be_extended?(action)).to be_falsey
+          end
+        end
+      end
+    end
+
+    context 'when evidence is in outstanding state' do
+      before do
+        income_evidence.update_attributes!(aasm_state: 'outstanding')
+      end
+
+      it 'returns true when no prior extensions exist' do
+        expect(income_evidence.can_be_extended?(action)).to be_truthy
+      end
+    end
+  end
+
   context 'move_evidence_to_outstanding' do
     let(:income_evidence) do
       applicant.create_income_evidence(

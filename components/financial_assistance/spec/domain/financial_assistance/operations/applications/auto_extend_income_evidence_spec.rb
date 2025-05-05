@@ -130,7 +130,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AutoExtendIncome
       context 'previously auto extended then transition to attested or verified' do
         before do
           income_evidence.verification_histories.create(action: 'auto_extend_due_date', update_reason: 'Auto extended due date', updated_by: 'system')
-          income_evidence.workflow_state_transitions.create(to_state: "verified", transition_at: TimeKeeper.date_of_record, reason: "met minimum criteria", comment: "consumer provided proper documentation",
+          income_evidence.workflow_state_transitions.create(to_state: "verified", transition_at: DateTime.now, reason: "met minimum criteria", comment: "consumer provided proper documentation",
                                                             user_id: BSON::ObjectId.from_time(DateTime.now))
           @result = subject.call({})
         end

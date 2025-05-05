@@ -229,9 +229,9 @@ module Eligibilities
       return true unless extensions&.any?
       #  want this limitation on due date extensions to reset anytime an evidence no longer requires a due date
       # (is moved to 'verified' or 'attested' state) so that an individual can benefit from the extension again in the future.
-      auto_extend_time = extensions.last&.created_at
+      auto_extend_time = extensions.last&.date_of_action
       return true unless auto_extend_time
-      workflow_state_transitions.where(:to_state.in => ['verified', 'attested'], :created_at.gt => auto_extend_time).any?
+      workflow_state_transitions.where(:to_state.in => ['verified', 'attested'], :transition_at.gt => auto_extend_time).any?
     end
 
     # rubocop:disable Metrics/CyclomaticComplexity
