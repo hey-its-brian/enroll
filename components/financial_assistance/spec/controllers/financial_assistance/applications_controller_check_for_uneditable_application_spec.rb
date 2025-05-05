@@ -104,17 +104,6 @@ RSpec.describe FinancialAssistance::ApplicationsController, type: :controller do
     end
   end
 
-  # transfer_history
-  describe 'GET #transfer_history' do
-    context 'when application is in renewal_draft state' do
-      it 'redirects to applications index page' do
-        get :transfer_history, params: { id: application.id }
-        expect(response).to redirect_to(applications_path)
-        expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
-      end
-    end
-  end
-
   # wait_for_eligibility_response
   describe 'GET #wait_for_eligibility_response' do
     context 'when application is in renewal_draft state' do

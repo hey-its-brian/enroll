@@ -39,7 +39,6 @@ module FinancialAssistance
       :review_and_submit,
       :review,
       :raw_application,
-      :transfer_history,
       :wait_for_eligibility_response,
       :eligibility_results,
       :application_publish_error,

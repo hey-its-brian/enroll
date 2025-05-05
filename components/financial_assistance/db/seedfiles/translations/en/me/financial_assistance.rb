@@ -482,6 +482,6 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   "en.faa.getting_eligibility" => "Getting your eligibility results...",
   'en.faa.add_mailing_address' => 'Add Mailing Address',
   'en.faa.remove_mailing_address' => 'Remove Mailing Address',
-  'en.faa.flash_alerts.uneditable_application' => 'The application is not editable because it is in renewal_draft state.'
+  'en.faa.flash_alerts.uneditable_application' => 'This application is not editable.'
 }.freeze
 # rubocop:enable Layout/LineLength
