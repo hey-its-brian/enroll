@@ -402,6 +402,33 @@ var ApplicantValidations = (function(window, undefined) {
     }
   }
 
+  function validationForDependentSSN(e) {
+    var noSSNCheckbox = $("#dependent_no_ssn");
+    var ssnField = $("#dependent_ssn");
+  
+    if (!noSSNCheckbox.length || !ssnField.length) {
+      return true;
+    }
+    
+    var dependentSSN = ssnField.val();
+    var dependentNoSSN = noSSNCheckbox.is(':checked');
+    
+    if (dependentSSN == '' && !dependentNoSSN) {
+      ssnField.off('change.validation');
+      noSSNCheckbox.off('change.validation');
+      
+      customValidityWithChangeEvent(noSSNCheckbox, 'SSN is required');
+      
+      ssnField.on('change.validation', function() {
+        customValidityWithChangeEvent(noSSNCheckbox, '');
+      });
+      ApplicantValidations.restoreRequiredAttributes(e);
+      return false;
+    }
+    
+    return true;
+  }
+
   function validationForVlpDocuments(e) {
     if (validationForPersonOrDependent()) {
       $('#showWarning').removeClass('hidden');
@@ -543,6 +570,7 @@ var ApplicantValidations = (function(window, undefined) {
     validationForVlpDocuments: validationForVlpDocuments,
     validationForIncarcerated: validationForIncarcerated,
     validationForIndianTribeMember: validationForIndianTribeMember,
+    validationForDependentSSN: validationForDependentSSN,
     restoreRequiredAttributes: restoreRequiredAttributes
   };
 
@@ -557,6 +585,7 @@ function applicantDemographicValidations() {
     ApplicantValidations.validationForEligibleImmigrationStatuses(e);
     ApplicantValidations.validationForIndianTribeMember(e);
     ApplicantValidations.validationForIncarcerated(e);
+    ApplicantValidations.validationForDependentSSN(e);
     ApplicantValidations.validationForVlpDocuments(e);
     if ($('#showWarning').length && !$('#showWarning').hasClass('hidden') && !$('#showWarning').hasClass('shown')) {
       var btn = document.querySelector('.applicant-confirm-member');

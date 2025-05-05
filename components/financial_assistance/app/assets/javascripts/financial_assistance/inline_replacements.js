@@ -10,6 +10,7 @@ function init_faa_immigration_doc_fields() {
 function init_faa_dependent_form() {
   // components/financial_assistance/app/views/financial_assistance/applicants/_dependent_form.html.erb
   var bs4 = document.documentElement.dataset.bs4
+  var immigrationDocWarning = immigrationDocWarning || false;
 
   if (bs4) {
     function disableButton(button) {
@@ -73,6 +74,12 @@ function init_faa_dependent_form() {
         // enable confirm member button
         if (!form.checkValidity()){
           enableButton($button);
+       }
+       if (!$('#showWarning').hasClass('hidden')) {
+        if (!immigrationDocWarning) {
+          immigrationDocWarning = true;
+          enableButton($button);
+        }
        }
       }
     });

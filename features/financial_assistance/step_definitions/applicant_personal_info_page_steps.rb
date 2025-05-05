@@ -26,6 +26,26 @@ And(/user enters applicant name, gender, dob and checks no ssn$/) do
   end
 end
 
+And(/the user enters applicant information with us citizen false$/) do
+  fill_in FinancialAssistance::ApplicantForm.applicant_first_name, :with => 'johnson'
+  fill_in FinancialAssistance::ApplicantForm.applicant_last_name, :with => 'smith'
+  fill_in FinancialAssistance::ApplicantForm.applicant_form_dob, :with => '10/10/1984'
+  click_outside_datepicker(l10n('family_information'))
+  check FinancialAssistance::ApplicantForm.applicant_form_no_ssn
+  if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+    select 'Male', from: FinancialAssistance::ApplicantForm.applicant_gender_select
+    select 'Child', from: FinancialAssistance::ApplicantForm.applicant_relationship
+    choose(FinancialAssistance::ApplicantForm.us_citizen, option: 'false')
+    choose(FinancialAssistance::ApplicantForm.indian_tribe_member, option: 'false')
+    choose(FinancialAssistance::ApplicantForm.radio_incarcerated, option: 'false')
+  else
+    find(:xpath, FinancialAssistance::ApplicantForm.applicant_form_gender_select_male).click
+    find(:xpath, FinancialAssistance::ApplicantForm.applicant_spouse_select).click
+    choose('indian_tribe_member_no', allow_label_click: true)
+    choose('radio_incarcerated_no', allow_label_click: true)
+  end
+end
+
 And(/user selects no for applicant's coverage requirement$/) do
   find(:xpath, FinancialAssistance::ApplicantForm.is_applying_coverage_true).click
 end

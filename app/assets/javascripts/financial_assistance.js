@@ -2,6 +2,7 @@
 $(document).on('ajax:success', '#edit-dependent-person', function (event) {
   $.inputMasks();
   init_glossary();
+  var immigrationDocWarning = immigrationDocWarning || false;
 
   $('#applicant_same_with_primary').on('click', function () {
     if ($(this).is(':checked')) {
@@ -65,6 +66,13 @@ $(document).on('ajax:success', '#edit-dependent-person', function (event) {
     if (!$(this).closest('form')[0].checkValidity()) {
       $(this).removeAttr('disabled').removeClass('disabled').attr('tabindex', 0);
     }
+
+    if (!$('#showWarning').hasClass('hidden')) {
+      if (!immigrationDocWarning) {
+        immigrationDocWarning = true;
+        $(this).removeAttr('disabled').removeClass('disabled');
+      }
+     }
   });
 });
 
