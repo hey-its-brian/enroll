@@ -1,6 +1,6 @@
 
 $(document).on('turbolinks:load', function () {
-  $("#family-matrix").on("change", ".selected_relationship", function () {
+  $("#family-matrix").off("change", ".selected_relationship").on("change", ".selected_relationship", function () {  
     var bs4 = document.documentElement.dataset.bs4;
     $.ajax({
       url: window.location.pathname.replace('/financial_assistance/relationships', ''),
