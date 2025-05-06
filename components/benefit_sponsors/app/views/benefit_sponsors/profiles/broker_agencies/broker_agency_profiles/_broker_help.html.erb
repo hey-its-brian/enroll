@@ -1,5 +1,6 @@
 <% active_broker = @broker %>
 <% broker_agency_profile =  active_broker.broker_agency_profile%>
+<% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
 
 <div id="broker_show_<%= active_broker.id %>" tabindex="-1" class='hide broker_selection_choice'>
 <% if @bs4 %>
@@ -45,7 +46,7 @@
       <dd><%= broker_agency_profile.languages %></dd>
     </dl>
     <button type="button" class="outline close_broker_select"><%= l10n("previous_step")%></button>
-    <%= h(link_to "Go To My Expert", main_app.brokers_insured_families_path(tab: l10n("brokers_tab")), class: "button hidden go-to-expert mt-4") %>
+    <%= h(link_to "Go To My Expert", main_app.brokers_insured_families_path(tab: l10n("brokers_tab")), class: "button hidden go-to-expert mt-4", data: { turbolinks: (genesys_feature_enabled ? false : true) }) %>
     <button type="button" <%= 'disabled' if !broker_agency_profile.accept_new_clients %> class="select-broker" data-broker='<%=@staff.id%>'><%= l10n("select_this_expert")%></button>
   </section>
 <% else %>

@@ -112,10 +112,10 @@
                   </p>
                   <%= build_link_for_sep_type(@active_sep, l10n('plans.shop_now'), @family.id.to_s, link_class = "btn btn-default") %>
                   <p class="mt-4"><%= l10n('insured.start_your_coverage') %> </p>
-                    <%= h(link_to "#{l10n('plans.qualify_for_new_sep')}", find_sep_insured_families_path(options), class: "btn btn-default pull-left") %></p>
+                    <%= h(link_to "#{l10n('plans.qualify_for_new_sep')}", find_sep_insured_families_path(options), class: "btn btn-default pull-left", data: genesys_feature_enabled ? {turbolinks: false} : {}) %></p>
                 <% elsif !is_under_open_enrollment? %>
                   <p><%= l10n('insured.open_enrollment_is_over') %></p>
-                  <p><%= h(link_to "#{l10n('plans.shop_now')}", find_sep_insured_families_path(options), class: "btn btn-default pull-right") %></p>
+                  <p><%= h(link_to "#{l10n('plans.shop_now')}", find_sep_insured_families_path(options), class: "btn btn-default pull-right", data: genesys_feature_enabled ? {turbolinks: false} : {}) %></p>
                 <% end %>
               <% else %>
                 <% msg = l10n('insured.you_have_no_employer_sponsored_insurance').to_s %>
@@ -259,7 +259,7 @@
                   </p>
                   <p> <%= l10n('insured.start_your_coverage') %> </p>
                     <br/>
-                    <%= h(link_to "#{l10n('insured.quaalify_for_new_sep')}", find_sep_insured_families_path(options), class: "btn btn-default pull-left") %></p>
+                    <%= h(link_to "#{l10n('insured.qualify_for_new_sep')}", find_sep_insured_families_path(options), class: "btn btn-default pull-left") %></p>
                 <% elsif !is_under_open_enrollment? %>
                   <p><%= l10n('insured.open_enrollment_is_over') %></p>
                   <p><%= h(link_to "#{l10n('plans.shop_now')}", find_sep_insured_families_path(options), class: "btn btn-default pull-right") %></p>
