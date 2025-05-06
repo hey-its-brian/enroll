@@ -191,4 +191,22 @@ RSpec.describe FinancialAssistance::Relationship, type: :model, dbclean: :after_
       end
     end
   end
+
+  describe '#validations' do
+    context 'invalid relationship' do
+      let(:relationship_kind) { 'spouse' }
+
+      it 'will not save without an applicant_id' do
+        relationship = application.relationships.build(valid_params.except(:applicant_id))
+        expect(relationship.valid?).to be_falsey
+        expect(relationship.errors[:applicant_id]).to include("can't be blank")
+      end
+
+      it 'will not save without a relative_id' do
+        relationship = application.relationships.build(valid_params.except(:relative_id))
+        expect(relationship.valid?).to be_falsey
+        expect(relationship.errors[:relative_id]).to include("can't be blank")
+      end
+    end
+  end
 end

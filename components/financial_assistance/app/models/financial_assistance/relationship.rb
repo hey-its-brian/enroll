@@ -102,6 +102,10 @@ module FinancialAssistance
               inclusion: { in: RELATIONSHIPS, message: "%{value} is not a valid kind" },
               allow_blank: false
 
+    # refrain from creating/updating a relationship if either applicant or relative is nil
+    validates :applicant_id, presence: true
+    validates :relative_id, presence: true
+
     after_save :propagate_applicant
 
     attr_accessor :callback_update
