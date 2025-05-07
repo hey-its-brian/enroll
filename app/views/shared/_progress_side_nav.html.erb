@@ -1,7 +1,18 @@
+<% qhp_enabled = qhp_application_feature_enabled? %>
 <% content_for :side_nav do %>
   <nav class="progress-nav">
     <% if nav[:title_link].present? %>
-      <h3><a href="<%= nav[:title_link] %>"><i class="fa fa-arrow-circle-left white-font hh-previous-icon" aria-hidden="true"></i> <%= nav[:title] %></a></h3>
+      <h3>
+        <a href="<%= nav[:title_link] %>" class="">
+          <% if qhp_enabled %>
+            <span class="arrow-back-icon vertical-align-middle mr-2"></span>
+            <span class="beta"><%= nav[:title] %></span>
+          <% else %>
+            <i class="fa fa-arrow-circle-left white-font hh-previous-icon" aria-hidden="true"></i>
+            <%= nav[:title] %>
+          <% end %>
+        </a>
+      </h3>
     <% else %>
       <h3><%= nav[:title] %></h3>
     <% end %>

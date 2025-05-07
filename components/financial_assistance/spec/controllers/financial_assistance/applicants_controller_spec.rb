@@ -909,6 +909,60 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
       expect(response.status).not_to eq 200
     end
   end
+
+  context "GET show_ssn" do
+    let(:ssn) { "123456789" }
+    let(:formatted_ssn) { "123-45-6789" }
+
+    before do
+      allow_any_instance_of(FinancialAssistance::ApplicantsController).to receive(:number_to_ssn).with(ssn).and_return(formatted_ssn)
+    end
+
+    context "when user is authorized and applicant exists" do
+      before do
+        applicant.update_attributes(ssn: ssn)
+
+        allow_any_instance_of(FinancialAssistance::ApplicantsController).to receive(:authorize).and_return(true)
+      end
+
+      it "returns the formatted SSN in JSON response" do
+        get :show_ssn, params: { application_id: application.id, id: applicant.id }
+
+        expect(response).to have_http_status(200)
+        parsed_response = JSON.parse(response.body)
+        expect(parsed_response["payload"]).to eq(formatted_ssn)
+        expect(parsed_response["status"]).to eq(200)
+      end
+    end
+
+    context "when applicant does not exist" do
+      before do
+        allow_any_instance_of(FinancialAssistance::ApplicantsController).to receive(:authorize).and_return(true)
+      end
+
+      it "returns unauthorized status in JSON response" do
+        get :show_ssn, params: { application_id: application.id, id: BSON::ObjectId.new }
+
+        expect(response).to have_http_status(401)
+        parsed_response = JSON.parse(response.body)
+        expect(parsed_response["message"]).to eq("Unauthorized")
+      end
+    end
+
+    context "when user is not authorized" do
+      before do
+        allow_any_instance_of(FinancialAssistance::ApplicantsController).to receive(:authorize).and_raise(Pundit::NotAuthorizedError.new("not authorized"))
+      end
+
+      it "returns unauthorized status in JSON response" do
+        get :show_ssn, params: { application_id: application.id, id: applicant.id }
+
+        expect(response).to have_http_status(401)
+        parsed_response = JSON.parse(response.body)
+        expect(parsed_response["message"]).to eq("Unauthorized")
+      end
+    end
+  end
 end
 
 RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do

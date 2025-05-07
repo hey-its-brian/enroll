@@ -141,11 +141,11 @@ header.navbar-primary {
 
       &.complete {
         .vertical-line-progress {
-          background-color: var(--theme-primary-blue, #007bc4);
+          background-color: var(--primary-color-darker, #253843);
         }
 
         span.circle-progress {
-          background-color: var(--theme-primary-blue, #007bc4);
+          background-color: var(--primary-color-darker, #253843);
           border: none;
           width: 14px;
           right: 32px;
@@ -156,7 +156,7 @@ header.navbar-primary {
 
       &.active {
         font-weight: bold;
-        color: var(--theme-primary-blue, #007bc4);
+        color: var(--primary-color-darker, #253843);
 
         .vertical-line-progress {
           background-color: #cacaca;
@@ -164,7 +164,7 @@ header.navbar-primary {
 
         span.circle-progress {
           background-color: var(--grey-000);
-          border: 2px solid var(--theme-primary-blue, #007bc4);
+          border: 2px solid var(--primary-color-darker, #253843);
           width: 14px;
           right: 32px;
           height: 14px;

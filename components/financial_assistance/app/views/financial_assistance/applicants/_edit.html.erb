@@ -43,9 +43,12 @@
           <% ssn_enabled = EnrollRegistry.feature_enabled?(:people_tab) ? @applicant.try(:ssn).present? : false %>
           <%= f.label :ssn, l10n("social_security") %>
           <% if EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields) %>
-            <%= render partial: 'shared/person/ssn/consumer_ssn_field',
-              locals: { f: f, presenter: organize_ssn_params(f.object), default_disabled: ssn_enabled }
-            %>
+            <% presenter = organize_ssn_params(f.object) %>
+            <% partial_path = EnrollRegistry.feature_enabled?(:qhp_application) ?
+                                'financial_assistance/shared/ssn/applicant_ssn_field' :
+                                'shared/person/ssn/consumer_ssn_field' %>
+            <%= render partial: partial_path,
+                       locals: { f: f, presenter: presenter, default_disabled: ssn_enabled } %>
           <% else %>
             <% if EnrollRegistry.feature_enabled?(:ssn_ui_validation) %>
               <%= f.text_field :ssn, placeholder: "000-00-0000", class: "required keep-label mask-ssn",

@@ -417,12 +417,13 @@ module FinancialAssistance
       nav[:links] = true
       nav[:step] = step
       view_applications = (applicant.present? || step != 1) && application.is_draft?
-      nav[:title] = view_applications ? l10n("faa.nav.my_household") : l10n("faa.results.view_my_applications").titleize
-      nav[:title_link] = if view_applications
-                           qhp_enabled ? financial_assistance.application_applicants_path(application) : financial_assistance.edit_application_path(application)
-                         else
-                           financial_assistance.applications_path
-                         end
+      if qhp_enabled
+        nav[:title] = applicant.present? ? l10n("faa.nav.my_household") : nil
+        nav[:title_link] = applicant.present? ? financial_assistance.application_applicants_path(application) : nil
+      else
+        nav[:title] = view_applications ? l10n("faa.nav.my_household") : l10n("faa.results.view_my_applications").titleize
+        nav[:title_link] = view_applications ? financial_assistance.edit_application_path(application) : financial_assistance.applications_path
+      end
       nav[:subheading] = l10n("faa.nav.applicant_subheader") unless qhp_enabled
 
       nav[:show_help_button] = true
@@ -469,12 +470,15 @@ module FinancialAssistance
 
       if qhp_application_feature_enabled?
         # For feature enabled, include an income and coverage step.
-        income_step = { step: multiple_applicants ? 3 : 2, label: l10n('faa.nav.applicant_subheader'),
-                        link: application.present? && application.is_draft? ? financial_assistance.edit_application_path(application) : "javascript:void(0);"}
+        income_step = { step: multiple_applicants ? 3 : 2, label: l10n('faa.nav.income_and_coverage'),
+                        link: "javascript:void(0);"}
         review_step = { step: multiple_applicants ? 4 : 3, label: l10n('faa.nav.review'),
                         link: "javascript:void(0);"}
         # Set the review step link only if the application is ready for attestation.
-        review_step[:link] = financial_assistance.review_and_submit_application_path(application) if application.present? && application.ready_for_attestation? && application.is_draft?
+
+        application_ready_for_attestation = application.present? && application.ready_for_attestation? && application.is_draft?
+        income_step[:link] = financial_assistance.edit_application_path(application) if application_ready_for_attestation
+        review_step[:link] = financial_assistance.review_and_submit_application_path(application) if application_ready_for_attestation
         links.push(income_step, review_step)
       else
         # Without the feature flag, there is no income step.

@@ -179,5 +179,5 @@ end
 
 And(/^.+ returns to the applications page$/) do
   sleep 2
-  find('.interaction-click-control-view-my-applications').click
+  visit '/financial_assistance/applications?tab=cost_savings'
 end

@@ -1,6 +1,6 @@
 <%= javascript_pack_tag 'benefit_sponsors', 'data-turbolinks-track': 'reload' %>
 <% if EnrollRegistry.feature_enabled?(:qhp_application) %>
-  <h1><%= l10n("faa.nav.applicant_subheader") %></h1>
+  <h1><%= l10n("faa.nav.income_and_coverage_information") %></h1>
 <% else %>
   <h1><%= l10n("family_information") %></h1>
   <h2><%= l10n("application_for_coverage", year: @application.assistance_year )%></h2>

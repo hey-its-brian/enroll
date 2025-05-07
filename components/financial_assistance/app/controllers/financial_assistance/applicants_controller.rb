@@ -11,6 +11,8 @@ module FinancialAssistance
     before_action :set_cache_headers, only: [:other_questions, :tax_info]
     before_action :enable_bs4_layout, only: [:index, :edit, :other_questions, :tax_info]
 
+    include ::ApplicationHelper
+
     # This is a before_action that checks if the application is a renewal draft and if it is, it sets a flash message and redirects to the applications_path
     # This before_action needs to be called after finding the application
     #
@@ -207,6 +209,20 @@ module FinancialAssistance
                         edit_application_path(@application)
                       end
       redirect_to redirect_link
+    end
+
+    def show_ssn
+      authorize @application, :can_show_ssn?
+
+      @applicant = @application.applicants.where(id: params[:id]).first
+      if @applicant
+        payload = number_to_ssn(@applicant.ssn)
+        render json: { payload: payload, status: 200 }
+      else
+        render json: { message: "Unauthorized" }, status: 401
+      end
+    rescue Pundit::NotAuthorizedError, Mongoid::Errors::DocumentNotFound
+      render json: { message: "Unauthorized" }, status: 401
     end
 
     private

@@ -9,15 +9,19 @@ module Presenters
                 :object_type,
                 :disabled,
                 :person_id,
-                :family_id
+                :applicant_id,
+                :family_id,
+                :application_id
 
-    def initialize(form_object, family_id = nil)
+    def initialize(form_object, family_id = nil, application_id = nil)
       @form_object = form_object
 
       @object_type = @form_object.class.to_s
       @obscured_ssn = nil
       @family_id = family_id ? family_id.to_s : nil
+      @application_id = application_id ? application_id.to_s : nil
       @person_id = nil
+      @applicant_id = nil
       @disabled = nil
     end
 
@@ -72,13 +76,19 @@ module Presenters
     end
 
     def sanitize_applicant
-      family = @form_object.family
-      @family_id = family.id.to_s
+      if EnrollRegistry.feature_enabled?(:qhp_application)
+        application = @form_object.application
+        @application_id = application.id.to_s
+        @applicant_id = @form_object.id.to_s
+        obscure_ssn(@form_object)
+      else
+        family = @form_object.family
+        @family_id = family.id.to_s
+        person = Person.by_hbx_id(@form_object.person_hbx_id).first
+        @person_id = person.id.to_s
+        obscure_ssn(person)
+      end
 
-      person = Person.by_hbx_id(@form_object.person_hbx_id).first
-      @person_id = person.id.to_s
-
-      obscure_ssn(person)
       @disabled = if EnrollRegistry.feature_enabled?(:people_tab)
                     @form_object.ssn.present? ? true : false
                   else

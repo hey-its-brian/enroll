@@ -59,6 +59,7 @@ FinancialAssistance::Engine.routes.draw do
       post :step, on: :collection
       get 'step/:step', on: :member, action: 'step', as: 'go_to_step'
       put ':step/:step', on: :member, action: 'step'
+      get :show_ssn, on: :member
 
       resources :incomes do
         get 'other', on: :collection

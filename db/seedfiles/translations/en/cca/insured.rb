@@ -460,6 +460,7 @@ How to find the SEVIS ID: On the DS-2019, the number is on the top right hand si
   :'en.review' => "Review",
   :'en.insured.family_members.index.sep_header' => "%{sep} on: %{sep_date}",
   :'en.insured.family_members.index.continue_to_get_insurance' => "If you need to get insurance coverage for other members of your household, select 'Add New Member'. When you’re finished, select CONTINUE.",
+  :'en.insured.family_members.index.add_members_and_continue_to_get_insurance' => "If you need to get health insurance coverage for other members of your family, select 'Add New Member To Household'. When you’re finished, select 'Continue to Next Step'.",
   :'en.insured.family_members.index.add_member_info_html' => "<span class='bold'>Here's your chance to add family members to your plan.</span><br>Add family members by clicking the 'Add Member' button. If you don't need to add more members, or when you are done adding members, click continue.",
   :'en.insured.family_members.duplicate_error_message' => "Cannot %{action} the duplicate members as they are present on enrollments/tax households. Please call customer service at %{contact_center_phone_number}.",
   :'en.month' => "Month",

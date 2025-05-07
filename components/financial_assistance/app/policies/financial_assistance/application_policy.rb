@@ -190,5 +190,15 @@ module FinancialAssistance
     def update_application_year?
       edit?
     end
+
+    # Determines whether the SSN field can be displayed to the user.
+    #
+    # This method returns `true` only if the `:mask_ssn_ui_fields` feature flag is enabled
+    # via the EnrollRegistry and the current context allows editing (i.e., `edit?` returns true).
+    def can_show_ssn?
+      return false unless EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields)
+
+      edit?
+    end
   end
 end

@@ -272,3 +272,16 @@ button.text-button {
     background: var(--secondary-color);
   }
 }
+
+.arrow-back-icon {
+  display: inline-block;
+  height: 24px;
+  width: 24px;
+  background: var(--default-font-color);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%2211%22%20stroke%3D%22%23323130%22%20stroke-width%3D%222%22/%3E%3Cpath%20d%3D%22M6.5%2012.2426L10.7426%208M6.5%2012.2426L10.7426%2016.4853M6.5%2012.2426H17.8137%22%20stroke%3D%22%23323130%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%2211%22%20stroke%3D%22%23323130%22%20stroke-width%3D%222%22/%3E%3Cpath%20d%3D%22M6.5%2012.2426L10.7426%208M6.5%2012.2426L10.7426%2016.4853M6.5%2012.2426H17.8137%22%20stroke%3D%22%23323130%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E");
+
+  &.vertical-align-middle {
+    vertical-align: -3px;
+  }
+}

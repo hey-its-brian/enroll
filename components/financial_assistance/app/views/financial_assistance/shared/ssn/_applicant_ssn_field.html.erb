@@ -1,0 +1,24 @@
+<% if f.object.ssn.blank? %>
+  <%= f.text_field :ssn,
+                   placeholder: "000-00-0000",
+                   class: "required keep-label mask-ssn",
+                   pattern: "(?!666|000|9\\d{2})\\d{3}[\\- ]{0,1}(?!00)\\d{2}[\\- ]{0,1}(?!0{4})\\d{4}",
+                   disabled: defined?(default_disabled) && default_disabled,
+                   **ssn_field_validation_attributes(is_enabled: true)
+  %>
+<% else %>
+  <div id='ssn-input-container' class="<%= 'div-disabled' if presenter.disabled %>" data-controller='applicant'>
+    <%= f.text_field :ssn,
+                     value: presenter.formatted_ssn,
+                     disabled: presenter.disabled,
+                     class: "keep-label mask-ssn hidden ssn-input ssn-input-#{presenter.applicant_id}",
+                     target: 'applicant.ssn',
+                     **ssn_field_validation_attributes(is_enabled: true)
+    %>
+    <span class="ssn-facade ssn-facade-<%= presenter.applicant_id %>">
+      <%= presenter.obscured_ssn %>
+    </span>
+    <%= render partial: 'financial_assistance/shared/ssn/show_hide_ssn_buttons', locals: { presenter: presenter } %>
+  </div>
+<% end %>
+
