@@ -14,10 +14,9 @@
 #
 # @see Mongoid::Migration
 class MigrateExistingOtherApplicationsToPopulateOriginReason < Mongoid::Migration
-  include ::ResourceRegistryHelper
 
   def self.up
-    if qhp_application_feature_enabled?
+    if EnrollRegistry.feature_enabled?(:qhp_application)
       # Fetch applications that are not transferred in or imported or renewal
       puts "Fetching applications ..."
       application_hbx_ids = FinancialAssistance::Application.collection.aggregate(

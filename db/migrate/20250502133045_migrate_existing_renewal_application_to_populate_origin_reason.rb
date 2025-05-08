@@ -14,10 +14,9 @@
 #
 # @see Mongoid::Migration
 class MigrateExistingRenewalApplicationToPopulateOriginReason < Mongoid::Migration
-  include ::ResourceRegistryHelper
 
   def self.up
-    if qhp_application_feature_enabled?
+    if EnrollRegistry.feature_enabled?(:qhp_application)
       # Fetch applications with a non-nil `predecessor_id`
       puts "Fetching applications with non-nil predecessor_id..."
       applications = FinancialAssistance::Application.where(:predecessor_id.ne => nil)
