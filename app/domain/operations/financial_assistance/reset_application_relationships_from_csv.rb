@@ -52,8 +52,10 @@ module Operations
       end
 
       def reset_application_relationships(application)
-        application.relationships = []
-        application.save!
+        application.collection.update_one(
+          { "_id" => application.id },
+          { "$set" => { "relationships" => [] } }
+        )
 
         application.reload
 
