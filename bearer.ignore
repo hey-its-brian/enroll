@@ -574,5 +574,17 @@
     "comment": "This is flagged as 'Usage of hard-coded secret [CWE-798]' but this just text from a translation file.",
     "false_positive": true,
     "ignored_at": "2024-09-19T19:13:42Z"
+  },
+  "70752d377e288563e24347322a7af3bf_0": {
+    "author": "Tristan",
+    "comment": "This is flagged as 'Unsanitized user input in file path [CWE-73]' but is a hard-coded string from a script file.",
+    "false_positive": true,
+    "ignored_at": "2025-05-07T22:10:23Z"
+  },
+  "70752d377e288563e24347322a7af3bf_1": {
+    "author": "Tristan",
+    "comment": "This is flagged as 'Unsanitized user input in file path [CWE-73]' but is a hard-coded string from a script file.",
+    "false_positive": true,
+    "ignored_at": "2025-05-07T22:10:23Z"
   }
 }
