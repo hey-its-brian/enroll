@@ -3,7 +3,7 @@
   <nav class="progress-nav">
     <% if nav[:title_link].present? %>
       <h3>
-        <a href="<%= nav[:title_link] %>" class="">
+        <a href="<%= nav[:title_link] %>">
           <% if qhp_enabled %>
             <span class="arrow-back-icon vertical-align-middle mr-2"></span>
             <span class="beta"><%= nav[:title] %></span>
@@ -13,7 +13,7 @@
           <% end %>
         </a>
       </h3>
-    <% else %>
+    <% elsif nav[:title].present? %>
       <h3><%= nav[:title] %></h3>
     <% end %>
 

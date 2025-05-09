@@ -16,6 +16,7 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   "en.faa.nav.other_questions" => "Other Questions",
   "en.faa.nav.health_coverage" => "Health Coverage",
   "en.faa.nav.applicant_subheader" => "Income & Coverage Info",
+  "en.faa.nav.income_and_coverage" => "Income & Coverage Info",
   "en.faa.checklist.heading" => "Application Checklist",
   "en.faa.tax_info.header" => "Tax Info",
   "en.faa.tax_info.subheader" => "Tell us about tax information for %{person}, select “Continue to Next Step” when finished.",
