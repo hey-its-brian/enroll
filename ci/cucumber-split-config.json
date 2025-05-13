@@ -296,7 +296,8 @@
     "files":[
       "features/admin/prior_py_shop_admin_sep.feature",
       "features/hbx_admin/manage_sep_types/manage_sep_types.feature",
-      "features/financial_assistance/health_coverage.feature"
+      "features/financial_assistance/health_coverage.feature",
+      "features/financial_assistance/health_coverage_medicaid_cubcare_eligible.feature"
     ]
   },
   {

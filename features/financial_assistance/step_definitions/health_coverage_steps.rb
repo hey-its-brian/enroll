@@ -192,3 +192,41 @@ Then(/should see not sure modal pop up/) do
   find('#has_enrolled_health_coverage_from_hra') if FinancialAssistanceRegistry[:has_enrolled_health_coverage].setting(:currently_enrolled_with_hra).item
   find('#has_enrolled_health_coverage') if FinancialAssistanceRegistry[:has_enrolled_health_coverage].setting(:currently_enrolled).item
 end
+
+Given('the user answers yes to having MaineCare coverage end date') do
+  sleep 2
+  find('#has_eligible_medicaid_cubcare_true').click
+  expect(page).to have_selector('#denied-medicaid', visible: true)
+end
+
+Given('the user answers yes to eligibility changed question') do
+  sleep 2
+  find('#has_eligible_medicaid_cubcare_false').click
+  find('#has_eligibility_changed_true').click
+  expect(page).to have_selector('#medicaid-chip-coverage-last-day', visible: true)
+end
+
+When('the user sets {string} date field to {string}') do |field_id, date_value|
+  date_field = find("##{field_id}")
+  date_field.click
+
+  page.execute_script("document.getElementById('#{field_id}').value = '#{date_value}'")
+  page.execute_script("document.getElementById('#{field_id}').dispatchEvent(new Event('change'))")
+end
+
+Then('the date in field {string} should be {string}') do |field_id, expected_date|
+  expect(page).to have_field(field_id, with: expected_date)
+end
+
+Then('the user clicks continue, the applicant {string} has updated value {string}') do |field_id, expected_date|
+  find('.btn-continue').click
+  sleep 2
+
+  application = FinancialAssistance::Application.last
+  applicant = application.primary_applicant
+
+  field_name = field_id.to_sym
+  actual_date = applicant&.send(field_name)&.strftime("%Y-%m-%d")
+
+  expect(actual_date).to eq(expected_date)
+end

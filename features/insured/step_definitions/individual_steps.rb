@@ -255,3 +255,12 @@ end
 When(/^send_extra_fields_to_checkbook feature is disabled$/) do
   disable_feature :send_extra_fields_to_checkbook
 end
+
+When(/^has_medicare_cubcare_eligible feature is enabled$/) do
+  feature_flag = :has_medicare_cubcare_eligible
+
+  unless FinancialAssistanceRegistry.feature_enabled?(feature_flag)
+    enable_feature feature_flag
+    allow(FinancialAssistanceRegistry[feature_flag].feature).to receive(:is_enabled).and_return(true)
+  end
+end
