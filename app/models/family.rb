@@ -353,16 +353,26 @@ class Family
     where({"eligibility_determination.subjects.eligibility_states.evidence_states.is_eligble" => true})
   }
 
+  # This scope queries for families with enrolled members who have outstanding verifications which are expiring on a specific date.
   scope :outstanding_verifications_expiring_on, lambda { |date|
     if EnrollRegistry.feature_enabled?(:trigger_document_reminder_notices_at_individual_level)
       where({
-              "$and" =>
-                [
-                  {"eligibility_determination.subjects" => {"$elemMatch": {"outstanding_verification_status": {"$ne": "not_enrolled"}}}},
-                  {"eligibility_determination.subjects.eligibility_states.evidence_states.status" => {"$in": [:outstanding, :rejected]}},
-                  {"eligibility_determination.subjects.eligibility_states.eligibility_item_key" => {"$in": %w[aptc_csr_credit aca_individual_market_eligibility] }},
-                  {"eligibility_determination.subjects.eligibility_states.evidence_states.due_on" => date.beginning_of_day}
-                ]
+              "eligibility_determination.subjects" => {
+                "$elemMatch" => {
+                  "outstanding_verification_status" => { "$ne" => "not_enrolled" },
+                  "eligibility_states" => {
+                    "$elemMatch" => {
+                      "eligibility_item_key" => { "$in": %w[aptc_csr_credit aca_individual_market_eligibility] },
+                      "evidence_states" => {
+                        "$elemMatch" => {
+                          "status" => { "$in": [:outstanding, :rejected] },
+                          "due_on" => date.beginning_of_day
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             })
     else
       where(:"eligibility_determination.outstanding_verification_earliest_due_date" => date.beginning_of_day)

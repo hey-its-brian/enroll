@@ -1250,6 +1250,331 @@ describe "#outstanding_verification_datatable scope", dbclean: :after_each do
   end
 end
 
+describe "#outstanding_verifications_expiring_on scope", dbclean: :after_each do
+  let(:date) { TimeKeeper.date_of_record }
+  let!(:person) { FactoryBot.create(:person) }
+
+  context "when document reminder notices at individual level feature is enabled" do
+    before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:trigger_document_reminder_notices_at_individual_level).and_return(true)
+    end
+
+    context "with enrolled member having an outstanding or rejected evidence for the individual market or faa eligibilities expiring on the date" do
+      let!(:family) do
+        FactoryBot.create(
+          :family,
+          :with_primary_family_member,
+          person: person,
+          eligibility_determination: FactoryBot.build(
+            :eligibilities_determination,
+            subjects: [
+              FactoryBot.build(
+                :eligibilities_subject,
+                eligibility_states: [
+                  FactoryBot.build(
+                    :eligibilities_eligibility_state,
+                    evidence_states: [
+                      FactoryBot.build(
+                        :eligibilities_evidence_state,
+                        status: :outstanding,
+                        due_on: date.beginning_of_day
+                      )
+                    ]
+                  )
+                ]
+              )
+            ]
+          )
+        )
+      end
+
+      it "should include the family" do
+        expect(Family.outstanding_verifications_expiring_on(date).to_a).to include(family)
+      end
+    end
+
+    context "with member having determination-level status indicating no enrollment" do
+      let!(:family) do
+        FactoryBot.create(
+          :family,
+          :with_primary_family_member,
+          person: person,
+          eligibility_determination: FactoryBot.build(
+            :eligibilities_determination,
+            subjects: [
+              FactoryBot.build(
+                :eligibilities_subject,
+                outstanding_verification_status: "not_enrolled",
+                eligibility_states: [
+                  FactoryBot.build(
+                    :eligibilities_eligibility_state,
+                    evidence_states: [
+                      FactoryBot.build(
+                        :eligibilities_evidence_state,
+                        status: :outstanding,
+                        due_on: date.beginning_of_day
+                      )
+                    ]
+                  )
+                ]
+              )
+            ]
+          )
+        )
+      end
+
+      it "should not include the family" do
+        expect(Family.outstanding_verifications_expiring_on(date).to_a).to_not include(family)
+      end
+    end
+
+    context "with enrolled member having an outstanding or rejected evidence not for the individual market or faa eligibilities expiring on the date" do
+      context "with no other evidences" do
+        let!(:family) do
+          FactoryBot.create(
+            :family,
+            :with_primary_family_member,
+            person: person,
+            eligibility_determination: FactoryBot.build(
+              :eligibilities_determination,
+              outstanding_verification_status: "not_enrolled",
+              subjects: [
+                FactoryBot.build(
+                  :eligibilities_subject,
+                  eligibility_states: [
+                    FactoryBot.build(
+                      :eligibilities_eligibility_state,
+                      eligibility_item_key: "other_eligibility",
+                      evidence_states: [
+                        FactoryBot.build(
+                          :eligibilities_evidence_state,
+                          status: :outstanding,
+                          due_on: date.beginning_of_day
+                        )
+                      ]
+                    )
+                  ]
+                )
+              ]
+            )
+          )
+        end
+
+        it "should not include the family" do
+          expect(Family.outstanding_verifications_expiring_on(date).to_a).to_not include(family)
+        end
+      end
+
+      context "with another evidence for the individual market or faa eligibilities but otherwise not meeting the criteria" do
+        let!(:family) do
+          FactoryBot.create(
+            :family,
+            :with_primary_family_member,
+            person: person,
+            eligibility_determination: FactoryBot.build(
+              :eligibilities_determination,
+              outstanding_verification_status: "not_enrolled",
+              subjects: [
+                FactoryBot.build(
+                  :eligibilities_subject,
+                  eligibility_states: [
+                    FactoryBot.build(
+                      :eligibilities_eligibility_state,
+                      eligibility_item_key: "other_eligibility",
+                      evidence_states: [
+                        FactoryBot.build(
+                          :eligibilities_evidence_state,
+                          status: :outstanding,
+                          due_on: date.beginning_of_day
+                        )
+                      ]
+                    ),
+                    FactoryBot.build(
+                      :eligibilities_eligibility_state,
+                      evidence_states: [
+                        FactoryBot.build(
+                          :eligibilities_evidence_state,
+                          status: :verified,
+                          due_on: date.prev_day
+                        )
+                      ]
+                    )
+                  ]
+                )
+              ]
+            )
+          )
+        end
+
+        it "should include the family" do
+          expect(Family.outstanding_verifications_expiring_on(date).to_a).to_not include(family)
+        end
+      end
+    end
+
+    context "with enrolled member having an evidence for the individual market or faa eligibilities expiring on the date without outstanding or rejected status" do
+      let!(:family) do
+        FactoryBot.create(
+          :family,
+          :with_primary_family_member,
+          person: person,
+          eligibility_determination: FactoryBot.build(
+            :eligibilities_determination,
+            subjects: [
+              FactoryBot.build(
+                :eligibilities_subject,
+                eligibility_states: [
+                  FactoryBot.build(
+                    :eligibilities_eligibility_state,
+                    evidence_states: [
+                      FactoryBot.build(
+                        :eligibilities_evidence_state,
+                        status: :verified,
+                        due_on: date.beginning_of_day
+                      )
+                    ]
+                  )
+                ]
+              )
+            ]
+          )
+        )
+      end
+
+      it "should not include the family" do
+        expect(Family.outstanding_verifications_expiring_on(date).to_a).not_to include(family)
+      end
+
+      context "with another evidence for the individual market or faa eligibilities having outstanding status but otherwise not meeting the criteria" do
+        let!(:family) do
+          FactoryBot.create(
+            :family,
+            :with_primary_family_member,
+            person: person,
+            eligibility_determination: FactoryBot.build(
+              :eligibilities_determination,
+              subjects: [
+                FactoryBot.build(
+                  :eligibilities_subject,
+                  eligibility_states: [
+                    FactoryBot.build(
+                      :eligibilities_eligibility_state,
+                      evidence_states: [
+                        FactoryBot.build(
+                          :eligibilities_evidence_state,
+                          status: :verified,
+                          due_on: date.beginning_of_day
+                        ),
+                        FactoryBot.build(
+                          :eligibilities_evidence_state,
+                          status: :outstanding,
+                          due_on: date.beginning_of_day
+                        )
+                      ]
+                    )
+                  ]
+                )
+              ]
+            )
+          )
+        end
+
+        it "should include the family" do
+          expect(Family.outstanding_verifications_expiring_on(date).to_a).to include(family)
+        end
+      end
+    end
+
+    context "with enrolled member having an outstanding or rejected evidence for the individual market or faa eligibilities not expiring on the date" do
+      let!(:family) do
+        FactoryBot.create(
+          :family,
+          :with_primary_family_member,
+          person: person,
+          eligibility_determination: FactoryBot.build(
+            :eligibilities_determination,
+            subjects: [
+              FactoryBot.build(
+                :eligibilities_subject,
+                eligibility_states: [
+                  FactoryBot.build(
+                    :eligibilities_eligibility_state,
+                    evidence_states: [
+                      FactoryBot.build(
+                        :eligibilities_evidence_state,
+                        status: :outstanding,
+                        due_on: date.prev_day
+                      )
+                    ]
+                  )
+                ]
+              )
+            ]
+          )
+        )
+      end
+
+      it "should not include the family" do
+        expect(Family.outstanding_verifications_expiring_on(date).to_a).not_to include(family)
+      end
+
+      context "with another evidence for the individual market or faa eligibilities expiring on the date but otherwise not meeting the criteria" do
+        let!(:family) do
+          FactoryBot.create(
+            :family,
+            :with_primary_family_member,
+            person: person,
+            eligibility_determination: FactoryBot.build(
+              :eligibilities_determination,
+              subjects: [
+                FactoryBot.build(
+                  :eligibilities_subject,
+                  eligibility_states: [
+                    FactoryBot.build(
+                      :eligibilities_eligibility_state,
+                      evidence_states: [
+                        FactoryBot.build(
+                          :eligibilities_evidence_state,
+                          status: :outstanding,
+                          due_on: date.prev_day
+                        ),
+                        FactoryBot.build(
+                          :eligibilities_evidence_state,
+                          status: :verified,
+                          due_on: date
+                        )
+                      ]
+                    )
+                  ]
+                )
+              ]
+            )
+          )
+        end
+      end
+    end
+  end
+
+  context "when document reminder notices at individual level feature is disabled" do
+    let!(:family) do
+      FactoryBot.create(
+        :family,
+        :with_primary_family_member,
+        person: person,
+        eligibility_determination: FactoryBot.build(:eligibilities_determination, outstanding_verification_earliest_due_date: date)
+      )
+    end
+
+    before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:trigger_document_reminder_notices_at_individual_level).and_return(false)
+    end
+
+    it "should use the old query method" do
+      expect(Family.outstanding_verifications_expiring_on(date).to_a).to include(family)
+    end
+  end
+end
+
 describe Family, "with 2 households a person and 2 extended family members", :dbclean => :after_each do
   let(:family) { FactoryBot.build(:family) }
   let(:primary) { FactoryBot.create(:person) }

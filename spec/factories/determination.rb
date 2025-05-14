@@ -8,9 +8,9 @@ FactoryBot.define do
     outstanding_verification_document_status { 'outstanding' }
 
     transient do
-      subject_count { 3 }
-      subjects_with_action_needed { 1 }
-      subjects_with_review { 1 }
+      subject_count { 0 }
+      subjects_with_action_needed { 0 }
+      subjects_with_review { 0 }
     end
 
     after(:build) do |determination, evaluator|
