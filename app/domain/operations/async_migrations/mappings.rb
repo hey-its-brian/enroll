@@ -10,7 +10,8 @@ module Operations
       # @return [Hash] The mapping of model or query names to their corresponding classes.
       QUERY_MAP = {
         'families_with_id' => ::Family.only(:_id),
-        'applications_with_aasm_state_and_hbx_ids' => ::FinancialAssistance::Application.only(:hbx_id, :aasm_state)
+        'applications_with_aasm_state_and_hbx_ids' => ::FinancialAssistance::Application.only(:hbx_id, :aasm_state),
+        'latest_determined_fa_application_with_ids' => ::Operations::AsyncMigrations::Handlers::Families::FetchLatestDeterminedFAApplicationHbxIds.new
       }.freeze
 
       # Mapping of event handler names to their corresponding classes.
@@ -19,7 +20,8 @@ module Operations
       EVENT_HANDLER_MAP = {
         '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility,
         '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally,
-        'migrate_fa_evidences' => ::Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvidence
+        'migrate_fa_evidences' => ::Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvidence,
+        'create_financial_assistance_application' => ::Operations::AsyncMigrations::Handlers::AptcCsrEligibility::CreateApplication
       }.freeze
     end
   end
