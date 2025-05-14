@@ -113,6 +113,11 @@ module IndividualMarket
     # @return [Symbol] The current state of the application
     field :current_state, type: Symbol, default: :initial
 
+    # @!attribute is_renewal
+    # @return [Boolean] Indicates if the application is a renewal application
+    # @note This field is used to track if the application is a renewal of a previous application
+    field :is_renewal, type: Boolean, default: false
+
     # All possible states for an application
     # @!attribute ALL_STATES
     # @return [Array<Symbol>] Collection of all possible states

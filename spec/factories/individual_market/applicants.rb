@@ -11,8 +11,11 @@ FactoryBot.define do
     is_homeless { false }
 
     trait :dependent do
+      family_member_id { BSON::ObjectId.new }
       is_primary_applicant { false }
       address_same_as_primary { true }
+      is_applying_coverage { true }
+      is_homeless { false }
     end
 
     trait :with_person_name do

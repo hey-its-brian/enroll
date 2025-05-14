@@ -9,5 +9,6 @@ FactoryBot.define do
     is_incarcerated     { false }
     indian_tribe_member { false }
     is_physically_disabled { false }
+    no_ssn            { false }
   end
 end
