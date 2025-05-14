@@ -143,6 +143,7 @@ module Eligibilities
     def move_evidence_to_negative_response_received
       return unless may_negative_response_received?
 
+      update(verification_outstanding: false, is_satisfied: true, due_on: nil)
       negative_response_received!
     end
 

@@ -1049,7 +1049,7 @@ RSpec.describe ::Eligibilities::Evidence, type: :model, dbclean: :after_each do
     end
   end
 
-  context 'move_evidence_to_outstanding' do
+  describe '#move_evidence_to_outstanding' do
     let(:income_evidence) do
       applicant.create_income_evidence(
         key: :income,
@@ -1083,6 +1083,36 @@ RSpec.describe ::Eligibilities::Evidence, type: :model, dbclean: :after_each do
         income_evidence.reload
         expect(income_evidence.aasm_state).to eq "outstanding"
         expect(income_evidence.due_on).to eq TimeKeeper.date_of_record
+      end
+    end
+  end
+
+  describe '#move_evidence_to_negative_response_received' do
+    let(:income_evidence) do
+      applicant.create_income_evidence(
+        key: :income,
+        title: 'Income',
+        aasm_state: 'outstanding',
+        due_on: TimeKeeper.date_of_record,
+        verification_outstanding: true,
+        is_satisfied: false
+      )
+    end
+
+    it "should move income evidence to set status to negative_response_received, verification_outstanding to false, is_satisfied to true" do
+      expect(income_evidence.move_evidence_to_negative_response_received).to be_truthy
+      expect(income_evidence.aasm_state).to eq "negative_response_received"
+      expect(income_evidence.verification_outstanding).to eq false
+      expect(income_evidence.is_satisfied).to eq true
+      expect(income_evidence.due_on).to be_nil
+    end
+
+    context "when evidence cannot be moved to negative_response_received" do
+      before { income_evidence.update_attributes(aasm_state: :corrected) }
+
+      it "should not move income evidence to negative_response_received" do
+        expect(income_evidence.move_evidence_to_negative_response_received).to be_falsey
+        expect(income_evidence.aasm_state).to eq "corrected"
       end
     end
   end
