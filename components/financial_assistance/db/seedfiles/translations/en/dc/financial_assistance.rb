@@ -17,7 +17,8 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   "en.faa.nav.other_questions" => "Other Questions",
   "en.faa.nav.health_coverage" => "Health Coverage",
   "en.faa.nav.applicant_subheader" => "Income & Coverage Info",
-  "en.faa.nav.income_and_coverage" => "Income & Coverage Info",
+  "en.faa.nav.income_and_coverage" => "Income & Coverage",
+  "en.faa.nav.income_and_coverage_information" => "Income & Coverage Information",
   "en.faa.curam_lookup" => "It looks like you've already completed an application for Medicaid and cost savings on DC Health Link.
      Please call DC Health Link at (855) 532-5465 to make updates to that application.
       If you keep going, we'll check to see if you qualify to enroll in a private health insurance plan on DC Health Link, but won't be able to tell you if you qualify for Medicaid or cost savings.",
