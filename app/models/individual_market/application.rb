@@ -188,6 +188,18 @@ module IndividualMarket
       applicants.where(is_primary_applicant: true).first
     end
 
+    # Finds and returns the applicants who are not marked as the primary applicant
+    #
+    # @return [Array<FamilyMember>] The non-primary applicants associated with this application
+    def non_primary_applicants
+      applicants.where(is_primary_applicant: false)
+    end
+
+    # Defines the specific policy class for the application model as the application policy already exists
+    def policy_class
+      QhpApplicationPolicy
+    end
+
     private
 
     # Validates that there is exactly one primary applicant in the application if there are any applicants

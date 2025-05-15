@@ -12,22 +12,22 @@ module IndividualMarket
     embedded_in :applicant, class_name: 'IndividualMarket::Applicant'
 
     # Enable the commented fields below or add new fields (more descriptive) as needed.
-    # field :subject, type: String
-    # field :alien_number, type: String
-    # field :i94_number, type: String
-    # field :visa_number, type: String
-    # field :passport_number, type: String
-    # field :sevis_id, type: String
-    # field :naturalization_number, type: String
-    # field :receipt_number, type: String
-    # field :citizenship_number, type: String
-    # field :card_number, type: String
-    # field :country_of_citizenship, type: String
-    # field :expiration_date, type: Date
-    # field :issuing_country, type: String
+    field :subject, type: String
+    field :alien_number, type: String
+    field :i94_number, type: String
+    field :visa_number, type: String
+    field :passport_number, type: String
+    field :sevis_id, type: String
+    field :naturalization_number, type: String
+    field :receipt_number, type: String
+    field :citizenship_number, type: String
+    field :card_number, type: String
+    field :country_of_citizenship, type: String
+    field :expiration_date, type: Date
+    field :issuing_country, type: String
     # field :status, type: String
     # field :comment, type: String
-    # field :description, type: String
+    field :description, type: String
 
     # Below are all the fields that are present in the VlpDocument model in the main application.
     # field :title, type: String, default: "untitled"

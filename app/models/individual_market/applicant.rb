@@ -67,7 +67,13 @@ module IndividualMarket
     #   @return [Boolean] Indicates if this applicant is homeless
     field :is_homeless, type: Boolean
 
+    # @!attribute age_off_excluded
+    # @return [Boolean] Indicates if this applicant is should be kept on their parent's plan when they are 26+
+    field :age_off_excluded, type: Boolean
+
     validate :unique_eligibilities
+
+    accepts_nested_attributes_for :person_name, :demographics, :eligibilities, :immigration_information, :addresses
 
     # Finds and returns the family member associated with this applicant
     #
@@ -88,6 +94,32 @@ module IndividualMarket
       return @individual_market_eligibility if defined?(@individual_market_eligibility)
 
       @individual_market_eligibility = eligibilities.where(_type: 'Eligibilities::V3::IndividualMarketEligibility').first
+    end
+
+    # @!attribute age_on
+    # @return [Integer] The age of the applicant on a given date
+    def age_on(date)
+      dob = self.demographics.dob
+      age = date.year - dob.year
+      if date.month < dob.month || (date.month == dob.month && date.day < dob.day)
+        age - 1
+      else
+        age
+      end
+    end
+
+    # @!attribute relationship
+    # @return [String] The relationship of the applicant to the primary applicant
+    def relationship
+      return @relationship if defined?(@relationship)
+
+      primary_applicant = application.primary_applicant
+      return nil unless primary_applicant
+
+      @relationship = application.relationships.where(
+        source_id: primary_applicant.id,
+        relative_id: id
+      )&.first&.kind
     end
 
     private

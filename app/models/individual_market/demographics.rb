@@ -19,6 +19,24 @@ module IndividualMarket
     include Mongoid::Document
     include Mongoid::Timestamps
 
+    CITIZEN_STATUS_KINDS = %w[
+      us_citizen
+      naturalized_citizen
+      alien_lawfully_present
+      lawful_permanent_resident
+      undocumented_immigrant
+      not_lawfully_present_in_us
+      non_native_not_lawfully_present_in_us
+      ssn_pass_citizenship_fails_with_SSA
+      non_native_citizen
+    ].freeze
+
+    ACA_ELIGIBLE_CITIZEN_STATUS_KINDS = %w[
+      us_citizen
+      naturalized_citizen
+      indian_tribe_member
+    ].freeze
+
     # @!attribute applicant
     #   @return [IndividualMarket::Applicant] The applicant this demographics belongs to
     embedded_in :applicant, class_name: 'IndividualMarket::Applicant'
@@ -63,6 +81,10 @@ module IndividualMarket
     # @return [String]
     field :tribal_state, type: String
 
+    # The codes of the tribes the applicant belongs to
+    # @return [Array]
+    field :tribe_codes, type: Array
+
     # The preferred language code of the applicant
     # @return [String]
     field :language_code, type: String
@@ -74,5 +96,13 @@ module IndividualMarket
     # List of races the applicant identifies with
     # @return [Array]
     field :race, type: Array
+
+    # @!attribute citizen_status
+    # @return [String] The citizen status of the applicant
+    field :citizen_status, type: String
+
+    validates :citizen_status,
+              allow_blank: true,
+              inclusion: { in: CITIZEN_STATUS_KINDS + ACA_ELIGIBLE_CITIZEN_STATUS_KINDS, message: "%{value} is not a valid citizen status" }
   end
 end

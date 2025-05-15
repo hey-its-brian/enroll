@@ -70,4 +70,35 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
       end
     end
   end
+
+  describe '#relationship' do
+    let(:primary_applicant) { FactoryBot.create(:individual_market_applicant, application: application, is_primary_applicant: true) }
+
+    context 'when a relationship exists' do
+      before do
+        application.relationships.create!(
+          source_id: primary_applicant.id,
+          relative_id: applicant.id,
+          kind: 'spouse'
+        )
+      end
+
+      it 'returns the relationship kind' do
+        expect(applicant.relationship).to eq('spouse')
+      end
+    end
+
+    context 'when no relationship exists' do
+      it 'returns nil' do
+        expect(applicant.relationship).to be_nil
+      end
+    end
+
+    context 'when there is no primary applicant' do
+      it 'returns nil' do
+        application.applicants.where(is_primary_applicant: true).destroy_all
+        expect(applicant.relationship).to be_nil
+      end
+    end
+  end
 end
