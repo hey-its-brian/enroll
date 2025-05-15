@@ -55,6 +55,7 @@ end
 
 def identify_slcsp_premiums(family, enrollment, households_hash)
   payload = {
+    data_source: 'family',
     family_id: family.id,
     effective_date: enrollment.effective_on,
     households: households_hash

@@ -10,6 +10,7 @@ module Operations
       class DetermineSlcsp
         include Dry::Monads[:do, :result]
         include EventSource::Command
+        include ::ResourceRegistryHelper
 
         def call(params)
           # 1. Initialize Cv3 Application
@@ -19,9 +20,10 @@ module Operations
           # 5. Publish the response back
 
           mm_application           = yield initialize_application(params)
-          @family, request_payload = yield construct_request_payload(mm_application)
+          fa_application           = yield find_application(mm_application)
+          @family, request_payload = yield construct_request_payload(fa_application, mm_application)
           benchmark_product        = yield identify_slcsp_with_pediatric_dental_costs(request_payload)
-          mm_application           = yield add_benchmark_product_to_application(mm_application, benchmark_product)
+          mm_application           = yield add_benchmark_product_to_application(fa_application, mm_application, benchmark_product)
           event                    = yield build_event(mm_application)
           _published               = yield publish_slcsp_determined_response(event)
 
@@ -34,28 +36,55 @@ module Operations
           AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(params)
         end
 
-        def construct_request_payload(mm_application)
-          Operations::Transformers::Cv3ApplicationTo::IdentifySlcspRequest.new.call(mm_application)
+        # Finds a FinancialAssistance::Application by its HBX ID
+        # @param [AcaEntities::MagiMedicaid::Application] mm_application the MagiMedicaid application entity
+        # @return [Dry::Monads::Result::Success] with the found FinancialAssistance::Application
+        # @return [Dry::Monads::Result::Failure] if no application is found with the given HBX ID
+        def find_application(mm_application)
+          application = ::FinancialAssistance::Application.by_hbx_id(mm_application.hbx_id).first
+
+          if application.present?
+            Success(application)
+          else
+            Failure("FinancialAssistance::Application is not found with given hbx_id: #{mm_application.hbx_id}")
+          end
+        end
+
+        def construct_request_payload(fa_application, mm_application)
+          Operations::Transformers::Cv3ApplicationTo::IdentifySlcspRequest.new.call(
+            { fa_application: fa_application, mm_application: mm_application }
+          )
         end
 
         def identify_slcsp_with_pediatric_dental_costs(request_payload)
           Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCosts.new.call(request_payload)
         end
 
-        def add_benchmark_product_to_application(mm_application, benchmark_product)
+        # Retrieves the rating address from either the financial assistance application or family
+        # @param [FinancialAssistance::Application] fa_application the financial assistance application
+        # @return [Hash] the rating address attributes
+        def fetch_rating_address(fa_application)
+          if qhp_application_feature_enabled?
+            fa_application.primary_applicant.rating_address.attributes
+          else
+            @family.primary_person.rating_address.attributes
+          end
+        end
+
+        def add_benchmark_product_to_application(fa_application, mm_application, benchmark_product)
           benchmark_product_hash = {
             effective_date: benchmark_product.effective_date,
-            primary_rating_address: @family.primary_person.rating_address.attributes,
+            primary_rating_address: fetch_rating_address(fa_application),
             exchange_provided_code: benchmark_product.exchange_provided_code,
             household_group_ehb_premium: benchmark_product.household_group_benchmark_ehb_premium,
-            households: benchmark_households(benchmark_product)
+            households: benchmark_households(benchmark_product, fa_application)
           }
           mm_app_params = mm_application.to_h
           mm_app_params.merge!(benchmark_product: benchmark_product_hash)
           initialize_application(mm_app_params)
         end
 
-        def benchmark_households(benchmark_product)
+        def benchmark_households(benchmark_product, fa_application)
           benchmark_product.households.collect do |household|
             {
               household_hbx_id: household.household_id,
@@ -65,7 +94,7 @@ module Operations
               health_product_reference: health_product_reference(household.health_product_id),
               household_dental_ehb_premium: household.household_dental_benchmark_ehb_premium,
               dental_product_reference: dental_product_reference(household.dental_product_id),
-              members: household_members(household.members)
+              members: household_members(fa_application, household.members)
             }
           end
         end
@@ -116,20 +145,40 @@ module Operations
           }
         end
 
-        def household_members(members)
+        def household_members(fa_application, members)
           members.collect do |member|
-            { applicant_reference: applicant_reference(member),
+            {
+              applicant_reference: applicant_reference(fa_application, member),
               relationship_with_primary: member.relationship_with_primary,
-              age_on_effective_date: member.age_on_effective_date }
+              age_on_effective_date: member.age_on_effective_date
+            }
           end
         end
 
-        def applicant_reference(member)
-          family_member = @family.family_members.find(member.family_member_id)
-          { first_name: family_member.first_name,
-            last_name: family_member.last_name,
-            dob: family_member.dob,
-            person_hbx_id: family_member.hbx_id }
+        # Builds a reference hash for an applicant based on the application type
+        # @param [FinancialAssistance::Application] fa_application the financial assistance application
+        # @param [Object] member the member object containing applicant or family member reference
+        # @return [Hash] hash with the member's identifying information
+        def applicant_reference(fa_application, member)
+          if qhp_application_feature_enabled?
+            member = fa_application.applicants.find(member.applicant_id)
+
+            {
+              first_name: member.first_name,
+              last_name: member.last_name,
+              dob: member.dob,
+              person_hbx_id: member.person_hbx_id
+            }
+          else
+            family_member = @family.family_members.find(member.family_member_id)
+
+            {
+              first_name: family_member.first_name,
+              last_name: family_member.last_name,
+              dob: family_member.dob,
+              person_hbx_id: family_member.hbx_id
+            }
+          end
         end
 
         def build_event(mm_application)

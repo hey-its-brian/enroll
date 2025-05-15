@@ -6,7 +6,9 @@ module Validators
     class BenchmarkProductContract < ::Dry::Validation::Contract
 
       params do
+        optional(:data_source).maybe(:string, included_in?: %w[anonymous family fa_application])
         optional(:family_id).maybe(Types::Bson)
+        optional(:application_id).maybe(Types::Bson)
         required(:effective_date).filled(:date)
         optional(:primary_rating_address_id).maybe(Types::Bson)
         optional(:rating_area_id).maybe(Types::Bson)
@@ -39,6 +41,7 @@ module Validators
           optional(:household_dental_benchmark_ehb_premium).maybe(::AcaEntities::Types::Money)
           required(:members).array(:hash) do
             optional(:family_member_id).maybe(Types::Bson)
+            optional(:applicant_id).maybe(Types::Bson)
             required(:relationship_with_primary).filled(:string, included_in?: ::PersonRelationship::Kinds)
             optional(:date_of_birth).maybe(:date)
             optional(:age_on_effective_date).maybe(:integer)
@@ -47,14 +50,16 @@ module Validators
         end
       end
 
-      # We need family_id (or)
-      #   we need :date_of_birth of all members for each Household, &
-      #   we need county, zip, state based on EnrollRegistry[:enroll_app].settings(:rating_areas).item('single', 'county', 'zipcode')
-      rule(:family_id) do
-        unless keys.include?(:family_id) && value
+      # 1. We need family_id (or)
+      # 2. we need application_id (or)
+      # 3.
+      #   a. we need :date_of_birth of all members for each Household, &
+      #   b. we need county, zip, state based on EnrollRegistry[:enroll_app].settings(:rating_areas).item('single', 'county', 'zipcode')
+      rule(:family_id, :application_id) do
+        if values[:family_id].blank? && values[:application_id].blank?
           if values[:households].present?
             values[:households].each_with_index do |household, hh_index|
-              next unless household[:members].any? { |mmbr| mmbr[:date_of_birth].nil? }
+              next if household[:members].all? { |mmbr| mmbr[:date_of_birth].present? }
 
               key(
                 [:households, hh_index, :members, :date_of_birth]

@@ -14,7 +14,7 @@ module Operations
       # Identify the SLCSP for the tax household
       def call(params)
         benchmark_product_model          = yield validate(params)
-        @family, benchmark_product_model = yield identify_type_of_household(benchmark_product_model)
+        @family, benchmark_product_model, @application = yield identify_type_of_household(benchmark_product_model)
         benchmark_product_model          = yield identify_rating_and_service_areas(benchmark_product_model)
         benchmark_product_model          = yield identify_slcsapd(benchmark_product_model)
         benchmark_product_model          = yield identify_slcsp(benchmark_product_model)
@@ -48,7 +48,7 @@ module Operations
           )
         else
           ::Operations::BenchmarkProducts::IdentifyRatingAndServiceAreas.new.call(
-            { family: @family, benchmark_product_model: benchmark_product_model }
+            { application: @application, benchmark_product_model: benchmark_product_model, family: @family }
           )
         end
       end
@@ -100,6 +100,7 @@ module Operations
       def persist_calculation(params, benchmark_product_model)
         begin
           ::BenchmarkProduct.create(
+            data_source: benchmark_product_model.data_source,
             family_id: @family&.id,
             application_hbx_id: @application_hbx_id,
             request_payload: params.to_json,

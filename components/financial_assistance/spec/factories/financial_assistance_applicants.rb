@@ -50,6 +50,7 @@ FactoryBot.define do
     has_daily_living_help { false }
     need_help_paying_bills { false }
     is_resident_post_092296 { false }
+    dob { TimeKeeper.date_of_record - 30.years }
 
     trait :with_ssn do
       sequence(:ssn) do |n|

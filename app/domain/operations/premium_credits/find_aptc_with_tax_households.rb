@@ -224,6 +224,7 @@ module Operations
         return nil if households_hash.blank?
 
         payload = {
+          data_source: 'family',
           family_id: @family.id,
           effective_date: @effective_on,
           households: households_hash,

@@ -3,6 +3,12 @@
 require 'rails_helper'
 
 RSpec.describe Operations::BenchmarkProducts::Initialize do
+  let(:enabled) { false }
+
+  before :each do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(enabled)
+  end
+
   describe '#call' do
     let(:params) do
       {

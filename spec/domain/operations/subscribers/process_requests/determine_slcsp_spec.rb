@@ -6,6 +6,12 @@ require File.join(Rails.root, 'spec/shared_contexts/benchmark_products')
 RSpec.describe Operations::Subscribers::ProcessRequests::DetermineSlcsp, type: :model, dbclean: :after_each do
   include Dry::Monads[:do, :result]
 
+  let(:enabled) { false }
+
+  before :each do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(enabled)
+  end
+
   describe '#call' do
     subject { described_class.new.call(mm_application) }
 
@@ -94,6 +100,7 @@ RSpec.describe Operations::Subscribers::ProcessRequests::DetermineSlcsp, type: :
       let(:mm_application) { mm_application_entity.to_h }
 
       before do
+        health_products
         mm_application[:assistance_year] = TimeKeeper.date_of_record.year
         mm_application[:aptc_effective_date] = TimeKeeper.date_of_record.beginning_of_year.to_date
         allow(::BenefitMarkets::Products::ProductRateCache).to receive(:lookup_rate) { |_id, _start, age| age * 1.0 }

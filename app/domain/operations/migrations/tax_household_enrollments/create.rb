@@ -234,6 +234,7 @@ module Operations
           return if households_hash.blank?
 
           payload = {
+            data_source: 'family',
             family_id: enrollment.family.id,
             effective_date: enrollment.effective_on,
             households: households_hash

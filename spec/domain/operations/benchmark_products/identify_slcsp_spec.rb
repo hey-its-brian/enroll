@@ -14,6 +14,7 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcsp do
 
     let(:input_params) do
       {
+        data_source: 'family',
         family_id: family.id,
         effective_date: start_of_year,
         exchange_provided_code: rating_area.exchange_provided_code,
@@ -36,6 +37,7 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcsp do
     end
 
     before do
+      health_products
       allow(::BenefitMarkets::Products::ProductRateCache).to receive(:lookup_rate) { |_id, _start, age| age * 1.0 }
       allow(EnrollRegistry[:enroll_app].settings(:rating_areas)).to receive(:item).and_return('county')
       allow(EnrollRegistry[:service_area].settings(:service_area_model)).to receive(:item).and_return('county')
@@ -129,6 +131,7 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcsp do
 
     let(:input_params) do
       {
+        data_source: 'family',
         family_id: family.id,
         effective_date: start_of_year,
         exchange_provided_code: rating_area.exchange_provided_code,
@@ -167,6 +170,7 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcsp do
     end
 
     before do
+      health_products
       allow(::BenefitMarkets::Products::ProductRateCache).to receive(:lookup_rate) { |_id, _start, age| age * 1.0 }
       allow(EnrollRegistry[:enroll_app].settings(:rating_areas)).to receive(:item).and_return('county')
       allow(EnrollRegistry[:service_area].settings(:service_area_model)).to receive(:item).and_return('county')

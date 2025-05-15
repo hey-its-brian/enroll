@@ -8,6 +8,10 @@ RSpec.describe Operations::Migrations::Applications::BenchmarkPremiums::FetchBen
     include_context '3 dental products with different rating_methods, different child_only_offerings and 3 health products'
     include_context '3 dental products with different rating_methods, different child_only_offerings and 3 health products'
 
+    before do
+      health_products
+    end
+
     let(:application) do
       FactoryBot.create(
         :financial_assistance_application,

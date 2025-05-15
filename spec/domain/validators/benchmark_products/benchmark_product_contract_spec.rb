@@ -2,9 +2,42 @@
 
 require 'rails_helper'
 
-RSpec.describe Validators::BenchmarkProducts::BenchmarkProductContract,  dbclean: :after_each do
+RSpec.describe Validators::BenchmarkProducts::BenchmarkProductContract do
+  let(:valid_parmas_with_application) do
+    {
+      data_source: 'fa_application',
+      application_id: BSON::ObjectId.new,
+      effective_date: TimeKeeper.date_of_record,
+      primary_rating_address_id: BSON::ObjectId.new,
+      rating_area_id: BSON::ObjectId.new,
+      exchange_provided_code: 'R-ME001',
+      service_area_ids: [BSON::ObjectId.new],
+      household_group_benchmark_ehb_premium: 200.90,
+      households: [
+        {
+          household_id: 'a12bs6dbs1',
+          type_of_household: 'adult_only',
+          household_benchmark_ehb_premium: 200.90,
+          health_product_hios_id: '123',
+          health_product_id: BSON::ObjectId.new,
+          health_ehb: 0.99,
+          household_health_benchmark_ehb_premium: 200.90,
+          health_product_covers_pediatric_dental_costs: true,
+          members: [
+            {
+              applicant_id: BSON::ObjectId.new,
+              coverage_start_on: TimeKeeper.date_of_record,
+              relationship_with_primary: 'self'
+            }
+          ]
+        }
+      ]
+    }
+  end
+
   let(:valid_parmas_with_family) do
     {
+      data_source: 'family',
       family_id: BSON::ObjectId.new,
       effective_date: TimeKeeper.date_of_record,
       primary_rating_address_id: BSON::ObjectId.new,
@@ -37,6 +70,7 @@ RSpec.describe Validators::BenchmarkProducts::BenchmarkProductContract,  dbclean
   # SLCSP Anonymous Calculator
   let(:valid_parmas_without_family) do
     {
+      data_source: 'anonymous',
       rating_address: {
         county: 'County Name',
         zip: '11111',
@@ -58,15 +92,17 @@ RSpec.describe Validators::BenchmarkProducts::BenchmarkProductContract,  dbclean
           health_ehb: 0.99,
           household_health_benchmark_ehb_premium: 200.90,
           health_product_covers_pediatric_dental_costs: true,
-          members: [
-            {
-              relationship_with_primary: 'self',
-              date_of_birth: TimeKeeper.date_of_record - 30.years,
-              coverage_start_on: TimeKeeper.date_of_record
-            }
-          ]
+          members: [member]
         }
       ]
+    }
+  end
+
+  let(:member) do
+    {
+      relationship_with_primary: 'self',
+      date_of_birth: TimeKeeper.date_of_record - 30.years,
+      coverage_start_on: TimeKeeper.date_of_record
     }
   end
 
@@ -81,6 +117,13 @@ RSpec.describe Validators::BenchmarkProducts::BenchmarkProductContract,  dbclean
     context 'valid params without family' do
       it 'passes validation' do
         result = subject.call(valid_parmas_without_family)
+        expect(result.success?).to be_truthy
+      end
+    end
+
+    context 'valid params with application' do
+      it 'passes validation' do
+        result = subject.call(valid_parmas_with_application)
         expect(result.success?).to be_truthy
       end
     end
@@ -139,6 +182,18 @@ RSpec.describe Validators::BenchmarkProducts::BenchmarkProductContract,  dbclean
         it 'fails validation' do
           result = subject.call(invalid_params)
           expect(result.errors.to_h[:households][0][:members][0][:relationship_with_primary]).to include('must be a string')
+        end
+      end
+
+      context 'without family and without date_of_birth' do
+        let(:member) { { coverage_start_on: TimeKeeper.date_of_record, date_of_birth: nil, relationship_with_primary: 'self' } }
+        let(:invalid_params) { valid_parmas_without_family }
+
+        it 'fails validation' do
+          result = subject.call(invalid_params)
+          expect(result.errors.to_h).to eq(
+            { households: { 0 => { members: { date_of_birth: ['please provide date of births of all household members'] } } } }
+          )
         end
       end
     end

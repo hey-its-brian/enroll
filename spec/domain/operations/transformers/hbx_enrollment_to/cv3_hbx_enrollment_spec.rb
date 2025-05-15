@@ -7,6 +7,10 @@ RSpec.describe ::Operations::Transformers::HbxEnrollmentTo::Cv3HbxEnrollment, db
   include_context 'family with 2 family members with county_zip, rating_area & service_area'
   include_context '3 dental products with different rating_methods, different child_only_offerings and 3 health products'
 
+  before do
+    health_products
+  end
+
   let(:enr_product) do
     product = BenefitMarkets::Products::DentalProducts::DentalProduct.by_year(TimeKeeper.date_of_record.year).detect(&:family_based_rating?)
     product.update_attributes!(dental_level: nil)

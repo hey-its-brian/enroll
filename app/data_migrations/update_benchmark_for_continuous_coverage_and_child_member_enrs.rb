@@ -43,6 +43,7 @@ class UpdateBenchmarkForContinuousCoverageAndChildMemberEnrs < MongoidMigrationT
     end
 
     payload = {
+      data_source: 'family',
       family_id: family.id,
       effective_date: enrollment.effective_on,
       households: households_hash

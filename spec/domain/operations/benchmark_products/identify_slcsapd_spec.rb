@@ -8,12 +8,23 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcsapd do
     DatabaseCleaner.clean
   end
 
+  let(:enabled) { false }
+
+  before :each do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(enabled)
+  end
+
   describe '#call' do
     include_context 'family with 2 family members with county_zip, rating_area & service_area'
     include_context '3 dental products with different rating_methods, different child_only_offerings and 3 health products'
 
+    before do
+      health_products
+    end
+
     let(:input_params) do
       {
+        data_source: 'family',
         family_id: family.id,
         effective_date: start_of_year,
         exchange_provided_code: rating_area.exchange_provided_code,
@@ -152,6 +163,7 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcsapd do
 
     let(:input_params) do
       {
+        data_source: 'family',
         family_id: family.id,
         effective_date: start_of_year,
         exchange_provided_code: rating_area.exchange_provided_code,

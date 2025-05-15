@@ -10,6 +10,16 @@ class BenchmarkProduct
 
   field :application_hbx_id, type: String
 
+  # This field is used to identify the data source of the request.
+  # The information that is needed to idetify the benchmark product is either from the family, financial assistance application, or anonymous.
+  field :data_source, type: String
+
+  # Constant for data source kinds
+  DATA_SOURCE_KINDS = %w[anonymous family fa_application].freeze
+
+  # Validation for data source if it present
+  validates :data_source, inclusion: { in: DATA_SOURCE_KINDS }, allow_blank: true
+
   # Request Payload that is sent to Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCosts in JSON format
   field :request_payload, type: String
 

@@ -2,7 +2,8 @@
 
 FactoryBot.define do
   factory :application, class: "::FinancialAssistance::Application" do
-
+    origin { :user }
+    generation_reason { :manual }
   end
 
   factory :financial_assistance_application, class: "::FinancialAssistance::Application" do

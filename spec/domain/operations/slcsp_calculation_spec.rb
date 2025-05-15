@@ -6,27 +6,6 @@ require File.join(Rails.root, 'spec/shared_contexts/benchmark_products')
 RSpec.describe Operations::SlcspCalculation, type: :model, dbclean: :after_each do
   include_context 'family with 2 family members with county_zip, rating_area & service_area'
   include_context '3 dental products with different rating_methods, different child_only_offerings and 3 health products'
-  let(:one_household) do
-    {
-      family_id: family.id,
-      effective_date: start_of_year,
-      households: [
-        {
-          household_id: 'a12bs6dbs1',
-          members: [
-            {
-              family_member_id: family_member1.id,
-              relationship_with_primary: 'self'
-            },
-            {
-              family_member_id: family_member2.id,
-              relationship_with_primary: 'spouse'
-            }
-          ]
-        }
-      ]
-    }
-  end
 
   let(:person_rating_address) { person1.rating_address }
 
@@ -67,6 +46,7 @@ RSpec.describe Operations::SlcspCalculation, type: :model, dbclean: :after_each 
   end
 
   before do
+    health_products
     ::BenefitMarkets::Products::ProductRateCache.initialize_rate_cache!
   end
 

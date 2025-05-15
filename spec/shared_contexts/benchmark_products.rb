@@ -80,7 +80,11 @@ end
 RSpec.shared_context 'family with 2 family members with county_zip, rating_area & service_area', :shared_context => :metadata do
   include_context 'family with 2 family members'
 
-  let!(:county_zip) { ::BenefitMarkets::Locations::CountyZip.create!(county_name: 'York', zip: '04001', state: 'ME') }
+  let(:county_name) { 'York' }
+  let(:zip) { '04001' }
+  let(:state) { 'ME' }
+
+  let!(:county_zip) { ::BenefitMarkets::Locations::CountyZip.create!(county_name: county_name, zip: zip, state: state) }
   let!(:rating_area) do
     ::BenefitMarkets::Locations::RatingArea.create!(active_year: TimeKeeper.date_of_record.year, exchange_provided_code: "R-ME001", county_zip_ids: [county_zip.id])
   end
@@ -91,7 +95,7 @@ end
 
 RSpec.shared_context '3 dental products with different rating_methods, different child_only_offerings and 3 health products', :shared_context => :metadata do
   let(:covers_pediatric_dental) { false }
-  let!(:health_products) do
+  let(:health_products) do
     [
       ['48396ME0860009', false],
       ['48396ME0860011', covers_pediatric_dental],
