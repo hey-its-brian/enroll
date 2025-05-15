@@ -59,9 +59,11 @@ class Household
     primary_person = family_member.family.primary_applicant_person
 
     if Family::IMMEDIATE_FAMILY.include?(primary_relationship)
+      Rails.logger.info("Add/Remove ID: #{family_member.id} from immediate family for family_id: #{family_member&.family&.id}")
       immediate_family_coverage_household.add_coverage_household_member(family_member)
       extended_family_coverage_household.remove_family_member(family_member)
     else
+      Rails.logger.info("Add/Remove ID: #{family_member.id} from family for family_id: #{family_member&.family&.id}")
       immediate_family_coverage_household.remove_family_member(family_member)
       extended_family_coverage_household.add_coverage_household_member(family_member)
     end
@@ -82,9 +84,11 @@ class Household
     primary_person = family_member.family.primary_person
 
     if Family::IMMEDIATE_FAMILY.include?(primary_relationship)
+      Rails.logger.info("BUILD: Add/Remove ID: #{family_member.id} to immediate family for family_id: #{family_member&.family&.id}")
       immediate_family_coverage_household.add_coverage_household_member(family_member)
       extended_family_coverage_household.remove_family_member(family_member)
     else
+      Rails.logger.info("BUILD: Add/Remove ID: #{family_member.id} to family for family_id: #{family_member&.family&.id}")
       immediate_family_coverage_household.remove_family_member(family_member)
       extended_family_coverage_household.add_coverage_household_member(family_member)
     end

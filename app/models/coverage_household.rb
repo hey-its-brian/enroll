@@ -72,6 +72,8 @@ class CoverageHousehold
   def add_coverage_household_member(family_member)
     return if coverage_household_members.where(family_member_id: family_member.id).present?
 
+    Rails.logger.info("ADDING in CH Model: CoverageHouseholdMember for family_member_id: #{family_member.id} for family_id: #{family_member&.family&.id}")
+
     coverage_household_members.build(
       family_member: family_member,
       is_subscriber: family_member.is_primary_applicant?
@@ -84,6 +86,7 @@ class CoverageHousehold
 
   def remove_family_member(family_member)
     coverage_household_members.where(family_member_id: family_member.id).each do |chm|
+      Rails.logger.info("REMOVE FAMILY MEMBER in CH Model: CoverageHouseholdMember family_id: #{chm.id} for family_member_id: #{family_member.id}")
       chm.destroy
     end
 
@@ -96,8 +99,15 @@ class CoverageHousehold
   end
 
   def remove_coverage_household_member(coverage_household_member_id, family_member_id)
-    chm = coverage_household_members.where(id: coverage_household_member_id).and(family_member_id: family_member_id).first
-    chm.destroy if !chm.nil?
+    chm = coverage_household_members.where(id: coverage_household_member_id)
+                                    .and(family_member_id: family_member_id).first
+
+    if chm
+      chm.destroy
+      Rails.logger.info("REMOVING in CH Model: CoverageHouseholdMember family_id: #{chm.id} for family_member_id: #{family_member_id}")
+    else
+      Rails.logger.info("SKIP in CH Model: No CoverageHouseholdMember found for chm_id: #{coverage_household_member_id}, family_member_id: #{family_member_id}")
+    end
   end
 
   def notify_the_user(member)
