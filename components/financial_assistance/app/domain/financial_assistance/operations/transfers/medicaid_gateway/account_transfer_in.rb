@@ -291,7 +291,10 @@ module FinancialAssistance
                         is_coverage_applicant: family_member_hash['is_coverage_applicant'],
                         is_active: family_member_hash['is_active'] }
             family_member = family.add_family_member(person, fm_attr)
-            family_member.save!
+            # Per CU-868dt3zy9, we have seen cases where two identical inbound transfers occur near-simultaneously on different pods, which sometimes results in
+            # the same family member document being embedded in the family document twice. Saving the Family document instead of the FamilyMember document
+            # will *hopefully* prevent this from happening, but we should still monitor this behavior.
+            family.save!
 
             Success(family_member)
           rescue Mongoid::Errors::Validations => e
