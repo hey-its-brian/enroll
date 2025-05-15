@@ -35,10 +35,10 @@ module Operations
         return Failure("evidence due date is blank or greater than today") if evidence.due_on.blank? || evidence.due_on > Date.today
 
         if evidence.key == :income
-          auto_extend_verification_history = evidence.verification_histories.where(action: "auto_extend_due_date").order_by("created_at DESC").first
+          auto_extend_verification_history = evidence.verification_histories.where(action: "auto_extend_due_date").order_by("date_of_action DESC").first
 
           if auto_extend_verification_history.present?
-            verified_state_transition = evidence.workflow_state_transitions.where(:to_state => "verified", :created_at.gt => auto_extend_verification_history.created_at).order_by("created_at DESC").first
+            verified_state_transition = evidence.workflow_state_transitions.where(:to_state => "verified", :transition_at.gt => auto_extend_verification_history.date_of_action).order_by("transition_at DESC").first
             return Failure("Income evidence is not eligible for extension") unless verified_state_transition.present?
           end
         end

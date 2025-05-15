@@ -92,6 +92,46 @@ RSpec.describe ::Operations::FinancialAssistance::ExtendEvidenceDueOn, type: :mo
       end
     end
 
+    context "when verification history date of action is before aasm state transition" do
+      let!(:applicant2_income_evidence) do
+        applicant2.create_income_evidence(
+          key: :income,
+          title: 'Income',
+          aasm_state: :pending,
+          due_on: TimeKeeper.date_of_record,
+          verification_outstanding: true,
+          is_satisfied: false
+        )
+      end
+
+      let(:extension_days) { 30 }
+      let(:applicant2_income_evidence_due_on) {applicant2.income_evidence.due_on}
+      let!(:verification_history) { applicant2_income_evidence.verification_histories.create(action: "auto_extend_due_date", date_of_action: TimeKeeper.date_of_record - 2.days, modifier: "Admin") }
+
+      let!(:workflow_state_transition) do
+        applicant2_income_evidence.workflow_state_transitions.create(
+          to_state: "verified",
+          from_state: "pending",
+          transition_at: TimeKeeper.date_of_record - 1.day,
+          user_id: "Admin",
+          reason: "Admin"
+        )
+      end
+
+      before do
+        application.update_attributes!(aasm_state: 'determined')
+        applicant2.income_evidence.update_attributes!(due_on: TimeKeeper.date_of_record - 1.day, aasm_state: 'outstanding')
+        applicant2_income_evidence_due_on
+        @result2 = subject.call({evidence: applicant2.income_evidence, extension_days: extension_days})
+      end
+
+      it 'extends the due date' do
+        expect(@result2).to be_a(Dry::Monads::Result::Success)
+        applicant2.income_evidence.reload
+        expect(applicant2.income_evidence.due_on).to eq(TimeKeeper.date_of_record + extension_days.days)
+      end
+    end
+
     context "for due date greater than today" do
       let!(:applicant2_income_evidence) do
         applicant2.create_income_evidence(
