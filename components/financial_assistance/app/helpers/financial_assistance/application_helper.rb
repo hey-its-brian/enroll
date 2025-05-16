@@ -471,9 +471,9 @@ module FinancialAssistance
       if qhp_application_feature_enabled?
         # For feature enabled, include an income and coverage step.
         income_step = { step: multiple_applicants ? 3 : 2, label: l10n('faa.nav.income_and_coverage'),
-                        link: "javascript:void(0);"}
+                        link: "#"}
         review_step = { step: multiple_applicants ? 4 : 3, label: l10n('faa.nav.review'),
-                        link: "javascript:void(0);"}
+                        link: "#"}
         # Set the review step link only if the application is ready for attestation.
 
         application_ready_for_attestation = application.present? && application.ready_for_attestation? && application.is_draft?

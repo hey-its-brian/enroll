@@ -28,7 +28,17 @@
           <li class="<%= 'complete' if step_complete %> <%= 'active' if nav[:step] == nav_option[:step] %>">
             <span class="circle-progress"></span>
             <div class="vertical-line-progress"></div>
-            <a class="<%= 'future-step' unless nav[:step] > nav_option[:step] or nav[:step] == nav_option[:step] %>" href="<%= nav_option[:link] %>"><%= nav_option[:label] %></a>
+            <% is_placeholder = nav_option[:link] == '#' %>
+            <% if is_placeholder %>
+              <span class="<%= 'future-step' unless nav[:step] > nav_option[:step] or nav[:step] == nav_option[:step] %>">
+                <%= nav_option[:label] %>
+              </span>
+            <% else %>
+              <a class="<%= 'future-step' unless nav[:step] > nav_option[:step] or nav[:step] == nav_option[:step] %>"
+                href="<%= nav_option[:link] %>">
+                <%= nav_option[:label] %>
+              </a>
+            <% end %>
           </li>
         <% end %>
       <% else %>
