@@ -672,8 +672,24 @@ module FinancialAssistance
       update_attributes!(assisted_income_validation: "outstanding")
     end
 
+    # Finds the family member associated with the application.
+    # This method caches the family member object to avoid multiple database queries.
+    #
+    # @return [FamilyMember] The family member associated with the applicant.
+    def family_member
+      return @family_member if defined?(@family_member)
+
+      @family_member = family.family_members.where(id: family_member_id).first
+    end
+
+    # Finds the family associated with the application.
+    # This method caches the family object to avoid multiple database queries.
+    #
+    # @return [Family] The family associated with the application.
     def family
-      application.family || family_member.family
+      return @family if defined?(@family)
+
+      @family = application.family
     end
 
     def spouse_relationship

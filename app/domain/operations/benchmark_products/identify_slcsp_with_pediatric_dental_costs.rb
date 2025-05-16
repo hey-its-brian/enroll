@@ -103,6 +103,7 @@ module Operations
             data_source: benchmark_product_model.data_source,
             family_id: @family&.id,
             application_hbx_id: @application_hbx_id,
+            origin: benchmark_product_model.origin,
             request_payload: params.to_json,
             response_payload: benchmark_product_model.to_h.to_json
           )

@@ -45,6 +45,7 @@ RSpec.describe Validators::BenchmarkProducts::BenchmarkProductContract do
       exchange_provided_code: 'R-ME001',
       service_area_ids: [BSON::ObjectId.new],
       household_group_benchmark_ehb_premium: 200.90,
+      origin: 'enrollment_purchase',
       households: [
         {
           household_id: 'a12bs6dbs1',

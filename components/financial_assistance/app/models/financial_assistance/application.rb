@@ -759,8 +759,9 @@ module FinancialAssistance
       SUBMITTED_STATUS.include?(aasm_state)
     end
 
-    # Get the {FamilyMember} who is primary for this application.
-    # @return [ {FamilyMember} ] primary {FamilyMember}
+    # This method returns the primary applicant for this application.
+    #
+    # @return [ {Applicant} ] The primary applicant for this application.
     def primary_applicant
       @primary_applicant ||= applicants.detect(&:is_primary_applicant?)
     end
@@ -1386,7 +1387,6 @@ module FinancialAssistance
     def is_application_valid?
       required_attributes_valid? && relationships_complete? && applicants_have_valid_addresses?
     end
-
     # Used for performance improvement cacheing.
     attr_writer :family
 

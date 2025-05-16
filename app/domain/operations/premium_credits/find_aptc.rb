@@ -247,6 +247,7 @@ module Operations
         return nil if households_hash.blank?
 
         payload = {
+          origin: 'enrollment_purchase',
           data_source: 'family',
           family_id: @family.id,
           effective_date: @effective_on,

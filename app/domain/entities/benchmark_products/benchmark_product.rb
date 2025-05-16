@@ -14,6 +14,7 @@ module Entities
       attribute :exchange_provided_code, Types::String.optional.meta(omittable: true)
       attribute :service_area_ids, Types::Array.of(Types::Bson).optional.meta(omittable: true)
       attribute :household_group_benchmark_ehb_premium, ::AcaEntities::Types::Money.optional.meta(omittable: true)
+      attribute :origin, Types::String.optional.meta(omittable: true)
 
       attribute :households, Types::Array.of(Entities::BenchmarkProducts::Household).meta(omittable: false)
     end

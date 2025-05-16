@@ -15,6 +15,7 @@ module Validators
         optional(:exchange_provided_code).maybe(:string)
         optional(:service_area_ids).array(Types::Bson)
         optional(:household_group_benchmark_ehb_premium).maybe(::AcaEntities::Types::Money)
+        optional(:origin).maybe(:string)
 
         optional(:rating_address).hash do
           required(:county).filled(:string)

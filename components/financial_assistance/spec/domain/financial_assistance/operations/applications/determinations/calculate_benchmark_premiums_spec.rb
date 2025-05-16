@@ -80,6 +80,37 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Determinations::
     update_benchmark_premiums
   end
 
+  describe '#call' do
+    context 'when:
+      - qhp_application feature is enabled
+      - all the details are read from application and not family
+    ' do
+
+      let(:result) { subject.call(application: application) }
+      let(:in_state_address_params) { { kind: 'home', address_1: '1 Awesome Street', address_2: '#100', city: 'Washington', state: 'DC', zip: '20001' } }
+      let(:non_zero_output) do
+        {
+          health_only_lcsp_premiums: [{ member_identifier: applicant.person_hbx_id.to_s, monthly_premium: 100.00 }],
+          health_only_slcsp_premiums: [{ member_identifier: applicant.person_hbx_id.to_s, monthly_premium: 200.00 }]
+        }
+      end
+
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        allow(premiums_double).to receive(:failure?).and_return(false)
+        allow(slcsp_double).to receive(:failure?).and_return(false)
+        allow(lcsp_double).to receive(:failure?).and_return(false)
+        applicant.addresses.create!(in_state_address_params)
+        applicant.save!
+        allow(application).to receive(:family).and_return('FAMILY')
+      end
+
+      it 'returns success' do
+        expect(result.success).to eq non_zero_output
+      end
+    end
+  end
+
   describe "#applicant_benchmark_premium slcsp/lscp values" do
     context "when there is valid address" do
       let(:result) { subject.call(application: application) }

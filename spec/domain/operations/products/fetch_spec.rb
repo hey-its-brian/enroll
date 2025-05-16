@@ -3,6 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe ::Operations::Products::Fetch, dbclean: :after_each do
+  let!(:list_products) { FactoryBot.create_list(:benefit_markets_products_health_products_health_product, 5, :silver) }
 
   it 'should be a container-ready operation' do
     expect(subject.respond_to?(:call)).to be_truthy
@@ -17,6 +18,54 @@ RSpec.describe ::Operations::Products::Fetch, dbclean: :after_each do
     it 'should return failure' do
       result = subject.call(params)
       expect(result.failure?).to eq true
+    end
+  end
+
+  describe '#call' do
+    context 'with application and without a valid family' do
+      let(:effective_date) { TimeKeeper.date_of_record }
+      let(:application) { FactoryBot.create(:financial_assistance_application, :with_applicants, effective_date: effective_date) }
+      let(:params) { { application: application, effective_date: effective_date, family: 'family' } }
+
+      let(:primary_applicant_id) { application.applicants.where(is_primary_applicant: true).first.id }
+
+      let(:silver_product_premiums) do
+        {
+          primary_applicant_id => [
+            { cost: 200.0, product_id: BSON::ObjectId.new },
+            { cost: 300.0, product_id: BSON::ObjectId.new },
+            { cost: 400.0, product_id: BSON::ObjectId.new }
+          ]
+        }
+      end
+
+      let(:products) { ::BenefitMarkets::Products::Product.all }
+      let(:products_payload) { { products: products, rating_area_id: BSON::ObjectId.new } }
+
+      before :each do
+        allow(
+          Operations::Products::FetchSilverProducts
+        ).to receive(:new).and_return double(
+          call: ::Dry::Monads::Result::Success.new(products_payload)
+        )
+
+        allow(
+          Operations::Products::FetchSilverProductPremiums
+        ).to receive(:new).and_return double(
+          call: ::Dry::Monads::Result::Success.new(silver_product_premiums)
+        )
+      end
+
+      it 'returns success' do
+        result = subject.call(params)
+        expect(result.success?).to eq true
+      end
+
+      it 'returns an array of slcsp for the given application' do
+        value = subject.call(params).value!
+        expect(value.is_a?(Hash)).to eq true
+        expect(value[application.applicants.map(&:person_hbx_id)].keys.include?(:health_only)).to eq true
+      end
     end
   end
 
@@ -44,8 +93,6 @@ RSpec.describe ::Operations::Products::Fetch, dbclean: :after_each do
       }
     end
 
-    let!(:list_products) { FactoryBot.create_list(:benefit_markets_products_health_products_health_product, 5, :silver) }
-
     let(:products) { ::BenefitMarkets::Products::Product.all }
     let(:products_payload) do
       {
@@ -58,7 +105,6 @@ RSpec.describe ::Operations::Products::Fetch, dbclean: :after_each do
       allow(Operations::Products::FetchSilverProducts).to receive(:new).and_return double(call: ::Dry::Monads::Result::Success.new(products_payload))
       allow(Operations::Products::FetchSilverProductPremiums).to receive(:new).and_return double(call: ::Dry::Monads::Result::Success.new(silver_product_premiums))
     end
-
 
     it 'should return success' do
       result = subject.call(params)
@@ -112,8 +158,6 @@ RSpec.describe ::Operations::Products::Fetch, dbclean: :after_each do
         effective_date: effective_date
       }
     end
-
-    let!(:list_products) { FactoryBot.create_list(:benefit_markets_products_health_products_health_product, 5, :silver) }
 
     let(:products) { ::BenefitMarkets::Products::Product.all }
     let(:products_payload) do
@@ -224,8 +268,6 @@ RSpec.describe ::Operations::Products::Fetch, dbclean: :after_each do
         effective_date: effective_date
       }
     end
-
-    let!(:list_products) { FactoryBot.create_list(:benefit_markets_products_health_products_health_product, 5, :silver) }
 
     let(:products) { ::BenefitMarkets::Products::Product.all }
     let(:products_payload) do

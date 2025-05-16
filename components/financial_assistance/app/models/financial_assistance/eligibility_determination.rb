@@ -36,8 +36,14 @@ module FinancialAssistance
     scope :is_aptc_eligible, -> { where(:max_aptc.gte => 0.00) }
     scope :is_csr_eligible, -> { where(:csr_percent_as_integer.ne => 0) }
 
+    # finds all the applicants that are related to this eligibility determination
+    # memoizes the result to avoid multiple database calls
+    #
+    # @return [Mongoid::Criteria] the applicants
     def applicants
-      application.applicants.in(eligibility_determination_id: id)
+      return @applicants if defined?(@applicants)
+
+      @applicants = application.applicants.in(eligibility_determination_id: id)
     end
 
     def aptc_applicants
@@ -79,4 +85,3 @@ module FinancialAssistance
     end
   end
 end
-

@@ -7,6 +7,7 @@ module FinancialAssistance
         # Class to calculate benchmark premiums for a given application
         class CalculateBenchmarkPremiums
           include Dry::Monads[:do, :result]
+          include ResourceRegistryHelper
 
           # Main method to calculate benchmark premiums
           #
@@ -18,7 +19,7 @@ module FinancialAssistance
             family              = yield fetch_family(application)
             applicant_hbx_ids   = yield fetch_applicant_hbx_ids(application)
             effective_date      = yield fetch_effective_date(application)
-            benchmark_premiums  = yield fetch_benchmark_premiums(applicant_hbx_ids, effective_date, family)
+            benchmark_premiums  = yield fetch_benchmark_premiums(applicant_hbx_ids, application, effective_date, family)
 
             Success(benchmark_premiums)
           end
@@ -74,8 +75,10 @@ module FinancialAssistance
           # @param [Date] effective_date the effective date
           # @param [Family] family the family object
           # @return [Dry::Monads::Result] the result monad containing the benchmark premiums or failure message
-          def fetch_benchmark_premiums(applicant_hbx_ids, effective_date, family)
-            premiums = ::Operations::Products::Fetch.new.call({ effective_date: effective_date, family: family })
+          def fetch_benchmark_premiums(applicant_hbx_ids, application, effective_date, family)
+            fetch_params = { effective_date: effective_date, family: family }
+            fetch_params[:application] = application if qhp_application_feature_enabled?
+            premiums = ::Operations::Products::Fetch.new.call(fetch_params)
             return build_zero_member_premiums(applicant_hbx_ids) if premiums.failure?
 
             slcsp_info = ::Operations::Products::FetchSlcsp.new.call(member_silver_product_premiums: premiums.success)

@@ -7,7 +7,6 @@ module Operations
     class Fetch
       include Dry::Monads[:do, :result]
 
-
       # @param [Date] effective_date
       # @param [Family] family
       # @param [Family Member Id] family member id - to get specific family members lcsp.
@@ -26,19 +25,30 @@ module Operations
       def validate(params)
         return Failure('Missing Family') if params[:family].blank?
         return Failure('Missing Effective Date') if params[:effective_date].blank?
+        @application = params[:application] if params[:application].is_a?(::FinancialAssistance::Application)
         return Failure("Unable to find rating addresses for at least one family member for given family with id: #{params[:family].id}") unless all_members_have_valid_address?(params[:family])
+
         Success(params)
       end
 
-      # Return a failure monad if there are no rating addresses for any members
+      # Returns false if there are no rating addresses for any members
       def all_members_have_valid_address?(family)
-        active_family = family.family_members.where(is_active: true)
-        active_family.all? { |family_member| family_member.rating_address.present? }
+        if @application
+          @application.applicants.all? { |applicant| applicant.rating_address.present? }
+        else
+          active_family = family.family_members.where(is_active: true)
+          active_family.all? { |family_member| family_member.rating_address.present? }
+        end
       end
 
       def find_addresses(family)
         geographic_rating_area_model = EnrollRegistry[:enroll_app].setting(:geographic_rating_area_model).item
-        members = family.family_members.where(is_primary_applicant: true, is_active: true)
+
+        members = if @application
+                    @application.applicants.where(is_primary_applicant: true)
+                  else
+                    family.family_members.where(is_primary_applicant: true, is_active: true)
+                  end
 
         address_combinations = case geographic_rating_area_model
                                when 'single'
@@ -60,27 +70,54 @@ module Operations
         silver_products = Operations::Products::FetchSilverProducts.new.call({address: addresses.flatten[0], effective_date: effective_date})
         return Failure("unable to fetch silver_products for - #{addresses.flatten[0]}") if silver_products.failure?
 
-        Success({family.active_family_members.collect{|fm| fm.person.hbx_id} => silver_products.value!})
+        Success(
+          if @application
+            { @application.applicants.pluck(:person_hbx_id) => silver_products.value! }
+          else
+            { family.active_family_members.collect{|fm| fm.person.hbx_id} => silver_products.value! }
+          end
+        )
       end
 
       def fetch_member_premiums(rating_silver_products, family, effective_date)
         member_premiums = {}
-        min_age = family.family_members.map {|fm| fm.age_on(TimeKeeper.date_of_record) }.min
+
+        min_age = if @application
+                    @application.applicants.map {|app| app.age_on(effective_date) }.min
+                  else
+                    family.family_members.map {|fm| fm.age_on(TimeKeeper.date_of_record) }.min
+                  end
+
         benchmark_product_model = EnrollRegistry[:enroll_app].setting(:benchmark_product_model).item
 
         rating_silver_products.each_pair do |hbx_ids, payload|
           member_premiums[hbx_ids] = {}
 
           health_products = payload[:products].select { |product| product.kind == :health }
-          premiums = Operations::Products::FetchSilverProductPremiums.new.call({products: health_products, family: family, effective_date: effective_date,
-                                                                                rating_area_exchange_provided_code: payload[:rating_area_exchange_provided_code] })
+          premiums = Operations::Products::FetchSilverProductPremiums.new.call(
+            {
+              products: health_products,
+              family: family,
+              application: @application,
+              effective_date: effective_date,
+              rating_area_exchange_provided_code: payload[:rating_area_exchange_provided_code]
+            }
+          )
 
           return Failure("unable to fetch health only premiums for - #{hbx_ids}") if premiums.failure?
           member_premiums[hbx_ids][:health_only] = premiums.value!
 
           if benchmark_product_model == :health_and_dental && min_age < 19
 
-            premiums = Operations::Products::FetchSilverProductPremiums.new.call({products: payload[:products], family: family, effective_date: effective_date, rating_area_exchange_provided_code: payload[:rating_area_exchange_provided_code]})
+            premiums = Operations::Products::FetchSilverProductPremiums.new.call(
+              {
+                products: payload[:products],
+                family: family,
+                application: @application,
+                effective_date: effective_date,
+                rating_area_exchange_provided_code: payload[:rating_area_exchange_provided_code]
+              }
+            )
 
             return Failure("unable to fetch health only premiums for - #{hbx_ids}") if premiums.failure?
             member_premiums[hbx_ids][:health_and_dental] = premiums.value!
@@ -89,8 +126,15 @@ module Operations
           next unless benchmark_product_model == :health_and_ped_dental && min_age < 19
           health_and_ped_dental_products = payload[:products] # TODO: - filter child only ped dental products.
 
-          premiums = Operations::Products::FetchSilverProductPremiums.new.call({products: health_and_ped_dental_products, family: family, effective_date: effective_date,
-                                                                                rating_area_exchange_provided_code: payload[:rating_area_exchange_provided_code]})
+          premiums = Operations::Products::FetchSilverProductPremiums.new.call(
+            {
+              products: health_and_ped_dental_products,
+              family: family,
+              application: @application,
+              effective_date: effective_date,
+              rating_area_exchange_provided_code: payload[:rating_area_exchange_provided_code]
+            }
+          )
 
           return Failure("unable to fetch health only premiums for - #{hbx_ids}") if premiums.failure?
           member_premiums[hbx_ids][:health_and_ped_dental] = premiums.value!

@@ -20,6 +20,7 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
     context 'when data_source is family' do
       let(:one_household) do
         {
+          origin: 'enrollment_purchase',
           data_source: 'family',
           family_id: family.id,
           effective_date: start_of_year,
@@ -45,6 +46,7 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
 
       let(:one_household_without_family) do
         {
+          origin: 'enrollment_purchase',
           data_source: 'anonymous',
           rating_address: {
             county: person_rating_address.county,
@@ -72,6 +74,7 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
 
       let(:two_households) do
         {
+          origin: 'application_submission',
           data_source: 'family',
           family_id: family.id,
           effective_date: start_of_year,
@@ -100,6 +103,7 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
 
       let(:two_households_without_family) do
         {
+          origin: 'application_submission',
           data_source: 'anonymous',
           effective_date: start_of_year,
           rating_address: {
@@ -144,7 +148,10 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
           end
 
           it 'should return success with dental and health hios_ids' do
-            expect(::BenchmarkProduct.all.count).to eq(1)
+            benchmark_products = ::BenchmarkProduct.all
+            expect(benchmark_products.count).to eq(1)
+            expect(benchmark_products.first.origin).to eq('application_submission')
+            expect(@result.success.origin).to eq('application_submission')
             expect(@result.success.household_group_benchmark_ehb_premium).not_to be_nil
             expect(@result.success.households.map(&:household_benchmark_ehb_premium)).not_to include(nil)
             expect(@result.success.households.map(&:household_health_benchmark_ehb_premium)).not_to include(nil)
@@ -163,7 +170,10 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
             end
 
             it 'should return success with dental and health hios_ids' do
-              expect(::BenchmarkProduct.all.count).to eq(1)
+              benchmark_products = ::BenchmarkProduct.all
+              expect(benchmark_products.count).to eq(1)
+              expect(benchmark_products.first.origin).to eq('application_submission')
+              expect(@result.success.origin).to eq('application_submission')
               expect(@result.success.household_group_benchmark_ehb_premium).not_to be_nil
               expect(@result.success.households.map(&:household_benchmark_ehb_premium)).not_to include(nil)
               expect(@result.success.households.map(&:household_health_benchmark_ehb_premium)).not_to include(nil)
@@ -189,8 +199,11 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
           end
 
           it 'should return success with dental_hios_id' do
-            expect(::BenchmarkProduct.all.count).to eq(1)
+            benchmark_products = ::BenchmarkProduct.all
+            expect(benchmark_products.count).to eq(1)
+            expect(benchmark_products.first.origin).to eq('enrollment_purchase')
             expect(@result.success).to be_a(::Entities::BenchmarkProducts::BenchmarkProduct)
+            expect(@result.success.origin).to eq('enrollment_purchase')
             expect(@result.success.household_group_benchmark_ehb_premium).not_to be_nil
             expect(@result.success.households.map(&:household_benchmark_ehb_premium)).not_to include(nil)
             expect(@result.success.households.map(&:household_health_benchmark_ehb_premium)).not_to include(nil)
@@ -209,8 +222,11 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
           end
 
           it 'should return success with dental_hios_id' do
-            expect(::BenchmarkProduct.all.count).to eq(1)
+            benchmark_products = ::BenchmarkProduct.all
+            expect(benchmark_products.count).to eq(1)
+            expect(benchmark_products.first.origin).to eq('enrollment_purchase')
             expect(@result.success).to be_a(::Entities::BenchmarkProducts::BenchmarkProduct)
+            expect(@result.success.origin).to eq('enrollment_purchase')
             expect(@result.success.household_group_benchmark_ehb_premium).not_to be_nil
             expect(@result.success.households.map(&:household_benchmark_ehb_premium)).not_to include(nil)
             expect(@result.success.households.map(&:household_health_benchmark_ehb_premium)).not_to include(nil)
@@ -230,8 +246,11 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
           end
 
           it 'should return success without dental_hios_id' do
-            expect(::BenchmarkProduct.all.count).to eq(1)
+            benchmark_products = ::BenchmarkProduct.all
+            expect(benchmark_products.count).to eq(1)
+            expect(benchmark_products.first.origin).to eq('enrollment_purchase')
             expect(@result.success).to be_a(::Entities::BenchmarkProducts::BenchmarkProduct)
+            expect(@result.success.origin).to eq('enrollment_purchase')
             expect(@result.success.household_group_benchmark_ehb_premium).not_to be_nil
             expect(@result.success.households.map(&:household_benchmark_ehb_premium)).not_to include(nil)
             expect(@result.success.households.map(&:household_health_benchmark_ehb_premium)).not_to include(nil)
@@ -249,8 +268,11 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
             end
 
             it 'should return success with dental_hios_id' do
-              expect(::BenchmarkProduct.all.count).to eq(1)
+              benchmark_products = ::BenchmarkProduct.all
+              expect(benchmark_products.count).to eq(1)
+              expect(benchmark_products.first.origin).to eq('enrollment_purchase')
               expect(@result.success).to be_a(::Entities::BenchmarkProducts::BenchmarkProduct)
+              expect(@result.success.origin).to eq('enrollment_purchase')
               expect(@result.success.household_group_benchmark_ehb_premium).not_to be_nil
               expect(@result.success.households.map(&:household_benchmark_ehb_premium)).not_to include(nil)
               expect(@result.success.households.map(&:household_health_benchmark_ehb_premium)).not_to include(nil)
@@ -269,8 +291,11 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
             end
 
             it 'should return success with dental_hios_id' do
-              expect(::BenchmarkProduct.all.count).to eq(1)
+              benchmark_products = ::BenchmarkProduct.all
+              expect(benchmark_products.count).to eq(1)
+              expect(benchmark_products.first.origin).to eq('enrollment_purchase')
               expect(@result.success).to be_a(::Entities::BenchmarkProducts::BenchmarkProduct)
+              expect(@result.success.origin).to eq('enrollment_purchase')
               expect(@result.success.household_group_benchmark_ehb_premium).not_to be_nil
               expect(@result.success.households.map(&:household_benchmark_ehb_premium)).not_to include(nil)
               expect(@result.success.households.map(&:household_health_benchmark_ehb_premium)).not_to include(nil)
@@ -290,8 +315,11 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
             end
 
             it 'should return success without dental_hios_id' do
-              expect(::BenchmarkProduct.all.count).to eq(1)
+              benchmark_products = ::BenchmarkProduct.all
+              expect(benchmark_products.count).to eq(1)
+              expect(benchmark_products.first.origin).to eq('enrollment_purchase')
               expect(@result.success).to be_a(::Entities::BenchmarkProducts::BenchmarkProduct)
+              expect(@result.success.origin).to eq('enrollment_purchase')
               expect(@result.success.household_group_benchmark_ehb_premium).not_to be_nil
               expect(@result.success.households.map(&:household_benchmark_ehb_premium)).not_to include(nil)
               expect(@result.success.households.map(&:household_health_benchmark_ehb_premium)).not_to include(nil)
@@ -314,8 +342,11 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
             end
 
             it 'should return success with health_hios_id' do
-              expect(::BenchmarkProduct.all.count).to eq(1)
+              benchmark_products = ::BenchmarkProduct.all
+              expect(benchmark_products.count).to eq(1)
+              expect(benchmark_products.first.origin).to eq('enrollment_purchase')
               expect(@result.success).to be_a(::Entities::BenchmarkProducts::BenchmarkProduct)
+              expect(@result.success.origin).to eq('enrollment_purchase')
               expect(@result.success.data_source).to eq('family')
               expect(@result.success.household_group_benchmark_ehb_premium).not_to be_nil
               expect(@result.success.households.map(&:household_benchmark_ehb_premium)).not_to include(nil)
@@ -333,8 +364,11 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
             end
 
             it 'should return success with health_hios_id' do
-              expect(::BenchmarkProduct.all.count).to eq(1)
+              benchmark_products = ::BenchmarkProduct.all
+              expect(benchmark_products.count).to eq(1)
+              expect(benchmark_products.first.origin).to eq('enrollment_purchase')
               expect(@result.success).to be_a(::Entities::BenchmarkProducts::BenchmarkProduct)
+              expect(@result.success.origin).to eq('enrollment_purchase')
               expect(@result.success.household_group_benchmark_ehb_premium).not_to be_nil
               expect(@result.success.households.map(&:household_benchmark_ehb_premium)).not_to include(nil)
               expect(@result.success.households.map(&:household_health_benchmark_ehb_premium)).not_to include(nil)
@@ -364,6 +398,7 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
 
           let(:three_members_one_household) do
             {
+              origin: 'application_aptc_computation',
               data_source: 'family',
               family_id: family.id,
               effective_date: start_of_year,
@@ -399,8 +434,11 @@ RSpec.describe Operations::BenchmarkProducts::IdentifySlcspWithPediatricDentalCo
           end
 
           it 'should return expected household_group_benchmark_ehb_premium' do
-            expect(::BenchmarkProduct.all.count).to eq(1)
+            benchmark_products = ::BenchmarkProduct.all
+            expect(benchmark_products.count).to eq(1)
+            expect(benchmark_products.first.origin).to eq('application_aptc_computation')
             expect(@result.success).to be_a(::Entities::BenchmarkProducts::BenchmarkProduct)
+            expect(@result.success.origin).to eq('application_aptc_computation')
             expect(@result.success.household_group_benchmark_ehb_premium.to_f).to eq(household_group_benchmark_ehb_premium)
             expect(@result.success.households.map(&:household_benchmark_ehb_premium)).not_to include(nil)
             expect(@result.success.households.map(&:household_health_benchmark_ehb_premium)).not_to include(nil)

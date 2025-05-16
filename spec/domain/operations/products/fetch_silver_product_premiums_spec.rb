@@ -4,6 +4,36 @@ require 'rails_helper'
 
 RSpec.describe ::Operations::Products::FetchSilverProductPremiums, dbclean: :after_each do
 
+  let!(:products) { FactoryBot.create_list(:benefit_markets_products_health_products_health_product, 1, :silver) }
+  let(:premium_table) { products.first.premium_tables.first }
+  let(:rating_area_exchange_provided_code) { premium_table.exchange_provided_code }
+  let(:effective_date) { TimeKeeper.date_of_record }
+
+  before do
+    ::BenefitMarkets::Products::ProductRateCache.initialize_rate_cache!
+  end
+
+  describe '#call' do
+    context 'with application and without a valid family' do
+      let(:application) { FactoryBot.create(:financial_assistance_application, :with_applicants, effective_date: effective_date) }
+
+      let(:params) do
+        {
+          products: products,
+          family: 'family',
+          application: application,
+          effective_date: effective_date,
+          rating_area_exchange_provided_code: rating_area_exchange_provided_code
+        }
+      end
+
+      it 'returns success' do
+        result = subject.call(params)
+        expect(result.success?).to eq true
+      end
+    end
+  end
+
   it 'should be a container-ready operation' do
     expect(subject.respond_to?(:call)).to be_truthy
   end
@@ -21,15 +51,8 @@ RSpec.describe ::Operations::Products::FetchSilverProductPremiums, dbclean: :aft
   end
 
   describe 'valid params' do
-
     let(:person) { FactoryBot.create(:person, :with_consumer_role) }
     let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person)}
-
-    let!(:products) { FactoryBot.create_list(:benefit_markets_products_health_products_health_product, 1, :silver) }
-    let(:premium_table) { products.first.premium_tables.first }
-    let(:rating_area_exchange_provided_code) { premium_table.exchange_provided_code }
-
-    let(:effective_date) { TimeKeeper.date_of_record }
 
     let(:params) do
       {
@@ -38,10 +61,6 @@ RSpec.describe ::Operations::Products::FetchSilverProductPremiums, dbclean: :aft
         effective_date: effective_date,
         rating_area_exchange_provided_code: rating_area_exchange_provided_code
       }
-    end
-
-    before do
-      ::BenefitMarkets::Products::ProductRateCache.initialize_rate_cache!
     end
 
     context 'when address, rating area, service area exists' do

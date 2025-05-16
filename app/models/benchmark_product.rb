@@ -27,6 +27,18 @@ class BenchmarkProduct
   # This response payload includes all the calculations
   field :response_payload, type: String
 
+  ORIGIN_KINDS = %w[enrollment_purchase application_submission application_aptc_computation].freeze
+
+  # Origin of the request. This is used to identify the source of the request.
+  # Possible values are:
+  #   enrollment_purchase - when the request is made during enrollment purchase
+  #   application_submission - when the request is made during application submission
+  #   application_aptc_computation - when the request is made during APTC value calculation
+  field :origin, type: String
+
+  # Validates the origin field to ensure it is one of the defined ORIGIN_KINDS if present
+  validates :origin, inclusion: { in: ORIGIN_KINDS }, allow_blank: true
+
   def request
     JSON.parse(request_payload, symbolize_names: true)
   end

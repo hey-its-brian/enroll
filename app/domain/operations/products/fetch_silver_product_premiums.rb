@@ -26,26 +26,32 @@ module Operations
         return Failure('Missing Family') if params[:family].blank?
         return Failure('Missing Effective Date') if params[:effective_date].blank?
         return Failure('Missing rating area exchange code') if params[:rating_area_exchange_provided_code].blank?
+        @application = params[:application] if params[:application].is_a?(::FinancialAssistance::Application)
 
         Success(params)
       end
 
       def fetch_family_members(family, family_member_id)
-        members = family.family_members
-        family_members = members.active
-        family_members = members.where(id: BSON::ObjectId(family_member_id)) if family_member_id
-
-        if family_members.present?
-          Success(family_members)
+        if @application
+          members = @application.applicants
+          members ? Success(members) : Failure("Unable to find applicants for the given application: #{@application.id}")
         else
-          Failure("Unable to find family members for the given family: #{family.id} & family_member_id: #{family_member_id}")
+          members = family.family_members
+          family_members = members.active
+          family_members = members.where(id: BSON::ObjectId(family_member_id)) if family_member_id
+
+          if family_members.present?
+            Success(family_members)
+          else
+            Failure("Unable to find family members for the given family: #{family.id} & family_member_id: #{family_member_id}")
+          end
         end
       end
 
       def fetch_product_premiums(products, family_members, effective_date, rating_area_exchange_provided_code)
         member_premiums = family_members.inject({}) do |member_result, family_member|
           age = family_member.age_on(effective_date)
-          hbx_id = family_member.hbx_id
+          hbx_id = @application ? family_member.person_hbx_id : family_member.hbx_id
           # age = ::Operations::AgeLookup.new.call(age).success if false && age_rated # Todo - Get age_rated through settings
           product_hash =
             products.inject([]) do |result, product|
