@@ -584,7 +584,7 @@ class Person
   def publish_updated_event
     return if skip_person_updated_event_callback
 
-    event = event('events.person_updated', attributes: { gid: self.to_global_id.uri, payload: self.changed_attributes })
+    event = event('events.person_updated', attributes: { gid: self.to_global_id.uri, payload: self.changes })
     event.success.publish if event.success?
   rescue StandardError => e
     Rails.logger.error { "Couldn't generate person update event due to #{e.backtrace}" }
