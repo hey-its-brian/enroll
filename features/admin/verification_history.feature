@@ -14,17 +14,26 @@ Feature: Admin navigates to the verification history page of a consumer
   Scenario: Admin can access to the Verification History page of an outstanding verification
     Given the consumer vists the verification detail page for a verification with outstanding status
     When admin clicks on Verification History
-    Then the Transaction History table is present
+    Then the Verification History table is present
 
   Scenario: Admin can access to the Verification History page of a rejected verification
     Given the consumer vists the verification detail page for a verification with rejected status
     When admin clicks on Verification History
-    Then the Transaction History table is present
+    Then the Verification History table is present
+
+  Scenario: Admin can see history elements in correct order
+    Given the consumer has a verification with history elements that have varying dates
+    And the admin visits the verification tab
+    And the admin selects a household member
+    And the consumer selects the Income verification for the member
+    And admin clicks on Verification History
+    And the Verification History table is present
+    Then the Verification History table should be sorted by date in reverse order
 
   Scenario: Admin can access to the Verification History page and return to the Document Detail
     Given the consumer vists the verification detail page for a verification with rejected status
     And admin clicks on Verification History
-    And the Transaction History table is present
+    And the Verification History table is present
     And admin clicks on the back button of the Verification History page
     Then admin should be in the Document Detail page
     When admin clicks on Verification History

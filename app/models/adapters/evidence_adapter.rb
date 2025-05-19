@@ -71,7 +71,7 @@ module Adapters
       module HistoryHelper
         def format_history(elements)
           Array(elements).map { |element| EvidenceHistoryDecorator.new(element) }
-                         .sort_by(&:created_at)
+                         .sort_by(&:date_of_action)
                          .reverse
         end
       end

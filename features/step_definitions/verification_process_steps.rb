@@ -79,6 +79,25 @@ Given(/the consumer has these verifications:/) do |table|
   end
 end
 
+Given(/the consumer has a verification with history elements that have varying dates/) do
+  family = user.person.primary_family
+  application = FactoryBot.create(:application,
+                                  family_id: family.id,
+                                  created_at: TimeKeeper.date_of_record,
+                                  aasm_state: "determined",
+                                  effective_date: TimeKeeper.date_of_record)
+  user_family_member_id = family.primary_family_member.id
+  FactoryBot.create(:financial_assistance_applicant,
+                    :with_income_evidence,
+                    application: application,
+                    is_primary_applicant: true,
+                    family_member_id: user_family_member_id)
+  income_evidence = application.applicants.where(family_member_id: user_family_member_id).first.income_evidence
+  income_evidence.verification_histories.create(action: 'verify', update_reason: 'Document in EnrollApp', updated_by: 'admin@user.com')
+  income_evidence.request_results.create(result: 'verified', source: 'FDSH IFSV', raw_payload: nil)
+  ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family.reload)
+end
+
 def create_verification(type_name, validation_status:, inactive: false)
   family = user.person.primary_family
   case type_name
@@ -147,8 +166,14 @@ Then(/^the Action Items table is not present$/) do
   expect(page).not_to have_content(l10n('insured.consumer_roles.upload_ridp_documents.action_items'))
 end
 
-Then(/^the Transaction History table is present$/) do
+Then(/^the Verification History table is present$/) do
   expect(page).to have_content(l10n('insured.families.verifications.history.verification_history'))
+end
+
+Then(/^the Verification History table should be sorted by date in reverse order$/) do
+  date_strs = all('table tbody tr').map { |row| row.find('td:nth-child(1)').text }
+  dates = date_strs.map { |date_str| DateTime.strptime(date_str, '%m/%d/%Y %H:%M') }
+  expect(dates).to eq(dates.sort.reverse)
 end
 
 And(/^.+ clicks on the back button of the Verification History page$/) do
