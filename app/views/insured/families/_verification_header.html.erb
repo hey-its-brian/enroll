@@ -44,7 +44,7 @@
       </dd>
     </div>
   <% end %>
-  <% if summary_rows.include?(:update_reason) && @evidence.update_reason.present? && @evidence.is_action_needed? %>
+  <% if summary_rows.include?(:update_reason) && @evidence.update_reason.present? && @evidence.status.to_s == "rejected" %>
     <div class='d-flex align-items-center'>
       <dt class="<%= dt_class %>"><%= "#{l10n("insured.families.verifications.detail.summary.status_reason")}:" %></dt>
       <dd><strong><%= @evidence.update_reason %></strong></dd>

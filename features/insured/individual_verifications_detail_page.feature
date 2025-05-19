@@ -15,8 +15,8 @@ Feature: Individual Verification Details Page
 
     Examples:
       | status       | user_facing_status | with_or_without_reason | see_or_not_see_actionable_status | see_or_not_see_upload_section |
-      | outstanding  | outstanding        | with                   | see                              | see                           |
       | rejected     | rejected           | with                   | see                              | see                           |
+      | outstanding  | outstanding        | without                | see                              | see                           |
       | review       | review             | without                | not see                          | see                           |
       | pending      | pending            | without                | not see                          | not_see                       |
       | verified     | verified           | without                | not see                          | not see                       |
