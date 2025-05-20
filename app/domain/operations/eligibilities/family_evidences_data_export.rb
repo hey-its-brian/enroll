@@ -196,7 +196,14 @@ module Operations
           applicant.current_month_unearned_incomes.sum(&:amount)
         ] + evidences.collect do |evidence_name|
               evidence_record = applicant.send(evidence_name)
-              if evidence_record
+              if evidence_name == 'income_evidence'
+                if evidence_record
+                  has_auto_extend_date = evidence_record.verification_histories&.where(action: 'auto_extend_due_date')&.any? || false
+                  [evidence_record.aasm_state, evidence_record.due_on, has_auto_extend_date, evidence_record.has_determination_response?]
+                else
+                  append_nil(4)
+                end
+              elsif evidence_record
                 [evidence_record.aasm_state, evidence_record.due_on, evidence_record.has_determination_response?]
               else
                 append_nil(3)

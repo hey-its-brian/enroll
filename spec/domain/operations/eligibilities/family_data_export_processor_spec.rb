@@ -206,5 +206,13 @@ RSpec.describe ::Operations::Eligibilities::FamilyDataExportProcessor,
       expect(headers.include?("Residency Evi Due Date")).to be_falsey
     end
   end
+
+  context "income evidence" do
+    it "should include auto extension status" do
+      result = subject.call(required_params)
+      headers = CSV.open(result.success, 'r', &:first)
+      expect(headers.include?("Income Auto-Extended")).to be_truthy
+    end
+  end
 end
 

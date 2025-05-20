@@ -132,6 +132,7 @@ module Operations
           'Cur Mth UnEarned Income Amt',
           'Income Status',
           'Income Due Date',
+          'Income Auto-Extended',
           'Income Response',
           'Esi Status',
           'Esi Due Date',
