@@ -190,7 +190,8 @@ module Eligibilities
 
     def set_due_on(due_on, updated_by = nil, action = 'extend_due_date', extension_descriptor: nil)
       self.due_on = due_on
-      add_verification_history(action, l10n('admin.verifications.extend.history_description', extension_descriptor: extension_descriptor, date: due_on), updated_by)
+      due_on_str = due_on.strftime('%m/%d/%Y')
+      add_verification_history(action, l10n('admin.verifications.extend.history_description', extension_descriptor: extension_descriptor, date: due_on_str), updated_by)
     end
 
     def extend_due_on(period = 30.days, updated_by = nil, action = 'extend_due_date')

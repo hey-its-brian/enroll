@@ -26,6 +26,12 @@ And(/^.+ clicks on Verification History$/) do
   find(IvlDocumentDetail.verification_history_link).click
 end
 
+Then(/^the user will see the date, action, and update reason for the extension action$/) do
+  expect(page).to have_content TimeKeeper.date_of_record
+  expect(page).to have_content "Update Reason"
+  expect(page).to have_content "Transaction ID"
+end
+
 And(/^.+ lands in the Verifications page$/) do
   if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
     expect(page).to have_content "Verifications"

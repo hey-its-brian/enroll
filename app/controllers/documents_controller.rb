@@ -276,18 +276,20 @@ class DocumentsController < ApplicationController
       action = "Delete #{params[:doc_title]}"
     when "extend"
       if EnrollRegistry.feature_enabled?(:verification_due_on_options)
+        action = "extend_due_date"
         due_date = @verification_type.due_date
         extension_descriptor = if params[:extension_period]
                                  l10n('admin.verifications.extend.history_description.static', day_offset: params[:extension_period].to_i - 1)
                                else
                                  l10n('admin.verifications.extend.history_description.manual')
                                end
-        action = l10n('admin.verifications.extend.history_description', extension_descriptor: extension_descriptor, date: due_date)
+        reason = l10n('admin.verifications.extend.history_description', extension_descriptor: extension_descriptor, date: due_date)
       end
     end
-    reason = params[:verification_reason]
+    reason ||= params[:verification_reason]
+    action = action.split('_').join(' ') unless action == "extend_due_date"
     if @verification_type
-      @verification_type.add_type_history_element(action: action.split('_').join(' '),
+      @verification_type.add_type_history_element(action: action,
                                                   modifier: actor,
                                                   update_reason: reason)
     end

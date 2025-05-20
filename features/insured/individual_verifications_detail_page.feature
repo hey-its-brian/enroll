@@ -91,6 +91,8 @@ Feature: Individual Verification Details Page
     And the user selects the <date_option> option from the extend due date dropdown
     When Admin clicks confirm
     Then the user should see the new date
+    When Admin clicks on Verification History
+    Then the user will see the date, action, and update reason for the extension action
 
   Examples:
     | date_option  |
