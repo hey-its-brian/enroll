@@ -41,6 +41,13 @@ module Eligibilities
       ::Person.find(person_id)
     end
 
+    def is_active?
+      family_member = GlobalID::Locator.locate(gid)
+      raise "Family member not found" unless family_member
+
+      family_member.is_active
+    end
+
     def earliest_due_date
       eligibility_states.by_type_uploadable.collect(&:earliest_due_date).compact.min
     end

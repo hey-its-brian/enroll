@@ -35,13 +35,7 @@ module Operations
             all_subjects = family.eligibility_determination.subjects
 
             return Success(all_subjects) if params[:include_inactives] && EnrollRegistry.feature_enabled?(:show_inactive_verification_members)
-
-            members = all_subjects.map { |subject| GlobalID::Locator.locate(subject.gid) }
-            return Failure("Family members not found") unless members.count == all_subjects.count
-
-            zipped_subjects = members.map(&:is_active).zip(all_subjects)
-            active_subjects = zipped_subjects.select { |active, _| active }.map(&:last)
-            Success(active_subjects)
+            Success(all_subjects.select(&:is_active?))
           end
 
           def find_action_items_and_sort(subjects)
