@@ -112,23 +112,60 @@
 <% if user_signed_in? %>
   <script>
     // check time until logout
-    function check_time_until_logout(){
-      $.ajax({
-        url: "<%= main_app.check_time_until_logout_path(format: :js) %>",
-        method: 'GET',
-        dataType: 'script',
-        data:{ bs4: <%= @bs4 || "''" %> },
-        success: function(response){
-        },
-        error: function(response){
-        }
-      });
-    }
-    var logout_check_timer = setTimeout(check_time_until_logout, 100);
-    document.addEventListener('visibilitychange', function() {
-      if (!document.hidden) {
-        check_time_until_logout();
+    (function() {
+      if (window.visibilityChangeHandler) {
+        document.removeEventListener('visibilitychange', window.visibilityChangeHandler);
       }
-    });
+
+      if (window.logout_check_timer) {
+        clearTimeout(window.logout_check_timer);
+      }
+
+      if (window.countdownTimer) {
+        clearInterval(window.countdownTimer);
+      }
+
+      window.check_time_until_logout = function() {
+        $.ajax({
+          url: "<%= main_app.check_time_until_logout_path(format: :js) %>",
+          method: 'GET',
+          dataType: 'script',
+          data: { bs4: <%= @bs4 || "''" %> },
+          cache: false,
+            success: function(response){
+          },
+          error: function(response) {
+            if (window.logout_check_timer) {
+              clearTimeout(window.logout_check_timer);
+            }
+            window.logout_check_timer = setTimeout(window.check_time_until_logout, 15000);
+          }
+        });
+      };
+
+      window.visibilityChangeHandler = (function() {
+        var lastCheckTime = Date.now();
+        var minimumInterval = 180000;
+      
+        return function() {
+          if (!document.hidden) {
+            var currentTime = Date.now();
+            if (currentTime - lastCheckTime > minimumInterval) {
+              lastCheckTime = currentTime;
+              
+              if (window.logout_check_timer) {
+                clearTimeout(window.logout_check_timer);
+              }
+              
+              window.check_time_until_logout();
+            }
+          }
+        };
+      })();
+      
+      document.addEventListener('visibilitychange', window.visibilityChangeHandler);
+
+      window.logout_check_timer = setTimeout(window.check_time_until_logout, 100);
+    })();
   </script>
 <% end %>
