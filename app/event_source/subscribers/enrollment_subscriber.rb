@@ -116,7 +116,7 @@ module Subscribers
     def fetch_application(enrollment)
       application = if EnrollRegistry.feature_enabled?(:temporary_configuration_enable_multi_tax_household_feature)
                       thhe = TaxHouseholdEnrollment.where(enrollment_id: enrollment.id).first
-                      application_hbx_id = thhe&.tax_household&.tax_household_group&.application_id
+                      application_hbx_id = thhe&.tax_household&.tax_household_group&.application_hbx_id
                       ::FinancialAssistance::Application.where(hbx_id: application_hbx_id).first
                     end
 
