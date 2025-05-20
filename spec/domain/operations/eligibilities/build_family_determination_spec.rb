@@ -153,7 +153,11 @@ RSpec.describe ::Operations::Eligibilities::BuildFamilyDetermination,
     ].each do |feature_key|
       allow(EnrollRegistry).to receive(:feature_enabled?).with(feature_key).and_return(true)
     end
+
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(qhp_enabled)
   end
+
+  let(:qhp_enabled) { false }
 
   it 'should be a container-ready operation' do
     expect(subject.respond_to?(:call)).to be_truthy
@@ -257,6 +261,14 @@ RSpec.describe ::Operations::Eligibilities::BuildFamilyDetermination,
       expect(result.success?).to be_falsey
       expect(result.failure).to eq("Determination cannot be built as Primary person's Consumer Role is missing.")
       expect(result.success).not_to be_a(Eligibilities::Determination)
+    end
+  end
+
+  context 'QHP feature is enabled' do
+    let(:qhp_enabled) { true }
+
+    it 'returns failure with a message' do
+      expect(subject.call(required_params).failure).to eq('QHP Application feature is enabled')
     end
   end
 end

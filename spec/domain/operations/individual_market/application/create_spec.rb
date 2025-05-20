@@ -26,7 +26,8 @@ RSpec.describe Operations::IndividualMarket::Application::Create, dbclean: :afte
         },
         demographics: {
           dob: Date.new(1980, 1, 1),
-          gender: 'male'
+          gender: 'male',
+          no_ssn: true
         },
         eligibilities: [eligibility_params],
         is_applying_coverage: true
@@ -45,7 +46,8 @@ RSpec.describe Operations::IndividualMarket::Application::Create, dbclean: :afte
         },
         demographics: {
           dob: Date.new(2024, 12, 1),
-          gender: 'male'
+          gender: 'male',
+          no_ssn: true
         },
         eligibilities: [eligibility_params],
         is_applying_coverage: true
@@ -64,7 +66,8 @@ RSpec.describe Operations::IndividualMarket::Application::Create, dbclean: :afte
         },
         demographics: {
           dob: Date.new(2024, 12, 1),
-          gender: 'female'
+          gender: 'female',
+          no_ssn: true
         },
         eligibilities: [eligibility_params],
         is_applying_coverage: true

@@ -52,7 +52,7 @@ RSpec.describe Operations::IndividualMarket::GenerateApplication, dbclean: :afte
 
     context 'with valid params' do
       let!(:hbx_profile)   { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
-      let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+      let(:person) { FactoryBot.create(:person, :with_consumer_role, no_ssn: true) }
       let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
       let(:params) do
         {

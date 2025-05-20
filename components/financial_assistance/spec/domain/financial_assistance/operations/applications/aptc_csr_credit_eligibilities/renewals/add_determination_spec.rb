@@ -8,6 +8,10 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
     DatabaseCleaner.clean
   end
 
+  before :each do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+  end
+
   let!(:application) do
     FactoryBot.create(:financial_assistance_application, hbx_id: '200000126', aasm_state: "submitted")
   end

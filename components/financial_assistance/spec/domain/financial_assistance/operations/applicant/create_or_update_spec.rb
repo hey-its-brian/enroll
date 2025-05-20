@@ -17,6 +17,7 @@ RSpec.describe FinancialAssistance::Operations::Applicant::CreateOrUpdate, dbcle
                           dob: (Date.today - 10.years),
                           first_name: 'james',
                           last_name: 'bond',
+                          gender: nil,
                           is_primary_applicant: true)
       end
 
@@ -91,6 +92,7 @@ RSpec.describe FinancialAssistance::Operations::Applicant::CreateOrUpdate, dbcle
                           application: application,
                           ssn: '889984400',
                           dob: (Date.today - 10.years),
+                          gender: nil,
                           first_name: 'james',
                           last_name: 'bond',
                           :is_applying_coverage => true,
@@ -127,7 +129,7 @@ RSpec.describe FinancialAssistance::Operations::Applicant::CreateOrUpdate, dbcle
 
     context "and the incoming payload and existing attributes are same but attributes order changed" do
 
-      let!(:application) { FactoryBot.create(:financial_assistance_application, family_id: family_id, aasm_state: 'draft') }
+      let!(:application) { FactoryBot.create(:financial_assistance_application, family_id: family_id, aasm_state: 'draft', effective_date: nil) }
       let!(:applicant) do
         appl = FactoryBot.create(:financial_assistance_applicant,
                                  :with_five_year_bar,
@@ -145,6 +147,7 @@ RSpec.describe FinancialAssistance::Operations::Applicant::CreateOrUpdate, dbcle
                                  :is_primary_applicant => true,
                                  :is_consent_applicant => false,
                                  :is_disabled => false,
+                                 gender: nil,
                                  :ethnicity => [],
                                  :family_member_id => BSON::ObjectId('5f60c648bb40ee0c3d288a83'),
                                  :relationship => "child")
@@ -241,6 +244,7 @@ RSpec.describe FinancialAssistance::Operations::Applicant::CreateOrUpdate, dbcle
                           dob: (Date.today - 10.years),
                           first_name: 'james',
                           last_name: 'bond',
+                          gender: nil,
                           :is_applying_coverage => true,
                           :citizen_status => "us_citizen",
                           :is_consumer_role => true,

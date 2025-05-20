@@ -14,6 +14,7 @@ module FinancialAssistance
           class AddDetermination
             include Dry::Monads[:do, :result]
             include EventSource::Command
+            include ::ResourceRegistryHelper
 
             # @param [Hash] opts The options to add eligibility determination to Application(persistence object)
             # @option opts [Hash] :application_response_payload ::AcaEntities::MagiMedicaid::Application params
@@ -24,12 +25,23 @@ module FinancialAssistance
               yield update_application(application, application_entity)
               persisted_application = yield find_application(application_entity)
               # application_event_result = yield publish_application_event(persisted_application)
+              _family_result        = yield create_or_update_family(application)
               result = yield request_determination_notice(persisted_application)
 
               Success(result)
             end
 
             private
+
+            # Creates or updates the family associated with the application when the QHP application feature is enabled.
+            #
+            # @param application [FinancialAssistance::Application] The application to create or update the family for
+            # @return [Dry::Monads::Result]
+            def create_or_update_family(application)
+              return Success('Update not required for family') unless qhp_application_feature_enabled?
+
+              ::Operations::FinancialAssistance::OnDetermination::Families::CreateOrUpdate.new.call(application: application)
+            end
 
             def initialize_application_entity(params)
               ::AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(params)

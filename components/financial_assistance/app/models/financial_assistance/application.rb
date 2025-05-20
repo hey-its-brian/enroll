@@ -1019,7 +1019,10 @@ module FinancialAssistance
       self.effective_date.year < TimeKeeper.date_of_record.year
     end
 
+    # Creates tax household groups for the family associated with this application when qhp_application_feature_enabled is disabled.
     def create_tax_household_groups
+      return if qhp_application_feature_enabled?
+
       return unless EnrollRegistry.feature_enabled?(:temporary_configuration_enable_multi_tax_household_feature)
 
       determination = family.create_thhg_on_fa_determination(self)

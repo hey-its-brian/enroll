@@ -8,6 +8,7 @@ module Operations
     # Build determination for subjects passed with effective date
     class BuildFamilyDetermination
       include Dry::Monads[:do, :result]
+      include ::ResourceRegistryHelper
 
       # @param [Hash] opts Options to build determination
       # @option opts [Family] :family required
@@ -25,7 +26,7 @@ module Operations
       def validate(params)
         errors = []
         errors << 'family missing' unless params[:family]
-
+        return Failure('QHP Application feature is enabled') if qhp_application_feature_enabled?
         errors.empty? ? Success(params) : Failure(errors)
       end
 

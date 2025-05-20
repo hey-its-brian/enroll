@@ -490,7 +490,7 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
 
   describe '.assign_effective_date' do
     let(:family_id) { BSON::ObjectId.new }
-    let!(:application) { FactoryBot.create(:financial_assistance_application, family_id: family_id) }
+    let!(:application) { FactoryBot.create(:financial_assistance_application, family_id: family_id, effective_date: nil) }
 
     context 'for non existing effective_date' do
       before do

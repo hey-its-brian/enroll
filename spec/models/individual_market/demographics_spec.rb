@@ -28,4 +28,102 @@ RSpec.describe IndividualMarket::Demographics, type: :model do
       expect(demographics.applicant).to be_a(IndividualMarket::Applicant)
     end
   end
+
+  describe 'validations' do
+    describe '#no_ssn_or_encrypted_ssn' do
+      context 'when:
+        - no_ssn is true
+        - encrypted_ssn is present' do
+
+        before do
+          demographics.no_ssn = true
+          demographics.encrypted_ssn = '123-45-6789'
+        end
+
+        it 'adds an error' do
+          demographics.valid?
+          expect(demographics.errors[:base]).to include('Only one of no_ssn or encrypted_ssn must be present')
+        end
+      end
+
+      context 'when:
+        - no_ssn is false
+        - encrypted_ssn is blank' do
+
+        before do
+          demographics.no_ssn = false
+          demographics.encrypted_ssn = nil
+        end
+
+        it 'adds an error' do
+          demographics.valid?
+          expect(demographics.errors[:base]).to include('One of no_ssn or encrypted_ssn must be present')
+        end
+      end
+
+      context 'when:
+        - no_ssn is true
+        - encrypted_ssn is blank' do
+
+        before do
+          demographics.no_ssn = true
+          demographics.encrypted_ssn = nil
+        end
+
+        it 'is valid' do
+          expect(demographics.valid?).to be true
+        end
+      end
+
+      context 'when:
+        - no_ssn is false
+        - encrypted_ssn is present' do
+
+        before do
+          demographics.no_ssn = false
+          demographics.encrypted_ssn = '123-45-6789'
+        end
+
+        it 'is valid' do
+          expect(demographics.valid?).to be true
+        end
+      end
+    end
+
+    describe 'validation for no_ssn' do
+      context 'when no_ssn is true' do
+        before do
+          demographics.no_ssn = true
+          demographics.encrypted_ssn = nil
+        end
+
+        it 'is valid' do
+          expect(demographics.valid?).to be true
+        end
+      end
+
+      context 'when no_ssn is false' do
+        before do
+          demographics.no_ssn = false
+          demographics.encrypted_ssn = '123-45-6789'
+        end
+
+        it 'is valid' do
+          expect(demographics.valid?).to be true
+        end
+      end
+
+      context 'when no_ssn is nil' do
+        before do
+          demographics.no_ssn = nil
+          demographics.encrypted_ssn = '123-45-6789'
+        end
+
+        it 'is valid' do
+          expect(demographics.valid?).to be false
+          expect(demographics.errors[:no_ssn]).to include('is not included in the list')
+        end
+      end
+    end
+  end
 end

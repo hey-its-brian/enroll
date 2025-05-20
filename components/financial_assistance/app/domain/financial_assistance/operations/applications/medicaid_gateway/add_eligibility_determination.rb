@@ -12,6 +12,7 @@ module FinancialAssistance
         # Operation receives the MagiMedicaidApplication with Full Determination
         class AddEligibilityDetermination
           include Dry::Monads[:do, :result]
+          include ::ResourceRegistryHelper
 
           # @param [Hash] opts The options to add eligibility determination to Application(persistence object)
           # @option opts [Hash] :application_response_payload ::AcaEntities::MagiMedicaid::Application params
@@ -21,6 +22,7 @@ module FinancialAssistance
             application        = yield find_application(application_entity)
             application        = yield update_application(application, application_entity)
             result             = yield add_eligibility_determination(application_entity, application)
+            _family_result     = yield create_or_update_family(application)
             _done              = yield cache_determination_token(application)
 
             Success(result)
@@ -34,6 +36,16 @@ module FinancialAssistance
                               expires_in: 5.minutes)
 
             Success('Rails cache is set for the application with timestamp.')
+          end
+
+          # Creates or updates the family associated with the application when the QHP application feature is enabled.
+          #
+          # @param application [FinancialAssistance::Application] The application to create or update the family for
+          # @return [Dry::Monads::Result]
+          def create_or_update_family(application)
+            return Success('Update not required for family') unless qhp_application_feature_enabled?
+
+            ::Operations::FinancialAssistance::OnDetermination::Families::CreateOrUpdate.new.call(application: application)
           end
 
           def initialize_application_entity(params)

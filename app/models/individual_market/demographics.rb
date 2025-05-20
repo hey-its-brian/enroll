@@ -104,5 +104,19 @@ module IndividualMarket
     validates :citizen_status,
               allow_blank: true,
               inclusion: { in: CITIZEN_STATUS_KINDS + ACA_ELIGIBLE_CITIZEN_STATUS_KINDS, message: "%{value} is not a valid citizen status" }
+
+    # Validation for the presence of either no_ssn or encrypted_ssn
+    validate :no_ssn_or_encrypted_ssn
+
+    # Validation for the presence of no_ssn
+    validates :no_ssn, inclusion: { in: [true, false] }
+
+    private
+
+    # Validates that either no_ssn or encrypted_ssn is present
+    def no_ssn_or_encrypted_ssn
+      errors.add(:base, 'One of no_ssn or encrypted_ssn must be present') if !no_ssn && encrypted_ssn.nil?
+      errors.add(:base, 'Only one of no_ssn or encrypted_ssn must be present') if no_ssn && encrypted_ssn
+    end
   end
 end

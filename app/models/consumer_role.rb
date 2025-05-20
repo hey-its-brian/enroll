@@ -205,7 +205,9 @@ class ConsumerRole
 
   accepts_nested_attributes_for :person, :workflow_state_transitions, :vlp_documents, :ridp_documents
 
-  validates_presence_of :dob, :gender, :is_applicant
+  validates_presence_of :dob, :gender
+  # , :is_applicant  # This validation is currently disabled because the field 'is_applicant' is not being used anywhere in the codebase.
+
   #validate :ssn_or_no_ssn
 
   validates :vlp_authority,

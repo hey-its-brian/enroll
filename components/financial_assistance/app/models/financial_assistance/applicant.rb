@@ -174,7 +174,11 @@ module FinancialAssistance
 
     field :aasm_state, type: String, default: :unverified
 
+    # @!attribute [rw] person_hbx_id
+    #   @return [String] the unique identifier of the applicant in the system
+    #   @note  This value of this field can change when the matching person record exists in the system. Do not use this field as a foreign key.
     field :person_hbx_id, type: String
+
     field :ext_app_id, type: String
     field :family_member_id, type: BSON::ObjectId
     field :eligibility_determination_id, type: BSON::ObjectId
@@ -323,6 +327,18 @@ module FinancialAssistance
     # @!attribute [rw] benchmark_premiums
     #   @return [Hash] the SLCSP and LCSP premiums information calculated for Financial Assistance determination process
     field :benchmark_premiums, type: Hash, default: {}
+
+    # @!attribute [rw] age_off_excluded
+    #   @return [Boolean] true if the applicant is excluded from the age off process for enrollment purchases
+    field :age_off_excluded, type: Boolean, default: false
+
+    # @!attribute [rw] contact_method
+    #   @return [String] the preferred method of contact for the applicant
+    field :contact_method, type: String, default: EnrollRegistry.feature_enabled?(:contact_method_via_dropdown) ? 'Paper and Electronic communications' : 'Paper, Electronic and Text Message communications'
+
+    # @!attribute [rw] language_preference
+    #   @return [String] the preferred language for communication with the applicant
+    field :language_preference, type: String, default: 'English'
 
     embeds_many :verification_types, class_name: "::FinancialAssistance::VerificationType" #, cascade_callbacks: true, validate: true
     embeds_many :incomes,     class_name: "::FinancialAssistance::Income", cascade_callbacks: true, validate: true
