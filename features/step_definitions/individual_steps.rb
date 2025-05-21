@@ -199,6 +199,24 @@ Then(/^.+ sees form to enter personal information$/) do
   sleep 30
 end
 
+And(/Individual selects text option/) do
+  find('#contact_type_mail').click
+  find('#contact_type_email').click
+  find('#contact_type_text').click
+end
+
+And(/Individual selects mail option/) do
+  find('#contact_type_mail').click
+end
+
+Then(/Individual lands on the authorization and consent page/) do
+  expect(page).to have_css('h1', text: l10n('insured.consumer_roles.ridp_agreement.heading'))
+end
+
+And(/Individual enters a phone number/) do
+  fill_in IvlPersonalInformation.home_phone, :with => "22075555555"
+end
+
 Then(/Individual should see an message warning about invalid phone/) do
   text = page.driver.browser.switch_to.alert.text
   expect(text).to eq 'Mobile Phone number cannot be all zeros.'
@@ -246,6 +264,15 @@ Then(/^.+ sees form to enter personal information but doesn't check every box$/)
 end
 
 And(/the individual enters address information$/) do
+  fill_in IvlPersonalInformation.address_line_one, :with => "4900 USAA BLVD NE"
+  fill_in IvlPersonalInformation.address_line_two, :with => "212"
+  fill_in IvlPersonalInformation.city, :with => EnrollRegistry[:enroll_app].setting(:contact_center_city).item
+  find_all(IvlPersonalInformation.select_state_dropdown).first.click
+  find_all(:xpath, "//li[contains(., '#{EnrollRegistry[:enroll_app].setting(:state_abbreviation).item}')]").last.click
+  fill_in IvlPersonalInformation.zip, :with => EnrollRegistry[:enroll_app].setting(:contact_center_zip_code).item
+end
+
+And(/the individual enters address information with wiyj $/) do
   fill_in IvlPersonalInformation.address_line_one, :with => "4900 USAA BLVD NE"
   fill_in IvlPersonalInformation.address_line_two, :with => "212"
   fill_in IvlPersonalInformation.city, :with => EnrollRegistry[:enroll_app].setting(:contact_center_city).item

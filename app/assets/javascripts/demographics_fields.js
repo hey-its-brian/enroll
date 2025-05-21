@@ -305,6 +305,19 @@ var PersonValidations = (function (window, undefined) {
     });
   }
 
+  function customContactMethodValidation(element, message) {
+    element.last()[0].setCustomValidity(message);
+
+    if (!element.data('validationBound')) {
+      element.data('validationBound', true);
+      element.on('change', function() {
+        element.each(function() {
+          this.setCustomValidity('');
+        });
+      });
+    }
+  }
+
   function customValidityWithChangeEvent(element, message) {
     // Set custom validity on all radio buttons in the group
     element.each(function() {
@@ -782,6 +795,15 @@ var PersonValidations = (function (window, undefined) {
       }
 
       if ($('#contact_type_text').prop('checked')) {
+        if (!$('#contact_type_email').prop('checked') && !$('#contact_type_mail').prop('checked')) {
+          const contactTextCheckbox = $('input[name="person[consumer_role_attributes][contact_method][]"]');
+          customContactMethodValidation(contactTextCheckbox, "You must select at least one contact method other than 'Text'");
+          PersonValidations.restoreRequiredAttributes(e);
+          contactTextCheckbox.each(function() {
+            this.reportValidity();
+          });
+        }
+
         const phoneInput = $('input[name="person[phones_attributes][1][full_phone_number]"]');
         const phoneValue = phoneInput.val().replace(/\D/g, '');
 
