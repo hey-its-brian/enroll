@@ -28,6 +28,7 @@ module Eligibilities
     class Eligibility
       include Mongoid::Document
       include Mongoid::Timestamps
+      include StateMachine
 
       # @!attribute eligible
       #   @return [Object] The entity (polymorphic) to which this eligibility belongs
@@ -96,6 +97,44 @@ module Eligibilities
       scope :eligible, -> { where(current_state: :eligible) }
       scope :ineligible, -> { where(current_state: :ineligible) }
       scope :disqualified, -> { where(is_disqualified: true) }
+
+      # Defines the possible states for an eligibility object.
+      # These states represent the lifecycle of an eligibility determination and its associated evidences.
+      #
+      # @note The `current_state` field in the `Eligibility` model uses these states to track the eligibility's status.
+      #
+      # @example States and their meanings:
+      #   - `:initial`: The default state when the eligibility is created.
+      #
+      #   - `:unsatisfied`: Indicates that all members are determined ineligible for the eligibility, or all evidences are not satisfied.
+      #     - Example 1: All applicants applying for coverage are ineligible for APTC and CSR in `APTC_CSR_eligibility`.
+      #     - Example 2: All applicants applying for coverage are ineligible for QHP in `IndividualMarketEligibility`.
+      #     - Example 3: Evidences are in an outstanding state, and the ROP (Reasonable Opportunity Period) has expired.
+      #
+      #   - `:preliminary_eligible`: Indicates that application is determined and the eligibility evidences are eligible for determination
+      #
+      #   - `:verification_in_progress`: Indicates that evidences are in the process of being verified.
+      #
+      #   - `:satisfied`: Indicates that all evidences are eligible in one of these states `verified` or `attested`.
+      #
+      # @return [Array<Symbol>] List of possible states for an eligibility object.
+      STATES = [
+        :initial,
+        :unsatisfied,
+        :preliminary_eligible,
+        :verification_in_progress,
+        :satisfied
+      ].freeze
+
+      # Defines the possible events that can trigger state transitions for an eligibility object.
+      #   refer to the Eligibilities::V3::StateMachine module for more details.
+      state_transitions do
+        action :move_to_initial, from: [nil], to: :initial
+        action :pend, from: [:initial, :unsatisfied, :preliminary_eligible, :satisfied], to: :verification_in_progress
+        action :satisfy, from: [:initial, :unsatisfied, :preliminary_eligible, :verification_in_progress], to: :satisfied
+        action :unsatisfy, from: [:initial, :preliminary_eligible, :verification_in_progress, :satisfied], to: :unsatisfied
+        action :prequalify, from: [:initial], to: :preliminary_eligible
+      end
 
       # This method can be implemented in Domain Model as well.
       def determine_eligibility

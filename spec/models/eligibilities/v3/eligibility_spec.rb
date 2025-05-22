@@ -79,4 +79,10 @@ RSpec.describe Eligibilities::V3::Eligibility, type: :model do
       end
     end
   end
+
+  describe 'states' do
+    it 'should not be modified ' do
+      expect(eligibility.class::STATES).to eq [:initial, :unsatisfied, :preliminary_eligible, :verification_in_progress, :satisfied]
+    end
+  end
 end

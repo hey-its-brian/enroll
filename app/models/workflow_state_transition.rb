@@ -18,7 +18,7 @@ class WorkflowStateTransition
 
   before_validation :set_transition_timestamp
 
-  default_scope   ->{ order(:"transition_at".desc) }
+  default_scope ->{ order(:transition_at.desc) }
 
   # from_state may be nil on initial transition
   validates_presence_of :to_state, :transition_at
@@ -41,7 +41,8 @@ class WorkflowStateTransition
     end
   end
 
-private
+  private
+
   def set_transition_timestamp
     self.transition_at ||= Time.now
   end

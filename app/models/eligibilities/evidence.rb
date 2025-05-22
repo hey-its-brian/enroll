@@ -423,7 +423,6 @@ module Eligibilities
       !type_verified?
     end
 
-
     def type_verified?
       ["verified", "attested"].include? aasm_state
     end

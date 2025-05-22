@@ -1,0 +1,63 @@
+workflow_state_transition:
+  from_state: from_state
+  to_state: to_state
+  transition_at: transition_at
+  event: event
+  comment: comment
+  reason: reason
+  metadata: metadata
+
+request_result:
+  result: result
+  source: source
+  source_transaction_id: source_transaction_id
+  code: code
+  code_description: code_description
+  raw_payload: raw_payload
+  date_of_action: date_of_action
+  action: action
+
+document:
+  title: title
+  creator: creator
+  subject: subject
+  description: description
+  publisher: publisher
+  contributor: contributor
+  date: date
+  type: type
+  format: format
+  identifier: identifier
+  source: source
+  language: language
+  relation: relation
+  coverage: coverage
+  rights: rights
+  tags: tags
+  size: size
+  doc_identifier: doc_identifier
+
+verification_history:
+  action: action
+  updated_by: updated_by
+  update_reason: update_reason
+  is_satisfied: is_satisfied
+  verification_outstanding: verification_outstanding
+  due_on: due_on
+  date_of_action: date_of_action
+
+evidence:
+  aasm_state: current_state
+  update_reason: update_reason
+  verification_outstanding: verification_outstanding
+  due_on: due_on
+  updated_by: updated_by
+  external_service: external_service
+  title: title
+  description: description
+  is_satisfied: is_satisfied
+  determined_at: -> {}
+  verification_histories_attributes: verification_histories
+  request_results_attributes: request_results
+  workflow_state_transitions_attributes: state_histories
+  documents_attributes: documents

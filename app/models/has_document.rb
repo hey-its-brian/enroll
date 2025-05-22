@@ -20,7 +20,7 @@ module HasDocument
   extend ActiveSupport::Concern
 
   included do
-    embeds_many :documents, class_name: '::Document', as: :documentable
+    embeds_many :documents, class_name: '::Document', as: :documentable, cascade_callbacks: true
     # embeds_many :comments, class_name: '::Comment', as: :commentable
   end
 end

@@ -365,7 +365,8 @@ module FinancialAssistance
     #
     # @!attribute eligibilities
     #   @return [Array<Eligibilities::V3::Eligibility>] Collection of different eligibility determinations for this applicant
-    embeds_many :eligibilities, class_name: 'Eligibilities::V3::Eligibility', as: :eligible
+    #   @note Without cascade_callbacks the timestamps are not created/updated on the child objects, adding cascade_callbacks ensures timestamps are handled correctly.
+    embeds_many :eligibilities, class_name: 'Eligibilities::V3::Eligibility', as: :eligible, cascade_callbacks: true
 
     accepts_nested_attributes_for :incomes, :deductions, :benefits, :income_evidence, :esi_evidence, :non_esi_evidence, :local_mec_evidence, :member_determinations
     accepts_nested_attributes_for :phones, :reject_if => proc { |addy| addy[:full_phone_number].blank? }, allow_destroy: true
@@ -1632,6 +1633,18 @@ module FinancialAssistance
       return @individual_market_eligibility if defined?(@individual_market_eligibility)
 
       @individual_market_eligibility = eligibilities.where(_type: 'Eligibilities::V3::IndividualMarketEligibility').first
+    end
+
+    # Builds a new APTC/CSR eligibility for the applicant.
+    #
+    # @param applicant [FinancialAssistance::Applicant] The applicant for whom the eligibility is being built.
+    # @return [Eligibilities::V3::AptcCsrEligibility] The newly built eligibility.
+    def build_aptc_csr_eligibility
+      eligibilities.build(
+        _type: 'Eligibilities::V3::AptcCsrEligibility',
+        title: 'APTC/CSR Eligibility',
+        key: :aptc_csr_eligibility
+      )
     end
 
     private
