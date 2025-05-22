@@ -194,7 +194,7 @@ module Eligibilities
     end
 
     def extend_due_on(period = 30.days, updated_by = nil, action = 'extend_due_date')
-      current = EnrollRegistry.feature_enabled?(:verification_due_on_options) ? due_on || TimeKeeper.date_of_record : verif_due_date
+      current = EnrollRegistry.feature_enabled?(:verification_due_on_options) ? TimeKeeper.date_of_record : verif_due_date
       updated = current + period
       update_reason = if EnrollRegistry.feature_enabled?(:verification_due_on_options)
                         l10n('admin.verifications.extend.history_description.static', day_offset: period.parts[:days], date: updated.strftime('%m/%d/%Y'))

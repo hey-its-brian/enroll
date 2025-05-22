@@ -627,8 +627,7 @@ module VerificationHelper
             person: person,
             type_id: gid,
             v_type: type,
-            f_member: @family.find_family_member_by_person(person),
-            due_on: @evidence.due_on || TimeKeeper.date_of_record
+            f_member: @family.find_family_member_by_person(person)
           }
         }
       }
@@ -640,13 +639,14 @@ module VerificationHelper
         id: "#{applicant.id}-#{evidence_kind.split.join('-')}",
         partial: {
           :partial => "financial_assistance/applications/verifications/admin_verification_actions",
-          locals: { application: application, applicant: applicant, evidence_kind: evidence_kind, due_on: @evidence.due_on || TimeKeeper.date_of_record }
+          locals: { application: application, applicant: applicant, evidence_kind: evidence_kind }
         }
       }
     end
   end
 
-  def admin_evidence_due_on_options(due_on)
+  def admin_evidence_due_on_options
+    due_on = TimeKeeper.date_of_record
     static_options = EnrollRegistry[:verification_due_on_options].setting(:static_options).item
     static_options.map do |day_offset|
       incremented_day_offset = day_offset.to_i + 1 # +1 to account for DR triggers at midnight
