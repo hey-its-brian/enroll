@@ -97,9 +97,8 @@ ADMIN_ACTIONS_TRANSLATIONS = {
   'en.admin.verifications.extend.success_message' => "%{type} verification due date was extended %{duration}.",
   'en.admin.verifications.extend.success_message.period' => "for 30 days",
   'en.admin.verifications.extend.success_message.until' => "until %{date}",
-  'en.admin.verifications.extend.history_description' => "Extended due date%{extension_descriptor} to %{date}",
-  'en.admin.verifications.extend.history_description.manual' => " manually",
-  'en.admin.verifications.extend.history_description.static' => " by %{day_offset} days",
+  'en.admin.verifications.extend.history_description.manual' => "Extended due date manually to %{date}",
+  'en.admin.verifications.extend.history_description.static' => "Set %{day_offset} day ROP. New due date is %{date}.",
   'en.admin.verifications.reject_reason' => "Reject reason:",
   'en.admin.verifications.verify_reason' => "Provide verification reason:",
 }

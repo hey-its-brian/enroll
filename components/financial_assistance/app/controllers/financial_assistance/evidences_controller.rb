@@ -63,7 +63,13 @@ module FinancialAssistance
       enrollment = @family_member.family.enrollments.enrolled.first
       if enrollment.present? && @evidence.type_unverified?
         extension = if params[:due_on].present?
-                      @evidence.set_due_on(params[:due_on], current_user.oim_id, extension_descriptor: l10n('admin.verifications.extend.history_description.manual'))
+                      due_on = Date.parse(params[:due_on])
+                      @evidence.set_due_on(
+                        due_on,
+                        current_user.oim_id,
+                        'extend_due_date',
+                        l10n('admin.verifications.extend.history_description.manual', date: due_on.strftime('%m/%d/%Y'))
+                      )
                     else
                       period = params[:extension_period]&.to_i || 30
                       @evidence.extend_due_on(period.days, current_user.oim_id)

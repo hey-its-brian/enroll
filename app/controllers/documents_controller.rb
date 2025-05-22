@@ -278,12 +278,11 @@ class DocumentsController < ApplicationController
       if EnrollRegistry.feature_enabled?(:verification_due_on_options)
         action = "extend_due_date"
         due_date = @verification_type.due_date
-        extension_descriptor = if params[:extension_period]
-                                 l10n('admin.verifications.extend.history_description.static', day_offset: params[:extension_period].to_i - 1)
-                               else
-                                 l10n('admin.verifications.extend.history_description.manual')
-                               end
-        reason = l10n('admin.verifications.extend.history_description', extension_descriptor: extension_descriptor, date: due_date)
+        reason = if params[:extension_period]
+                   l10n('admin.verifications.extend.history_description.static', day_offset: params[:extension_period].to_i - 1, date: due_date)
+                 else
+                   l10n('admin.verifications.extend.history_description.manual', date: due_date)
+                 end
       end
     end
     reason ||= params[:verification_reason]

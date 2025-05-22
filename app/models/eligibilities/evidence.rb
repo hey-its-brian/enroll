@@ -188,21 +188,20 @@ module Eligibilities
       result
     end
 
-    def set_due_on(due_on, updated_by = nil, action = 'extend_due_date', extension_descriptor: nil)
+    def set_due_on(due_on, updated_by = nil, action = 'extend_due_date', update_reason = nil)
       self.due_on = due_on
-      due_on_str = due_on.strftime('%m/%d/%Y')
-      add_verification_history(action, l10n('admin.verifications.extend.history_description', extension_descriptor: extension_descriptor, date: due_on_str), updated_by)
+      add_verification_history(action, update_reason, updated_by)
     end
 
     def extend_due_on(period = 30.days, updated_by = nil, action = 'extend_due_date')
-      if EnrollRegistry.feature_enabled?(:verification_due_on_options)
-        current = due_on || TimeKeeper.date_of_record
-        extension_descriptor = l10n('admin.verifications.extend.history_description.static', day_offset: period.parts[:days])
-      else
-        current = verif_due_date
-        extension_descriptor = nil
-      end
-      self.set_due_on(current + period, updated_by, action, extension_descriptor: extension_descriptor)
+      current = EnrollRegistry.feature_enabled?(:verification_due_on_options) ? due_on || TimeKeeper.date_of_record : verif_due_date
+      updated = current + period
+      update_reason = if EnrollRegistry.feature_enabled?(:verification_due_on_options)
+                        l10n('admin.verifications.extend.history_description.static', day_offset: period.parts[:days], date: updated.strftime('%m/%d/%Y'))
+                      else
+                        "Extended due date to #{updated.strftime('%m/%d/%Y')}"
+                      end
+      self.set_due_on(updated, updated_by, action, update_reason)
     end
 
     def auto_extend_due_on(period = 30.days, updated_by = nil)
