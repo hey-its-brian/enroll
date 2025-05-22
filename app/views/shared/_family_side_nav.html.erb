@@ -36,10 +36,7 @@
         <li>
           <div class="d-flex">
             <%= h(link_to l10n("insured.families.verifications"), main_app.verification_insured_families_path(tab: 'verification'), class: "#{'active' if action_name == 'verification'}", data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
-
-            <% if enrollment_group_unverified?(@person) %>
-              <div role="alert" class="verifications-warning-icon icon d-inline-block mt-1" alt="warning" aria-hidden="true">&nbsp;</div>
-            <% end %>
+            <div role="alert" class="<%= 'hidden' unless enrollment_group_unverified?(@person) %> verifications-warning-icon icon d-inline-block mt-1" alt="warning" aria-hidden="true">&nbsp;</div>
           </div>
         </li>
       <% end %>

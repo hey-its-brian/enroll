@@ -15,3 +15,5 @@ $("#add-new-member").removeClass("hidden");
 <% if ::EnrollRegistry.feature_enabled?(:financial_assistance) &&  (['destroy'].include? controller.action_name) && (@person.consumer_role.present?)  %>
   $('#faa_flow_info').html("<%= escape_javascript(render partial: 'insured/families/faa_popup') %>");
 <% end %>
+
+<%= render partial: "toggle_verification_nav_icon" %>

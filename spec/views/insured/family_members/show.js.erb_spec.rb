@@ -3,7 +3,7 @@ require 'rails_helper'
 describe "insured/family_members/show.js.erb" do
   let(:person) { FactoryBot.create(:person) }
   let(:user) { FactoryBot.create(:user, person: person) }
-  let(:family) { Family.new }
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
   let(:family_member) { family.family_members.new }
 
   context "render show by creat" do

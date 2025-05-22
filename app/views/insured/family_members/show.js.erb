@@ -19,6 +19,7 @@ if (!$(".my-household-page").length) {
   } else {
     $('#manage_family_content tr:last').after("<%= escape_javascript(render partial: 'insured/families/family_member_row', locals: {member: member}) %>");
   }
+  <%= render partial: "toggle_verification_nav_icon" %>
 }
 
 <% if ::EnrollRegistry.feature_enabled?(:financial_assistance) &&  (['create', 'update', 'destroy'].include? controller.action_name) && (@person.consumer_role.present?) %>

@@ -1,0 +1,3 @@
+// This JS partial is used to toggle the visibility of the verification warning icon based on the enrollment group verification status.
+// It is intended to be used by AJAX updates to the FamilyMembers resource, as update/destroy actions may alter the status.
+$(".verifications-warning-icon").toggleClass('hidden', !<%= enrollment_group_unverified?(@person) %>);
