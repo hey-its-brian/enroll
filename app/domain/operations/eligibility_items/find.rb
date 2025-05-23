@@ -8,6 +8,7 @@ module Operations
     # Find eligibility item from resource registry
     class Find
       include Dry::Monads[:do, :result]
+      include ::ResourceRegistryHelper
 
       # @param [Hash] opts Options to find eligibility item from Resource Registry
 
@@ -27,6 +28,7 @@ module Operations
       def validate(params)
         errors = []
         errors << 'eligibility_item_key missing' unless params[:eligibility_item_key]
+        @family = params[:family]
 
         errors.empty? ? Success(params) : Failure(errors)
       end
@@ -46,6 +48,34 @@ module Operations
           { key: values[:eligibility_item_key], evidence_items: evidence_items }
         )
       end
+
+      # TODO: Uncomment this method and use the correct URIs for both subject_ref and evidence_ref.
+      #       Currently, the configuration only allows one URI for each but with QHP application, we need to be able to support different URIs based on the application type.
+      #
+      # def get_evidence_item(evidence_feature)
+      #   if qhp_application_feature_enabled?
+      #     case @family.latest_application_type
+      #     when 'faa'
+      #       {
+      #         key: evidence_feature.key.to_sym,
+      #         subject_ref: URI(evidence_feature.setting(:subject_ref).item),
+      #         evidence_ref: URI(evidence_feature.setting(:evidence_ref).item)
+      #       }
+      #     when 'qhp'
+      #       {
+      #         key: evidence_feature.key.to_sym,
+      #         subject_ref: URI(evidence_feature.setting(:subject_ref).item),
+      #         evidence_ref: URI(evidence_feature.setting(:evidence_ref).item)
+      #       }
+      #     end
+      #   else
+      #     {
+      #       key: evidence_feature.key.to_sym,
+      #       subject_ref: URI(evidence_feature.setting(:subject_ref).item),
+      #       evidence_ref: URI(evidence_feature.setting(:evidence_ref).item)
+      #     }
+      #   end
+      # end
 
       def get_evidence_item(evidence_feature)
         {

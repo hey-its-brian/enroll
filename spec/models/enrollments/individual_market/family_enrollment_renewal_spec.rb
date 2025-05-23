@@ -1169,6 +1169,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
           before do
             allow(EnrollRegistry[:temporary_configuration_enable_multi_tax_household_feature].feature).to receive(:is_enabled).and_return(true)
             enrollment_members = subject.enrollment.hbx_enrollment_members
+            allow(family).to receive(:all_family_member_relations_defined).and_return(true)
             eligibile_family_member_ids = enrollment_members.map(&:family_member).map(&:person).map(&:id)
             enrollment_members.last.family_member.person.consumer_role.update(is_applying_coverage: false)
             eligible_subject = eligibility_determination.subjects.select{|sub| sub.person_id == eligibile_family_member_ids.first.to_s}.last

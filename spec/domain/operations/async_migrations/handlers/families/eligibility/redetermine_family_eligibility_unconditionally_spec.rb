@@ -16,6 +16,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::Families::Eligibility::Red
 
 
   before do
+    allow(family).to receive(:all_family_member_relations_defined).and_return(true)
     allow(Logger).to receive(:new).and_return(logger)
     allow(EventSource::Event).to receive(:new).and_return(mocked_event)
   end

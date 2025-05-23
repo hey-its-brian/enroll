@@ -131,6 +131,7 @@ RSpec.describe ::Operations::Eligibilities::BuildEvidenceState,
   end
 
   before do
+    allow(family).to receive(:all_family_member_relations_defined).and_return(true)
     EnrollRegistry[:financial_assistance]
       .feature
       .stub(:is_enabled)

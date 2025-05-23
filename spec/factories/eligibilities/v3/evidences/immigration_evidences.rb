@@ -20,6 +20,7 @@ FactoryBot.define do
 
     trait :verified do
       current_state { :verified }
+      is_satisfied { true }
     end
 
     trait :rejected do
@@ -28,6 +29,7 @@ FactoryBot.define do
 
     trait :outstanding do
       current_state { :outstanding }
+      due_on { TimeKeeper.date_of_record + 30.days }
     end
 
     # With state histories

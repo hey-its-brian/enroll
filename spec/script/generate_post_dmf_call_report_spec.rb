@@ -20,6 +20,7 @@ describe 'generate post dmf call report' do
     let!(:person2) do
       p2 = FactoryBot.create(:person, :with_consumer_role, hbx_id: cv3_family_payload[:family_members][1][:person][:hbx_id])
       p2.update_attributes(ssn: cv3_family_payload[:family_members][1][:person][:person_demographics][:ssn])
+      person.ensure_relationship_with(p2, 'spouse')
       FactoryBot.create(:family_member, person: p2, family: family)
       p2
     end
@@ -33,6 +34,7 @@ describe 'generate post dmf call report' do
     let!(:person4) do
       p4 = FactoryBot.create(:person, :with_consumer_role, hbx_id: cv3_family2_payload[:family_members][1][:person][:hbx_id])
       p4.update_attributes(ssn: cv3_family2_payload[:family_members][1][:person][:person_demographics][:ssn])
+      person3.ensure_relationship_with(p4, 'spouse')
       FactoryBot.create(:family_member, person: p4, family: family2)
       p4
     end

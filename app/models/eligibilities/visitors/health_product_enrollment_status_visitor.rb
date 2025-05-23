@@ -5,7 +5,7 @@ module Eligibilities
     # Use Visitor Development Pattern to access models and determine Non-ESI
     # eligibility status for a Family Financial Assistance Application's Applicants
     class HealthProductEnrollmentStatusVisitor < Visitor
-      attr_accessor :evidence, :subject, :evidence_item
+      attr_accessor :evidence, :subject, :evidence_item, :family
 
       def call
         enrollments = hbx_enrollment_instances_for(subject)

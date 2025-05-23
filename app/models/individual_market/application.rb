@@ -8,6 +8,7 @@ module IndividualMarket
   #
   # @see Sbm::Application The parent class following Single Table Inheritance pattern
   class Application < Sbm::Application
+    include Eligibilities::Visitors::Visitable
 
     # @!attribute applicants
     # @return [Array<IndividualMarket::Applicant>] Collection of individuals within the application
@@ -198,6 +199,13 @@ module IndividualMarket
     # Defines the specific policy class for the application model as the application policy already exists
     def policy_class
       QhpApplicationPolicy
+    end
+
+    # Accepts a visitor to perform operations on each applicant
+    #
+    # @param visitor [Object] The visitor object that will perform operations on each applicant
+    def accept(visitor)
+      applicants.collect{|applicant| applicant.accept(visitor) }
     end
 
     private

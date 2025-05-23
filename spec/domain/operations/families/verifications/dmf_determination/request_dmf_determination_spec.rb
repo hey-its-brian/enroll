@@ -52,6 +52,7 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::RequestDmf
 
   context "success for one member family" do
     before do
+      person.add_new_verification_type(VerificationType::ALIVE_STATUS)
       job.create_process_status
       Operations::Eligibilities::BuildFamilyDetermination.new.call({effective_date: Date.today, family: family})
       family.eligibility_determination.subjects[0].eligibility_states.last.update(is_eligible: true)
@@ -91,10 +92,16 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::RequestDmf
 
   context "success for multi-member family" do
     let(:spouse_dob) { Date.today - 55.years }
-    let(:spouse_person) { FactoryBot.create(:person, :with_consumer_role, dob: spouse_dob, ssn: 101_011_012) }
+    let(:spouse_person) do
+      per = FactoryBot.create(:person, :with_consumer_role, dob: spouse_dob, ssn: 101_011_012)
+      person.ensure_relationship_with(per, 'spouse')
+      per
+    end
     let!(:spouse) { FactoryBot.create(:family_member, person: spouse_person, family: family) }
 
     before do
+      person.add_new_verification_type(VerificationType::ALIVE_STATUS)
+      spouse_person.add_new_verification_type(VerificationType::ALIVE_STATUS)
       job.create_process_status
       Operations::Eligibilities::BuildFamilyDetermination.new.call({effective_date: Date.today, family: family})
       family.eligibility_determination.subjects[0].eligibility_states.last.update(is_eligible: true)
@@ -145,7 +152,11 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::RequestDmf
 
   context "failure for all ineligible members" do
     let(:spouse_dob) { Date.today - 55.years }
-    let(:spouse_person) { FactoryBot.create(:person, :with_consumer_role, dob: spouse_dob, ssn: 101_011_012) }
+    let(:spouse_person) do
+      per = FactoryBot.create(:person, :with_consumer_role, dob: spouse_dob, ssn: 101_011_012)
+      person.ensure_relationship_with(per, 'spouse')
+      per
+    end
     let!(:spouse) { FactoryBot.create(:family_member, person: spouse_person, family: family) }
 
     before do
@@ -203,7 +214,11 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::RequestDmf
 
   context "failure for some ineligible members" do
     let(:spouse_dob) { Date.today - 55.years }
-    let(:spouse_person) { FactoryBot.create(:person, :with_consumer_role, dob: spouse_dob, ssn: 101_011_012) }
+    let(:spouse_person) do
+      per = FactoryBot.create(:person, :with_consumer_role, dob: spouse_dob, ssn: 101_011_012)
+      person.ensure_relationship_with(per, 'spouse')
+      per
+    end
     let!(:spouse) { FactoryBot.create(:family_member, person: spouse_person, family: family) }
 
     before do

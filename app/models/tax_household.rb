@@ -123,6 +123,13 @@ class TaxHousehold
     tax_household_members.find_all(&:is_ia_eligible?)
   end
 
+  # Returns the list of tax household members who are eligible for CSR
+  #
+  # @return [Mongoid::Criteria] tax household members who are eligible for CSR
+  def csr_members
+    tax_household_members.where(is_csr_eligible: true)
+  end
+
   def applicant_ids
     tax_household_members.map(&:applicant_id)
   end

@@ -5,7 +5,7 @@ class TaxHouseholdGroup
   include Mongoid::Document
   include Mongoid::Timestamps
 
-  SOURCE_KINDS = %w[Curam Admin Renewals Faa Ffe].freeze
+  SOURCE_KINDS = %w[Curam Admin Renewals Faa Ffe qhp].freeze
 
   embedded_in :family
 

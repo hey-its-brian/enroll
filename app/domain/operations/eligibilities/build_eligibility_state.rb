@@ -27,6 +27,7 @@ module Operations
         errors = []
         errors << 'subject missing' unless params[:subject]
         errors << 'eligibility item missing' unless params[:eligibility_item]
+        @family = params[:family]
 
         errors.empty? ? Success(params) : Failure(errors)
       end
@@ -44,6 +45,7 @@ module Operations
         evidence_items_for(values)
           .collect do |evidence_item|
             attrs = values.slice(:subject, :eligibility_item).merge(evidence_item: evidence_item)
+            attrs.merge!(family: @family)
             evidence_state = Operations::Eligibilities::BuildEvidenceState.new.call(attrs)
             evidence_state.success? ? evidence_state.success : {}
           end

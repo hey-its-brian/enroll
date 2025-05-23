@@ -15,9 +15,9 @@ module Operations
           # @param application [FinancialAssistance::Application] the financial assistance application
           # @return [Dry::Monads::Result] Success with family or Failure with error message
           def call(application:)
-            # Step1: Find the family
+            # Step1: Validate application and find the family
             # Step2: For each applicant, find or create the person
-            # Step3: For each applicant, create or update the family member
+            # Step3: For each applicant, create or update primary relationships
             # Step4: For each applicant, find or build the family member
             # Step5: Deactivate the old Tax Household Groups
             # Step6: Build a new Tax Household Group
@@ -34,7 +34,7 @@ module Operations
             _result               = yield build_tax_household_group(application, family, family_members_result)
             family                = yield assign_latest_application_gid(family)
             family                = yield persist_family(family)
-            # family_determination  = yield recreate_family_eligibility_determination(family)
+            _family_determination = yield recreate_family_eligibility_determination(family)
             application           = yield update_application(application, family_members_result, people_result)
 
             Success([application, family])
@@ -104,6 +104,9 @@ module Operations
             primary_person.save!
 
             Success('Created primary relationships')
+          rescue StandardError => e
+            Rails.logger.error("QHP Application - Error while creating primary relationships application: #{application.hbx_id}, error: #{e.message}, backtrace: #{e.backtrace.join('\n')}")
+            Failure("Error while creating or updating the primary relationships with error message: #{e.message}")
           end
 
           # Builds or updates family members for all applicants
@@ -288,10 +291,21 @@ module Operations
             Failure("Error while saving family with error message: #{e.message}")
           end
 
-          # def recreate_family_eligibility_determination(family)
-          #   ::Operations::Eligibilities::BuildFamilyDetermination.new.call({ family: family })
-          # end
+          # Recreates the family eligibility determination
+          #
+          # @param family [Family] the family to recreate the eligibility determination for
+          # @return [Dry::Monads::Result] Success with eligibility determination or Failure with error message
+          def recreate_family_eligibility_determination(family)
+            ::Operations::Eligibilities::BuildFamilyDetermination.new.call({ family: family })
+          end
 
+          # Updates the application with the new family member IDs and person HBX IDs
+          #
+          # @param application [FinancialAssistance::Application] the financial assistance application
+          # @param family_members_result [Hash] hash of applicant_id => family_member
+          # @param people_result [Hash] hash of applicant_id => person
+          #
+          # @return [Dry::Monads::Result] Success with application or Failure with error message
           def update_application(application, family_members_result, people_result)
             application.applicants.each do |applicant|
               applicant.family_member_id = family_members_result[applicant.id].id

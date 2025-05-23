@@ -41,7 +41,9 @@ And(/^.+ lands in the Verifications page$/) do
 end
 
 And(/the determination for the family has been built/) do
-  ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: user.person.primary_family.reload)
+  family = user.person.primary_family.reload
+  allow(family).to receive(:all_family_member_relations_defined).and_return(true)
+  ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
 end
 
 And(/^.+ clicks on member with verified status$/) do

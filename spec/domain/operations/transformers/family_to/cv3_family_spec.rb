@@ -519,6 +519,7 @@ RSpec.describe ::Operations::Transformers::FamilyTo::Cv3Family, dbclean: :around
 
   context 'include family eligibility determination' do
     before do
+      allow(family).to receive(:all_family_member_relations_defined).and_return(true)
       Operations::Eligibilities::BuildFamilyDetermination.new.call({effective_date: Date.today, family: family})
       result = subject.call(family, true).value!
       @eligibility_determination = result[:eligibility_determination]

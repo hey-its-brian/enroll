@@ -8,6 +8,7 @@ module Operations
     # Build grant based on the type passed in arguments
     class BuildGrant
       include Dry::Monads[:do, :result]
+      include ::ResourceRegistryHelper
 
       def call(params)
         values = yield validate(params)
@@ -50,8 +51,22 @@ module Operations
         end.compact
       end
 
+      # This method is used to get the csr members for the family member in the tax household group.
+      # It checks if the qhp application feature is enabled and returns the csr members accordingly.
+      #
+      # @param th_group [TaxHouseholdGroup] the tax household group
+      # @param family_member [FamilyMember] the family member
+      # @return [Array] the csr members for the family member in the tax household group
+      def eligible_members(th_group, family_member)
+        if qhp_application_feature_enabled?
+          th_group.tax_households.where("tax_household_members.applicant_id" => family_member.id).flat_map(&:csr_members)
+        else
+          th_group.tax_households.where("tax_household_members.applicant_id" => family_member.id).flat_map(&:aptc_members)
+        end
+      end
+
       def create_csr_grants(th_group, family_member)
-        members = th_group.tax_households.where("tax_household_members.applicant_id" => family_member.id).flat_map(&:aptc_members).collect do |tax_household_member|
+        members = eligible_members(th_group, family_member).collect do |tax_household_member|
           next unless tax_household_member.applicant_id == family_member.id
           tax_household_member
         end.compact

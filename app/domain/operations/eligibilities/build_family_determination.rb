@@ -14,9 +14,10 @@ module Operations
       # @option opts [Family] :family required
       # @return [Dry::Monad] result
       def call(params)
-        values = yield validate(params)
-        determination_entity = yield build_determination(values)
-        determination = yield persist(values, determination_entity)
+        values                = yield validate(params)
+        _result               = yield validate_application(values)
+        determination_entity  = yield build_determination(values)
+        determination         = yield persist(values, determination_entity)
 
         Success(determination)
       end
@@ -26,8 +27,24 @@ module Operations
       def validate(params)
         errors = []
         errors << 'family missing' unless params[:family]
-        return Failure('QHP Application feature is enabled') if qhp_application_feature_enabled?
+
         errors.empty? ? Success(params) : Failure(errors)
+      end
+
+      # Validates that the family has a determined application if QHP application feature is enabled
+      #
+      # @param [Hash] values The validated parameters hash
+      # @option values [Family] :family The family to check for applications
+      # @return [Dry::Monads::Result] Success if application exists or validation not required, Failure otherwise
+      def validate_application(values)
+        return Success('Application validation is not required') unless qhp_application_feature_enabled?
+
+        family = values[:family]
+        if family.latest_application.present?
+          Success('Application exists.')
+        else
+          Failure('Family does not have any applications.')
+        end
       end
 
       def build_determination(values)
@@ -50,7 +67,7 @@ module Operations
         model_attributes = transform(attributes)
         determination = ::Eligibilities::Determination.new(model_attributes)
         family.eligibility_determination = determination
-        family.save
+        family.save!
 
         Success(determination)
       end

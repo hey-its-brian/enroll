@@ -21,6 +21,7 @@ module Eligibilities
       include Mongoid::Document
       include Mongoid::Timestamps
       include ::HasDocument
+      include GlobalID::Identification
 
       embedded_in :eligibility, class_name: 'Eligibilities::V3::Eligibility'
 

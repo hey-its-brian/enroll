@@ -55,6 +55,7 @@ RSpec.describe BenefitSponsors::Subscribers::ReinstateEmployeeEnrollmentSubscrib
   end
 
   before do
+    allow(family).to receive(:all_family_member_relations_defined).and_return(true)
     period = initial_application.effective_period.min..(initial_application.end_on - 6.months).end_of_month
     initial_application.update_attributes!(termination_reason: 'nonpayment', terminated_on: period.max, effective_period: period)
     initial_application.terminate_enrollment!

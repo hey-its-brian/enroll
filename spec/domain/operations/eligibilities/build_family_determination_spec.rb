@@ -263,12 +263,4 @@ RSpec.describe ::Operations::Eligibilities::BuildFamilyDetermination,
       expect(result.success).not_to be_a(Eligibilities::Determination)
     end
   end
-
-  context 'QHP feature is enabled' do
-    let(:qhp_enabled) { true }
-
-    it 'returns failure with a message' do
-      expect(subject.call(required_params).failure).to eq('QHP Application feature is enabled')
-    end
-  end
 end

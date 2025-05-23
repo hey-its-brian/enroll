@@ -89,6 +89,8 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
 
     let!(:input_file) { Rails.root.join("spec", "test_data", "notices", "ivl_fel_aqhp_test_data.csv") }
 
+    before { allow(family3).to receive(:all_family_member_relations_defined).and_return(true) }
+
     describe "NoticeBuilder" do
       let(:data_elements) do
         [

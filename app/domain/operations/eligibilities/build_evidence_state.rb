@@ -37,6 +37,7 @@ module Operations
         errors << 'subject missing' unless params[:subject]
         errors << 'eligibility item missing' unless params[:eligibility_item]
         errors << 'evidence item missing' unless params[:evidence_item]
+        @family = params[:family]
 
         errors.empty? ? Success(params) : Failure(errors)
       end
@@ -51,6 +52,7 @@ module Operations
         visitor = visitor_klass(values[:eligibility_item]).new
         visitor.subject = subject
         visitor.evidence_item = values[:evidence_item]
+        visitor.family = @family
         visitor.call
 
         evidence = visitor.evidence

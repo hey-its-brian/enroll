@@ -40,7 +40,11 @@ RSpec.describe Operations::Fdsh::PayloadEligibility::CheckDeterminationSubjectEl
 
   context 'when all family members are eligible' do
     let(:primary) { FactoryBot.create(:person, :with_consumer_role, dob: primary_dob, ssn: 101_011_011) }
-    let(:spouse_person) { FactoryBot.create(:person, :with_consumer_role, dob: spouse_dob, ssn: 101_011_012) }
+    let(:spouse_person) do
+      per = FactoryBot.create(:person, :with_consumer_role, dob: spouse_dob, ssn: 101_011_012)
+      primary.ensure_relationship_with(per, 'spouse')
+      per
+    end
 
     it 'should return success' do
       result = subject.call(family_entity.eligibility_determination.subjects.values.first, :alive_status)
@@ -50,7 +54,11 @@ RSpec.describe Operations::Fdsh::PayloadEligibility::CheckDeterminationSubjectEl
 
   context 'when family member is not eligible' do
     let(:primary) { FactoryBot.create(:person, :with_consumer_role, dob: primary_dob, ssn: 101_011_011) }
-    let(:spouse_person) { FactoryBot.create(:person, :with_consumer_role, dob: spouse_dob, ssn: nil) }
+    let(:spouse_person) do
+      per = FactoryBot.create(:person, :with_consumer_role, dob: spouse_dob, ssn: nil)
+      primary.ensure_relationship_with(per, 'spouse')
+      per
+    end
 
     it 'should return failure' do
       result = subject.call(family_entity.eligibility_determination.subjects.values[1], :alive_status)

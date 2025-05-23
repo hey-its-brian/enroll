@@ -14,6 +14,7 @@ module Operations
     # Build determination for subjects passed with effective date
     class BuildDetermination
       include Dry::Monads[:do, :result]
+      include ::ResourceRegistryHelper
 
       # @param [Hash] opts Options to build determination
       # @option opts [Array<GlobalID>] :subjects required
@@ -34,6 +35,7 @@ module Operations
         errors = []
         errors << 'subject ref missing' unless params[:subjects]
         errors << 'family ref missing' unless params[:family]
+        @family = params[:family]
 
         errors.empty? ? Success(params) : Failure(errors)
       end
@@ -44,7 +46,10 @@ module Operations
         eligibility_items =
           eligibility_item_keys.collect do |eligibility_item_key|
             next unless EnrollRegistry[eligibility_item_key].enabled?
-            eligibility_item_result = Operations::EligibilityItems::Find.new.call(eligibility_item_key: eligibility_item_key)
+
+            eligibility_item_result = Operations::EligibilityItems::Find.new.call(
+              { eligibility_item_key: eligibility_item_key, family: @family }
+            )
             eligibility_item_result.success if eligibility_item_result.success?
           end.compact
 
@@ -64,8 +69,7 @@ module Operations
 
             subject_params = {
               is_primary: subject_instance.is_primary_applicant?,
-              eligibility_states:
-                build_eligibility_states(subject, eligibility_items, values)
+              eligibility_states: build_eligibility_states(subject, eligibility_items, values)
             }
             Hash[
               subject.uri,
@@ -81,7 +85,7 @@ module Operations
           end
           .reduce(:merge)
 
-        grants = build_aptc_grants(values[:family]).success
+        grants = build_aptc_grants(@family).success
 
         determination = {
           effective_date: TimeKeeper.date_of_record, # Since this is only being used for eligibility determination effective date
@@ -203,6 +207,7 @@ module Operations
 
             eligibility_state =
               BuildEligibilityState.new.call(
+                family: @family,
                 subject: subject,
                 eligibility_item: eligibility_item,
                 evidence_item_keys: evidence_item_keys

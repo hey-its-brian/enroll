@@ -15,6 +15,7 @@ module IndividualMarket
   class Applicant
     include Mongoid::Document
     include Mongoid::Timestamps
+    include Eligibilities::Visitors::Visitable
 
     # @!attribute application
     #   @return [IndividualMarket::Application] The application this applicant belongs to
@@ -120,6 +121,13 @@ module IndividualMarket
         source_id: primary_applicant.id,
         relative_id: id
       )&.first&.kind
+    end
+
+    # Visitor pattern method to accept a visitor
+    #
+    # @param visitor [Eligibilities::Visitors::Visitor] The visitor to accept
+    def accept(visitor)
+      visitor.visit(self)
     end
 
     private
