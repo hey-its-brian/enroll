@@ -179,13 +179,17 @@ jobs:
       - name: Scan Docker image
         if: github.event_name != 'pull_request'
         id: scan
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@v6
         with:
           image: ${{ format('{0}/{1}-{2}', needs.prep.outputs.registryEcr, needs.prep.outputs.taggedImage, matrix.client) }}
           acs-report-enable: true
           fail-build: false
           severity-cutoff: critical
-
+      - name: upload Anchore scan SARIF report
+        if: github.event_name != 'pull_request'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
       - name: Download sysdig scanner if needed and scan the image
         env:
           SECURE_API_TOKEN: ${{ secrets.SECURE_API_TOKEN }}
@@ -205,13 +209,6 @@ jobs:
             --console-log \
             --dbpath="${GITHUB_WORKSPACE}/cache/db/" \
             --cachepath="${GITHUB_WORKSPACE}/cache/scanner-cache/"
-
-      - name: upload Anchore scan SARIF report
-        if: github.event_name != 'pull_request'
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: ${{ steps.scan.outputs.sarif }}
-
       - name: Move cache
         run: |
           rm -rf /tmp/.buildx-cache
