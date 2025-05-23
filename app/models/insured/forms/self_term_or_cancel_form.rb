@@ -87,7 +87,7 @@ module Insured
         return true unless attrs[:term_or_cancel] == 'terminate'
 
         date = Date.strptime(attrs[:term_date].to_s, "%m/%d/%Y")
-        return date.today? || date.future?
+        date == TimeKeeper.date_of_record || date.future?
       end
 
       def self.format_date(date_str)

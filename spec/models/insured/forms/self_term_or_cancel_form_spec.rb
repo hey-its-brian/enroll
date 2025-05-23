@@ -306,6 +306,20 @@ module Insured
         enrollment_to_term.reload
         expect(enrollment_to_term.aasm_state).to eq 'coverage_terminated'
       end
+
+      context "TimeKeeper date is behind Date.today" do
+        before do
+          enrollment_to_term.update_attributes!(effective_on: TimeKeeper.date_of_record - 1.month)
+          allow(TimeKeeper).to receive(:date_of_record).and_return(Date.today - 1.day)
+        end
+
+        it "cancels an enrollment if the termination date equals or is greater to the TimeKeeper date" do
+          attrs = {enrollment_id: enrollment_to_term.id, term_date: TimeKeeper.date_of_record.to_s}
+          Insured::Forms::SelfTermOrCancelForm.for_post(attrs)
+          enrollment_to_term.reload
+          expect(enrollment_to_term.aasm_state).to eq 'coverage_terminated'
+        end
+      end
     end
 
     describe '.check_to_enable_tax_credit_btn' do
