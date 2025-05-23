@@ -1651,3 +1651,10 @@ And(/^Individual selects contact text check box/i) do
   sleep 30
 end
 
+When(/^.* submits the person form$/) do
+  find(IvlPersonalInformation.continue_btn).click
+end
+
+Then(/^Individual should not see the immigration field warning$/) do
+  expect(page).not_to have_content "It's important to enter as many fields from your immigration documents as possible"
+end

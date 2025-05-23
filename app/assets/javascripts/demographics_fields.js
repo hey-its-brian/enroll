@@ -565,7 +565,7 @@ var PersonValidations = (function (window, undefined) {
   }
 
   function validationForVlpDocuments(e) {
-    if (validationForPersonOrDependent()) {
+    if ($('#is_applying_coverage_true').prop('checked') && validationForPersonOrDependent()) {
       $('#showWarning').removeClass('hidden');
     }
     if ($('#vlp_documents_container').is(':visible')) {

@@ -54,3 +54,10 @@ Feature: Insured Plan Shopping on Individual market Document Errors
     Then the question "Where is this person's tribe located?" is displayed
     When tribal state dropdown box is clicked
     Then states dropdown should popup
+
+  Scenario: Individual should not see immigration field warning when attesting immmigration but not applying for coverage
+    When Individual selects applying for coverage
+    And Individual selects eligible immigration status
+    And Individual selects not applying for coverage
+    And Individual submits the person form
+    Then Individual should not see the immigration field warning
