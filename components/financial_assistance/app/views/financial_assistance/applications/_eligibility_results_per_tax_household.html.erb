@@ -5,6 +5,9 @@
   <%= render partial: '/financial_assistance/shared/faa_progress_options', locals: {step: step_number} %>
   <div class="<%= 'container mt-4' if !@in_application_flow %>">
     <h1 data-cuke='eligibility_results'><%= l10n("faa.results.eligibility_results") %></h1>
+
+    <p data-cuke='more_details'><%= l10n("faa.results.more_details_text") %></p>
+
     <% @application.eligibility_determinations.each_with_index do |ed, i| %>
       <% if ed.applicants.applying_coverage.present? %>
         <h2 data-cuke='tax_household' class='mt-3'><%= l10n("faa.results.tax_household", thh_number: i.next) %></h2>
@@ -15,7 +18,9 @@
 
         <!-- Start: Section for APTC Applicants -->
         <h3 data-cuke='aptc_heading'><b><%= l10n("faa.results.aptc_heading") %></b></h3>
-        <p data-cuke='aptc_text'><%= l10n("faa.results.aptc_text", aptc: number_with_delimiter(ed.max_aptc, :delimiter => ',')) %></p>
+        <p data-cuke='aptc_text'><%= l10n("faa.results.aptc_text",
+                                          short_name: EnrollRegistry[:enroll_app].setting(:short_name).item,
+                                          aptc: number_with_delimiter(ed.max_aptc, :delimiter => ',')) %></p>
         <ul>
           <% aptc_applicants.each do |applicant| %>
             <li data-cuke='full_name'><b><%= full_name(applicant) %></b></li>
@@ -121,8 +126,9 @@
       <% if ineligible_applicants.present? %>
         <h3 data-cuke='totally_ineligible_heading'><%= l10n("faa.results.totally_ineligible_heading") %></h3>
         <p data-cuke='totally_ineligible_text'><%= l10n("faa.results.totally_ineligible_text",
-                                                        medicaid_or_chip_program_short_name: FinancialAssistanceRegistry[medicaid_or_chip_program_short_name_key].setting(:name).item,
-                                                        short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+                                                        short_name: EnrollRegistry[:enroll_app].setting(:short_name).item,
+                                                        medicaid_or_chip_program_short_name: FinancialAssistanceRegistry[medicaid_or_chip_program_short_name_key].setting(:name).item)
+                                                         %></p>
         <ul>
           <% ineligible_applicants.each do |applicant| %>
             <li><b><%= full_name(applicant) %></b></li>
@@ -246,7 +252,9 @@
 
               <!-- Start: Section for APTC Applicants -->
               <h5 data-cuke='aptc_heading'><b><%= l10n("faa.results.aptc_heading") %></b></h5>
-              <p data-cuke='aptc_text'><%= l10n("faa.results.aptc_text", aptc: number_with_delimiter(ed.max_aptc, :delimiter => ',')) %></p>
+              <p data-cuke='aptc_text'><%= l10n("faa.results.aptc_text",
+                                                short_name: EnrollRegistry[:enroll_app].setting(:short_name).item,
+                                                aptc: number_with_delimiter(ed.max_aptc, :delimiter => ',')) %></p>
               <ul>
                 <% aptc_applicants.each do |applicant| %>
                   <li data-cuke='full_name'><b><%= full_name(applicant) %></b></li>
