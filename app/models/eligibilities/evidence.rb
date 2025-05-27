@@ -197,7 +197,7 @@ module Eligibilities
       current = EnrollRegistry.feature_enabled?(:verification_due_on_options) ? TimeKeeper.date_of_record : verif_due_date
       updated = current + period
       update_reason = if EnrollRegistry.feature_enabled?(:verification_due_on_options)
-                        l10n('admin.verifications.extend.history_description.static', day_offset: period.parts[:days], date: updated.strftime('%m/%d/%Y'))
+                        l10n('admin.verifications.extend.history_description.static', day_offset: period.parts[:days] - 1, date: updated.strftime('%m/%d/%Y'))
                       else
                         "Extended due date to #{updated.strftime('%m/%d/%Y')}"
                       end

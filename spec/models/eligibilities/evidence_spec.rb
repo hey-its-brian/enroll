@@ -121,7 +121,7 @@ RSpec.describe ::Eligibilities::Evidence, type: :model, dbclean: :after_each do
 
         history = income_evidence.verification_histories.first
         expect(history.action).to eq 'extend_due_date'
-        expect(history.update_reason).to eq "Set 30 day ROP. New due date is #{income_evidence.due_on.strftime('%m/%d/%Y')}."
+        expect(history.update_reason).to eq "Set 29 day ROP. New due date is #{income_evidence.due_on.strftime('%m/%d/%Y')}."
         expect(history.updated_by).to eq 'system'
       end
 
