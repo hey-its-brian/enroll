@@ -871,6 +871,59 @@ class Exchanges::HbxProfilesController < ApplicationController
     redirect_to exchanges_hbx_profiles_root_path
   end
 
+  # GET Endpoint to fetch family information for presenting the information in the UI.
+  # This endpoint is used to display family information for QAs to review the creates and updates made to the Family, Family Members, and People.
+  # The endpoint is accessible only to users with the `can_view_dry_run_dashboard?` permission.
+  #
+  # @param [String] id The ID of the family or person to fetch information for.
+  # @return [JSON] A JSON object containing family and family member information.
+  # @example
+  #   GET /exchanges/hbx_profiles/raw_family_information?id=12345
+  # @note This endpoint is intended for internal use by QAs in the lower environments to verify the correctness of the family data.
+  def raw_family_information
+    authorize HbxProfile, :can_view_dry_run_dashboard?
+
+    if EnrollRegistry.feature_enabled?(:display_raw_family_data)
+      family = fetch_family(params[:id])
+      if family.present?
+        family_info = family.attributes.slice(:_id, :hbx_assigned_id, :family_members)
+        family_members_info = family.family_members.map do |family_member|
+          fm_params = family_member.attributes
+          person = family_member.person
+          person_info = person.attributes.except(
+            :inbox,
+            :individual_market_transitions,
+            :verification_types,
+            :history_action_trackers,
+            :demographics_group,
+            :version,
+            :tracking_version,
+            :cv3_payload,
+            :crm_notifiction_needed,
+            :consumer_role
+          )
+          role = person.consumer_role
+          consumer_role_info = role.attributes.except(
+            :raw_event_responses, :history_action_trackers, :workflow_state_transitions, :lawful_presence_determination
+          )
+          consumer_role_info[:lawful_presence_determination] = role.lawful_presence_determination.attributes.except(:workflow_state_transitions)
+          person_info[:consumer_role] = consumer_role_info
+          fm_params[:person] = person_info
+          fm_params
+        end
+        family_info[:family_members] = family_members_info
+      else
+        family_info = { error: "Family or Person not found with the provided ID: #{params[:id]}" }
+      end
+    else
+      family_info = { error: "Feature 'display_raw_family_data' is not enabled. Please enable it to view family information." }
+    end
+
+    respond_to do |format|
+      format.html { render 'raw_family_information', locals: { family_info: family_info } }
+    end
+  end
+
   def ivl_dry_run_dashboard
     authorize HbxProfile, :can_view_dry_run_dashboard?
 
@@ -901,6 +954,15 @@ class Exchanges::HbxProfilesController < ApplicationController
   end
 
   private
+
+  # Fetches the family by ID or Primary person's HBX ID.
+  # If the family is not found by ID, it attempts to find the person by HBX ID and returns their primary family.
+  #
+  # @param [String] id The ID of the family or person's HBX ID.
+  # @return [Family, nil] The found family or nil if not found.
+  def fetch_family(id)
+    Family.where(id: id).first || Person.where(hbx_id: id).first&.primary_family
+  end
 
   def find_email(agent, role)
     if role == l10n("broker")
