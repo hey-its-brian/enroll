@@ -431,4 +431,53 @@ RSpec.describe IndividualMarket::Application, type: :model do
       end
     end
   end
+
+  describe '#assign_hbx_id' do
+    context 'when hbx_id is not set' do
+      it 'assigns a new hbx_id' do
+        expect(application.hbx_id).to be_present
+      end
+    end
+
+    context 'when hbx_id is already set' do
+      let(:hbx_id) { '83839273639289363' }
+      let(:application) { FactoryBot.create(:individual_market_application, :with_primary, hbx_id: hbx_id) }
+
+      it 'does not update hbx_id' do
+        expect(application.hbx_id).to eq(hbx_id)
+      end
+    end
+  end
+
+  describe 'index: unique hbx_id' do
+    let(:application1) { FactoryBot.create(:individual_market_application, :with_primary) }
+    let(:application2) { FactoryBot.create(:individual_market_application, :with_primary, hbx_id: hbx_id2) }
+    let(:hbx_id1) { application1.hbx_id }
+
+    before :each do
+      application1
+      described_class.remove_indexes
+      described_class.create_indexes
+    end
+
+    context 'when hbx_id is unique' do
+      let(:hbx_id2) { '3868646846578468765478' }
+
+      it 'creates second application without raising an error' do
+        expect { application2 }.not_to raise_error
+      end
+    end
+
+    context 'when hbx_id is not unique' do
+      let(:hbx_id2) { hbx_id1 }
+
+      it 'raises a Mongo::Error::OperationFailure error' do
+        expect { application2 }.to raise_error(
+          Mongo::Error::OperationFailure
+        ).with_message(
+          /E11000 duplicate key error collection/
+        )
+      end
+    end
+  end
 end

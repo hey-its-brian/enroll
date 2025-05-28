@@ -69,10 +69,6 @@ module IndividualMarket
     # @note The year 2025 is used as a minimum value for the assistance year
     validates :assistance_year, presence: true, numericality: { greater_than_or_equal_to: 2025 }
 
-    # @!attribute hbx_id
-    # @return [String] The unique identifier for the application
-    field :hbx_id, type: String
-
     # @!attribute effective_on
     # @return [Date] The date the application is effective
     field :effective_on, type: Date

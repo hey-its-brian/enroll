@@ -1666,8 +1666,11 @@ module FinancialAssistance
       end
     end
 
+    # Sets the hbx_id for the application if it is not already present.
+    # The hbx_id is generated using the FinancialAssistance::HbxIdGenerator.
+    #
+    # @return [void]
     def set_hbx_id
-      #TODO: Use hbx_id generator for Application
       write_attribute(:hbx_id, FinancialAssistance::HbxIdGenerator.generate_application_id) if hbx_id.blank?
     end
 
