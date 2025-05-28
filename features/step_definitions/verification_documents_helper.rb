@@ -8,7 +8,7 @@ class VerificationDocumentsHelper
       case type
       when "Citizenship"
         expected_content = citizenship_content
-      when "Immigration Status"
+      when "Immigration status"
         expected_content = immigration_status_content
       when "Social Security Number"
         expected_content = ssn_content

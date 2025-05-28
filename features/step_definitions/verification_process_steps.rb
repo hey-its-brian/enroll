@@ -107,10 +107,11 @@ Given(/the consumer has a verification with history elements that have varying d
 end
 
 def create_verification(type_name, validation_status:, inactive: false)
-  family = user.person.primary_family
+  person = user.person
+  family = person.primary_family
   case type_name
-  when "Citizenship", "Immigration status", "Social Security Number", "Alive Status"
-    FactoryBot.create(:verification_type, type_name: type_name, validation_status: validation_status, update_reason: "Mock Reason", due_date: TimeKeeper.date_of_record, person: user.person, inactive: inactive)
+  when "Citizenship", "Immigration status", "Social Security Number", "Alive Status", "American Indian Status"
+    FactoryBot.create(:verification_type, type_name: type_name, validation_status: validation_status, update_reason: "Mock Reason", due_date: TimeKeeper.date_of_record, person: person, inactive: inactive)
   else
     case type_name
     when "Income"
@@ -137,6 +138,8 @@ def create_verification(type_name, validation_status:, inactive: false)
                       family_member_id: user_family_member_id)
     application.applicants.where(family_member_id: user_family_member_id).first.send(type).update_attributes(aasm_state: validation_status)
   end
+  person.consumer_role.set(aasm_state: 'verified')
+  step "the alive_status feature is enabled" if type_name == "Alive Status"
   ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family.reload)
 end
 
@@ -294,7 +297,7 @@ Then(/the consumer should see the verification detail page/) do
   expect(page).to have_content("Verification Details")
 end
 
-When(/the (.*) vists the verification detail page for a(?: (.+))? verification with (.*) status/) do |user, type, status|
+When(/the (.*) visits the verification detail page for a(?: (.+))? verification with (.*) status/) do |user, type, status|
   type_substring = type ? " #{type}" : ''
   steps %(
     Given the consumer has a#{type_substring} verification with #{status} status
@@ -314,12 +317,13 @@ end
 
 Given(/the consumer selects the(?: +(.+))? verification for the member/) do |type|
   type = "Deceased" if type == "Alive Status"
+  type = type.titleize if type == "Immigration status"
   sleep 1
   all("#{IvlDocumentsPage.individual_verifications_section} tbody tr", text: type || "Citizenship").first.click
 end
 
-When(/^the consumer vists the verification detail page$/) do
-  step "the consumer vists the verification detail page for a verification with verified status"
+When(/^the consumer visits the verification detail page$/) do
+  step "the consumer visits the verification detail page for a verification with verified status"
 end
 
 Then(/the consumer should see the summary header (.*) the status reason/) do |negation|
@@ -384,6 +388,22 @@ When("the consumer expands all accordions") do
   all('.accordion a[data-toggle="collapse"]').each do |accordion|
     accordion.click
     sleep 1
+  end
+end
+
+Then(/^the admin actions dropdown should have options: (.*)$/) do |options_string|
+  if options_string.strip == "(no options)"
+    expect(page).not_to have_select('admin_actions')
+  else
+    all_possible_options = ['Verify', 'Reject', 'Call HUB', 'Set due date']
+    expected_options = options_string.split(', ').map(&:strip)
+    excluded_options = all_possible_options - expected_options
+
+    expect(page).to have_select(with_options: expected_options)
+
+    excluded_options.each do |excluded_option|
+      expect(page).not_to have_select(with_options: [excluded_option])
+    end
   end
 end
 
@@ -542,7 +562,11 @@ Then(/^Admin should see the esi evidence state as attested$/) do
 end
 
 Then(/^Individual should see view history option/) do
-  expect(page).to have_content('View History')
+  expect(page).to have_content(EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) ? IvlDocumentDetail.verification_history_link : 'View History')
+end
+
+Then(/^the "View verification history" link should be visible$/) do
+  expect(page).to have_selector(IvlDocumentDetail.verification_history_link)
 end
 
 Then(/^Admin navigates to view history section/) do

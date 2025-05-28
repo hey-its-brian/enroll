@@ -6,7 +6,7 @@ module Eligibilities
     include Mongoid::Document
     include Mongoid::Timestamps
 
-    SOCIAL_SECURITY_NUMBER = :social_secruity_number
+    SOCIAL_SECURITY_NUMBER = :social_security_number
     AMERICAN_INDIAN_STATUS = :american_indian_status
     CITIZENSHIP = :citizenship
     IMMIGRATION_STATUS = :immigration_status

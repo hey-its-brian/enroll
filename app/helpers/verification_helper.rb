@@ -414,7 +414,7 @@ module VerificationHelper
 
     rejections = []
     rejections << ::VlpDocument::CALL_HUB if f_member.consumer_role.aasm_state == 'unverified' || Eligibilities::EvidenceState::ADMIN_CALL_HUB_VERIFICATION_TYPES.exclude?(evidence.evidence_item_key)
-    rejections << ::VlpDocument::REJECT if verification_type_status(evidence, f_member) == :outstanding
+    rejections << ::VlpDocument::REJECT if verification_type_status(evidence, f_member) == 'outstanding'
     rejections << ::VlpDocument::EXTEND unless !EnrollRegistry.feature_enabled?(:verification_due_on_options) || (evidence.is_action_needed? && pundit_allow(HbxProfile, :can_extend_due_date?))
 
     ::VlpDocument::ADMIN_VERIFICATION_ACTIONS - rejections
