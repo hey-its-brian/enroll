@@ -15,7 +15,7 @@ module Eligibilities
       # uploads, state transitions, and integration with verification services.
       #
       # @example Creating a new social security number evidence
-      #   eligibility.evidences.build(_type: 'Eligibilities::Evidences::SocialSecurityNumberEvidence')
+      #   eligibility.evidences.build(_type: 'Eligibilities::V3::Evidences::SocialSecurityNumberEvidence')
       #
       # @see Eligibilities::Evidence Parent class for common evidence functionality
       class SocialSecurityNumberEvidence < ::Eligibilities::V3::Evidence

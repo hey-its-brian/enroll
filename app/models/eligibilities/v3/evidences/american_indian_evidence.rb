@@ -17,7 +17,7 @@ module Eligibilities
       # state transitions, and integration with verification services that can confirm tribal membership.
       #
       # @example Creating American Indian evidence for an eligibility
-      #   eligibility.evidences.build(_type: 'Eligibilities::Evidences::AmericanIndianEvidence')
+      #   eligibility.evidences.build(_type: 'Eligibilities::V3::Evidences::AmericanIndianEvidence')
       #
       # @see Eligibilities::Evidence The parent class with common evidence functionality
       class AmericanIndianEvidence < ::Eligibilities::V3::Evidence

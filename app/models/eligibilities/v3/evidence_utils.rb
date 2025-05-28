@@ -30,11 +30,11 @@ module Eligibilities
       # Definition of all allowed state transitions
       # @return [Hash] Map of event names to transition rules
       # @example
-      #   STATE_TRANSITIONS[:attest][:from] # Returns array of states from which :attest is allowed
-      #   STATE_TRANSITIONS[:attest][:to]   # Returns the destination state after :attest event
+      #   STATE_TRANSITIONS[:move_to_attested][:from] # Returns array of states from which :move_to_attested is allowed
+      #   STATE_TRANSITIONS[:move_to_attested][:to]   # Returns the destination state after :move_to_attested event
       STATE_TRANSITIONS = {
-        attest: {
-          from: [:attested, :negative_response_received, :outstanding, :pending, :rejected, :review, :unverified, :verified],
+        move_to_attested: {
+          from: [:attested, :initial, :negative_response_received, :outstanding, :pending, :rejected, :review, :unverified, :verified],
           to: :attested
         },
         move_to_rejected: {
@@ -62,7 +62,7 @@ module Eligibilities
           to: :review
         },
         move_to_pending: {
-          from: [:attested, :negative_response_received, :outstanding, :pending, :rejected, :review, :unverified, :verified],
+          from: [:attested, :initial, :negative_response_received, :outstanding, :pending, :rejected, :review, :unverified, :verified],
           to: :pending
         }
         # TODO: Some of the states defined below are not defined in the STATES constant.

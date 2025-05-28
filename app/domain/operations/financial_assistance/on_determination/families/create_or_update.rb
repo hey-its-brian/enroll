@@ -22,10 +22,9 @@ module Operations
             # Step5: Deactivate the old Tax Household Groups
             # Step6: Build a new Tax Household Group
             # Step7: Assign latest application GID
-            # Step8: Persist the family
-            # Step9: Build Family Eligibility Determination for the family
-            # Step10: Update applicants with the new family member id and person hbx_id
-
+            # Step8: Build Family Eligibility Determination for the family
+            # Step9: Persist the family
+            # Step10: Update applicants with the new family member id and person hbx_id and set family_updated_at with current time
             application, family   = yield validate_application(application)
             people_result         = yield create_or_update_people(application)
             _relationships_result = yield create_or_update_primary_relationships(people_result, application)
@@ -299,7 +298,9 @@ module Operations
             ::Operations::Eligibilities::BuildFamilyDetermination.new.call({ family: family })
           end
 
-          # Updates the application with the new family member IDs and person HBX IDs
+          # Updates the application with:
+          #   the new family member IDs and person HBX IDs
+          #   the family_updated_at with current time
           #
           # @param application [FinancialAssistance::Application] the financial assistance application
           # @param family_members_result [Hash] hash of applicant_id => family_member
@@ -311,6 +312,7 @@ module Operations
               applicant.family_member_id = family_members_result[applicant.id].id
               applicant.person_hbx_id = people_result[applicant.id].hbx_id
             end
+            application.family_updated_at = Time.current
             application.save!
 
             Success(application)

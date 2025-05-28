@@ -8,7 +8,6 @@ module Operations
     # Find eligibility item from resource registry
     class Find
       include Dry::Monads[:do, :result]
-      include ::ResourceRegistryHelper
 
       # @param [Hash] opts Options to find eligibility item from Resource Registry
 

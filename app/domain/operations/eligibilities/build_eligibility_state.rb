@@ -8,6 +8,7 @@ module Operations
     # Build Eligibility state for the eligibility item passed
     class BuildEligibilityState
       include Dry::Monads[:do, :result]
+      include ::ResourceRegistryHelper
 
       # @param [Hash] opts Options to build eligibility state
       # @option opts [GlobalID] :subject required
@@ -67,6 +68,21 @@ module Operations
         if values[:eligibility_item].key == 'aptc_csr_credit'
           subject = GlobalID::Locator.locate(values[:subject])
           grants = build_csr_grants(subject).success
+
+          # Builds MagiMedicaid Grants for aptc_csr_credit if QHP application feature is enabled
+          if qhp_application_feature_enabled?
+            mm_grants = construct_magi_medicaid_grants_params(subject).success
+            grants += mm_grants if mm_grants.present?
+          end
+
+          eligibility_state.merge!(grants: grants)
+        end
+
+        # Builds QHP Grants for aca_individual_market_eligibility if QHP application feature is enabled
+        if qhp_application_feature_enabled? && values[:eligibility_item].key == 'aca_individual_market_eligibility'
+          subject = GlobalID::Locator.locate(values[:subject])
+          grants = construct_qhp_grants_params(subject).success
+
           eligibility_state.merge!(grants: grants)
         end
 
@@ -88,6 +104,28 @@ module Operations
           family_member: family_member,
           family: family_member.family,
           type: 'CsrAdjustmentGrant'
+        )
+      end
+
+      # Constructs MagiMedicaid Grants for the latest active tax household group for all the assistance years
+      # Tax household Members are found based on the tax household member's applicant_id is equal to family_member.id
+      #
+      # @param [FamilyMember] family_member
+      # @return [Dry::Monads::Result] Success with array of MagiMedicaid grant params or Failure with error message
+      def construct_magi_medicaid_grants_params(family_member)
+        ::Operations::Eligibilities::BuildGrant.new.call(
+          family: family_member.family, family_member: family_member, type: 'MagiMedicaidGrant'
+        )
+      end
+
+      # Constructs QHP Grants for the latest active tax household group for all the assistance years
+      # Tax household Members are found based on the tax household member's applicant_id is equal to family_member.id
+      #
+      # @param [FamilyMember] family_member
+      # @return [Dry::Monads::Result] Success with array of QHP grant params or Failure with error message
+      def construct_qhp_grants_params(family_member)
+        ::Operations::Eligibilities::BuildGrant.new.call(
+          family: family_member.family, family_member: family_member, type: 'QhpGrant'
         )
       end
 

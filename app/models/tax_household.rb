@@ -130,6 +130,20 @@ class TaxHousehold
     tax_household_members.where(is_csr_eligible: true)
   end
 
+  # Returns the list of tax household members who are eligible for Medicaid/CHIP
+  #
+  # @return [Mongoid::Criteria] tax household members who are eligible for Medicaid/CHIP
+  def magi_medicaid_members
+    tax_household_members.where(is_medicaid_chip_eligible: true)
+  end
+
+  # Returns the list of tax household members who are eligible for QHP (Qualified Health Plan) or UQHP (Unassisted Qualified Health Plan)
+  #
+  # @return [Mongoid::Criteria] tax household members who are eligible for QHP or UQHP
+  def qhp_members
+    tax_household_members.where(is_without_assistance: true)
+  end
+
   def applicant_ids
     tax_household_members.map(&:applicant_id)
   end

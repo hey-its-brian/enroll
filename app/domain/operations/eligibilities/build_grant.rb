@@ -33,7 +33,12 @@ module Operations
         end.compact
       end
 
-      def create_aptc_grants(th_group)
+      # Constructs APTC grants parameters for a given tax household group.
+      # It retrieves the APTC members from the tax household group and constructs grant parameters.
+      #
+      # @param th_group [TaxHouseholdGroup] the tax household group
+      # @return [Array<Hash>] an array of hashes containing grant parameters for each APTC member
+      def constructs_aptc_grants_params(th_group)
         th_group.tax_households.collect do |tax_household|
           next if tax_household.aptc_members.blank?
 
@@ -57,7 +62,7 @@ module Operations
       # @param th_group [TaxHouseholdGroup] the tax household group
       # @param family_member [FamilyMember] the family member
       # @return [Array] the csr members for the family member in the tax household group
-      def eligible_members(th_group, family_member)
+      def csr_grant_members(th_group, family_member)
         if qhp_application_feature_enabled?
           th_group.tax_households.where("tax_household_members.applicant_id" => family_member.id).flat_map(&:csr_members)
         else
@@ -65,8 +70,14 @@ module Operations
         end
       end
 
-      def create_csr_grants(th_group, family_member)
-        members = eligible_members(th_group, family_member).collect do |tax_household_member|
+      # Constructs CSR grants parameters for a given tax household group and family member.
+      # It retrieves the CSR members from the tax household group with matching family member ID and constructs grant parameters.
+      #
+      # @param th_group [TaxHouseholdGroup] the tax household group
+      # @param family_member [FamilyMember] the family member
+      # @return [Array<Hash>] an array of hashes containing grant parameters for each CSR member
+      def constructs_csr_grants_params(th_group, family_member)
+        members = csr_grant_members(th_group, family_member).collect do |tax_household_member|
           next unless tax_household_member.applicant_id == family_member.id
           tax_household_member
         end.compact
@@ -84,15 +95,76 @@ module Operations
         end.compact
       end
 
+      # Constructs MagiMedicaid grants parameters for a given tax household group and family member.
+      # It retrieves the MagiMedicaid members from the tax household group with matching family member ID and constructs grant parameters.
+      #
+      # @param th_group [TaxHouseholdGroup] the tax household group
+      # @param family_member [FamilyMember] the family member
+      # @return [Array<Hash>] an array of hashes containing grant parameters for each MagiMedicaid member
+      def constructs_magi_medicaid_grants_params(th_group, family_member)
+        thh = th_group.tax_households.where('tax_household_members.applicant_id' => family_member.id).first
+        return [] unless thh
+
+        thhm = thh.magi_medicaid_members.where(applicant_id: family_member.id).first
+        return [] unless thhm
+
+        [
+          {
+            title: 'magi_medicaid_grant',
+            key: 'MagiMedicaidGrant',
+            value: thhm.is_medicaid_chip_eligible.to_s,
+            start_on: th_group.start_on,
+            end_on: th_group.end_on,
+            assistance_year: th_group.assistance_year,
+            member_ids: [family_member.id.to_s]
+          }
+        ]
+      end
+
+      # Constructs QHP grants parameters for a given tax household group and family member.
+      # It retrieves the QHP members from the tax household group with matching family member ID and constructs grant parameters.
+      #
+      # @param th_group [TaxHouseholdGroup] the tax household group
+      # @param family_member [FamilyMember] the family member
+      # @return [Array<Hash>] an array of hashes containing grant parameters for each QHP member
+      def constructs_qhp_grants_params(th_group, family_member)
+        thh = th_group.tax_households.where('tax_household_members.applicant_id' => family_member.id).first
+        return [] unless thh
+
+        thhm = thh.qhp_members.where(applicant_id: family_member.id).first
+        return [] unless thhm
+
+        [
+          {
+            title: 'qhp_grant',
+            key: 'QhpGrant',
+            value: thhm.is_without_assistance.to_s,
+            start_on: th_group.start_on,
+            end_on: th_group.end_on,
+            assistance_year: th_group.assistance_year,
+            member_ids: [family_member.id.to_s]
+          }
+        ]
+      end
+
+      # Builds grants based on the type specified in the values hash.
+      # It retrieves the latest tax household groups per year and creates grants accordingly.
+      #
+      # @param values [Hash] a hash containing the family, family_member, and type
+      # @return [Array<Hash>] an array of hashes containing grant parameters
       def build_grants(values)
         groups = latest_tax_household_group_per_year(values)
 
         grants = groups.collect do |th_group|
           case values[:type]
           when 'AdvancePremiumAdjustmentGrant'
-            create_aptc_grants(th_group)
+            constructs_aptc_grants_params(th_group)
           when 'CsrAdjustmentGrant'
-            create_csr_grants(th_group, values[:family_member])
+            constructs_csr_grants_params(th_group, values[:family_member])
+          when 'MagiMedicaidGrant'
+            constructs_magi_medicaid_grants_params(th_group, values[:family_member])
+          when 'QhpGrant'
+            constructs_qhp_grants_params(th_group, values[:family_member])
           else
             []
           end

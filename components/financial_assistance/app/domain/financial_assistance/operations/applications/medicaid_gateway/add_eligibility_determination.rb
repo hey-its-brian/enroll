@@ -23,6 +23,7 @@ module FinancialAssistance
             application        = yield update_application(application, application_entity)
             result             = yield add_eligibility_determination(application_entity, application)
             _family_result     = yield create_or_update_family(application)
+            _evidences_result  = yield create_eligibilities_evidences(application)
             _done              = yield cache_determination_token(application)
 
             Success(result)
@@ -30,12 +31,37 @@ module FinancialAssistance
 
           private
 
+          # Caches the determination token for the application to be able to present determination results in the UI to the user.
+          # Caching helps to avoid querying the database for the determination token every time.
+          #
+          # @param application [FinancialAssistance::Application] The application to cache the determination token for
+          # @return [Dry::Monads::Result]
           def cache_determination_token(application)
             Rails.cache.write("application_#{application.hbx_id}_determined",
                               Time.now.strftime('%Y-%m-%d %H:%M:%S.%L'),
                               expires_in: 5.minutes)
 
             Success('Rails cache is set for the application with timestamp.')
+          end
+
+          # Creates or updates the eligibiliites & evidences associated with the application when the QHP application feature is enabled.
+          #
+          # @param application [FinancialAssistance::Application] The application to create or update the evidences for
+          # @return [Dry::Monads::Result]
+          def create_eligibilities_evidences(application)
+            return Success('Update not required for evidences') unless qhp_application_feature_enabled?
+
+            application.build_eligibilities_evidences
+
+            if application.valid?
+              application.save!
+              Success(application)
+            else
+              Failure("Unable to build evidences for application with hbx_id: #{application.hbx_id} with errors: #{application.errors.full_messages}")
+            end
+          rescue StandardError => e
+            Rails.logger.error("Unable to build evidences for application with hbx_id: #{application.hbx_id} with errors: #{e.message}, backtrace: #{e.backtrace.join("\n")}")
+            Failure("Unable to build evidences for application with hbx_id: #{application.hbx_id} with errors: #{e.message}")
           end
 
           # Creates or updates the family associated with the application when the QHP application feature is enabled.

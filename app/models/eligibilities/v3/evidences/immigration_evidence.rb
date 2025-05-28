@@ -15,7 +15,7 @@ module Eligibilities
       # uploads, state transitions, and integration with verification services.
       #
       # @example Creating a new immigration evidence
-      #   eligibility.evidences.build(_type: 'Eligibilities::Evidences::ImmigrationEvidence')
+      #   eligibility.evidences.build(_type: 'Eligibilities::V3::Evidences::ImmigrationEvidence')
       #
       # @see Eligibilities::Evidence Parent class for common evidence functionality
       class ImmigrationEvidence < ::Eligibilities::V3::Evidence

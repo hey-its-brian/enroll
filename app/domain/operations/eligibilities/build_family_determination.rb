@@ -61,6 +61,13 @@ module Operations
         end
       end
 
+      # Persists the eligibility determination for the family
+      #
+      # @param [Hash] values The validated parameters hash
+      # @option values [Family] :family The family to build the determination for
+      # @param [Determination] determination_entity The eligibility determination entity
+      #
+      # @return [Dry::Monads::Result] Success if determination is built successfully, Failure otherwise
       def persist(values, determination_entity)
         family = values[:family]
         attributes = determination_entity.sanitize_attributes
@@ -70,6 +77,9 @@ module Operations
         family.save!
 
         Success(determination)
+      rescue StandardError => e
+        Rails.logger.error("Failed to save determination for family #{family.id}: #{e.message}")
+        Failure("Failed to save determination: #{e.message}")
       end
 
       def relations

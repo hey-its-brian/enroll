@@ -6,7 +6,8 @@ module Eligibilities
     include Mongoid::Document
     include Mongoid::Timestamps
 
-    KEYS = ['AdvancePremiumAdjustmentGrant', 'CsrAdjustmentGrant'].freeze
+    # Keys for all types of grants supported in the system. For now all the Grants we have are for Individual Market.
+    KEYS = ['AdvancePremiumAdjustmentGrant', 'CsrAdjustmentGrant', 'MagiMedicaidGrant', 'QhpGrant'].freeze
 
     field :title, type: String
     field :key, type: String

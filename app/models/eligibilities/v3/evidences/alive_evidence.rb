@@ -16,7 +16,7 @@ module Eligibilities
       # living status.
       #
       # @example Creating alive evidence for an eligibility
-      #   eligibility.evidences.build(_type: 'Eligibilities::Evidences::AliveEvidence')
+      #   eligibility.evidences.build(_type: 'Eligibilities::V3::Evidences::AliveEvidence')
       #
       # @see Eligibilities::Evidence The parent class with common evidence functionality
       class AliveEvidence < ::Eligibilities::V3::Evidence

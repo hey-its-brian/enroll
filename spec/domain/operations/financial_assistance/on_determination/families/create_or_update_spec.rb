@@ -119,6 +119,17 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
       it 'deactivates the secondary family member' do
         expect(secondary_family_member.reload.is_active).to be_falsey
       end
+
+      it 'updates applicants with family_member_id and person_hbx_id' do
+        application.applicants.each do |applicant|
+          expect(applicant.family_member_id).to be_present
+          expect(applicant.person_hbx_id).to be_present
+        end
+      end
+
+      it 'updates the application with family_updated_at' do
+        expect(application.family_updated_at).to be_present
+      end
     end
 
     context "when:
@@ -219,6 +230,17 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
           number: secondary_phone.number
         )
       end
+
+      it 'updates applicants with family_member_id and person_hbx_id' do
+        application.applicants.each do |applicant|
+          expect(applicant.family_member_id).to be_present
+          expect(applicant.person_hbx_id).to be_present
+        end
+      end
+
+      it 'updates the application with family_updated_at' do
+        expect(application.family_updated_at).to be_present
+      end
     end
 
     context "when:
@@ -315,6 +337,17 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
           area_code: secondary_phone.area_code,
           number: secondary_phone.number
         )
+      end
+
+      it 'updates applicants with family_member_id and person_hbx_id' do
+        application.applicants.each do |applicant|
+          expect(applicant.family_member_id).to be_present
+          expect(applicant.person_hbx_id).to be_present
+        end
+      end
+
+      it 'updates the application with family_updated_at' do
+        expect(application.family_updated_at).to be_present
       end
     end
   end

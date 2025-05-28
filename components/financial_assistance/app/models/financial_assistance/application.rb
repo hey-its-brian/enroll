@@ -159,6 +159,11 @@ module FinancialAssistance
     # The value of this field is only valid if the application is either in 'applicants_update_required' or 'income_verification_extension_required' state.
     field :renewal_draft_blocker_reasons, type: Array
 
+    # @!attribute family_updated_at
+    # @return [DateTime] The timestamp when the family was updated successfully without errors on application determination
+    # @note Used to track which applications failed to update their family successfully for debugging and refactoring purposes
+    field :family_updated_at, type: DateTime
+
     # FinancialAssistance::EligibilityDetermination is the object that represents the TaxHousehold.
     embeds_many :eligibility_determinations, inverse_of: :application, class_name: '::FinancialAssistance::EligibilityDetermination', cascade_callbacks: true, validate: true
     embeds_many :relationships, inverse_of: :application, class_name: '::FinancialAssistance::Relationship', cascade_callbacks: true, validate: true
@@ -520,7 +525,11 @@ module FinancialAssistance
       determine! # If successfully loaded ed's move the application to determined state
     end
 
+    # This method is used to create new determination for Family for Tax Model 1.0.
+    # This method is not executed when the qhp_application feature is enabled.
     def send_determination_to_ea
+      return unless qhp_application_feature_enabled?
+
       return if EnrollRegistry.feature_enabled?(:temporary_configuration_enable_multi_tax_household_feature)
 
       result = ::Operations::Families::AddFinancialAssistanceEligibilityDetermination.new.call(self)
@@ -1514,6 +1523,10 @@ module FinancialAssistance
       self.save!
     end
 
+    def build_eligibilities_evidences
+      applicants.each(&:build_eligibilities_evidences)
+    end
+
     private
 
     # Validates that origin and generation_reason have permitted values
@@ -1870,7 +1883,9 @@ module FinancialAssistance
       self.save!
     end
 
+    # Creates evidences V1.0 for each applicant when the QHP application feature is disabled.
     def create_evidences
+      return if qhp_application_feature_enabled?
       return if previously_renewal_draft? && FinancialAssistanceRegistry.feature_enabled?(:renewal_eligibility_verification_using_rrv)
 
       active_applicants.each do |applicant|

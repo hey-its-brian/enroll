@@ -176,7 +176,8 @@ module FinancialAssistance
 
     # @!attribute [rw] person_hbx_id
     #   @return [String] the unique identifier of the applicant in the system
-    #   @note  This value of this field can change when the matching person record exists in the system. Do not use this field as a foreign key.
+    #   @note  The value of this field will change when the person record is created or matched in the system.
+    #          Do not use this field as a foreign key. This field is needed as MITC needs a number identifier to identify the applicant.
     field :person_hbx_id, type: String
 
     field :ext_app_id, type: String
@@ -1623,16 +1624,34 @@ module FinancialAssistance
       naturalized_citizen.present? || eligible_immigration_status.present?
     end
 
+    # Returns the APTC/CSR eligibility for the applicant.
     def aptc_csr_eligibility
-      return @aptc_csr_eligibility if defined?(@aptc_csr_eligibility)
-
-      @aptc_csr_eligibility = eligibilities.where(_type: 'Eligibilities::V3::AptcCsrEligibility').first
+      eligibilities.where(_type: 'Eligibilities::V3::AptcCsrEligibility').first
     end
 
+    # Returns the Individual Market eligibility for the applicant.
     def individual_market_eligibility
-      return @individual_market_eligibility if defined?(@individual_market_eligibility)
+      eligibilities.where(_type: 'Eligibilities::V3::IndividualMarketEligibility').first
+    end
 
-      @individual_market_eligibility = eligibilities.where(_type: 'Eligibilities::V3::IndividualMarketEligibility').first
+    # Method to build eligibilities and evidences for the applicant.
+    #   It creates APTC/CSR Eligibility and Individual Market Eligibility if they do not exist.
+    #   It calls the methods to build evidences for APTC/CSR Eligibility and Individual Market Eligibility.
+    #
+    # @return [void]
+    def build_eligibilities_evidences
+      build_aptc_csr_eligibility unless aptc_csr_eligibility
+      build_individual_market_eligibility unless individual_market_eligibility
+      build_evidences
+    end
+
+    # Method to build evidences for the applicant.
+    #   It creates evidences for APTC CSR Eligibility and Individual Market Eligibility.
+    #
+    # @return [void]
+    def build_evidences
+      build_aptc_csr_evidences
+      build_individual_market_evidences
     end
 
     # Builds a new APTC/CSR eligibility for the applicant.
@@ -1647,7 +1666,224 @@ module FinancialAssistance
       )
     end
 
+    # Builds a new Individual Market eligibility for the applicant.
+    #
+    # @param applicant [FinancialAssistance::Applicant] The applicant for whom the eligibility is being built.
+    # @return [Eligibilities::V3::AptcCsrEligibility] The newly built eligibility.
+    def build_individual_market_eligibility
+      eligibilities.build(
+        _type: 'Eligibilities::V3::IndividualMarketEligibility',
+        title: 'Individua lMarket Eligibility',
+        key: :individual_market_eligibility
+      )
+    end
+
     private
+
+    # Builds evidences for the individual market eligibility.
+    #   It creates evidences for citizenship, immigration, American Indian, and social security number.
+    #
+    # @return [void]
+    def build_individual_market_evidences
+      build_citizenship_evidence
+      build_immigration_evidence
+      build_american_indian_evidence
+      build_social_security_number_evidence
+
+      # We do not have residency evidence verification for any client we are currently supporting from this codebase
+      # build_residency_evidence
+
+      # We only verify alive evidence as part of the bulk verification process and not during every application
+      # build_alive_evidence
+    end
+
+    # Builds citizenship evidence if the applicant is applying for coverage, does not have citizenship evidence, and consumer is a US citizen or naturalized citizen.
+    #   It creates a citizenship evidence and moves it to pending state.
+    #
+    # @return [void]
+    def build_citizenship_evidence
+      return individual_market_eligibility.citizenship_evidence if individual_market_eligibility.citizenship_evidence
+      return unless is_applying_coverage
+      return if [ConsumerRole::US_CITIZEN_STATUS, ConsumerRole::NATURALIZED_CITIZEN_STATUS].exclude?(citizen_status)
+
+      evidence = individual_market_eligibility.evidences.build(
+        _type: 'Eligibilities::V3::Evidences::CitizenshipEvidence',
+        title: 'Citizenship Evidence',
+        key: :citizenship_evidence
+      )
+      evidence.move_to_pending(
+        comment: 'application_determination',
+        reason: 'Citizenship evidence is required for QHP eligibility'
+      )
+      evidence
+    end
+
+    # Builds immigration evidence if the applicant is applying for coverage, does not have immigration evidence, and consumer is alien lawfully present.
+    #   It creates an immigration evidence and moves it to pending state.
+    #
+    # @return [void]
+    def build_immigration_evidence
+      return individual_market_eligibility.immigration_evidence if individual_market_eligibility.immigration_evidence
+      return unless is_applying_coverage
+      return if ConsumerRole::ALIEN_LAWFULLY_PRESENT_STATUS != citizen_status
+
+      evidence = individual_market_eligibility.evidences.build(
+        _type: 'Eligibilities::V3::Evidences::ImmigrationEvidence',
+        title: 'Immigration Evidence',
+        key: :immigration_evidence
+      )
+
+      evidence.move_to_pending(
+        comment: 'application_determination',
+        reason: 'Immigration evidence is required for QHP eligibility'
+      )
+      evidence
+    end
+
+    # Builds American Indian evidence if the applicant is an Indian tribe member and does not have American Indian evidence.
+    #   It creates an American Indian evidence and moves it to attested or pending state based on the feature flag.
+    #
+    # @return [void]
+    def build_american_indian_evidence
+      return individual_market_eligibility.american_indian_evidence if individual_market_eligibility.american_indian_evidence
+      return unless indian_tribe_member
+
+      evidence = individual_market_eligibility.evidences.build(
+        _type: 'Eligibilities::V3::Evidences::AmericanIndianEvidence',
+        title: 'American Indian Evidence',
+        key: :american_indian_evidence
+      )
+
+      if EnrollRegistry.feature_enabled?(:ai_an_self_attestation)
+        evidence.move_to_attested(
+          comment: 'application_determination',
+          reason: 'American Indian evidence is required for QHP eligibility'
+        )
+      else
+        evidence.move_to_pending(
+          comment: 'application_determination',
+          reason: 'American Indian evidence is required for QHP eligibility'
+        )
+      end
+      evidence
+    end
+
+    # Builds social security number evidence if the applicant does not have it and has an encrypted SSN.
+    #   It creates a social security number evidence and moves it to pending state.
+    #
+    # @return [void]
+    def build_social_security_number_evidence
+      return individual_market_eligibility.social_security_number_evidence if individual_market_eligibility.social_security_number_evidence
+      return if encrypted_ssn.blank?
+
+      evidence = individual_market_eligibility.evidences.build(
+        _type: 'Eligibilities::V3::Evidences::SocialSecurityNumberEvidence',
+        title: 'Social Security Number Evidence',
+        key: :social_security_number_evidence
+      )
+
+      evidence.move_to_pending(
+        comment: 'application_determination',
+        reason: 'Social Security Number evidence is required for QHP eligibility'
+      )
+      evidence
+    end
+
+    # Builds evidences for the APTC CSR eligibility.
+    #   It creates evidences for ESI MEC, Income, Local MEC, and Non-ESI MEC.
+    #
+    # @return [void]
+    def build_aptc_csr_evidences
+      build_esi_mec_evi
+      build_income_evi
+      build_local_mec_evi
+      build_non_esi_mec_evi
+    end
+
+    # Builds ESI MEC evidence if the applicant is applying for coverage and does not have ESI MEC evidence.
+    #   It creates an ESI MEC evidence and moves it to pending state.
+    #
+    # @return [void]
+    def build_esi_mec_evi
+      return unless FinancialAssistanceRegistry.feature_enabled?(:esi_mec_determination)
+      return aptc_csr_eligibility.esi_mec_evidence if aptc_csr_eligibility.esi_mec_evidence
+      return unless is_applying_coverage
+
+      evidence = aptc_csr_eligibility.evidences.build(
+        _type: 'FinancialAssistance::Evidences::EsiMecEvidence',
+        title: 'ESI MEC Evidence',
+        key: :esi_mec_evidence
+      )
+      evidence.move_to_pending(
+        comment: 'application_determination',
+        reason: 'ESI MEC evidence is required for APTC eligibility'
+      )
+      evidence
+    end
+
+    # Builds income evidence if the applicant is applying for coverage and does not have income evidence.
+    #   It creates an income evidence and moves it to pending state.
+    #
+    # @return [void]
+    # @note Ideally, we should only create income evidence if the member is in a Tax Household or a Medicaid Household where at least one person in one of the households is applying for coverage.
+    #       However, we are creating income evidence for all members in the Application as we do not store Medicaid Household information to be able to determine this.
+    def build_income_evi
+      return unless FinancialAssistanceRegistry.feature_enabled?(:ifsv_determination)
+      return aptc_csr_eligibility.income_evidence if aptc_csr_eligibility.income_evidence
+
+      evidence = aptc_csr_eligibility.evidences.build(
+        _type: 'FinancialAssistance::Evidences::IncomeEvidence',
+        title: 'Income Evidence',
+        key: :income_evidence
+      )
+      evidence.move_to_pending(
+        comment: 'application_determination',
+        reason: 'Income evidence is required for APTC eligibility'
+      )
+      evidence
+    end
+
+    # Builds local MEC evidence if the applicant is applying for coverage and does not have local MEC evidence.
+    #   It creates a local MEC evidence and moves it to pending state.
+    #
+    # @return [void]
+    def build_local_mec_evi
+      return unless FinancialAssistanceRegistry.feature_enabled?(:mec_check)
+      return aptc_csr_eligibility.local_mec_evidence if aptc_csr_eligibility.local_mec_evidence
+      return unless is_applying_coverage
+
+      evidence = aptc_csr_eligibility.evidences.build(
+        _type: 'FinancialAssistance::Evidences::LocalMecEvidence',
+        title: 'Local MEC Evidence',
+        key: :local_mec_evidence
+      )
+      evidence.move_to_pending(
+        comment: 'application_determination',
+        reason: 'Local MEC evidence is required for APTC eligibility'
+      )
+      evidence
+    end
+
+    # Builds non-ESI MEC evidence if the applicant is applying for coverage and does not have non-ESI MEC evidence.
+    #   It creates a non-ESI MEC evidence and moves it to pending state.
+    #
+    # @return [void]
+    def build_non_esi_mec_evi
+      return unless FinancialAssistanceRegistry.feature_enabled?(:non_esi_mec_determination)
+      return aptc_csr_eligibility.non_esi_mec_evidence if aptc_csr_eligibility.non_esi_mec_evidence
+      return unless is_applying_coverage
+
+      evidence = aptc_csr_eligibility.evidences.build(
+        _type: 'FinancialAssistance::Evidences::NonEsiMecEvidence',
+        title: 'Non-ESI MEC Evidence',
+        key: :non_esi_mec_evidence
+      )
+      evidence.move_to_pending(
+        comment: 'application_determination',
+        reason: 'Non-ESI MEC evidence is required for APTC eligibility'
+      )
+      evidence
+    end
 
     # Adds to errors collection if duplicate eligibilities are found
     # @return [void]

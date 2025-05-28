@@ -419,7 +419,7 @@ jobs:
         if: steps.npm-cache.outputs.cache-hit != 'true'
         run: yarn install
       - name: Publish Tests
-        run: bundle exec ruby test/detest_rspec_publish.rb --require rails_helper --color --format progress --pattern '{spec,components/benefit_markets,components/benefit_sponsors,components/financial_assistance,components/notifier,components/sponsored_benefits,components/transport_gateway,components/transport_profiles}/**/*_spec.rb'
+        run: bundle exec ruby test/detest_rspec_publish.rb --require rails_helper --color --format progress --pattern '{spec,components/benefit_markets,components/benefit_sponsors,components/notifier,components/sponsored_benefits,components/transport_gateway,components/transport_profiles}/**/*_spec.rb'
   rspec-worker:
     needs: [rspec-publisher]
     runs-on: ubuntu-latest

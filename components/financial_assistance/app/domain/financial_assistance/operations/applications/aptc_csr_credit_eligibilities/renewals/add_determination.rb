@@ -26,12 +26,33 @@ module FinancialAssistance
               persisted_application = yield find_application(application_entity)
               # application_event_result = yield publish_application_event(persisted_application)
               _family_result        = yield create_or_update_family(application)
+              _evidences_result     = yield create_eligibilities_evidences(application)
               result = yield request_determination_notice(persisted_application)
 
               Success(result)
             end
 
             private
+
+            # Creates or updates the eligibiliites & evidences associated with the application when the QHP application feature is enabled.
+            #
+            # @param application [FinancialAssistance::Application] The application to create or update the evidences for
+            # @return [Dry::Monads::Result]
+            def create_eligibilities_evidences(application)
+              return Success('Update not required for evidences') unless qhp_application_feature_enabled?
+
+              application.build_eligibilities_evidences
+
+              if application.valid?
+                application.save!
+                Success(application)
+              else
+                Failure("Unable to build evidences for application with hbx_id: #{application.hbx_id} with errors: #{application.errors.full_messages}")
+              end
+            rescue StandardError => e
+              Rails.logger.error("Unable to build evidences for application with hbx_id: #{application.hbx_id} with errors: #{e.message}, backtrace: #{e.backtrace.join("\n")}")
+              Failure("Unable to build evidences for application with hbx_id: #{application.hbx_id} with errors: #{e.message}")
+            end
 
             # Creates or updates the family associated with the application when the QHP application feature is enabled.
             #

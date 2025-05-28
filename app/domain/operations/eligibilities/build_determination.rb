@@ -14,7 +14,6 @@ module Operations
     # Build determination for subjects passed with effective date
     class BuildDetermination
       include Dry::Monads[:do, :result]
-      include ::ResourceRegistryHelper
 
       # @param [Hash] opts Options to build determination
       # @option opts [Array<GlobalID>] :subjects required

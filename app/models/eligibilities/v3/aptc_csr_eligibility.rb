@@ -50,13 +50,7 @@ module Eligibilities
           'income_evidence' => income_evidence,
           'esi_evidence' => esi_mec_evidence,
           'non_esi_evidence' => non_esi_mec_evidence,
-          'local_mec_evidence' => local_mec_evidence,
-          'immigration_status' => immigration_evidence,
-          'citizenship' => citizenship_evidence,
-          'american_indian_status' => american_indian_evidence,
-          'social_security_number' => social_security_number_evidence,
-          'residency' => residency_evidence,
-          'alive_status' => alive_evidence
+          'local_mec_evidence' => local_mec_evidence
         }[evidence_type]
       end
 
@@ -86,48 +80,6 @@ module Eligibilities
       # @return [FinancialAssistance::Evidences::NonEsiMecEvidence, nil] The non-ESI MEC evidence or nil if not found
       def non_esi_mec_evidence
         evidences.where(_type: 'FinancialAssistance::Evidences::NonEsiMecEvidence').first
-      end
-
-      # Retrieves the immigration evidence record for this eligibility
-      #
-      # @return [Eligibilities::V3::Evidences::ImmigrationEvidence, nil] The immigration evidence or nil if not found
-      def immigration_evidence
-        evidences.where(_type: 'Eligibilities::V3::Evidences::ImmigrationEvidence').first
-      end
-
-      # Retrieves the citizenship evidence record for this eligibility
-      #
-      # @return [Eligibilities::V3::Evidences::CitizenshipEvidence, nil] The citizenship evidence or nil if not found
-      def citizenship_evidence
-        evidences.where(_type: 'Eligibilities::V3::Evidences::CitizenshipEvidence').first
-      end
-
-      # Retrieves the American Indian evidence record for this eligibility
-      #
-      # @return [Eligibilities::V3::Evidences::AmericanIndianEvidence, nil] The American Indian evidence or nil if not found
-      def american_indian_evidence
-        evidences.where(_type: 'Eligibilities::V3::Evidences::AmericanIndianEvidence').first
-      end
-
-      # Retrieves the social security number evidence record for this eligibility
-      #
-      # @return [Eligibilities::V3::Evidences::SocialSecurityNumberEvidence, nil] The social security number evidence or nil if not found
-      def social_security_number_evidence
-        evidences.where(_type: 'Eligibilities::V3::Evidences::SocialSecurityNumberEvidence').first
-      end
-
-      # Retrieves the residency evidence record for this eligibility
-      #
-      # @return [Eligibilities::V3::Evidences::ResidencyEvidence, nil] The residency evidence or nil if not found
-      def residency_evidence
-        evidences.where(_type: 'Eligibilities::V3::Evidences::ResidencyEvidence').first
-      end
-
-      # Retrieves the alive evidence record for this eligibility
-      #
-      # @return [Eligibilities::V3::Evidences::AliveEvidence, nil] The alive evidence or nil if not found
-      def alive_evidence
-        evidences.where(_type: 'Eligibilities::V3::Evidences::AliveEvidence').first
       end
 
       private

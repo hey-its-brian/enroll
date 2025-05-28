@@ -25,6 +25,27 @@ module Eligibilities
 
     accepts_nested_attributes_for :evidence_states, :grants
 
+    # Returns CSR grant for the eligibility state
+    #
+    # @return [Eligibilities::Grant] CSR grant if exists, otherwise nil
+    def csr_grant
+      grants.where(key: 'CsrAdjustmentGrant').first
+    end
+
+    # Returns Magi Medicaid grant for the eligibility state
+    #
+    # @return [Eligibilities::Grant] Magi Medicaid grant if exists, otherwise nil
+    def magi_medicaid_grant
+      grants.where(key: 'MagiMedicaidGrant').first
+    end
+
+    # Returns Qualified Health Plan (QHP) grant for the eligibility state
+    #
+    # @return [Eligibilities::Grant] Qualified Health Plan (QHP) grant if exists, otherwise nil
+    def qhp_grant
+      grants.where(key: 'QhpGrant').first
+    end
+
     def cumulative_grouped_status
       return :action_needed if evidence_states.any?(&:is_action_needed?)
       return :review if evidence_states.any? { |es| es.grouped_status == :review }
