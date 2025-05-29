@@ -472,6 +472,13 @@ class HbxProfilePolicy < ApplicationPolicy
     can_extend_open_enrollment?
   end
 
+  # Checks if the logged user can view raw family information
+  #
+  # @return [Boolean] true if the user can view raw family information, false otherwise
+  def can_view_raw_family_information?
+    can_extend_open_enrollment?
+  end
+
   private
 
   def user_hbx_staff_role

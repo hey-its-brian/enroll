@@ -3,6 +3,7 @@
 module FinancialAssistance
   # IAP application controller
   class ApplicationsController < FinancialAssistance::ApplicationController
+    include ::ResourceRegistryHelper
 
     before_action :set_current_person
     before_action :set_family
@@ -101,6 +102,9 @@ module FinancialAssistance
 
     def preferences
       authorize @application, :preferences?
+
+      # Triggers the creation of IVL eligibility, related 3.0 evidences, and triggers events to call respective hubs when qhp_application feature is enabled.
+      ::Operations::Eligibilities::V3::IndividualMarket::CreateAndCallHubs.new.call(application: @application) if qhp_application_feature_enabled?
 
       save_faa_bookmark(request.original_url)
       respond_to :html

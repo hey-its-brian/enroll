@@ -27,7 +27,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
   let(:applying_coverage) { true }
   let(:citizen_status) { 'us_citizen' }
 
-  describe '#build_evidences' do
+  describe '#build_aptc_csr_evidences & #build_individual_market_evidences' do
     context 'when eligibilities exists' do
       before :each do
         aptc_csr_eligibility
@@ -35,13 +35,15 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
       end
 
       it 'executes the methods without raising errors' do
-        expect{ applicant.build_evidences }.not_to raise_error
+        expect { applicant.send(:build_aptc_csr_evidences) }.not_to raise_error
+        expect { applicant.send(:build_individual_market_evidences) }.not_to raise_error
       end
     end
 
     context 'when no eligibilities exist' do
       it 'raises an error' do
-        expect { applicant.build_evidences }.to raise_error(NoMethodError, /undefined method `esi_mec_evidence' for nil:NilClass/)
+        expect { applicant.send(:build_aptc_csr_evidences) }.to raise_error(NoMethodError, /undefined method `esi_mec_evidence' for nil:NilClass/)
+        expect { applicant.send(:build_individual_market_evidences) }.to raise_error(NoMethodError, /undefined method `citizenship_evidence' for nil:NilClass/)
       end
     end
   end
@@ -613,33 +615,22 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
     end
   end
 
-  describe '#build_eligibilities_evidences' do
+  describe '#build_aptc_eligibilities_evidences' do
     context 'when aptc_csr_eligibility is present' do
       before do
         aptc_csr_eligibility
-        applicant.build_eligibilities_evidences
+        applicant.build_aptc_eligibilities_evidences
       end
 
       it 'builds the evidences for aptc_csr_eligibility' do
         expect(applicant.aptc_csr_eligibility).to eq(aptc_csr_eligibility)
         expect(applicant.aptc_csr_eligibility.evidences).not_to be_empty
       end
-
-      it 'builds individual_market_eligibility with evidences' do
-        expect(applicant.individual_market_eligibility).to be_present
-        expect(applicant.individual_market_eligibility.evidences).not_to be_empty
-      end
     end
 
-    context 'when individual_market_eligibility is present' do
+    context 'when aptc_csr_eligibility is not present' do
       before do
-        individual_market_eligibility
-        applicant.build_eligibilities_evidences
-      end
-
-      it 'builds the evidences for individual_market_eligibility' do
-        expect(applicant.individual_market_eligibility).to eq(individual_market_eligibility)
-        expect(applicant.individual_market_eligibility.evidences).not_to be_empty
+        applicant.build_aptc_eligibilities_evidences
       end
 
       it 'builds aptc_csr_eligibility with evidences' do
@@ -647,15 +638,27 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
         expect(applicant.aptc_csr_eligibility.evidences).not_to be_empty
       end
     end
+  end
 
-    context 'when no eligibilities are present' do
+  describe '#build_ivl_eligibility_with_evidences' do
+    context 'when individual_market_eligibility is present' do
       before do
-        applicant.build_eligibilities_evidences
+        individual_market_eligibility
+        applicant.build_ivl_eligibility_with_evidences
       end
 
-      it 'creates eligibilities and evidences' do
-        expect(applicant.aptc_csr_eligibility).to be_present
-        expect(applicant.aptc_csr_eligibility.evidences).not_to be_empty
+      it 'builds the evidences for individual_market_eligibility' do
+        expect(applicant.individual_market_eligibility).to eq(individual_market_eligibility)
+        expect(applicant.individual_market_eligibility.evidences).not_to be_empty
+      end
+    end
+
+    context 'when individual_market_eligibility is not present' do
+      before do
+        applicant.build_ivl_eligibility_with_evidences
+      end
+
+      it 'builds individual_market_eligibility with evidences' do
         expect(applicant.individual_market_eligibility).to be_present
         expect(applicant.individual_market_eligibility.evidences).not_to be_empty
       end

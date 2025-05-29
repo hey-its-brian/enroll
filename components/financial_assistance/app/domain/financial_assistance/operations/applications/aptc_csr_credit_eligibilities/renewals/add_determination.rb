@@ -25,8 +25,8 @@ module FinancialAssistance
               yield update_application(application, application_entity)
               persisted_application = yield find_application(application_entity)
               # application_event_result = yield publish_application_event(persisted_application)
+              _evidences_result     = yield create_aptc_eligibilities_evidences(application)
               _family_result        = yield create_or_update_family(application)
-              _evidences_result     = yield create_eligibilities_evidences(application)
               result = yield request_determination_notice(persisted_application)
 
               Success(result)
@@ -34,14 +34,14 @@ module FinancialAssistance
 
             private
 
-            # Creates or updates the eligibiliites & evidences associated with the application when the QHP application feature is enabled.
+            # Creates the APTC eligibility & related evidences associated with the application when the QHP application feature is enabled.
             #
             # @param application [FinancialAssistance::Application] The application to create or update the evidences for
             # @return [Dry::Monads::Result]
-            def create_eligibilities_evidences(application)
+            def create_aptc_eligibilities_evidences(application)
               return Success('Update not required for evidences') unless qhp_application_feature_enabled?
 
-              application.build_eligibilities_evidences
+              application.build_aptc_eligibilities_evidences
 
               if application.valid?
                 application.save!

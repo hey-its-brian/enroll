@@ -873,7 +873,7 @@ class Exchanges::HbxProfilesController < ApplicationController
 
   # GET Endpoint to fetch family information for presenting the information in the UI.
   # This endpoint is used to display family information for QAs to review the creates and updates made to the Family, Family Members, and People.
-  # The endpoint is accessible only to users with the `can_view_dry_run_dashboard?` permission.
+  # The endpoint is accessible only to users with the `can_view_raw_family_information?` permission.
   #
   # @param [String] id The ID of the family or person to fetch information for.
   # @return [JSON] A JSON object containing family and family member information.
@@ -881,12 +881,12 @@ class Exchanges::HbxProfilesController < ApplicationController
   #   GET /exchanges/hbx_profiles/raw_family_information?id=12345
   # @note This endpoint is intended for internal use by QAs in the lower environments to verify the correctness of the family data.
   def raw_family_information
-    authorize HbxProfile, :can_view_dry_run_dashboard?
+    authorize HbxProfile, :can_view_raw_family_information?
 
     if EnrollRegistry.feature_enabled?(:display_raw_family_data)
       family = fetch_family(params[:id])
       if family.present?
-        family_info = family.attributes.slice(:_id, :hbx_assigned_id, :family_members)
+        family_info = family.attributes.slice(:_id, :hbx_assigned_id, :family_members, :eligibility_determination, :tax_household_groups)
         family_members_info = family.family_members.map do |family_member|
           fm_params = family_member.attributes
           person = family_member.person
@@ -900,7 +900,9 @@ class Exchanges::HbxProfilesController < ApplicationController
             :tracking_version,
             :cv3_payload,
             :crm_notifiction_needed,
-            :consumer_role
+            :consumer_role,
+            :is_active,
+            :documents
           )
           role = person.consumer_role
           consumer_role_info = role.attributes.except(

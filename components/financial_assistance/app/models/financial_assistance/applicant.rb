@@ -1634,24 +1634,24 @@ module FinancialAssistance
       eligibilities.where(_type: 'Eligibilities::V3::IndividualMarketEligibility').first
     end
 
-    # Method to build eligibilities and evidences for the applicant.
-    #   It creates APTC/CSR Eligibility and Individual Market Eligibility if they do not exist.
-    #   It calls the methods to build evidences for APTC/CSR Eligibility and Individual Market Eligibility.
+    # Method to build Individual Market Eligibility and evidences for the applicant.
+    #   It creates Individual Market Eligibility if it does not exist.
+    #   It calls the method to build evidences for Individual Market Eligibility if they do not exist.
     #
     # @return [void]
-    def build_eligibilities_evidences
-      build_aptc_csr_eligibility unless aptc_csr_eligibility
+    def build_ivl_eligibility_with_evidences
       build_individual_market_eligibility unless individual_market_eligibility
-      build_evidences
+      build_individual_market_evidences
     end
 
-    # Method to build evidences for the applicant.
-    #   It creates evidences for APTC CSR Eligibility and Individual Market Eligibility.
+    # Method to build APTC/CSR Eligibility and evidences for the applicant.
+    #   It creates APTC/CSR Eligibility if it does not exist.
+    #   It calls the method to build evidences for APTC/CSR Eligibility if they do not exist.
     #
     # @return [void]
-    def build_evidences
+    def build_aptc_eligibilities_evidences
+      build_aptc_csr_eligibility unless aptc_csr_eligibility
       build_aptc_csr_evidences
-      build_individual_market_evidences
     end
 
     # Builds a new APTC/CSR eligibility for the applicant.

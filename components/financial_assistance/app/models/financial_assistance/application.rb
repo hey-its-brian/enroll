@@ -1523,8 +1523,18 @@ module FinancialAssistance
       self.save!
     end
 
-    def build_eligibilities_evidences
-      applicants.each(&:build_eligibilities_evidences)
+    # Builds IVL eligibility with evidences for each applicant.
+    #
+    # @return [void]
+    def build_ivl_eligibility_with_evidences
+      applicants.each(&:build_ivl_eligibility_with_evidences)
+    end
+
+    # Builds APTC eligibility evidences for each applicant.
+    #
+    # @return [void]
+    def build_aptc_eligibilities_evidences
+      applicants.each(&:build_aptc_eligibilities_evidences)
     end
 
     private
