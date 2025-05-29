@@ -11,7 +11,8 @@ module Operations
       QUERY_MAP = {
         'families_with_id' => ::Family.only(:_id),
         'applications_with_aasm_state_and_hbx_ids' => ::FinancialAssistance::Application.only(:hbx_id, :aasm_state),
-        'latest_determined_fa_application_with_ids' => ::Operations::AsyncMigrations::Handlers::Families::FetchLatestDeterminedFAApplicationHbxIds.new
+        'latest_determined_fa_application_with_ids' => ::Operations::AsyncMigrations::Handlers::Families::FetchLatestDeterminedFAApplicationHbxIds.new,
+        'families_without_determined_fa_applications_for_current_year' => ::Operations::AsyncMigrations::Handlers::Families::FetchFamiliesWithoutDeterminedFAApplication
       }.freeze
 
       # Mapping of event handler names to their corresponding classes.
@@ -21,7 +22,8 @@ module Operations
         '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility,
         '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally,
         'migrate_fa_evidences' => ::Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvidence,
-        'create_financial_assistance_application' => ::Operations::AsyncMigrations::Handlers::AptcCsrEligibility::CreateApplication
+        'create_financial_assistance_application' => ::Operations::AsyncMigrations::Handlers::AptcCsrEligibility::CreateApplication,
+        'create_qhp_application' => ::Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::CreateApplication
       }.freeze
     end
   end
