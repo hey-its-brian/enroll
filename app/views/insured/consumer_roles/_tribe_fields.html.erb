@@ -127,7 +127,7 @@
 
       <div class="row row-form-wrapper no-buffer" id="tribal-state-container">
         <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 tribal-state">
-        <label><%= l10n("insured.tribal_state") %></label>
+        <label class="required"><%= l10n("insured.tribal_state") %></label>
         </div>
         <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 form-group form-group-lg no-pd border_bottom_zero">
           <%= f.select(:tribal_state, options_for_select(State::STATE_IDS, selected: f.object.tribal_state), {include_blank: "SELECT STATE"}, id: "tribal-state")  %>

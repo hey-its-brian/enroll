@@ -5,6 +5,7 @@ require 'rails_helper'
 RSpec.describe IndividualMarket::Demographics, type: :model do
   let(:applicant)     { FactoryBot.build(:individual_market_applicant, :dependent) }
   let(:demographics)  { FactoryBot.build(:individual_market_demographics, applicant: applicant) }
+  let(:encrypted_ssn) { SymmetricEncryption.encrypt('123456789') }
 
   describe 'fields' do
     it { is_expected.to have_field(:encrypted_ssn).of_type(String) }
@@ -37,7 +38,7 @@ RSpec.describe IndividualMarket::Demographics, type: :model do
 
         before do
           demographics.no_ssn = true
-          demographics.encrypted_ssn = '123-45-6789'
+          demographics.encrypted_ssn = encrypted_ssn
         end
 
         it 'adds an error' do
@@ -81,7 +82,7 @@ RSpec.describe IndividualMarket::Demographics, type: :model do
 
         before do
           demographics.no_ssn = false
-          demographics.encrypted_ssn = '123-45-6789'
+          demographics.encrypted_ssn = encrypted_ssn
         end
 
         it 'is valid' do
@@ -105,7 +106,7 @@ RSpec.describe IndividualMarket::Demographics, type: :model do
       context 'when no_ssn is false' do
         before do
           demographics.no_ssn = false
-          demographics.encrypted_ssn = '123-45-6789'
+          demographics.encrypted_ssn = encrypted_ssn
         end
 
         it 'is valid' do
@@ -116,7 +117,7 @@ RSpec.describe IndividualMarket::Demographics, type: :model do
       context 'when no_ssn is nil' do
         before do
           demographics.no_ssn = nil
-          demographics.encrypted_ssn = '123-45-6789'
+          demographics.encrypted_ssn = encrypted_ssn
         end
 
         it 'is valid' do

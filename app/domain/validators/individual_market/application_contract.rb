@@ -29,7 +29,7 @@ module Validators
     #   end
     #
     # @see Operations::Families::Find
-    # @see Validators::IndividualMarket::ApplicantContract
+    # @see Validators::IndividualMarket::ApplicantCandidateContract
     class ApplicationContract < Dry::Validation::Contract
 
       params do
@@ -50,7 +50,7 @@ module Validators
       rule(:applicants).each do
         if key? && value
           if value.is_a?(Hash)
-            result = ::Validators::IndividualMarket::ApplicantContract.new.call(value)
+            result = ::Validators::IndividualMarket::ApplicantCandidateContract.new.call(value)
             key.failure(text: "invalid applicant", error: result.errors.to_h) if result&.failure?
           else
             key.failure(text: "invalid applicant. Expected a hash.")

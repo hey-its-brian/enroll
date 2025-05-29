@@ -18,6 +18,27 @@ module IndividualMarket
   class Demographics
     include Mongoid::Document
     include Mongoid::Timestamps
+    include Config::AcaModelConcern
+    include UnsetableSparseFields
+    include Ssn
+
+    CITIZEN_STATUS_KINDS = %w[
+      us_citizen
+      naturalized_citizen
+      alien_lawfully_present
+      lawful_permanent_resident
+      undocumented_immigrant
+      not_lawfully_present_in_us
+      non_native_not_lawfully_present_in_us
+      ssn_pass_citizenship_fails_with_SSA
+      non_native_citizen
+    ].freeze
+
+    ACA_ELIGIBLE_CITIZEN_STATUS_KINDS = %w[
+      us_citizen
+      naturalized_citizen
+      indian_tribe_member
+    ].freeze
 
     CITIZEN_STATUS_KINDS = %w[
       us_citizen
@@ -104,6 +125,46 @@ module IndividualMarket
     validates :citizen_status,
               allow_blank: true,
               inclusion: { in: CITIZEN_STATUS_KINDS + ACA_ELIGIBLE_CITIZEN_STATUS_KINDS, message: "%{value} is not a valid citizen status" }
+
+    def us_citizen=(val)
+      @us_citizen = (val.to_s == "true")
+      @naturalized_citizen = false if val.to_s == "false"
+    end
+
+    def naturalized_citizen=(val)
+      @naturalized_citizen = (val.to_s == "true")
+    end
+
+    def eligible_immigration_status=(val)
+      @eligible_immigration_status = (val.to_s == "true")
+    end
+
+    def us_citizen
+      return @us_citizen unless @us_citizen.nil?
+      return nil if citizen_status.blank?
+      @us_citizen ||= ::ConsumerRole::US_CITIZEN_STATUS_KINDS.include?(citizen_status)
+    end
+
+    def naturalized_citizen
+      return @naturalized_citizen unless @naturalized_citizen.nil?
+      return nil if citizen_status.blank?
+      @naturalized_citizen ||= (::ConsumerRole::NATURALIZED_CITIZEN_STATUS == citizen_status)
+    end
+
+    def eligible_immigration_status
+      return @eligible_immigration_status unless @eligible_immigration_status.nil?
+      return nil if us_citizen.nil?
+      return nil if @us_citizen
+      return nil if citizen_status.blank?
+      @eligible_immigration_status ||= (::ConsumerRole::ALIEN_LAWFULLY_PRESENT_STATUS == citizen_status)
+    end
+
+    def tribal_names
+      return @tribal_names unless @tribal_names.nil?
+      return nil if tribe_codes.blank?
+      tribes = FinancialAssistanceRegistry[:featured_tribes_selection].setting(:featured_tribes).item&.to_h&.invert
+      @tribal_names ||= tribe_codes.map{|code| tribes[code]}.join(", ")
+    end
 
     # Validation for the presence of either no_ssn or encrypted_ssn
     validate :no_ssn_or_encrypted_ssn

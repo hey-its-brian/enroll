@@ -159,4 +159,26 @@ module NavigationHelper
     current_step_index = steps.keys.find_index(action_name)
     { breadcrumbs: steps.values[0..current_step_index], previous_step: steps.values[current_step_index - 1] }
   end
+
+  def individual_market_nav_options(step)
+    nav = {}
+
+    nav[:nav_options] = [
+      {step: 1, page_key: :family_info, display_label: l10n('family_info')},
+      {step: 2, page_key: :voter_registration, display_label: l10n('qhp_application.nav.voter_registration')},
+      {step: 3, page_key: :contact_preferences, display_label: l10n('qhp_application.nav.preferences_label')},
+      {step: 4, page_key: :review, display_label: l10n('qhp_application.nav.review_label')},
+      {step: 5, page_key: :attest, display_label: l10n('qhp_application.nav.attest')},
+      {step: 6, page_key: :results, display_label: l10n('qhp_application.nav.results')}
+    ]
+    nav[:step] = step
+    nav[:title] = l10n("qhp_application.nav_header")
+
+    nav[:show_help_button] = true
+    nav[:show_exit_button] = true
+    nav[:show_previous_button] = false
+    nav[:show_account_button] = EnrollRegistry.feature_enabled?(:back_to_account_all_shop)
+    nav[:back_to_account_flag] = true
+    nav
+  end
 end

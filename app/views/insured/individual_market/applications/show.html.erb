@@ -1,0 +1,39 @@
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      <h1>Application Details</h1>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Application Information</h2>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <dl class="row">
+                <dt class="col-sm-4">Application ID:</dt>
+                <dd class="col-sm-8"><%= @application.id %></dd>
+
+                <dt class="col-sm-4">Assistance Year:</dt>
+                <dd class="col-sm-8"><%= @application.assistance_year %></dd>
+
+                <dt class="col-sm-4">Origin:</dt>
+                <dd class="col-sm-8"><%= @application.origin %></dd>
+
+                <dt class="col-sm-4">Generation Reason:</dt>
+                <dd class="col-sm-8"><%= @application.generation_reason %></dd>
+
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+      <% @application.applicants.each do |applicant| %>
+        <div class="card my-4">
+          <%= applicant.inspect %>
+        </div>
+      <% end %>
+
+    </div>
+  </div>
+</div>

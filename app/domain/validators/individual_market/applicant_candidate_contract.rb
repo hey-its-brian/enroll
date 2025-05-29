@@ -3,16 +3,28 @@
 module Validators
   module IndividualMarket
     # Contract for validating Individual Market Applicant attributes
-    class ApplicantContract < Dry::Validation::Contract
+    class ApplicantCandidateContract < Dry::Validation::Contract
+
       params do
-        required(:family_member_id).filled(Types::Bson)
+        optional(:family_member_id).maybe(Types::Bson)
         required(:is_primary_applicant).filled(:bool)
         required(:address_same_as_primary).filled(:bool)
         required(:is_applying_coverage).filled(:bool)
         optional(:is_homeless).maybe(:bool)
         optional(:is_temporarily_out_of_state).maybe(:bool)
         optional(:age_off_excluded).maybe(:bool)
-        optional(:addresses).maybe(:array)
+        optional(:addresses).array(:hash) do
+          required(:kind).filled(:string)
+          required(:address_1).filled(:string)
+          optional(:address_2).maybe(:string)
+          optional(:address_3).maybe(:string)
+          required(:city).filled(:string)
+          optional(:county).maybe(:string)
+          required(:state).filled(:string)
+          required(:zip).filled(:string)
+          optional(:country_name).maybe(:string)
+          optional(:quadrant).maybe(:string)
+        end
 
         required(:person_name).hash do
           required(:given_name).filled(:string)
@@ -26,6 +38,7 @@ module Validators
         required(:demographics).hash do
           optional(:encrypted_ssn).maybe(:string)
           optional(:no_ssn).maybe(:bool)
+          optional(:ssn).maybe(:string)
           required(:dob).filled(:date)
           required(:gender).filled(:string)
           optional(:ethnicity).array(:string)

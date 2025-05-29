@@ -55,6 +55,10 @@ module Locations
               }
     validate :county_check
 
+    # Scopes
+    scope :mailing, -> { where(kind: 'mailing') }
+    scope :home, -> { where(kind: 'home') }
+
     def county_check
       return unless EnrollRegistry.feature_enabled?(:display_county)
       return if self.state&.downcase != EnrollRegistry[:enroll_app].setting(:state_abbreviation).item.downcase

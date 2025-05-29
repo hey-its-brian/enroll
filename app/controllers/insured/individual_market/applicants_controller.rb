@@ -1,0 +1,247 @@
+# frozen_string_literal: true
+
+module Insured
+  module IndividualMarket
+    # Controller for managing applicants in the individual market
+    # pundit policies use QhpApplicationPolicy for applications and ApplicantPolicy for applicants
+    class ApplicantsController < ApplicationController
+      before_action :verify_qhp_application_enabled
+      before_action :set_current_person
+      before_action :set_family
+      before_action :find_application
+      before_action :find_applicant, only: [:edit, :update, :destroy, :show]
+      before_action :set_consumer_bookmark_url, except: [:new]
+      before_action :enable_bs4_layout
+
+      layout "progress"
+
+      include ::ResourceRegistryHelper
+      include ::ApplicationHelper
+
+      def index
+        authorize @application, :index?
+
+        respond_to :html
+      end
+
+      def show
+        authorize @applicant, :show?
+
+        respond_to :html
+      end
+
+      def new
+        authorize @application, :new_applicant?
+        @applicant = ::Forms::IndividualMarket::Applicant.new(
+          application_id: @application.id,
+          is_primary_applicant: @application.applicants.blank?
+        )
+        @person_name_form = ::Forms::IndividualMarket::PersonNameForm.new
+        @demographics_form = ::Forms::IndividualMarket::DemographicsForm.new
+        @immigration_information_form = ::Forms::IndividualMarket::ImmigrationInformationForm.new
+        @address_forms = [::Forms::Locations::AddressForm.new]
+        respond_to do |format|
+          format.html { render 'new', layout: false}
+        end
+      end
+
+      def create
+        authorize @application, :new_applicant?
+        @applicant = ::Forms::IndividualMarket::Applicant.new(applicant_params.merge(application_id: params[:application_id]))
+
+        success, result = @applicant.save
+
+        respond_to do |format|
+          format.html do
+            if success
+              redirect_to insured_individual_market_application_applicants_path(@application)
+            else
+              flash.now[:error] = result
+              redirect_to insured_individual_market_application_applicants_path(@application), :flash => { :error => "Failed to create applicant due to response: #{result}" }
+            end
+          end
+
+          format.js
+        end
+      end
+
+      def edit
+        authorize @application, :index?
+
+        # Load existing eligibilities if present
+        @applicant.eligibilities ||= @applicant.initialize_eligibilities
+
+        respond_to do |format|
+          format.html { render 'new', layout: false}
+        end
+      end
+
+      def update
+        authorize @applicant, :edit?
+        @applicant = ::Forms::IndividualMarket::Applicant.new(base_attributes)
+        @applicant.person_name_form = ::Forms::IndividualMarket::PersonNameForm.new(applicant_params[:person_name_attributes])
+        @applicant.demographics_form = ::Forms::IndividualMarket::DemographicsForm.new(applicant_params[:demographics_attributes])
+        @applicant.immigration_form = ::Forms::IndividualMarket::ImmigrationInformationForm.new(applicant_params[:immigration_information_attributes])
+        @applicant.address_forms = applicant_params[:addresses_attributes]&.values&.map do |addr_attrs|
+          ::Forms::Locations::AddressForm.new(addr_attrs)
+        end || []
+
+        success, result = @applicant.save
+
+        respond_to do |format|
+          format.html do
+            if success
+              redirect_to insured_individual_market_application_applicants_path(@application)
+            else
+              flash.now[:error] = result
+              redirect_to insured_individual_market_application_applicants_path(@application), :flash => { :error => "Failed to update applicant due to #{result}" }
+            end
+          end
+        end
+      end
+
+      def destroy
+        authorize @applicant, :destroy?
+        ::Operations::IndividualMarket::Applicant::Destroy.new.call(@applicant)
+        redirect_to insured_individual_market_application_applicants_path(@application)
+
+        respond_to :js
+      end
+
+      def show_ssn
+        authorize @application, :can_show_ssn?
+        @applicant = @application.applicants.where(id: params[:id]).first
+        if @applicant
+          payload = number_to_ssn(@applicant.demographics.ssn)
+          render json: { payload: payload, status: 200 }
+        else
+          render json: { message: "Unauthorized" }, status: 401
+        end
+      rescue Pundit::NotAuthorizedError, Mongoid::Errors::DocumentNotFound
+        render json: { message: "Unauthorized" }, status: 401
+      end
+
+      private
+
+      def verify_qhp_application_enabled
+        return render(file: 'public/404.html', status: 404) unless EnrollRegistry.feature_enabled?(:qhp_application)
+        true
+      end
+
+      def find_application
+        @application = if current_user.try(:person).try(:agent?)
+                         ::IndividualMarket::Application.find(params[:application_id])
+                       else
+                         ::IndividualMarket::Application.find_by(
+                           id: params[:application_id],
+                           family_id: get_current_person&.primary_family&.id
+                         )
+                       end
+      end
+
+      def find_applicant
+        @applicant = @application.applicants.find(params[:id])
+      end
+
+      def set_family
+        @family = @person.primary_family
+      end
+
+      def enable_bs4_layout
+        @bs4 = true if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+      end
+
+      def base_attributes
+        {
+          id: params[:id],
+          application_id: params[:application_id],
+          family_member_id: applicant_params[:family_member_id],
+          is_primary_applicant: applicant_params[:is_primary_applicant],
+          is_dependent: applicant_params[:is_dependent],
+          is_applying_coverage: applicant_params[:is_applying_coverage],
+          is_homeless: applicant_params[:is_homeless],
+          age_off_excluded: applicant_params[:age_off_excluded],
+          address_same_as_primary: applicant_params[:address_same_as_primary],
+          relationship: applicant_params[:relationship],
+          eligibilities: applicant_params[:eligibilities]
+        }
+      end
+
+      def applicant_params
+        params.require(:applicant).permit(
+          :id,
+          :family_member_id,
+          :is_primary_applicant,
+          :is_dependent,
+          :is_applying_coverage,
+          :is_homeless,
+          :age_off_excluded,
+          :address_same_as_primary,
+          :relationship,
+          eligibilities: [:key, :title],
+          person_name_attributes: [
+            :id,
+            :given_name,
+            :middle_name,
+            :family_name,
+            :name_pfx,
+            :name_sfx,
+            :alternate_name
+          ],
+          demographics_attributes: [
+            :id,
+            :encrypted_ssn,
+            :ssn,
+            :no_ssn,
+            :dob,
+            :gender,
+            :us_citizen,
+            :naturalized_citizen,
+            :eligible_immigration_status,
+            :indian_tribe_member,
+            :tribal_id,
+            :tribal_name,
+            :tribal_state,
+            :language_code,
+            :citizen_status,
+            :is_incarcerated,
+            :is_applying_coverage,
+            { ethnicity: [] },
+            { tribe_codes: [] }
+          ],
+          immigration_information_attributes: [
+            :id,
+            :subject,
+            :alien_number,
+            :i94_number,
+            :visa_number,
+            :passport_number,
+            :sevis_id,
+            :naturalization_number,
+            :receipt_number,
+            :citizenship_number,
+            :card_number,
+            :country_of_citizenship,
+            :expiration_date,
+            :issuing_country,
+            :description
+          ],
+          addresses_attributes: [
+            :id,
+            :kind,
+            :address_1,
+            :address_2,
+            :address_3,
+            :city,
+            :county,
+            :state,
+            :zip,
+            :country_name,
+            :quadrant,
+            :_destroy
+          ]
+        )
+      end
+    end
+  end
+end

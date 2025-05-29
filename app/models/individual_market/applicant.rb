@@ -15,6 +15,7 @@ module IndividualMarket
   class Applicant
     include Mongoid::Document
     include Mongoid::Timestamps
+    include Config::AcaModelConcern
     include Eligibilities::Visitors::Visitable
 
     # @!attribute application
@@ -118,9 +119,36 @@ module IndividualMarket
       return nil unless primary_applicant
 
       @relationship = application.relationships.where(
-        source_id: primary_applicant.id,
-        relative_id: id
+        relative_id: primary_applicant.id,
+        source_id: id
       )&.first&.kind
+    end
+
+    # Returns the first mailing address of the applicant.
+    #
+    # @return [Address, nil] the first mailing address if one exists, otherwise nil
+    def mailing_address
+      addresses.mailing.first
+    end
+
+    # Returns the first home address of the applicant.
+    #
+    # @return [Address, nil] the first home address if one exists, otherwise nil
+    def home_address
+      addresses.home.first
+    end
+
+    def is_state_resident?
+      return true if is_homeless?
+
+      address_to_use = addresses.collect(&:kind).include?('home') ? 'home' : 'mailing'
+      addresses.each{|address| return true if address.kind == address_to_use && address.state == aca_state_abbreviation}
+      false
+    end
+
+    # Defines the specific policy class for the applicant model
+    def policy_class
+      ApplicantPolicy
     end
 
     # Visitor pattern method to accept a visitor

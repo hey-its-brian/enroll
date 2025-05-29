@@ -78,7 +78,7 @@ module Operations
         # @return [void]
         def build_eligibilities(applicant, eligibilities)
           eligibilities.each do |eligibility|
-            eligibility_class = ELIGIBILITY_CLASSES[eligibility[:key]]
+            eligibility_class = ::Eligibilities::V3::IndividualMarketEligibility::ELIGIBILITY_CLASSES[eligibility[:key]]
             next unless eligibility_class
 
             applicant.eligibilities.build(eligibility.merge(_type: eligibility_class))

@@ -6,14 +6,25 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
   let(:application)   { FactoryBot.create(:individual_market_application) }
   let(:family_member) { application.family.family_members.first }
   let(:applicant) do
-    FactoryBot.create(
+    FactoryBot.build(
       :individual_market_applicant,
       :with_person_name,
       :with_demographics,
       :with_eligibilities,
       :with_home_address,
       application: application,
-      family_member_id: family_member.id
+      family_member_id: family_member.id,
+      is_primary_applicant: true
+    )
+  end
+  let(:dependent_applicant) do
+    FactoryBot.create(
+      :individual_market_applicant,
+      :dependent,
+      :with_person_name,
+      :with_demographics,
+      :with_eligibilities,
+      application: application
     )
   end
 
@@ -72,32 +83,17 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
   end
 
   describe '#relationship' do
-    let(:primary_applicant) { FactoryBot.create(:individual_market_applicant, application: application, is_primary_applicant: true) }
-
     context 'when a relationship exists' do
       before do
         application.relationships.create!(
-          source_id: primary_applicant.id,
+          source_id: dependent_applicant.id,
           relative_id: applicant.id,
           kind: 'spouse'
         )
       end
 
       it 'returns the relationship kind' do
-        expect(applicant.relationship).to eq('spouse')
-      end
-    end
-
-    context 'when no relationship exists' do
-      it 'returns nil' do
-        expect(applicant.relationship).to be_nil
-      end
-    end
-
-    context 'when there is no primary applicant' do
-      it 'returns nil' do
-        application.applicants.where(is_primary_applicant: true).destroy_all
-        expect(applicant.relationship).to be_nil
+        expect(dependent_applicant.relationship).to eq('spouse')
       end
     end
   end

@@ -2,18 +2,24 @@ import { Controller } from "stimulus"
 import axios from 'axios'
 
 export default class extends Controller {
+
   showSsn(event) {
     event.stopImmediatePropagation();
     let target = event.target;
     let applicantId = target.getAttribute('data-id');
     let applicationId = target.getAttribute('data-application-id');
+    let url = target.getAttribute('data-url');
+
+    if (!url) {
+      url = `/financial_assistance/applications/${applicationId}/applicants/${applicantId}/show_ssn`;
+    }
 
     if (applicantId == 'temp') {
       this.showSsnInput(applicantId);
     } else {
       axios({
         method: 'GET',
-        url: `/financial_assistance/applications/${applicationId}/applicants/${applicantId}/show_ssn`,
+        url: url,
         headers: {
           'X-CSRF-Token': document.querySelector("meta[name=csrf-token]").content
         }

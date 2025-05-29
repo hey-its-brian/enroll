@@ -1,0 +1,90 @@
+<%# locals: address, f, type (home/mailing) %>
+<div class="address-row <%= type %>-div">
+  <h4 class="gamma">
+    <%= type == 'home' ? l10n("insured.consumer_roles.home_address") : l10n("insured.mailing_address") %>
+  </h4>
+  <i class="fa fa-info-circle"></i>
+  <%= type == 'home' ? l10n("insured.primary_home_address_info") : l10n("insured.primary_mailing_address_info") %>
+</div>
+
+<div class="address-row">
+  <div class="d-flex mb-md-2 row col-sm">
+    <div class="col-sm col-md-6 p-0">
+      <div class="col-md-12 pl-0">
+        <%= address.hidden_field :kind, value: type %>
+        <%= address.label :address_1, "#{l10n("address_1")} #{l10n("address_1_desc")}", class: "required" %>
+        <%= address.text_field :address_1, placeholder: l10n("address_1"), class: "address_required w-100", required: true %>
+      </div>
+    </div>
+    <div class="mr col-sm col-md-6 p-0">
+      <div class="col-md-12 pr-0">
+        <%= address.label :address_2, "#{l10n("address_2")} #{l10n("address_2_desc")}" %>
+        <%= address.text_field :address_2, placeholder: l10n("address_2"), class: "w-100" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="address-row" data-controller="zip-check">
+    <div class="d-flex mb-md-4 row col-sm">
+      <div class="d-flex col-sm col-md-6 pl-0">
+        <div class="mr-auto col-sm col-md-6 pl-0">
+          <%= address.label :city, class: "required" %>
+          <%= address.text_field :city, placeholder: "City", class: "address_required w-100", required: true %>
+        </div>
+        <div class="col-sm col-md-6 pr-0">
+          <%= address.label :state, class: "required" %>
+          <%= address.select(:state,
+              options_for_select(State::STATE_IDS, selected: address.object.try(:state)),
+              { include_blank: "SELECT STATE" },
+              { class: "w-100 address_required", required: true }) %>
+        </div>
+      </div>
+      <div class="d-flex col-sm col-md-6 pr-0">
+        <div class="mr-auto col-sm col-md-6 pl-0">
+          <%= address.label :zip, l10n("zip_code"), class: "required" %>
+          <%= address.text_field :zip,
+              class: "w-100 address_required zip",
+              required: true,
+              placeholder: l10n("zip_code"),
+              maxlength: 5,
+              data: {
+                action: 'change->zip-check#zipChange',
+                'child-index': "0"
+              } %>
+        </div>
+        <% if EnrollRegistry.feature_enabled?(:display_county) %>
+          <div id="county-select-<%= f.index %>" class="col-sm col-md-6 pr-0">
+            <% @counties = fetch_counties_by_zip(address.object) %>
+            <% @empty_message = address.object.try(:zip).nil? ? 'Please provide a zip code' : "Zip code outside supported area" %>
+            <% @counties = [@empty_message] if @counties.empty? %>
+            <%= address.label :county %>
+            <%= address.select(:county, options_for_select(@counties, selected: (address.object.try(:county) || @counties.first)),{},class:'w-100 required county-input', data: { target: 'zip-check.countySelect', options: BenefitMarkets::Locations::CountyZip.county_names })%>
+          </div>
+        <% else %>
+          <div class="col-sm col-md-6 pl-0 sm-hide"></div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <% if type == 'home' && dependent == 'false' %>
+    <div class="address-row show no-dc-address-reasons mb-4">
+      <% if EnrollRegistry.feature_enabled?(:moving_to_state) %>
+        <label class="weight-n">
+          <%= f.check_box :is_moving_to_state %>
+          <strong><%= l10n('insured.moving_to_dc') %></strong> <%= l10n('insured.moving_to_dc_extension') %>
+        </label>
+      <% end %>
+      <% if EnrollRegistry.feature_enabled?(:living_outside_state) %>
+        <label class="weight-n">
+          <%= f.check_box :is_temporarily_out_of_state %>
+          <strong><%= l10n('insured.outside_dc') %></strong> <%= l10n('insured.outside_dc_extension') %>
+        </label>
+      <% end %>
+      <label class="weight-n">
+        <%= f.check_box :is_homeless, id: "is_homeless" %>
+        <strong><%= l10n('insured.dc_homeless') %></strong> <%= l10n('insured.dc_homeless_extension') %>
+      </label>
+    </div>
+  <% end %>
+</div>

@@ -22,7 +22,7 @@ RSpec.describe Operations::IndividualMarket::Applicant::Build, dbclean: :after_e
             gender: 'male'
           },
           eligibilities: [
-            {key: :medicaid, title: 'Medicaid'}
+            {key: :individual_market_eligibility, title: 'Medicaid'}
           ],
           is_applying_coverage: true
         }
@@ -36,7 +36,7 @@ RSpec.describe Operations::IndividualMarket::Applicant::Build, dbclean: :after_e
       end
 
       it 'should build applicant entity object' do
-        expect(result.success).to be_a ::Entities::IndividualMarket::Applicant
+        expect(result.success).to be_a ::Entities::IndividualMarket::ApplicantCandidate
       end
 
     end
@@ -44,7 +44,6 @@ RSpec.describe Operations::IndividualMarket::Applicant::Build, dbclean: :after_e
     context 'with invalid params' do
       let(:invalid_params) do
         {
-          is_primary_applicant: true,
           address_same_as_primary: false,
 
           person_name: {
@@ -64,7 +63,7 @@ RSpec.describe Operations::IndividualMarket::Applicant::Build, dbclean: :after_e
 
       let(:contract_errors) do
         {
-          family_member_id: ["is missing", "must be BSON::ObjectId"]
+          is_primary_applicant: ["is missing", "must be boolean"]
         }
       end
 
@@ -75,7 +74,7 @@ RSpec.describe Operations::IndividualMarket::Applicant::Build, dbclean: :after_e
       end
 
       it 'does not create an Applicant entity' do
-        expect(::Entities::IndividualMarket::Applicant).not_to receive(:new)
+        expect(::Entities::IndividualMarket::ApplicantCandidate).not_to receive(:new)
         subject.call(params: invalid_params)
       end
     end

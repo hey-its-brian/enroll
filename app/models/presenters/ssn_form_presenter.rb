@@ -35,6 +35,8 @@ module Presenters
         sanitize_person
       when 'FinancialAssistance::Applicant'
         sanitize_applicant
+      when 'IndividualMarket::Demographics'
+        sanitize_demographics
       end
       self
     end
@@ -94,6 +96,13 @@ module Presenters
                   else
                     @form_object.is_primary_applicant?
                   end
+    end
+
+    def sanitize_demographics
+      application = @form_object.applicant.application
+      @application_id = application&.id&.to_s
+      @applicant_id = @form_object.applicant&.id&.to_s
+      obscure_ssn(@form_object)
     end
 
     def obscure_ssn(subject = @form_object)

@@ -15,7 +15,7 @@ module Eligibilities
     #     key: :individual_market_eligibility,
     #   )
     class IndividualMarketEligibility < ::Eligibilities::V3::Eligibility
-
+      include ::Eligibilities::V3::EligibilityUtils
       # A replacement model for WorkflowStateTransition.
       # In future, we will use has_chronicle that could potentially include both versions of the current model and its state history.
       # This is the reason why the state_histories association is added here and not in the parent class.

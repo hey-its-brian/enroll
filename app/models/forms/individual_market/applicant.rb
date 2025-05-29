@@ -1,0 +1,531 @@
+# frozen_string_literal: true
+
+module Forms
+  module IndividualMarket
+    # Form object for handling Individual Market Applicant data input and validation
+    # This form coordinates the creation and updating of applicant information including
+    # personal details, demographics, and addresses.
+    class Applicant
+      include ActiveModel::Model
+      include ActiveModel::Validations
+      include Config::AcaModelConcern
+
+      include ActionView::Helpers::TranslationHelper
+      include L10nHelper
+
+      attr_accessor :id,
+                    :application_id,
+                    :family_member_id,
+                    :is_primary_applicant,
+                    :is_homeless,
+                    :age_off_excluded,
+                    :address_same_as_primary,
+                    :relationship,
+                    :is_dependent,
+                    :applicant_id,
+                    :eligibilities
+
+      attr_writer :person_name_form, :demographics_form, :immigration_form, :address_forms
+
+      validate :verify_unique_dependent
+      validate :validate_nested_forms
+      validate :relationship_validation
+
+      delegate :is_applying_coverage, :is_applying_coverage=,
+               to: :demographics
+
+      # Initializes a new Applicant form object
+      # @param args [Array] Arguments passed to form initialization
+      # @option args [Hash] First argument containing form attributes
+      # @option args[0] [Hash] :person_name_attributes Person name form attributes
+      # @option args[0] [Hash] :demographics_attributes Demographics form attributes
+      # @option args[0] [Hash] :immigration_information_attributes Immigration form attributes
+      # @option args[0] [Hash] :addresses_attributes Address form attributes
+      # @option args[0] [Hash] :eligibilities Eligibility attributes
+      # @option args[0] [Boolean] :is_primary_applicant Whether this is the primary applicant
+      # @option args[0] [Boolean] :is_dependent Whether this is a dependent
+      # @option args[0] [String] :family_member_id Associated family member ID
+      def initialize(*args)
+        super
+        attributes = args.first || {}
+        initialize_nested_forms(attributes)
+        initialize_eligibilities_data(attributes)
+        initialize_boolean_attributes(attributes)
+        initialize_basic_attributes(attributes)
+
+        # Pass the value to demographics form
+        sync_demographics_coverage
+      end
+
+      # Sets address attributes and creates new address forms
+      # @param attributes [Hash] Address attributes to set
+      # @return [Array<Forms::Locations::AddressForm>] Array of address form objects
+      def addresses_attributes=(attributes)
+        @address_forms = attributes.values.map do |address_attrs|
+          Forms::Locations::AddressForm.new(address_attrs)
+        end
+      end
+
+      # Sets the is_applying_coverage flag and syncs with demographics form
+      # @param value [Boolean] Whether the applicant is applying for coverage
+      def is_applying_coverage=(value)
+        @is_applying_coverage = value
+        # Keep demographics form in sync
+        @demographics_form.is_applying_coverage = value if @demographics_form
+      end
+
+      # Checks if the form represents a persisted record
+      # @return [Boolean] true if the form has an ID, false otherwise
+      def persisted?
+        id.present?
+      end
+
+      # Retrieves the associated application
+      # @return [IndividualMarket::Application, nil] The associated application or nil if not found
+      def application
+        @application ||= ::IndividualMarket::Application.find(application_id) if application_id.present?
+      end
+
+      # Retrieves the associated applicant
+      # @return [IndividualMarket::Applicant, nil] The associated applicant or nil if not found
+      def applicant
+        return @applicant if defined? @applicant
+        @applicant = application.applicants.find(applicant_id) if applicant_id.present?
+      end
+
+      # Checks if a mailing address should be destroyed
+      # @param address [Hash] The address attributes to check
+      # @option address [String] :kind The type of address
+      # @option address [String] :_destroy Whether to destroy the address ('true' or 'false')
+      # @option address [String, nil] :id The address ID if it exists
+      # @return [Boolean] true if the address should be destroyed, false otherwise
+      def destroy_mailing_address?(address)
+        address[:kind] == ::Locations::Address::MAILING_KIND && address[:_destroy] == 'true' && address[:id].present?
+      end
+
+      # Saves the form data and creates or updates the applicant
+      # @return [Array<(Boolean, IndividualMarket::Applicant, Hash)>] Success flag and either the applicant or error messages
+      def save
+        return [false, self.errors.full_messages] unless valid?
+
+        applicant_entity = build_applicant_entity
+        return handle_failure(applicant_entity) unless applicant_entity.success?
+
+        values = applicant_entity.success.to_h
+        applicant = find_or_build_applicant(values)
+        build_relationship(applicant)
+        application.reload
+
+        [true, applicant]
+      end
+
+      # Sets demographics form attributes
+      # @param attributes [Hash] Demographics attributes to set
+      def demographics_attributes=(attributes)
+        @demographics_form = DemographicsForm.new(attributes)
+      end
+
+      # Sets immigration information form attributes
+      # @param attributes [Hash] Immigration information attributes to set
+      def immigration_information_attributes=(attributes)
+        @immigration_form = ImmigrationInformationForm.new(attributes)
+      end
+
+      # Gets the person name form object
+      # @return [Forms::IndividualMarket::PersonNameForm] The person name form
+      def person_name_attributes=(attributes)
+        @person_name_form = PersonNameForm.new(attributes)
+      end
+
+      def person_name
+        @person_name_form
+      end
+
+      # Gets the address forms
+      # @return [Array<Forms::Locations::AddressForm>] Array of address forms
+      def addresses
+        @address_forms
+      end
+
+      # Gets the demographics form object
+      # @return [Forms::IndividualMarket::DemographicsForm] The demographics form
+      def demographics
+        @demographics_form
+      end
+
+      # Gets the immigration information form object
+      # @return [Forms::IndividualMarket::ImmigrationInformationForm] The immigration information form
+      def immigration_information
+        @immigration_form
+      end
+
+      # Gets or initializes the address forms array
+      # @return [Array<Forms::Locations::AddressForm>] Array of address forms
+      def address_forms
+        @address_forms ||= []
+      end
+
+      private
+
+      # Initializes all nested form objects with provided attributes
+      # @param attributes [Hash] The attributes to initialize forms with
+      # @option attributes [Hash] :person_name_attributes Person name attributes
+      # @option attributes [Hash] :demographics_attributes Demographics attributes
+      # @option attributes [Hash] :immigration_information_attributes Immigration information attributes
+      # @option attributes [Hash] :addresses_attributes Address attributes
+      # @return [void]
+      def initialize_nested_forms(attributes)
+        @person_name_form = PersonNameForm.new(attributes[:person_name_attributes] || {})
+        @demographics_form = DemographicsForm.new(attributes[:demographics_attributes] || {})
+        @immigration_information_form = ImmigrationInformationForm.new(attributes[:immigration_information_attributes] || {})
+        @address_forms = build_address_forms(attributes[:addresses_attributes])
+      end
+
+      # Builds address form objects from attributes
+      # @param addresses_attributes [Hash] The address attributes to build forms from
+      # @return [Array<Forms::Locations::AddressForm>] Array of address forms
+      def build_address_forms(addresses_attributes)
+        return [] unless addresses_attributes.present?
+
+        addresses_attributes.values.map do |addr_attrs|
+          Forms::Locations::AddressForm.new(addr_attrs)
+        end
+      end
+
+      # Initializes eligibilities data from attributes
+      # @param attributes [Hash] The attributes containing eligibilities data
+      # @return [Array<Hash>] Array of eligibility attributes
+      def initialize_eligibilities_data(attributes)
+        @eligibilities = if attributes[:eligibilities].present?
+                           attributes[:eligibilities]
+                         else
+                           initialize_eligibilities
+                         end
+      end
+
+      # Initializes boolean attributes with type casting
+      # @param attributes [Hash] The attributes containing boolean values
+      # @return [void]
+      def initialize_boolean_attributes(attributes)
+        boolean_type = ActiveModel::Type::Boolean.new
+        @is_primary_applicant = boolean_type.cast(attributes['is_primary_applicant'] || attributes[:is_primary_applicant])
+        @is_dependent = boolean_type.cast(attributes['is_dependent'] || attributes[:is_dependent])
+      end
+
+      # Initializes basic attributes from the provided hash
+      # @param attributes [Hash] The attributes to initialize
+      # @return [void]
+      def initialize_basic_attributes(attributes)
+        @family_member_id = attributes['family_member_id'] || attributes[:family_member_id]
+        @address_same_as_primary = attributes[:address_same_as_primary] || true
+        @is_applying_coverage = attributes[:is_applying_coverage] || true
+        @is_homeless = attributes[:is_homeless]
+        @age_off_excluded = attributes[:age_off_excluded]
+        @id = attributes['id'] || attributes[:id]
+        @application_id = attributes['application_id'] || attributes[:application_id]
+        @relationship = attributes[:relationship]
+        @applicant_id = attributes['applicant_id'] || attributes[:applicant_id] || @id
+      end
+
+      # Synchronizes the demographics coverage status with the form's status
+      # @return [void]
+      def sync_demographics_coverage
+        @demographics_form.is_applying_coverage = @is_applying_coverage if @demographics_form
+      end
+
+      # Validates all nested form objects
+      # @private
+      def validate_nested_forms
+        validate_person_name
+        validate_demographics
+        validate_immigration if needs_immigration_information?
+        validate_addresses
+      end
+
+      # Validates the person name form
+      # @private
+      def validate_person_name
+        return if person_name.valid?
+        person_name.errors.each do |error|
+          errors.add(:base, "#{error.attribute} #{error.message}")
+        end
+      end
+
+      # Validates the demographics form
+      # @private
+      def validate_demographics
+        return if demographics.valid?
+        demographics.errors.each do |error|
+          errors.add(:base, "#{error.attribute} #{error.message}")
+        end
+      end
+
+      # Validates the immigration form
+      # @private
+      def validate_immigration
+        return if immigration_information.valid?
+        immigration_information.errors.each do |error|
+          errors.add(:base, "#{error.attribute} #{error.message}")
+        end
+      end
+
+      # Validates the addresses
+      # @private
+      def validate_addresses
+        return if address_same_as_primary == "true"
+
+        address_forms.each do |address_form|
+          next if address_form.valid?
+          address_form.errors.each do |error|
+            errors.add(:base, "#{error.attribute} #{error.message}")
+          end
+        end
+      end
+
+      # Collects all form data into parameters for entity creation
+      # @private
+      # @return [Hash] Combined parameters from all form objects
+      def applicant_params
+        params = {
+          id: id,
+          applicant_id: applicant_id,
+          family_member_id: family_member_id,
+          is_primary_applicant: is_primary_applicant,
+          is_dependent: is_dependent,
+          is_applying_coverage: @is_applying_coverage,
+          is_homeless: is_homeless,
+          age_off_excluded: age_off_excluded,
+          address_same_as_primary: @address_same_as_primary,
+          person_name: person_name&.to_h,
+          demographics: demographics&.to_h,
+          immigration_information: immigration_params,
+          addresses: addresses_params,
+          eligibilities: find_or_build_eligibilities
+        }
+
+        if is_primary_applicant == "false" && address_same_as_primary == "true"
+          primary = application.primary_applicant
+          params.merge!(is_homeless: primary.is_homeless?)
+        end
+
+        params
+      end
+
+      # Gets immigration parameters if needed
+      # @private
+      # @return [Hash] Immigration parameters or empty hash
+      def immigration_params
+        return {} unless needs_immigration_information?
+        immigration_information.to_h
+      end
+
+      # Processes address parameters
+      # @private
+      # @return [Array<Hash>] Array of address parameters
+      def addresses_params
+        return [] if address_same_as_primary == "true"
+        return [] if addresses.nil?
+
+        addresses.map(&:to_h).compact
+      end
+
+      # Determines if immigration information is needed
+      # @private
+      # @return [Boolean] Whether immigration information is required
+      def needs_immigration_information?
+        (demographics&.us_citizen == false &&
+          demographics&.eligible_immigration_status == true) ||
+          demographics&.naturalized_citizen == true
+      end
+
+      # Validates relationship selection
+      # @private
+      def relationship_validation
+        return unless relationship.present?
+        return if is_primary_applicant
+        errors.add(:relationship, "is invalid") unless valid_relationship?
+      end
+
+      # Checks if the relationship is valid
+      # @private
+      # @return [Boolean] Whether the relationship is valid
+      def valid_relationship?
+        # Add relationship validation logic
+        true
+      end
+
+      # Verifies that the dependent is not a duplicate
+      # @private
+      def verify_unique_dependent
+        return if skip_duplicate_check?
+
+        add_duplicate_error if duplicate_exists?
+      end
+
+      # Determines if duplicate checking should be skipped
+      # @return [Boolean] Whether to skip the duplicate check
+      def skip_duplicate_check?
+        persisted? || application.blank? || application.applicants.blank?
+      end
+
+      # Checks if a duplicate applicant exists
+      # @return [Boolean] Whether a duplicate exists
+      def duplicate_exists?
+        application.applicants.any? do |existing_applicant|
+          matches_existing_applicant?(existing_applicant)
+        end
+      end
+
+      # Checks if an existing applicant matches the current form data
+      # @param existing_applicant [IndividualMarket::Applicant] The applicant to check against
+      # @return [Boolean] Whether the applicants match
+      def matches_existing_applicant?(existing_applicant)
+        existing_applicant&.person_name&.given_name == person_name&.given_name &&
+          existing_applicant&.person_name&.family_name == person_name&.family_name &&
+          existing_applicant&.demographics&.dob == demographics&.dob
+      end
+
+      # Adds a duplicate error message to the errors collection
+      # @return [void]
+      def add_duplicate_error
+        duplicate_message = l10n(
+          'insured.family_members.duplicate_error_message',
+          action: "add",
+          contact_center_phone_number: EnrollRegistry[:enroll_app].settings(:contact_center_short_number).item
+        )
+        errors.add(:base, duplicate_message)
+      end
+
+      # Gets eligibilities for the applicant
+      # @private
+      # @return [Array<Hash>] Array of eligibility attributes
+      def find_or_build_eligibilities
+        return initialize_eligibilities unless persisted?
+
+        existing_applicant = application.applicants.find(id)
+        return existing_applicant.eligibilities.map(&:attributes) if existing_applicant&.eligibilities.present?
+
+        initialize_eligibilities
+      end
+
+      # Initializes default eligibilities
+      # @private
+      # @return [Array<Hash>] Array of default eligibility attributes
+      def initialize_eligibilities
+        [{
+          key: :individual_market_eligibility,
+          title: "Individual Market Eligibility"
+        }]
+      end
+
+      # Builds eligibility records for an applicant
+      # @param applicant [IndividualMarket::Applicant] The applicant to build eligibilities for
+      # @param eligibilities [Array<Hash>] Array of eligibility parameters
+      # @option eligibilities [Symbol] :key The type of eligibility
+      # @option eligibilities [String] :title The display title for the eligibility
+      # @return [void]
+      def build_eligibilities(applicant, eligibilities)
+        eligibilities.each do |eligibility|
+          eligibility_class = ::Eligibilities::V3::IndividualMarketEligibility::ELIGIBILITY_CLASSES[eligibility[:key]]
+          next unless eligibility_class
+
+          applicant.eligibilities.build(eligibility.merge(_type: eligibility_class))
+        end
+      end
+
+      # Builds or updates the relationship between the applicant and primary applicant
+      # @param applicant [IndividualMarket::Applicant] The applicant to build/update relationship for
+      # @param relationship [String] The relationship kind to set
+      # @return [void]
+      def build_relationship(applicant)
+        return if applicant.is_primary_applicant
+        primary_id = application.primary_applicant.id
+        existing_relationship = application.relationships.where(
+          source_id: applicant.id,
+          relative_id: primary_id
+        )&.first
+
+        if existing_relationship
+          # Only update if the relationship kind has changed
+          existing_relationship.update(kind: @relationship) if existing_relationship.kind != @relationship
+        else
+          application.relationships.new({
+                                          source_id: applicant.id,
+                                          relative_id: primary_id,
+                                          kind: @relationship
+                                        })
+          application.save!
+        end
+      end
+
+      # Builds an applicant entity from the form parameters
+      # @return [Result] Operation result containing the built entity or errors
+      def build_applicant_entity
+        ::Operations::IndividualMarket::Applicant::Build.new.call(
+          params: applicant_params
+        )
+      end
+
+      # Handles failure cases from entity building
+      # @param applicant_entity [Result] The failed operation result
+      # @return [Array<(Boolean, Hash)>] Array containing false and the error messages
+      def handle_failure(applicant_entity)
+        applicant_entity.failure.each do |key, msg|
+          errors.add(:base, "#{key} #{msg[0]}")
+        end
+        [false, applicant_entity.failure]
+      end
+
+      # Finds an existing applicant or builds a new one
+      # @param values [Hash] The values to update or create with
+      # @return [IndividualMarket::Applicant] The found or newly built applicant
+      def find_or_build_applicant(values)
+        applicant = application.applicants.find(applicant_id) if applicant_id.present?
+        if applicant.present? && applicant.persisted?
+          update_existing_applicant(applicant, values)
+        else
+          create_new_applicant(values)
+        end
+      end
+
+      # Updates an existing applicant with new values
+      # @param applicant [IndividualMarket::Applicant] The applicant to update
+      # @param values [Hash] The values to update with
+      # @return [IndividualMarket::Applicant] The updated applicant
+      def update_existing_applicant(applicant, values)
+        handle_address_changes(applicant)
+        applicant.update(values)
+        handle_address_changes(applicant)
+        applicant
+      end
+
+      # Creates a new applicant with the provided values
+      # @param values [Hash] The values to create the applicant with
+      # @return [IndividualMarket::Applicant] The newly created applicant
+      def create_new_applicant(values)
+        applicant = application.applicants.build
+        applicant.assign_attributes(values.except(:eligibilities))
+        build_eligibilities(applicant, values[:eligibilities])
+        applicant.save!
+        applicant
+      end
+
+      # Handles address changes for an applicant
+      # @param applicant [IndividualMarket::Applicant] The applicant whose addresses need handling
+      # @return [Boolean] The result of saving the applicant
+      def handle_address_changes(applicant)
+        # Handle home address
+        applicant.home_address&.destroy if !applicant.is_primary_applicant && address_same_as_primary
+
+        # Handle mailing address
+        if applicant.mailing_address.present? &&
+           addresses_attributes.values.any? { |address| destroy_mailing_address?(address) }
+          applicant.mailing_address.destroy!
+        end
+
+        applicant.save
+      end
+
+    end
+  end
+end

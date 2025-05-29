@@ -28,6 +28,10 @@ class PersonName
   include Mongoid::Document
   include Mongoid::Timestamps
 
+  SUFFIX_OPTIONS = [
+    'Jr.', 'Sr.', 'II', 'III', 'IV', 'V'
+  ].freeze
+
   # Defines the polymorphic relationship with the parent document
   # This allows PersonName to be embedded in any model that sets itself as :person_nameable
   embedded_in :person_nameable, polymorphic: true
@@ -55,6 +59,10 @@ class PersonName
   # @!attribute alternate_name
   #   @return [String] An alternate name or a nickname for the person, if any
   field :alternate_name, type: String
+
+  validates :name_sfx,
+            allow_blank: true,
+            inclusion: { in: PersonName::SUFFIX_OPTIONS, message: "%{value} is not a valid suffix" }
 
   # Combines all name components into a full name representation
   #

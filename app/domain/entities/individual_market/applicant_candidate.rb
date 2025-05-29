@@ -3,11 +3,11 @@
 module Entities
   module IndividualMarket
     # Entity representing an Individual Market Applicant
-    class Applicant < Dry::Struct
+    class ApplicantCandidate < Dry::Struct
       transform_keys(&:to_sym)
 
       # Top-level attributes
-      attribute :family_member_id, Types::Bson
+      attribute :family_member_id, Types::Bson.optional.meta(omittable: true)
       attribute :is_primary_applicant, Types::Bool
       attribute :address_same_as_primary, Types::Bool
       attribute :is_applying_coverage, Types::Bool
@@ -31,6 +31,7 @@ module Entities
         attribute :no_ssn, Types::Bool.optional.meta(omittable: true)
         attribute :dob, Types::Date
         attribute :gender, Types::String
+        attribute :ssn, Types::String.optional.meta(omittable: true)
         attribute :ethnicity, Types::Array.of(Types::String).optional.meta(omittable: true)
         attribute :race, Types::String.optional.meta(omittable: true)
         attribute :is_incarcerated, Types::Bool.optional.meta(omittable: true)
@@ -62,6 +63,8 @@ module Entities
         attribute :description, Types::String.optional.meta(omittable: true)
       end
 
+      # Addresses array
+      attribute :addresses, Types::Array.of(Entities::Address).optional.meta(omittable: true)
       # Eligibilities array
       attribute :eligibilities, Types::Array do
         attribute :key, Types::Symbol

@@ -36,4 +36,17 @@ RSpec.describe PersonName, type: :model do
       expect(person_name.full_name).to eq('Mr. Johnny Doe Jr.')
     end
   end
+
+  describe 'with suffix' do
+    it 'is valid' do
+      person_name.name_sfx = 'Jr.'
+      expect(person_name).to be_valid
+    end
+
+    it 'is invalid' do
+      person_name.name_sfx = 'Invalid'
+      expect(person_name).to be_invalid
+      expect(person_name.errors.full_messages).to include("Name sfx Invalid is not a valid suffix")
+    end
+  end
 end

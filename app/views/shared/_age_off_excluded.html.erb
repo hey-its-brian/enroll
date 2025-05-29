@@ -1,7 +1,7 @@
 <% if @bs4 %>
   <div class="d-flex flex-row align-items-center my-md-4">
     <%= f.check_box :age_off_excluded, {id: 'age_off_excluded'}, "true", "false"%>
-		<label for="age_off_excluded" class="my-0">
+		<label for="age_off_excluded" class="my-0 <%= 'admin-designation' if EnrollRegistry.feature_enabled?(:qhp_application) %>">
 			<span for="age_off_excluded"><%= l10n('ageoff_exclusion')%> </span>
 		</label>
   </div>

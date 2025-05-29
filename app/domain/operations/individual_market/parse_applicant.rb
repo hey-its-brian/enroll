@@ -114,6 +114,7 @@ module Operations
 
       def individual_market_eligibility_attributes
         {
+          _type: 'Eligibilities::V3::IndividualMarketEligibility',
           key: :individual_market_eligibility,
           title: "Individual Market Eligibility"
         }
@@ -168,7 +169,8 @@ module Operations
             "address_2",
             "city",
             "state",
-            "zip"
+            "zip",
+            "county"
           ).symbolize_keys
         end
       end

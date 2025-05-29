@@ -348,6 +348,19 @@ class Insured::ConsumerRolesController < ApplicationController
         flash[:error] = "Failed to proceed, " + e.message
         redirect_back fallback_location: '/'
       end
+    elsif EnrollRegistry.feature_enabled?(:qhp_application)
+      begin
+        result = Operations::IndividualMarket::GenerateApplication.new.call(apply_params(@person, current_user))
+        if result.success?
+          redirect_to insured_individual_market_application_applicants_path(result.success)
+        else
+          flash[:error] = get_error_messages(result)
+          redirect_back fallback_location: '/'
+        end
+      rescue StandardError => e
+        flash[:error] = "Failed to proceed, #{e.message}"
+        redirect_back fallback_location: '/'
+      end
     else
       @person.update_attributes is_applying_for_assistance: false
       redirect_to insured_family_members_path(consumer_role_id: @person.consumer_role.id)

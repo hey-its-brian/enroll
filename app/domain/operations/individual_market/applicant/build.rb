@@ -18,8 +18,8 @@ module Operations
       #     errors = result.failure
       #   end
       #
-      # @see Validators::IndividualMarket::ApplicantContract
-      # @see Entities::IndividualMarket::Applicant
+      # @see Validators::IndividualMarket::ApplicantCandidateContract
+      # @see Entities::IndividualMarket::ApplicantCandidate
       class Build
         include Dry::Monads[:do, :result]
 
@@ -36,7 +36,7 @@ module Operations
 
         def validate(params)
           # switch to use contract from aca_entities
-          result = ::Validators::IndividualMarket::ApplicantContract.new.call(params)
+          result = ::Validators::IndividualMarket::ApplicantCandidateContract.new.call(params)
           if result.success?
             Success(result.to_h)
           else
@@ -46,7 +46,7 @@ module Operations
 
         def build(values)
           # switch to use entity from aca_entities
-          applicant_entity = ::Entities::IndividualMarket::Applicant.new(values)
+          applicant_entity = ::Entities::IndividualMarket::ApplicantCandidate.new(values)
           Success(applicant_entity)
         end
       end

@@ -1,0 +1,165 @@
+<%# Naturalization Documents %>
+<template id="naturalization_certificate_template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <div class="form-group">
+      <%= render :partial => "insured/consumer_roles/docs_shared/naturalization_number", locals: {v: f} %>
+    </div>
+
+    <div class="form-group">
+      <%= render :partial => "insured/consumer_roles/docs_shared/alien_number", locals: {v: f, name: 'naturalization_certificate'} %>
+    </div>
+  </div>
+</template>
+
+<template id="certificate_of_citizenship_template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/citizenship_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/alien_number", locals: {v: f, name: 'certificate_citizenship'} %>
+  </div>
+</template>
+
+<%# I-327 (Reentry Permit) %>
+<template id="i_327__reentry_permit__template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/alien_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/expiration_date", locals: {v: f, name: "I-327"} %>
+  </div>
+</template>
+
+<%# I-551 (Permanent Resident Card) %>
+<template id="i_551__permanent_resident_card__template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/alien_number", locals: {v: f} %>
+	  <%= render :partial => "insured/consumer_roles/docs_shared/card_number", locals: {v: f, name: 'I-551'} %>
+	  <%= render :partial => "insured/consumer_roles/docs_shared/expiration_date", locals: {v: f, name: "I-551"} %>
+  </div>
+</template>
+
+<%# I-571 (Refugee Travel Document) %>
+<template id="i_571__refugee_travel_document__template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/alien_number", locals: {v: f, name: 'I-571'} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/expiration_date", locals: {v: f, name: "I-571"} %>
+  </div>
+</template>
+
+<%# I-766 (Employment Authorization Card) %>
+<template id="i_766__employment_authorization_card__template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/alien_number", locals: {v: f, name: 'I-766'} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/card_number", locals: {v: f, name: 'I-766'} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/expiration_date", locals: {v: f, name: "I-766"} %>
+  </div>
+</template>
+
+<%# Machine Readable Immigrant Visa %>
+<template id="machine_readable_immigrant_visa__with_temporary_i_551_language__template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/alien_number", locals: {v: f, name: 'Temporary I-551'} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/passport_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/visa_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/expiration_date", locals: {v: f, name: "Temporary I-551"} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/country_of_citizenship", locals: {v: f} %>
+  </div>
+</template>
+
+<%# Temporary I-551 Stamp (on passport or I-94) %>
+<template id="temporary_i_551_stamp__on_passport_or_i_94__template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/alien_number", locals: {v: f, name: 'Temporary I-551 Stamp'} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/passport_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/expiration_date", locals: {v: f, name: "Temporary I-551 Stamp"} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/country_of_citizenship", locals: {v: f} %>
+  </div>
+</template>
+
+<%# I-94 (Arrival/Departure Record) %>
+<template id="i_94__arrival_departure_record__template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/i_94_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/servis_id", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/expiration_date", locals: {v: f, name: "Passport"} %>
+  </div>
+</template>
+
+<%# I-94 in Unexpired Foreign Passport %>
+<template id="i_94__arrival_departure_record__in_unexpired_foreign_passport_template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/i_94_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/passport_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/visa_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/servis_id", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/expiration_date", locals: {v: f, name: "Passport"} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/country_of_citizenship", locals: {v: f} %>
+  </div>
+</template>
+
+<%# Unexpired Foreign Passport %>
+<template id="unexpired_foreign_passport_template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/passport_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/i_94_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/servis_id", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/expiration_date", locals: {v: f, name: "Passport"} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/country_of_citizenship", locals: {v: f} %>
+  </div>
+</template>
+
+<%# I-20 (Certificate of Eligibility for Student Status) %>
+<template id="i_20__certificate_of_eligibility_for_nonimmigrant__f_1__student_status__template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/servis_id", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/i_94_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/passport_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/expiration_date", locals: {v: f, name: "Passport"} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/country_of_citizenship", locals: {v: f} %>
+  </div>
+</template>
+
+<%# DS2019 (Certificate of Eligibility for Exchange Visitor Status) %>
+<template id="ds2019__certificate_of_eligibility_for_exchange_visitor__j_1__status__template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/servis_id", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/i_94_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/passport_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/expiration_date", locals: {v: f, name: "Passport"} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/country_of_citizenship", locals: {v: f} %>
+  </div>
+</template>
+
+<%# Other Documents %>
+<template id="other__with_alien_number__template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/alien_number", locals: {v: f, name: 'Passport'} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/passport_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/servis_id", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/expiration_date", locals: {v: f, name: "Passport"} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/country_of_citizenship", locals: {v: f} %>
+    <div class="mt-4 mb-4">
+      <%= f.label :description, l10n("insured.consumer_roles.docs_shared.document_description"), class: "weight-n" %>
+      <%= f.text_field :description, :placeholder => l10n("insured.consumer_roles.docs_shared.document_description"),
+                      :pattern => ".{1,35}",
+                      :class => "doc_fields",
+                      :title => l10n("insured.consumer_roles.docs_shared.document_description_req")%>
+      <%= render :partial => "insured/consumer_roles/docs_shared/vlp_doc_requirements", locals: {req: l10n("insured.consumer_roles.docs_shared.document_description_req")} %>
+    </div>
+  </div>
+</template>
+
+<template id="other__with_i_94_number__template" data-target="immigration-documents.template">
+  <div class="document-fields">
+    <%= render :partial => "insured/consumer_roles/docs_shared/i_94_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/passport_number", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/servis_id", locals: {v: f} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/expiration_date", locals: {v: f, name: "Passport"} %>
+    <%= render :partial => "insured/consumer_roles/docs_shared/country_of_citizenship", locals: {v: f} %>
+    <div class="mt-4 mb-4">
+      <%= f.label :description, l10n("insured.consumer_roles.docs_shared.document_description"), class: "weight-n" %>
+      <%= f.text_field :description, :placeholder => l10n("insured.consumer_roles.docs_shared.document_description"),
+                      :pattern => ".{1,35}",
+                      :class => "doc_fields",
+                      :title => l10n("insured.consumer_roles.docs_shared.document_description_req")%>
+      <%= render :partial => "insured/consumer_roles/docs_shared/vlp_doc_requirements", locals: {req: l10n("insured.consumer_roles.docs_shared.document_description_req")} %>
+    </div>
+  </div>
+</template>
