@@ -229,4 +229,155 @@ RSpec.describe Operations::Families::ApplyForFinancialAssistance, type: :model, 
       end
     end
   end
+
+  describe 'active vlp fields' do
+    let(:document) { FactoryBot.build(:vlp_document, **doc_attrs) }
+    let(:consumer_role) { FactoryBot.create(:consumer_role, vlp_documents: [document], active_vlp_document_id: document.id) }
+    let(:person) { FactoryBot.create(:person, consumer_role: consumer_role) }
+    let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+
+    shared_examples 'includes vlp fields in response' do
+      it 'should include all vlp fields in the response' do
+        result = subject.call(family_id: family.id).success.first
+        doc_attrs.each_key do |key|
+          response_key = key == :subject ? :vlp_subject : key
+          response_key = key == :description ? :vlp_description : response_key
+          value = doc_attrs[key]
+          value = value.strftime("%d/%m/%Y") if response_key == :expiration_date
+          expect(result[response_key]).to eq(value)
+        end
+      end
+    end
+
+    context 'when consumer has a permanent resident card (I-551)' do
+      let(:doc_attrs) do
+        {
+          subject: 'I-551 (Permanent Resident Card)',
+          alien_number: '123456789',
+          card_number: '1234567890123',
+          expiration_date: Date.current + 1.year
+        }
+      end
+      it_behaves_like 'includes vlp fields in response'
+    end
+
+    context 'when consumer has employment authorization document (I-766)' do
+      let(:doc_attrs) do
+        {
+          subject: 'I-766 (Employment Authorization Card)',
+          alien_number: '987654321',
+          card_number: '9876543210987',
+          expiration_date: Date.current + 2.years
+        }
+      end
+      it_behaves_like 'includes vlp fields in response'
+    end
+
+    context 'when consumer has machine readable immigrant visa' do
+      let(:doc_attrs) do
+        {
+          subject: 'Machine Readable Immigrant Visa (with Temporary I-551 Language)',
+          alien_number: '555666777',
+          passport_number: 'MRV12345678',
+          visa_number: 'VISA98765432',
+          expiration_date: Date.current + 1.year,
+          country_of_citizenship: 'Mexico'
+        }
+      end
+      it_behaves_like 'includes vlp fields in response'
+    end
+
+    context 'when consumer has I-94 arrival/departure record' do
+      let(:doc_attrs) do
+        {
+          subject: 'I-94 (Arrival/Departure Record)',
+          i94_number: '94123456789',
+          sevis_id: 'SEVIS12345',
+          expiration_date: Date.current + 6.months
+        }
+      end
+      it_behaves_like 'includes vlp fields in response'
+    end
+
+    context 'when consumer has I-94 in unexpired foreign passport' do
+      let(:doc_attrs) do
+        {
+          subject: 'I-94 (Arrival/Departure Record) in Unexpired Foreign Passport',
+          i94_number: '94987654321',
+          passport_number: 'P123456789',
+          visa_number: '555666777',
+          sevis_id: 'SEVIS67890',
+          expiration_date: Date.current + 1.year,
+          country_of_citizenship: 'Canada'
+        }
+      end
+      it_behaves_like 'includes vlp fields in response'
+    end
+
+    context 'when consumer has I-20 student certificate' do
+      let(:doc_attrs) do
+        {
+          subject: 'I-20 (Certificate of Eligibility for Nonimmigrant (F-1) Student Status)',
+          sevis_id: 'SEVIS11111',
+          i94_number: '94555666777',
+          passport_number: 'P987654321',
+          expiration_date: Date.current + 4.years,
+          country_of_citizenship: 'India'
+        }
+      end
+      it_behaves_like 'includes vlp fields in response'
+    end
+
+    context 'when consumer has I-327 reentry permit' do
+      let(:doc_attrs) do
+        {
+          subject: 'I-327 (Reentry Permit)',
+          alien_number: '111222333',
+          expiration_date: Date.current + 2.years
+        }
+      end
+      it_behaves_like 'includes vlp fields in response'
+    end
+
+    context 'when consumer has I-571 refugee travel document' do
+      let(:doc_attrs) do
+        {
+          subject: 'I-571 (Refugee Travel Document)',
+          alien_number: '444555666',
+          expiration_date: Date.current + 1.year
+        }
+      end
+      it_behaves_like 'includes vlp fields in response'
+    end
+
+    context 'when consumer has other document with I-94 number' do
+      let(:doc_attrs) do
+        {
+          subject: 'Other (With I-94 Number)',
+          i94_number: 'I94OTHER123',
+          passport_number: 'P111222333',
+          sevis_id: 'SEVIS99999',
+          expiration_date: Date.current + 1.year,
+          country_of_citizenship: 'Philippines',
+          description: 'Special temporary status document'
+        }
+      end
+      it_behaves_like 'includes vlp fields in response'
+    end
+
+    context 'when consumer has other document with alien number' do
+      let(:doc_attrs) do
+        {
+          subject: 'Other (With Alien Number)',
+          alien_number: '777888999',
+          passport_number: 'P444555666',
+          sevis_id: 'SEVIS77777',
+          expiration_date: Date.current + 1.year,
+          country_of_citizenship: 'South Korea',
+          description: 'Humanitarian parole document'
+        }
+      end
+      it_behaves_like 'includes vlp fields in response'
+    end
+  end
 end
