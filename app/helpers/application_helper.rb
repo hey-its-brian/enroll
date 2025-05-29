@@ -1189,7 +1189,7 @@ module ApplicationHelper
   end
 
   def date_field_value(date = nil)
-    date = Date.current if date.nil? || date.to_s == "0"
+    date = TimeKeeper.date_of_record if date.nil? || date.to_s == "0"
     date.strftime("%Y-%m-%d")
   end
 
