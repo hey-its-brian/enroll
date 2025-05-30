@@ -305,10 +305,11 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
         )
       end
 
-      it 'creates a new family member for the secondary applicant' do
+      it 'creates a new active family member for the secondary applicant' do
         expect(new_family_member).to be_a(FamilyMember)
         expect(secondary_applicant.family_member_id).to eq(new_family_member.id)
         expect(secondary_applicant.person_hbx_id).to eq(new_person.hbx_id)
+        expect(new_family_member.is_active).to be_truthy
       end
 
       it 'creates addresses for the new person' do

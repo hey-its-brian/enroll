@@ -122,8 +122,9 @@ module Operations
               result_hash
             end
 
-            # Deactivates all the family members that are not in the current application
-            family.family_members.where(:id.nin => application.applicants.pluck(:family_member_id)).each do |member|
+            # Deactivates all the family members that are not associated with the applicants.
+            # We should not query the applicants to get the family member IDs as the applicants are updated with the family member IDs in the `update_application` step.
+            family.family_members.where(:id.nin => results.values.map(&:id)).each do |member|
               member.is_active = false
             end
 
