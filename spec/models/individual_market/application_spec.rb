@@ -148,9 +148,9 @@ RSpec.describe IndividualMarket::Application, type: :model do
   end
 
   describe 'state machine' do
-    let(:failure_comment) { 'Missing information' }
-    let(:reset_comment) { 'Fixing application' }
-    let(:expire_comment) { 'Application expired' }
+    let(:failure_comment) { {comment: 'Missing information'} }
+    let(:reset_comment) { {comment: 'Fixing application'} }
+    let(:expire_comment) { {comment: 'Application expired'} }
 
     context 'default state' do
       it 'has an initial state by default' do
@@ -167,33 +167,33 @@ RSpec.describe IndividualMarket::Application, type: :model do
         let(:application) { FactoryBot.create(:individual_market_application, :initial) }
 
         it 'can transition to submission_failed' do
-          expect(application.may_failed_submission?).to be true
-          application.failed_submission('Validation errors')
+          expect(application.can_failed_submission?).to be true
+          application.failed_submission(reason: 'Validation errors')
           expect(application.current_state).to eq(:submission_failed)
         end
 
         it 'can transition to submitted' do
-          expect(application.may_submit?).to be true
-          application.submit('Application submitted')
+          expect(application.can_submit?).to be true
+          application.submit(reason: 'Application submitted')
           expect(application.current_state).to eq(:submitted)
         end
 
         it 'can transition to expired' do
-          expect(application.may_expire?).to be true
-          application.expire('Application expired')
+          expect(application.can_expire?).to be true
+          application.expire(**expire_comment)
           expect(application.current_state).to eq(:expired)
         end
 
         it 'cannot transition to determined or determination_failed' do
-          expect(application.may_determine?).to be false
-          expect(application.may_failed_determination?).to be false
-          expect { application.determine }.to raise_error(ArgumentError)
-          expect { application.failed_determination }.to raise_error(ArgumentError)
+          expect(application.can_determine?).to be false
+          expect(application.can_failed_determination?).to be false
+          expect { application.determine }.to raise_error(RuntimeError)
+          expect { application.failed_determination }.to raise_error(RuntimeError)
         end
 
         it 'cannot transition to initial (already there)' do
-          expect(application.may_reset?).to be false
-          expect { application.reset }.to raise_error(ArgumentError)
+          expect(application.can_reset?).to be false
+          expect { application.reset }.to raise_error(RuntimeError)
         end
       end
 
@@ -201,31 +201,31 @@ RSpec.describe IndividualMarket::Application, type: :model do
         let(:application) { FactoryBot.create(:individual_market_application, :submission_failed) }
 
         it 'can transition to initial via reset' do
-          expect(application.may_reset?).to be true
-          application.reset('Resetting application')
+          expect(application.can_reset?).to be true
+          application.reset(reason: 'Resetting application')
           expect(application.current_state).to eq(:initial)
         end
 
         it 'can transition to submitted' do
-          expect(application.may_submit?).to be true
-          application.submit('Re-submitting application')
+          expect(application.can_submit?).to be true
+          application.submit(reason: 'Re-submitting application')
           expect(application.current_state).to eq(:submitted)
         end
 
         it 'can transition to expired' do
-          expect(application.may_expire?).to be true
-          application.expire('Application expired')
+          expect(application.can_expire?).to be true
+          application.expire(**expire_comment)
           expect(application.current_state).to eq(:expired)
         end
 
         it 'cannot transition to determined or determination_failed' do
-          expect(application.may_determine?).to be false
-          expect(application.may_failed_determination?).to be false
+          expect(application.can_determine?).to be false
+          expect(application.can_failed_determination?).to be false
         end
 
         it 'cannot transition to submission_failed (already there)' do
-          expect(application.may_failed_submission?).to be false
-          expect { application.failed_submission }.to raise_error(ArgumentError)
+          expect(application.can_failed_submission?).to be false
+          expect { application.failed_submission }.to raise_error(RuntimeError)
         end
       end
 
@@ -233,31 +233,31 @@ RSpec.describe IndividualMarket::Application, type: :model do
         let(:application) { FactoryBot.create(:individual_market_application, :submitted) }
 
         it 'can transition to determined' do
-          expect(application.may_determine?).to be true
-          application.determine('Application determined')
+          expect(application.can_determine?).to be true
+          application.determine(reason: 'Application determined')
           expect(application.current_state).to eq(:determined)
         end
 
         it 'can transition to determination_failed' do
-          expect(application.may_failed_determination?).to be true
-          application.failed_determination('Determination failed')
+          expect(application.can_failed_determination?).to be true
+          application.failed_determination(reason: 'Determination failed')
           expect(application.current_state).to eq(:determination_failed)
         end
 
         it 'can transition to expired' do
-          expect(application.may_expire?).to be true
-          application.expire('Application expired')
+          expect(application.can_expire?).to be true
+          application.expire(**expire_comment)
           expect(application.current_state).to eq(:expired)
         end
 
         it 'cannot transition to initial or submission_failed' do
-          expect(application.may_reset?).to be false
-          expect(application.may_failed_submission?).to be false
+          expect(application.can_reset?).to be false
+          expect(application.can_failed_submission?).to be false
         end
 
         it 'cannot transition to submitted (already there)' do
-          expect(application.may_submit?).to be false
-          expect { application.submit }.to raise_error(ArgumentError)
+          expect(application.can_submit?).to be false
+          expect { application.submit }.to raise_error(RuntimeError)
         end
       end
 
@@ -266,31 +266,31 @@ RSpec.describe IndividualMarket::Application, type: :model do
 
         describe 'valid transitions' do
           it 'can transition to expired' do
-            expect(application.may_expire?).to be true
-            application.expire(expire_comment)
+            expect(application.can_expire?).to be true
+            application.expire(**expire_comment)
             expect(application.current_state).to eq(:expired)
           end
         end
 
         describe 'invalid transitions' do
           it 'cannot transition to initial state' do
-            expect(application.may_reset?).to be false
+            expect(application.can_reset?).to be false
           end
 
           it 'cannot transition to submission_failed state' do
-            expect(application.may_failed_submission?).to be false
+            expect(application.can_failed_submission?).to be false
           end
 
           it 'cannot transition to submitted state' do
-            expect(application.may_submit?).to be false
+            expect(application.can_submit?).to be false
           end
 
           it 'cannot transition to determination_failed state' do
-            expect(application.may_failed_determination?).to be false
+            expect(application.can_failed_determination?).to be false
           end
 
           it 'cannot transition to determined state (already there)' do
-            expect(application.may_determine?).to be false
+            expect(application.can_determine?).to be false
           end
         end
       end
@@ -299,17 +299,17 @@ RSpec.describe IndividualMarket::Application, type: :model do
         let(:application) { FactoryBot.create(:individual_market_application, :determination_failed) }
 
         it 'can transition to expired' do
-          expect(application.may_expire?).to be true
-          application.expire('Application expired')
+          expect(application.can_expire?).to be true
+          application.expire(**expire_comment)
           expect(application.current_state).to eq(:expired)
         end
 
         it 'cannot transition to other states' do
-          expect(application.may_reset?).to be false
-          expect(application.may_failed_submission?).to be false
-          expect(application.may_submit?).to be false
-          expect(application.may_failed_determination?).to be false
-          expect(application.may_determine?).to be false
+          expect(application.can_reset?).to be false
+          expect(application.can_failed_submission?).to be false
+          expect(application.can_submit?).to be false
+          expect(application.can_failed_determination?).to be false
+          expect(application.can_determine?).to be false
         end
       end
 
@@ -317,12 +317,12 @@ RSpec.describe IndividualMarket::Application, type: :model do
         let(:application) { FactoryBot.create(:individual_market_application, :expired) }
 
         it 'cannot transition to any other state' do
-          expect(application.may_reset?).to be false
-          expect(application.may_failed_submission?).to be false
-          expect(application.may_submit?).to be false
-          expect(application.may_failed_determination?).to be false
-          expect(application.may_determine?).to be false
-          expect(application.may_expire?).to be false
+          expect(application.can_reset?).to be false
+          expect(application.can_failed_submission?).to be false
+          expect(application.can_submit?).to be false
+          expect(application.can_failed_determination?).to be false
+          expect(application.can_determine?).to be false
+          expect(application.can_expire?).to be false
         end
       end
     end
@@ -331,14 +331,14 @@ RSpec.describe IndividualMarket::Application, type: :model do
       let(:state_history) { application.state_histories.first }
 
       before :each do
-        application.submit(comment, reason)
+        application.submit(**comment1, **reason1)
         application.save!
         application.reload
       end
 
       context 'when comment and reason are provided' do
-        let(:comment) { 'Completed application' }
-        let(:reason) { 'COMPLETE' }
+        let(:comment1) { {comment: 'Completed application'} }
+        let(:reason1) { {reason: 'COMPLETE'} }
 
         it 'persists from state' do
           expect(state_history.from_state).to eq(:initial)
@@ -366,8 +366,8 @@ RSpec.describe IndividualMarket::Application, type: :model do
       end
 
       context 'when comment and reason are not provided' do
-        let(:comment) { nil }
-        let(:reason) { nil }
+        let(:comment1) { {comment: nil } }
+        let(:reason1) { {reason: nil } }
 
         it 'persists nil comment' do
           expect(state_history.comment).to be_nil
@@ -383,13 +383,13 @@ RSpec.describe IndividualMarket::Application, type: :model do
       it 'raises error when transitioning from an invalid state' do
         application.current_state = :invalid_state
 
-        expect { application.submit }.to raise_error(ArgumentError, /Invalid from_state/)
+        expect { application.submit }.to raise_error(RuntimeError, /Invalid transition from invalid_state/)
       end
 
       it 'raises error when attempting an invalid transition' do
         application.submit # Move to submitted state
 
-        expect { application.submit }.to raise_error(ArgumentError, /Cannot submit from state/)
+        expect { application.submit }.to raise_error(RuntimeError, /Invalid transition from submitted/)
       end
     end
   end

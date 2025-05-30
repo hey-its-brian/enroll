@@ -9,6 +9,7 @@ module IndividualMarket
   # @see Sbm::Application The parent class following Single Table Inheritance pattern
   class Application < Sbm::Application
     include Eligibilities::Visitors::Visitable
+    include Eligibilities::V3::StateMachine
 
     # @!attribute applicants
     # @return [Array<IndividualMarket::Applicant>] Collection of individuals within the application
@@ -127,7 +128,7 @@ module IndividualMarket
     #                          Examples: 1) An in progress application exists and the user creates a new application,
     #                          the old application will be marked as expired.
     #                          2) FUTURE USE CASE: All applications that are older than specific number of years could be marked as expired.
-    ALL_STATES = %i[
+    STATES = %i[
       initial
       submission_failed
       submitted
@@ -136,46 +137,13 @@ module IndividualMarket
       expired
     ].freeze
 
-    # Defines valid state transitions for the state machine
-    # @!attribute STATE_TRANSITIONS
-    # @return [Hash] Mapping of events to their from states and to states
-    STATE_TRANSITIONS = {
-      reset: {
-        from: [:submission_failed],
-        to: :initial
-      },
-      failed_submission: {
-        from: [:initial],
-        to: :submission_failed
-      },
-      submit: {
-        from: [:initial, :submission_failed],
-        to: :submitted
-      },
-      failed_determination: {
-        from: [:submitted],
-        to: :determination_failed
-      },
-      determine: {
-        from: [:submitted],
-        to: :determined
-      },
-      expire: {
-        from: [:initial, :submission_failed, :submitted, :determination_failed, :determined],
-        to: :expired
-      }
-    }.freeze
-
-    STATE_TRANSITIONS.each_key do |event|
-      # Dynamically define may_*? methods for each event to check if transition is allowed
-      define_method("may_#{event}?") do
-        STATE_TRANSITIONS[event][:from].include?(current_state)
-      end
-
-      # Dynamically define event methods for state transitions
-      define_method(event) do |comment = nil, reason = nil|
-        transition_state(event, comment, reason)
-      end
+    state_transitions do
+      action :reset, from: [:submission_failed], to: :initial
+      action :failed_submission, from: [:initial], to: :submission_failed
+      action :submit, from: [:initial, :submission_failed], to: :submitted
+      action :failed_determination, from: [:submitted], to: :determination_failed
+      action :determine, from: [:submitted], to: :determined
+      action :expire, from: [:initial, :submission_failed, :submitted, :determination_failed, :determined], to: :expired
     end
 
     # Finds and returns the applicant who is marked as the primary applicant
@@ -216,33 +184,6 @@ module IndividualMarket
       # Check if there is exactly one primary applicant
       errors.add(:applicants, 'must have exactly one primary applicant') if primary_applicants.size != 1
     end
-
-    # Handles state transitions with validation and state history tracking
-    # @param event [Symbol] The event triggering the state transition
-    # @param comment [String, nil] Optional comment about why the state changed
-    # @param reason [String, nil] Optional reason code for the state change
-    # @raise [ArgumentError] When current_state is invalid or transition is not allowed
-    # @return [void]
-    def transition_state(event, comment = nil, reason = nil)
-      raise(ArgumentError, "Invalid from_state: #{current_state}") if ALL_STATES.exclude?(current_state)
-
-      transition = STATE_TRANSITIONS[event]
-      raise(ArgumentError, "Cannot #{event} from state: #{current_state}") unless send("may_#{event}?")
-
-      from_state = current_state
-      self.current_state = transition[:to]
-      state_histories.build(
-        effective_on: Date.today,
-        from_state: from_state,
-        to_state: transition[:to],
-        transition_at: DateTime.now,
-        event: event,
-        comment: comment,
-        reason: reason
-      )
-    end
-
-    # -- State Machine End --
 
     # Validates that there are no duplicate relationships with the same source and relative
     def no_duplicate_relationships
