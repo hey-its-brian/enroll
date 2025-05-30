@@ -34,7 +34,7 @@ class MigrateExistingOtherApplicationsToPopulateOriginReason < Mongoid::Migratio
       puts "Found #{application_hbx_ids.count} applications."
       # Perform a bulk update to set `origin`, `generation_reason`, and `updated_at`
       applications.update_all(
-        origin: "migration",
+        origin: "user",
         generation_reason: "manual",
         updated_at: DateTime.now.strftime('%Y-%m-%d %H:%M:%S%z')
       )
