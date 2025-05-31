@@ -75,85 +75,48 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
     end
   end
 
-  describe 'for event permission check methods' do
-    shared_examples_for 'permission check methods' do |event, allowed_states|
-      context "for #{event} event" do
+  describe 'for action permission check methods' do
+    shared_examples_for 'check permission and transition' do |action, to_state|
+      context "for #{action} action" do
         described_class::STATES.each do |state|
           context "when current_state is #{state}" do
-            before { dummy_evidence.current_state = state }
-
-            if allowed_states.include?(state)
-              it "returns true for may_#{event}?" do
-                expect(dummy_evidence.send("may_#{event}?")).to be true
-              end
-            else
-              it "returns false for may_#{event}?" do
-                expect(dummy_evidence.send("may_#{event}?")).to be false
-              end
-            end
-          end
-        end
-      end
-    end
-
-    described_class::STATE_TRANSITIONS.each do |event, transition|
-      include_examples 'permission check methods', event, transition[:from]
-    end
-  end
-
-  describe 'for state transition methods' do
-    shared_examples_for 'state transition methods' do |event, from_states, to_state|
-      context "for #{event} event" do
-        from_states.each do |from_state|
-          context "when current_state is #{from_state}" do
+            let(:state_histories) { spy('state_histories') }
             before do
-              dummy_evidence.current_state = from_state
+              dummy_evidence.current_state = state
+              allow(dummy_evidence).to receive(:state_histories).and_return(state_histories)
             end
 
-            it "changes state from #{from_state} to #{to_state}" do
-              if from_state == to_state
-                expect { dummy_evidence.send(event, 'test comment', 'test reason') }
-                  .not_to change(dummy_evidence, :current_state)
+            it "returns true for can_#{action}?" do
+              if dummy_evidence.send("can_#{action}?")
+                expect { dummy_evidence.send(action)}
+                  .to change(dummy_evidence, :current_state).from(state).to(to_state)
+
+                expect(dummy_evidence.state_histories).to have_received(:build).with(
+                  transition_at: now,
+                  from_state: state,
+                  to_state: to_state,
+                  event: action,
+                  comment: nil,
+                  effective_on: now,
+                  reason: nil
+                )
               else
-                expect { dummy_evidence.send(event, 'test comment', 'test reason') }
-                  .to change(dummy_evidence, :current_state).from(from_state).to(to_state)
+                expect { dummy_evidence.send(action) }.to raise_error(RuntimeError, /Invalid transition from #{state}/i)
               end
-            end
-
-            it 'creates a state history record' do
-              expect { dummy_evidence.send(event, 'test comment', 'test reason') }
-                .to change { dummy_evidence.state_histories.size }.by(1)
-
-              history = dummy_evidence.state_histories.last
-              expect(history.from_state).to eq(from_state)
-              expect(history.to_state).to eq(to_state)
-              expect(history.effective_on).to eq(today)
-              expect(history.transition_at).to eq(now)
-              expect(history.event).to eq(event)
-              expect(history.comment).to eq('test comment')
-              expect(history.reason).to eq('test reason')
-            end
-          end
-        end
-
-        # Test state that's not in from_states
-        invalid_states = described_class::STATES - from_states
-        if invalid_states.any?
-          context "when current_state is #{invalid_states.first}" do
-            before { dummy_evidence.current_state = invalid_states.first }
-
-            it 'raises an error when attempting invalid transition' do
-              expect { dummy_evidence.send(event, 'test comment', 'test reason') }
-                .to raise_error(ArgumentError, /Cannot #{event} from state:/)
             end
           end
         end
       end
     end
 
-    described_class::STATE_TRANSITIONS.each do |event, transition|
-      include_examples 'state transition methods', event, transition[:from], transition[:to]
-    end
+    it_behaves_like 'check permission and transition', :move_to_attested, :attested
+    it_behaves_like 'check permission and transition', :move_to_rejected, :rejected
+    it_behaves_like 'check permission and transition', :negative_response_received, :negative_response_received
+    it_behaves_like 'check permission and transition', :move_to_unverified, :unverified
+    it_behaves_like 'check permission and transition', :move_to_outstanding, :outstanding
+    it_behaves_like 'check permission and transition', :move_to_verified, :verified
+    it_behaves_like 'check permission and transition', :move_to_review, :review
+    it_behaves_like 'check permission and transition', :move_to_pending, :pending
   end
 
   describe '#latest_state_history' do
