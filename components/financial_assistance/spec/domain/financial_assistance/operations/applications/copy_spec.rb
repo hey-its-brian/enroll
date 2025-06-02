@@ -46,6 +46,12 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
                       person_hbx_id: person2.hbx_id)
   end
 
+  let(:enabled) { false }
+
+  before :each do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(enabled)
+  end
+
   describe 'failure results' do
     context 'invalid aasm state' do
       before do
@@ -1165,43 +1171,59 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
       income_evidence.documents.create(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
     end
 
-    before do
-      new_applicant = subject.call(application_id: application.id).success.applicants.first
-      @new_income_evi = new_applicant.income_evidence
-      @new_verification_history = @new_income_evi.verification_histories.first
-      @new_request_result = @new_income_evi.request_results.first
-      @new_wfst = @new_income_evi.workflow_state_transitions.first
-      @new_document = @new_income_evi.documents.first
+    context 'when qhp_application feature is disabled' do
+      before do
+        new_applicant = subject.call(application_id: application.id).success.applicants.first
+        @new_income_evi = new_applicant.income_evidence
+        @new_verification_history = @new_income_evi.verification_histories.first
+        @new_request_result = @new_income_evi.request_results.first
+        @new_wfst = @new_income_evi.workflow_state_transitions.first
+        @new_document = @new_income_evi.documents.first
+      end
+
+      it 'should clone income_evidence' do
+        expect(@new_income_evi).not_to be_nil
+        expect(@new_income_evi.created_at).not_to be_nil
+        expect(@new_income_evi.updated_at).not_to be_nil
+      end
+
+      it 'should clone verification_history' do
+        expect(@new_income_evi.verification_histories).not_to be_empty
+        expect(@new_verification_history.created_at).not_to be_nil
+        expect(@new_verification_history.updated_at).not_to be_nil
+      end
+
+      it 'should clone request_result' do
+        expect(@new_income_evi.request_results).not_to be_empty
+        expect(@new_request_result.created_at).not_to be_nil
+        expect(@new_request_result.updated_at).not_to be_nil
+      end
+
+      it 'should clone workflow_state_transition' do
+        expect(@new_income_evi.workflow_state_transitions).not_to be_empty
+        expect(@new_wfst.created_at).not_to be_nil
+        expect(@new_wfst.updated_at).not_to be_nil
+      end
+
+      it 'should clone documents' do
+        expect(@new_income_evi.documents).not_to be_empty
+        expect(@new_document.created_at).not_to be_nil
+        expect(@new_document.updated_at).not_to be_nil
+      end
     end
 
-    it 'should clone income_evidence' do
-      expect(@new_income_evi).not_to be_nil
-      expect(@new_income_evi.created_at).not_to be_nil
-      expect(@new_income_evi.updated_at).not_to be_nil
-    end
+    context 'when qhp_application feature is enabled' do
+      let(:enabled) { true }
+      let(:operation_result) { subject.call({ application_id: application.id, generation_reason: :manual, origin: :user }) }
+      let(:new_applicant) { operation_result.success.applicants.first }
 
-    it 'should clone verification_history' do
-      expect(@new_income_evi.verification_histories).not_to be_empty
-      expect(@new_verification_history.created_at).not_to be_nil
-      expect(@new_verification_history.updated_at).not_to be_nil
-    end
+      it 'returns a success result' do
+        expect(operation_result).to be_success
+      end
 
-    it 'should clone request_result' do
-      expect(@new_income_evi.request_results).not_to be_empty
-      expect(@new_request_result.created_at).not_to be_nil
-      expect(@new_request_result.updated_at).not_to be_nil
-    end
-
-    it 'should clone workflow_state_transition' do
-      expect(@new_income_evi.workflow_state_transitions).not_to be_empty
-      expect(@new_wfst.created_at).not_to be_nil
-      expect(@new_wfst.updated_at).not_to be_nil
-    end
-
-    it 'should clone documents' do
-      expect(@new_income_evi.documents).not_to be_empty
-      expect(@new_document.created_at).not_to be_nil
-      expect(@new_document.updated_at).not_to be_nil
+      it 'returns applicant without income_evidence' do
+        expect(new_applicant.income_evidence).to be_nil
+      end
     end
   end
 
@@ -1226,43 +1248,59 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
       esi_evidence.documents.create(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
     end
 
-    before do
-      new_applicant = subject.call(application_id: application.id).success.applicants.first
-      @new_esi_evi = new_applicant.esi_evidence
-      @new_verification_history = @new_esi_evi.verification_histories.first
-      @new_request_result = @new_esi_evi.request_results.first
-      @new_wfst = @new_esi_evi.workflow_state_transitions.first
-      @new_document = @new_esi_evi.documents.first
+    context 'when qhp_application feature is enabled' do
+      let(:enabled) { true }
+      let(:operation_result) { subject.call({ application_id: application.id, generation_reason: :manual, origin: :user }) }
+      let(:new_applicant) { operation_result.success.applicants.first }
+
+      it 'returns a success result' do
+        expect(operation_result).to be_success
+      end
+
+      it 'returns applicant without esi_evidence' do
+        expect(new_applicant.esi_evidence).to be_nil
+      end
     end
 
-    it 'should clone esi_evidence' do
-      expect(@new_esi_evi).not_to be_nil
-      expect(@new_esi_evi.created_at).not_to be_nil
-      expect(@new_esi_evi.updated_at).not_to be_nil
-    end
+    context 'when qhp_application feature is disabled' do
+      before do
+        new_applicant = subject.call(application_id: application.id).success.applicants.first
+        @new_esi_evi = new_applicant.esi_evidence
+        @new_verification_history = @new_esi_evi.verification_histories.first
+        @new_request_result = @new_esi_evi.request_results.first
+        @new_wfst = @new_esi_evi.workflow_state_transitions.first
+        @new_document = @new_esi_evi.documents.first
+      end
 
-    it 'should clone verification_history' do
-      expect(@new_esi_evi.verification_histories).not_to be_empty
-      expect(@new_verification_history.created_at).not_to be_nil
-      expect(@new_verification_history.updated_at).not_to be_nil
-    end
+      it 'should clone esi_evidence' do
+        expect(@new_esi_evi).not_to be_nil
+        expect(@new_esi_evi.created_at).not_to be_nil
+        expect(@new_esi_evi.updated_at).not_to be_nil
+      end
 
-    it 'should clone request_result' do
-      expect(@new_esi_evi.request_results).not_to be_empty
-      expect(@new_request_result.created_at).not_to be_nil
-      expect(@new_request_result.updated_at).not_to be_nil
-    end
+      it 'should clone verification_history' do
+        expect(@new_esi_evi.verification_histories).not_to be_empty
+        expect(@new_verification_history.created_at).not_to be_nil
+        expect(@new_verification_history.updated_at).not_to be_nil
+      end
 
-    it 'should clone workflow_state_transition' do
-      expect(@new_esi_evi.workflow_state_transitions).not_to be_empty
-      expect(@new_wfst.created_at).not_to be_nil
-      expect(@new_wfst.updated_at).not_to be_nil
-    end
+      it 'should clone request_result' do
+        expect(@new_esi_evi.request_results).not_to be_empty
+        expect(@new_request_result.created_at).not_to be_nil
+        expect(@new_request_result.updated_at).not_to be_nil
+      end
 
-    it 'should clone documents' do
-      expect(@new_esi_evi.documents).not_to be_empty
-      expect(@new_document.created_at).not_to be_nil
-      expect(@new_document.updated_at).not_to be_nil
+      it 'should clone workflow_state_transition' do
+        expect(@new_esi_evi.workflow_state_transitions).not_to be_empty
+        expect(@new_wfst.created_at).not_to be_nil
+        expect(@new_wfst.updated_at).not_to be_nil
+      end
+
+      it 'should clone documents' do
+        expect(@new_esi_evi.documents).not_to be_empty
+        expect(@new_document.created_at).not_to be_nil
+        expect(@new_document.updated_at).not_to be_nil
+      end
     end
   end
 
@@ -1288,43 +1326,59 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
       non_esi_evidence.documents.create(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
     end
 
-    before do
-      new_applicant = subject.call(application_id: application.id).success.applicants.first
-      @new_non_esi_evi = new_applicant.non_esi_evidence
-      @new_verification_history = @new_non_esi_evi.verification_histories.first
-      @new_request_result = @new_non_esi_evi.request_results.first
-      @new_wfst = @new_non_esi_evi.workflow_state_transitions.first
-      @new_document = @new_non_esi_evi.documents.first
+    context 'when qhp_application feature is enabled' do
+      let(:enabled) { true }
+      let(:operation_result) { subject.call({ application_id: application.id, generation_reason: :manual, origin: :user }) }
+      let(:new_applicant) { operation_result.success.applicants.first }
+
+      it 'returns a success result' do
+        expect(operation_result).to be_success
+      end
+
+      it 'returns applicant without non_esi_evidence' do
+        expect(new_applicant.non_esi_evidence).to be_nil
+      end
     end
 
-    it 'should clone non_esi_evidence' do
-      expect(@new_non_esi_evi).not_to be_nil
-      expect(@new_non_esi_evi.created_at).not_to be_nil
-      expect(@new_non_esi_evi.updated_at).not_to be_nil
-    end
+    context 'when qhp_application feature is disabled' do
+      before do
+        new_applicant = subject.call(application_id: application.id).success.applicants.first
+        @new_non_esi_evi = new_applicant.non_esi_evidence
+        @new_verification_history = @new_non_esi_evi.verification_histories.first
+        @new_request_result = @new_non_esi_evi.request_results.first
+        @new_wfst = @new_non_esi_evi.workflow_state_transitions.first
+        @new_document = @new_non_esi_evi.documents.first
+      end
 
-    it 'should clone verification_history' do
-      expect(@new_non_esi_evi.verification_histories).not_to be_empty
-      expect(@new_verification_history.created_at).not_to be_nil
-      expect(@new_verification_history.updated_at).not_to be_nil
-    end
+      it 'should clone non_esi_evidence' do
+        expect(@new_non_esi_evi).not_to be_nil
+        expect(@new_non_esi_evi.created_at).not_to be_nil
+        expect(@new_non_esi_evi.updated_at).not_to be_nil
+      end
 
-    it 'should clone request_result' do
-      expect(@new_non_esi_evi.request_results).not_to be_empty
-      expect(@new_request_result.created_at).not_to be_nil
-      expect(@new_request_result.updated_at).not_to be_nil
-    end
+      it 'should clone verification_history' do
+        expect(@new_non_esi_evi.verification_histories).not_to be_empty
+        expect(@new_verification_history.created_at).not_to be_nil
+        expect(@new_verification_history.updated_at).not_to be_nil
+      end
 
-    it 'should clone workflow_state_transition' do
-      expect(@new_non_esi_evi.workflow_state_transitions).not_to be_empty
-      expect(@new_wfst.created_at).not_to be_nil
-      expect(@new_wfst.updated_at).not_to be_nil
-    end
+      it 'should clone request_result' do
+        expect(@new_non_esi_evi.request_results).not_to be_empty
+        expect(@new_request_result.created_at).not_to be_nil
+        expect(@new_request_result.updated_at).not_to be_nil
+      end
 
-    it 'should clone documents' do
-      expect(@new_non_esi_evi.documents).not_to be_empty
-      expect(@new_document.created_at).not_to be_nil
-      expect(@new_document.updated_at).not_to be_nil
+      it 'should clone workflow_state_transition' do
+        expect(@new_non_esi_evi.workflow_state_transitions).not_to be_empty
+        expect(@new_wfst.created_at).not_to be_nil
+        expect(@new_wfst.updated_at).not_to be_nil
+      end
+
+      it 'should clone documents' do
+        expect(@new_non_esi_evi.documents).not_to be_empty
+        expect(@new_document.created_at).not_to be_nil
+        expect(@new_document.updated_at).not_to be_nil
+      end
     end
   end
 
@@ -1350,43 +1404,59 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
       local_mec_evidence.documents.create(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
     end
 
-    before do
-      new_applicant = subject.call(application_id: application.id).success.applicants.first
-      @new_local_mec = new_applicant.local_mec_evidence
-      @new_verification_history = @new_local_mec.verification_histories.first
-      @new_request_result = @new_local_mec.request_results.first
-      @new_wfst = @new_local_mec.workflow_state_transitions.first
-      @new_document = @new_local_mec.documents.first
+    context 'when qhp_application feature is enabled' do
+      let(:enabled) { true }
+      let(:operation_result) { subject.call({ application_id: application.id, generation_reason: :manual, origin: :user }) }
+      let(:new_applicant) { operation_result.success.applicants.first }
+
+      it 'returns a success result' do
+        expect(operation_result).to be_success
+      end
+
+      it 'returns applicant without local_mec_evidence' do
+        expect(new_applicant.local_mec_evidence).to be_nil
+      end
     end
 
-    it 'should clone local_mec_evidence' do
-      expect(@new_local_mec).not_to be_nil
-      expect(@new_local_mec.created_at).not_to be_nil
-      expect(@new_local_mec.updated_at).not_to be_nil
-    end
+    context 'when qhp_application feature is disabled' do
+      before do
+        new_applicant = subject.call(application_id: application.id).success.applicants.first
+        @new_local_mec = new_applicant.local_mec_evidence
+        @new_verification_history = @new_local_mec.verification_histories.first
+        @new_request_result = @new_local_mec.request_results.first
+        @new_wfst = @new_local_mec.workflow_state_transitions.first
+        @new_document = @new_local_mec.documents.first
+      end
 
-    it 'should clone verification_history' do
-      expect(@new_local_mec.verification_histories).not_to be_empty
-      expect(@new_verification_history.created_at).not_to be_nil
-      expect(@new_verification_history.updated_at).not_to be_nil
-    end
+      it 'should clone local_mec_evidence' do
+        expect(@new_local_mec).not_to be_nil
+        expect(@new_local_mec.created_at).not_to be_nil
+        expect(@new_local_mec.updated_at).not_to be_nil
+      end
 
-    it 'should clone request_result' do
-      expect(@new_local_mec.request_results).not_to be_empty
-      expect(@new_request_result.created_at).not_to be_nil
-      expect(@new_request_result.updated_at).not_to be_nil
-    end
+      it 'should clone verification_history' do
+        expect(@new_local_mec.verification_histories).not_to be_empty
+        expect(@new_verification_history.created_at).not_to be_nil
+        expect(@new_verification_history.updated_at).not_to be_nil
+      end
 
-    it 'should clone workflow_state_transition' do
-      expect(@new_local_mec.workflow_state_transitions).not_to be_empty
-      expect(@new_wfst.created_at).not_to be_nil
-      expect(@new_wfst.updated_at).not_to be_nil
-    end
+      it 'should clone request_result' do
+        expect(@new_local_mec.request_results).not_to be_empty
+        expect(@new_request_result.created_at).not_to be_nil
+        expect(@new_request_result.updated_at).not_to be_nil
+      end
 
-    it 'should clone documents' do
-      expect(@new_local_mec.documents).not_to be_empty
-      expect(@new_document.created_at).not_to be_nil
-      expect(@new_document.updated_at).not_to be_nil
+      it 'should clone workflow_state_transition' do
+        expect(@new_local_mec.workflow_state_transitions).not_to be_empty
+        expect(@new_wfst.created_at).not_to be_nil
+        expect(@new_wfst.updated_at).not_to be_nil
+      end
+
+      it 'should clone documents' do
+        expect(@new_local_mec.documents).not_to be_empty
+        expect(@new_document.created_at).not_to be_nil
+        expect(@new_document.updated_at).not_to be_nil
+      end
     end
   end
 
@@ -1462,7 +1532,6 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
     before do
       first_draft_app
       second_draft_app
-      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(enabled)
       @result = subject.call(
         {
           application_id: application.id,
@@ -1486,8 +1555,6 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
     end
 
     context 'when disabled' do
-      let(:enabled) { false }
-
       it 'creates a new application' do
         expect(@result.success).to be_a(FinancialAssistance::Application)
       end
