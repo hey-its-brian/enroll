@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 class DummySessionClass
@@ -285,6 +287,32 @@ RSpec.describe ApplicationController do
       it 'should update the admin bookmark url with the url that is passed' do
         subject.send(:set_admin_bookmark_url)
         expect(current_person.consumer_role.admin_bookmark_url).to eq('http://test.host')
+      end
+    end
+  end
+
+  describe 'set_consumer_bookmark_url' do
+    let(:current_person) { FactoryBot.create(:person, :with_consumer_role, first_name: "test1") }
+    let(:current_user) { FactoryBot.create(:user, :person => current_person) }
+    let(:bookmark_url) { '/path/to/bookmark' }
+
+    context 'current user is not hbx admin and role is consumer' do
+      before do
+        sign_in(current_user)
+        allow(subject.request).to receive(:fullpath).and_return(bookmark_url)
+        allow(current_user).to receive(:has_hbx_staff_role?).and_return(false)
+        controller.instance_variable_set(:@person, current_person)
+      end
+
+      it 'should update the consumer bookmark url with the url that is passed' do
+        bookmark_url = family_account_path
+        controller.send(:set_consumer_bookmark_url, bookmark_url)
+        expect(current_person.consumer_role.bookmark_url).to eq('/families/home')
+      end
+
+      it 'should update the consumer bookmark url with the last url visited' do
+        controller.send(:set_consumer_bookmark_url)
+        expect(current_person.consumer_role.bookmark_url).to eq(bookmark_url)
       end
     end
   end

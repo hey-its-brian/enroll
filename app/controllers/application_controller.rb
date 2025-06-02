@@ -474,7 +474,7 @@ class ApplicationController < ActionController::Base
   def set_consumer_bookmark_url(url = nil) # rubocop:disable Naming/AccessorMethodName
     set_current_person
     role = @person.try(:consumer_role)
-    bookmark_url = url || request.original_url
+    bookmark_url = url || request.fullpath
     save_bookmark role, bookmark_url
     session[:last_market_visited] = 'individual'
   end
