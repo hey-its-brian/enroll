@@ -34,8 +34,8 @@ FactoryBot.define do
 
     trait :with_applicants do
       after(:build) do |application|
-        FactoryBot.build(:individual_market_applicant, :with_person_name, :with_demographics, application: application)
-        FactoryBot.build(:individual_market_applicant, :dependent, :with_person_name, :with_demographics, application: application)
+        FactoryBot.build(:individual_market_applicant, :with_person_name, :with_demographics, :with_eligibilities, application: application)
+        FactoryBot.build(:individual_market_applicant, :dependent, :with_person_name, :with_demographics, :with_eligibilities, application: application)
       end
     end
 

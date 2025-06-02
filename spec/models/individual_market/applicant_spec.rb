@@ -28,6 +28,17 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
     )
   end
 
+  let(:dependent_applicant) do
+    FactoryBot.create(
+      :individual_market_applicant,
+      :dependent,
+      :with_person_name,
+      :with_demographics,
+      :with_eligibilities,
+      application: application
+    )
+  end
+
   describe 'associations' do
     it 'embeds one person_name' do
       expect(applicant.person_name).to be_a(PersonName)
@@ -94,6 +105,19 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
 
       it 'returns the relationship kind' do
         expect(dependent_applicant.relationship).to eq('spouse')
+      end
+    end
+
+    context 'when no relationship exists' do
+      it 'returns nil' do
+        expect(dependent_applicant.relationship).to be_nil
+      end
+    end
+
+    context 'when there is no primary applicant' do
+      it 'returns nil' do
+        application.applicants.where(is_primary_applicant: true).destroy_all
+        expect(dependent_applicant.relationship).to be_nil
       end
     end
   end

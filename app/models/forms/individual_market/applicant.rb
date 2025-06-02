@@ -199,7 +199,7 @@ module Forms
         @eligibilities = if attributes[:eligibilities].present?
                            attributes[:eligibilities]
                          else
-                           initialize_eligibilities
+                           find_or_build_eligibilities
                          end
       end
 
@@ -300,7 +300,7 @@ module Forms
           demographics: demographics&.to_h,
           immigration_information: immigration_params,
           addresses: addresses_params,
-          eligibilities: find_or_build_eligibilities
+          eligibilities: @eligibilities
         }
 
         if is_primary_applicant == "false" && address_same_as_primary == "true"
@@ -414,7 +414,8 @@ module Forms
       def initialize_eligibilities
         [{
           key: :individual_market_eligibility,
-          title: "Individual Market Eligibility"
+          title: "Individual Market Eligibility",
+          _type: Eligibilities::V3::IndividualMarketEligibility
         }]
       end
 
@@ -494,8 +495,9 @@ module Forms
       # @return [IndividualMarket::Applicant] The updated applicant
       def update_existing_applicant(applicant, values)
         handle_address_changes(applicant)
-        applicant.update(values)
+        applicant.update(values.except(:eligibilities))
         handle_address_changes(applicant)
+        applicant.save!
         applicant
       end
 

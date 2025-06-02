@@ -29,7 +29,19 @@ module Eligibilities
 
       # @!attribute is_eligible
       #   @return [Boolean] Whether the applicant is eligible based on all bases being satisfied
-      field :is_eligible, type: Boolean
+      field :is_eligible, type: Boolean, default: false
+
+      validates :is_eligible, presence: true
+      validate :unique_basis_kinds
+
+      private
+
+      # @!attribute unique_basis_kinds
+      #   @return [Boolean] Whether the basis kinds are unique
+      def unique_basis_kinds
+        embedded_basis_kinds = bases.map(&:basis_kind)
+        errors.add(:bases, "Duplicate basis kinds") if embedded_basis_kinds.uniq.length != embedded_basis_kinds.length
+      end
     end
   end
 end

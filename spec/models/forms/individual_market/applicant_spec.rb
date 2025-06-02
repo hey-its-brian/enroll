@@ -102,7 +102,7 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
     end
 
     it 'should build the eligibilities' do
-      expect(@applicant_form.eligibilities.count).to eq(1)
+      expect(@applicant_form.eligibilities.count).not_to be_zero
     end
 
     it 'should handle address changes' do

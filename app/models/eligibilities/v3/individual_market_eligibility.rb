@@ -98,6 +98,37 @@ module Eligibilities
         evidences.where(_type: 'Eligibilities::V3::Evidences::AliveEvidence').first
       end
 
+      # Retrieves the QHP determination for this eligibility
+      def qhp_determination
+        determinations.where(_type: 'Eligibilities::V3::Determinations::IndividualMarketDetermination').last
+      end
+
+      # Retrieves the CSR determination for this eligibility
+      #
+      # @return [Eligibilities::V3::Determinations::CsrDetermination, nil] The CSR determination or nil if not found
+      def csr_determination
+        determinations.where(_type: 'Eligibilities::V3::Determinations::CsrDetermination').last
+      end
+
+      # Builds a new QHP determination for this eligibility
+      #
+      # @return [Eligibilities::V3::Determinations::IndividualMarketDetermination] The new QHP determination
+      def build_individual_market_determination
+        determinations.build(
+          _type: 'Eligibilities::V3::Determinations::IndividualMarketDetermination'
+        )
+      end
+
+      # Builds a new CSR determination for this eligibility
+      #
+      # @return [Eligibilities::V3::Determinations::CsrDetermination] The new CSR determination
+      def build_csr_determination
+        determinations.build(
+          _type: 'Eligibilities::V3::Determinations::CsrDetermination',
+          csr_type: 'csr_limited'
+        )
+      end
+
       private
 
       # Adds to errors collection if duplicate evidence types are found
