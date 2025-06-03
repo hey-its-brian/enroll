@@ -28,22 +28,22 @@ module Eligibilities
     # Returns CSR grant for the eligibility state
     #
     # @return [Eligibilities::Grant] CSR grant if exists, otherwise nil
-    def csr_grant
-      grants.where(key: 'CsrAdjustmentGrant').first
+    def csr_grant_by_year(year)
+      grants.where(key: 'CsrAdjustmentGrant', assistance_year: year).first
     end
 
     # Returns Magi Medicaid grant for the eligibility state
     #
     # @return [Eligibilities::Grant] Magi Medicaid grant if exists, otherwise nil
-    def magi_medicaid_grant
-      grants.where(key: 'MagiMedicaidGrant').first
+    def magi_medicaid_grant_by_year(year)
+      grants.where(key: 'MagiMedicaidGrant', assistance_year: year).first
     end
 
     # Returns Qualified Health Plan (QHP) grant for the eligibility state
     #
     # @return [Eligibilities::Grant] Qualified Health Plan (QHP) grant if exists, otherwise nil
-    def qhp_grant
-      grants.where(key: 'QhpGrant').first
+    def qhp_grant_by_year(year)
+      grants.where(key: 'QhpGrant', assistance_year: year).first
     end
 
     def cumulative_grouped_status

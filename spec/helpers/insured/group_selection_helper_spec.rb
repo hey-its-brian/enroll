@@ -1029,4 +1029,150 @@ RSpec.describe Insured::GroupSelectionHelper, :type => :helper, dbclean: :after_
       end
     end
   end
+
+  describe "#coverage_medicaid_warning" do
+    let(:errors) { [] }
+    let(:family_member) { double("FamilyMember") }
+    let(:family) { double("Family") }
+    let(:year_param) { 2023 }
+
+    before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:choose_coverage_medicaid_warning).and_return(feature_enabled)
+      allow(helper).to receive(:medicaid_eligible?).and_return(medicaid_eligible)
+      allow(helper).to receive(:medicaid_warning_message).and_return("Medicaid warning message")
+    end
+
+    context "when feature is disabled" do
+      let(:feature_enabled) { false }
+      let(:medicaid_eligible) { true }
+
+      it "returns errors without modification" do
+        expect(helper.coverage_medicaid_warning(errors, family_member, family, year_param)).to eq(errors)
+        expect(helper).not_to have_received(:medicaid_eligible?)
+      end
+    end
+
+    context "when feature is enabled but family member is not medicaid eligible" do
+      let(:feature_enabled) { true }
+      let(:medicaid_eligible) { false }
+
+      it "returns errors without modification" do
+        expect(helper.coverage_medicaid_warning(errors, family_member, family, year_param)).to eq(errors)
+        expect(helper).to have_received(:medicaid_eligible?).with(family_member, family, year_param)
+      end
+    end
+
+    context "when feature is enabled and family member is medicaid eligible" do
+      let(:feature_enabled) { true }
+      let(:medicaid_eligible) { true }
+
+      it "adds warning message to errors" do
+        result = helper.coverage_medicaid_warning(errors, family_member, family, year_param)
+        expect(result).to include("Medicaid warning message")
+        expect(helper).to have_received(:medicaid_eligible?).with(family_member, family, year_param)
+      end
+    end
+  end
+
+  describe "#medicaid_eligible?" do
+    let(:family_member) { double("FamilyMember", id: "123", person: double("Person", id: "456")) }
+    let(:family) { double("Family") }
+    let(:year_param) { 2023 }
+    let(:eligibility_determination) { double("EligibilityDetermination") }
+    let(:subject) { double("Subject", person_id: "456") }
+    let(:magi_medicaid_grant) { double("MagiMedicaidGrant", member_ids: [["123"]]) }
+
+    before do
+      allow(helper).to receive(:qhp_application_feature_enabled?).and_return(qhp_enabled)
+      allow(family).to receive(:eligibility_determination).and_return(eligibility_determination)
+      allow(eligibility_determination).to receive(:subjects).and_return([subject])
+      allow(subject).to receive(:magi_medicaid_grant).and_return(magi_medicaid_grant)
+    end
+
+    context "when qhp application feature is enabled" do
+      let(:qhp_enabled) { true }
+
+      context "when member is medicaid eligible" do
+        it "returns true" do
+          allow(eligibility_determination).to receive(:member_medicaid_eligible?).and_return(true)
+          expect(helper.medicaid_eligible?(family_member, family, year_param)).to be true
+        end
+      end
+
+      context "when member is not medicaid eligible" do
+        let(:magi_medicaid_grant) { double("MagiMedicaidGrant", member_ids: [["789"]]) }
+
+        it "returns false" do
+          allow(eligibility_determination).to receive(:member_medicaid_eligible?).and_return(false)
+          expect(helper.medicaid_eligible?(family_member, family, year_param)).to be false
+        end
+      end
+
+      context "when magi_medicaid_grant is nil" do
+        let(:magi_medicaid_grant) { nil }
+
+        it "returns false" do
+          allow(eligibility_determination).to receive(:member_medicaid_eligible?).and_return(false)
+          expect(helper.medicaid_eligible?(family_member, family, year_param)).to be false
+        end
+      end
+    end
+
+    context "when qhp application feature is disabled" do
+      let(:qhp_enabled) { false }
+
+      before do
+        allow(helper).to receive(:family_member_eligible_for_medicaid).with(family_member, family, year_param).and_return(eligibility_result)
+      end
+
+      context "when family_member_eligible_for_medicaid returns true" do
+        let(:eligibility_result) { true }
+
+        it "returns true" do
+          expect(helper.medicaid_eligible?(family_member, family, year_param)).to be true
+        end
+      end
+
+      context "when family_member_eligible_for_medicaid returns false" do
+        let(:eligibility_result) { false }
+
+        it "returns false" do
+          expect(helper.medicaid_eligible?(family_member, family, year_param)).to be false
+        end
+      end
+    end
+  end
+
+  describe "#medicaid_warning_message" do
+    let(:program_name) { "Medicaid/CHIP" }
+
+    before do
+      allow(::FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:remove_cubcare_references).and_return(remove_cubcare)
+      allow(::FinancialAssistanceRegistry).to receive(:[]).with(any_args).and_return(registry_object)
+      allow(registry_object).to receive_message_chain(:setting, :item).and_return(program_name)
+      allow(helper).to receive(:l10n).and_return("Warning message")
+    end
+
+    let(:registry_object) { double("RegistryObject") }
+
+    context "when remove_cubcare_references feature is enabled" do
+      let(:remove_cubcare) { true }
+
+      it "uses the no_cubcare key to get program name" do
+        helper.medicaid_warning_message
+        expect(::FinancialAssistanceRegistry).to have_received(:[]).with(:medicaid_or_chip_program_short_name_no_cubcare)
+        expect(helper).to have_received(:l10n).with("insured.group_selection.medicaid_eligible_warning", { medicaid_or_chip_program_short_name: program_name })
+      end
+    end
+
+    context "when remove_cubcare_references feature is disabled" do
+      let(:remove_cubcare) { false }
+
+      it "uses the regular key to get program name" do
+        helper.medicaid_warning_message
+        expect(::FinancialAssistanceRegistry).to have_received(:[]).with(:medicaid_or_chip_program_short_name)
+        expect(helper).to have_received(:l10n).with("insured.group_selection.medicaid_eligible_warning", { medicaid_or_chip_program_short_name: program_name })
+      end
+    end
+  end
 end

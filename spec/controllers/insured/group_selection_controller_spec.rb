@@ -487,6 +487,248 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
       end
     end
 
+    context 'individual and QHP feature is enabled' do
+      let(:user_2)  { FactoryBot.create(:user, person: person_2) }
+      let(:person_2) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+      let(:primary_applicant) { family.primary_applicant }
+
+      before do
+        allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(true)
+        allow(EnrollRegistry[:choose_coverage_medicaid_warning].feature).to receive(:is_enabled).and_return(true)
+        allow(FinancialAssistanceRegistry[:remove_cubcare_references].feature).to receive(:is_enabled).and_return(true)
+      end
+
+      context 'family has aptc grants present' do
+        let(:grants_config) do
+          {
+            'aptc_csr_credit' => [
+              { key: 'AdvancePremiumAdjustmentGrant' }
+            ]
+          }
+        end
+        let(:family) do
+          FactoryBot.create(:family,
+                            :with_primary_family_member,
+                            :with_eligibility_determination_and_subjects,
+                            person: person_2,
+                            outstanding_verification_status: 'not_enrolled',
+                            eligibility_item_keys: ['aptc_csr_credit'],
+                            assistance_year: TimeKeeper.date_of_record.year,
+                            use_family_member_ids: true,
+                            grants_config: grants_config)
+        end
+
+        it "family member should not have any errors" do
+          sign_in user_2
+          get(
+            :new,
+            params: {
+              person_id: person_2.id,
+              consumer_role_id: person_2.consumer_role.id,
+              change_plan: "",
+              coverage_kind: hbx_enrollment.coverage_kind,
+              market_kind: "individual"
+            }
+          )
+          fm_hash = assigns(:fm_hash)
+          expect(fm_hash.values.flatten.detect{|err| err.to_s.match(/Ineligible for Plan shopping/)}).to eq(nil)
+          expect(response).to have_http_status("200")
+        end
+      end
+
+      context 'family has aptc grants present but members not eligible for plan shopping' do
+        let(:grants_config) do
+          {
+            'aptc_csr_credit' => [
+              { key: 'AdvancePremiumAdjustmentGrant' }
+            ]
+          }
+        end
+        let(:family) do
+          FactoryBot.create(:family,
+                            :with_primary_family_member,
+                            :with_eligibility_determination_and_subjects,
+                            person: person_2,
+                            outstanding_verification_status: 'not_enrolled',
+                            eligibility_item_keys: ['aptc_csr_credit'],
+                            assistance_year: TimeKeeper.date_of_record.year,
+                            use_family_member_ids: false,
+                            grants_config: grants_config)
+        end
+
+        it "family member should have ineligible plan shopping errors" do
+          sign_in user_2
+          get(
+            :new,
+            params: {
+              person_id: person_2.id,
+              consumer_role_id: person_2.consumer_role.id,
+              change_plan: "",
+              coverage_kind: hbx_enrollment.coverage_kind,
+              market_kind: "individual"
+            }
+          )
+          fm_hash = assigns(:fm_hash)
+          expect(fm_hash.values.flatten.any?{|err| err.to_s.match(/Ineligible for Plan shopping/)}).to be_truthy
+          expect(response).to have_http_status("200")
+        end
+      end
+
+      context 'family has aptc grants present and members have outstanding status' do
+        let(:grants_config) do
+          {
+            'aptc_csr_credit' => [
+              { key: 'AdvancePremiumAdjustmentGrant' }
+            ]
+          }
+        end
+        let(:family) do
+          FactoryBot.create(:family,
+                            :with_primary_family_member,
+                            :with_eligibility_determination_and_subjects,
+                            person: person_2,
+                            outstanding_verification_status: 'outstanding',
+                            eligibility_item_keys: ['aptc_csr_credit'],
+                            assistance_year: TimeKeeper.date_of_record.year,
+                            use_family_member_ids: false,
+                            grants_config: grants_config)
+        end
+
+        it "family member should have ineligible plan shopping errors" do
+          sign_in user_2
+          get(
+            :new,
+            params: {
+              person_id: person_2.id,
+              consumer_role_id: person_2.consumer_role.id,
+              change_plan: "",
+              coverage_kind: hbx_enrollment.coverage_kind,
+              market_kind: "individual"
+            }
+          )
+          fm_hash = assigns(:fm_hash)
+          expect(fm_hash.values.flatten.any?{|err| err.to_s.match(/Ineligible for Plan shopping/)}).to be_truthy
+          expect(fm_hash.values.flatten.any?{|err| err.to_s.match(/eligibility failed on lawful_presence_status/)}).to be_truthy
+          expect(response).to have_http_status("200")
+        end
+      end
+
+      context 'family has aca individual grants present' do
+        let(:grants_config) do
+          {
+            'aca_individual_market_eligibility' => [
+              { key: 'QhpGrant' }
+            ]
+          }
+        end
+        let(:family) do
+          FactoryBot.create(:family,
+                            :with_primary_family_member,
+                            :with_eligibility_determination_and_subjects,
+                            person: person_2,
+                            outstanding_verification_status: 'not_enrolled',
+                            eligibility_item_keys: ['aca_individual_market_eligibility'],
+                            assistance_year: TimeKeeper.date_of_record.year,
+                            use_family_member_ids: true,
+                            grants_config: grants_config)
+        end
+
+        it "family member should not have any errors" do
+          sign_in user_2
+          get(
+            :new,
+            params: {
+              person_id: person_2.id,
+              consumer_role_id: person_2.consumer_role.id,
+              change_plan: "",
+              coverage_kind: hbx_enrollment.coverage_kind,
+              market_kind: "individual"
+            }
+          )
+          fm_hash = assigns(:fm_hash)
+          expect(fm_hash.values.flatten.any?{|err| err.to_s.match(/Ineligible for Plan shopping/)}).to eq false
+          expect(fm_hash.values.flatten.any?{|err| err.to_s.match(/eligibility failed on lawful_presence_status/)}).to eq false
+          expect(response).to have_http_status("200")
+        end
+      end
+
+      context 'family has aca individual with qhp grants present but members not eligible for plan shopping' do
+        let(:grants_config) do
+          {
+            'aca_individual_market_eligibility' => [
+              { key: 'QhpGrant' }
+            ]
+          }
+        end
+        let(:family) do
+          FactoryBot.create(:family,
+                            :with_primary_family_member,
+                            :with_eligibility_determination_and_subjects,
+                            person: person_2,
+                            outstanding_verification_status: 'not_enrolled',
+                            eligibility_item_keys: ['aca_individual_market_eligibility'],
+                            assistance_year: TimeKeeper.date_of_record.year,
+                            use_family_member_ids: false,
+                            grants_config: grants_config)
+        end
+
+        it "family member should have ineligible plan shopping errors" do
+          sign_in user_2
+          get(
+            :new,
+            params: {
+              person_id: person_2.id,
+              consumer_role_id: person_2.consumer_role.id,
+              change_plan: "",
+              coverage_kind: hbx_enrollment.coverage_kind,
+              market_kind: "individual"
+            }
+          )
+          fm_hash = assigns(:fm_hash)
+          expect(fm_hash.values.flatten.any?{|err| err.to_s.match(/Ineligible for Plan shopping/)}).to be_truthy
+          expect(response).to have_http_status("200")
+        end
+      end
+
+      context 'family has magi medicaid grants present' do
+        let(:grants_config) do
+          {
+            'aptc_csr_credit' => [
+              { key: 'MagiMedicaidGrant' }
+            ]
+          }
+        end
+        let(:family) do
+          FactoryBot.create(:family,
+                            :with_primary_family_member,
+                            :with_eligibility_determination_and_subjects,
+                            person: person_2,
+                            eligibility_item_keys: ['aptc_csr_credit'],
+                            assistance_year: TimeKeeper.date_of_record.year,
+                            use_family_member_ids: true,
+                            grants_config: grants_config)
+        end
+
+        it "family member should have ineligible plan shopping errors" do
+          sign_in user_2
+          get(
+            :new,
+            params: {
+              person_id: person_2.id,
+              consumer_role_id: person_2.consumer_role.id,
+              change_plan: "",
+              coverage_kind: hbx_enrollment.coverage_kind,
+              market_kind: "individual"
+            }
+          )
+          fm_hash = assigns(:fm_hash)
+          translation = l10n('insured.group_selection.medicaid_eligible_warning')
+          expect(fm_hash.values.flatten.any? { |err| err.to_s.include?(translation) }).to be_truthy
+          expect(response).to have_http_status("200")
+        end
+      end
+    end
+
     context 'dual role household' do
       include_context "setup benefit market with market catalogs and product packages"
       include_context "setup initial benefit application"
@@ -1271,7 +1513,7 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
   end
 
   context "POST CREATE" do
-    let(:family_member_ids) {{"0"=>family.family_members.first.id}}
+    let(:family_member_ids) {{"0" => family.family_members.first.id}}
 
     before do
       allow(Person).to receive(:find).and_return(person)

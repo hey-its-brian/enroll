@@ -3,6 +3,7 @@ class Insured::GroupSelectionController < ApplicationController
   include Config::SiteConcern
   include L10nHelper
   include Insured::FamiliesHelper
+  include ::ResourceRegistryHelper
 
   CANCELATION_REASONS = [
     "medicare_cancel",
@@ -384,20 +385,15 @@ class Insured::GroupSelectionController < ApplicationController
              family_member.person.resident_role
            end
     family_member_ids = @family.family_members.active.map(&:id)
-
-    rule = InsuredEligibleForBenefitRule.new(role, @benefit, {family: @family, coverage_kind: @coverage_kind, new_effective_on: @new_effective_on, market_kind: get_ivl_market_kind(@person), shopping_family_members_ids: family_member_ids})
+    eligibility_determination = @family.eligibility_determination
+    options = {family: @family, coverage_kind: @coverage_kind, new_effective_on: @new_effective_on, market_kind: get_ivl_market_kind(@person), shopping_family_members_ids: family_member_ids}
+    options.merge!(eligibility_determination: eligibility_determination, family_member_id: family_member.id.to_s) if qhp_application_feature_enabled?
+    rule = InsuredEligibleForBenefitRule.new(role, @benefit, options)
 
     is_ivl_coverage, errors = rule.satisfied?
     person = family_member.person
     incarcerated = person.is_consumer_role_active? && family_member.is_applying_coverage && person.is_incarcerated.nil? ? "incarcerated_not_answered" : family_member.person.is_incarcerated
-
-    if EnrollRegistry.feature_enabled?(:choose_coverage_medicaid_warning)
-      is_eligible_for_medicaid = family_member_eligible_for_medicaid(family_member, @family, @new_effective_on&.year)
-      medicaid_or_chip_program_short_name_key = FinancialAssistanceRegistry.feature_enabled?(:remove_cubcare_references) ? :medicaid_or_chip_program_short_name_no_cubcare : :medicaid_or_chip_program_short_name
-      translation_keys = { medicaid_or_chip_program_short_name: FinancialAssistanceRegistry[medicaid_or_chip_program_short_name_key].setting(:name).item }
-      errors << l10n("insured.group_selection.medicaid_eligible_warning", translation_keys) if is_eligible_for_medicaid
-    end
-
+    errors = coverage_medicaid_warning(errors, family_member, @family, @new_effective_on&.year)
     @fm_hash[family_member.id] = [is_ivl_coverage, rule, errors, incarcerated]
   end
 

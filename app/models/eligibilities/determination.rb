@@ -38,5 +38,41 @@ module Eligibilities
        outstanding_verification_earliest_due_date: outstanding_verification_earliest_due_date,
        outstanding_verification_document_status: outstanding_verification_document_status}.deep_symbolize_keys
     end
+
+    # Determines if a family member is eligible for Medicaid
+    # @param family_member [FamilyMember] The family member to check eligibility for
+    # @return [Boolean] true if the family member is eligible for Medicaid, false otherwise
+    def member_medicaid_eligible?(family_member, year)
+      subject = subjects.detect { |subj| subj.person_id == family_member.person.id.to_s }
+      magi_medicaid_grant = subject&.magi_medicaid_grant_by_year(year)
+      magi_medicaid_grant_member_ids = magi_medicaid_grant&.member_ids&.flatten&.uniq || []
+      magi_medicaid_grant_member_ids.include?(family_member.id.to_s)
+    end
+
+    # Returns an array of family member IDs that are eligible for plan shopping
+    # Eligibility is determined by having eligible eligibility states (aptc_csr_credit or
+    # aca_individual_market_eligibility) with qualifying grants (AdvancePremiumAdjustmentGrant,
+    # QhpGrant or MagiMedicaidGrant)
+    # @return [Array<String>] Array of family member IDs eligible for shopping
+    def shopping_eligible_member_ids
+      subjects.flat_map do |subject|
+        eligibility_states = subject.eligibility_states.select do |state|
+          %w[aptc_csr_credit aca_individual_market_eligibility].include?(state.eligibility_item_key)
+        end
+
+        next [] if eligibility_states.empty?
+
+        # CSR Grant - If member is only eligible for CSR Grant, then it does not mean they are eligible for plan shopping
+        eligibility_states.flat_map do |state|
+          grants = state.grants.select do |grant|
+            %w[AdvancePremiumAdjustmentGrant QhpGrant MagiMedicaidGrant].include?(grant.key)
+          end
+
+          next [] if grants.empty?
+
+          grants.flat_map(&:member_ids)
+        end
+      end
+    end
   end
 end

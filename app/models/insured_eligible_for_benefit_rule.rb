@@ -1,5 +1,6 @@
 class InsuredEligibleForBenefitRule
   include L10nHelper
+  include ::ResourceRegistryHelper
 
   # Insured role can be: EmployeeRole, ConsumerRole, ResidentRole
 
@@ -21,6 +22,8 @@ class InsuredEligibleForBenefitRule
     @market_kind = options[:market_kind]
     @shopping_family_member_ids = options[:shopping_family_members_ids]
     @csr_kind = options[:csr_kind]
+    @eligibility_determination = options[:eligibility_determination]
+    @family_member_id = options[:family_member_id]
   end
 
   def setup
@@ -45,7 +48,14 @@ class InsuredEligibleForBenefitRule
     if @role.class.name == "ConsumerRole" || @role.class.name == "ResidentRole"
       @errors = []
       return [false, ["coverage not available"]] if @benefit_package.blank?
-      status = @benefit_package.benefit_eligibility_element_group.class.fields.keys.reject{|k| k == "_id"}.reduce(true) do |eligible, element|
+      benefit_eligibility_elements = @benefit_package.benefit_eligibility_element_group.class.fields.keys.reject{|k| k == "_id"}
+      elements = if qhp_application_feature_enabled?
+                   rejected_elements = %w[applying_coverage incarceration_status residency_status citizenship_status]
+                   benefit_eligibility_elements.reject { |element| rejected_elements.include?(element) }
+                 else
+                   benefit_eligibility_elements
+                 end
+      status = elements.reduce(true) do |eligible, element|
         if @market_kind == "shop" && !("#{element}" == "active_consumer")
           if self.public_send("is_#{element}_satisfied?")
             true && eligible
@@ -66,11 +76,30 @@ class InsuredEligibleForBenefitRule
         end
       end
       status = false if is_age_range_satisfied_for_catastrophic? == false
+      status = update_status_if_member_ineligible(status) if qhp_application_feature_enabled?
       status = set_status_and_error_if_not_applying_coverage if @role.class.name == "ConsumerRole" && is_applying_coverage_status_satisfied? == false
       status = set_status_and_error_if_birthdate_after_effective_date unless valid_birthdate?
       return status, @errors
     end
     [false]
+  end
+
+  # Checks if the current family member is eligible for plan shopping based on eligibility determination
+  #
+  # @param status [Boolean] The current eligibility status being evaluated
+  # @return [Boolean] Returns original status if member is eligible, otherwise returns false
+  #
+  # This method retrieves the list of member IDs eligible for shopping from the
+  # eligibility determination. If the current member's ID is included in this list,
+  # the method returns the original status unchanged. Otherwise, it sets the status
+  # to false, adds an error message to the @errors array, and returns the updated status.
+  def update_status_if_member_ineligible(status)
+    shopping_eligible_member_ids = @eligibility_determination.shopping_eligible_member_ids
+    return status if shopping_eligible_member_ids.include?(@family_member_id)
+
+    status = false
+    @errors << ["Ineligible for Plan shopping"] #TODO: Error message changes based on business input
+    status
   end
 
   def eligibility_errors(element)
@@ -217,7 +246,12 @@ class InsuredEligibleForBenefitRule
   end
 
   def is_lawful_presence_status_satisfied?
-    is_verification_satisfied? || is_person_vlp_verified?
+    if qhp_application_feature_enabled? && @eligibility_determination.present?
+      subject = @eligibility_determination.subjects.by_person(@role.person.id).first
+      !subject.outstanding?
+    else
+      is_verification_satisfied? || is_person_vlp_verified?
+    end
   end
 
   def is_active_individual_role_satisfied?

@@ -1,5 +1,6 @@
 module Insured
   module GroupSelectionHelper
+    include ::ResourceRegistryHelper
 
     def can_shop_individual?(person)
       EnrollRegistry.feature_enabled?(:aca_individual_market) && person.present? && person.is_consumer_role_active?
@@ -263,6 +264,35 @@ module Insured
       else
         is_health_coverage.nil? ? is_ivl_coverage : is_health_coverage
       end
+    end
+
+    def coverage_medicaid_warning(errors, family_member, family, year_param)
+      return errors unless EnrollRegistry.feature_enabled?(:choose_coverage_medicaid_warning)
+      return errors unless medicaid_eligible?(family_member, family, year_param)
+
+      errors << medicaid_warning_message
+    end
+
+    def medicaid_eligible?(family_member, family, year_param)
+      if qhp_application_feature_enabled?
+        family.eligibility_determination&.member_medicaid_eligible?(family_member, year_param)
+      else
+        family_member_eligible_for_medicaid(family_member, family, year_param)
+      end
+    end
+
+    def medicaid_warning_message
+      program_name_key = if ::FinancialAssistanceRegistry.feature_enabled?(:remove_cubcare_references)
+                           :medicaid_or_chip_program_short_name_no_cubcare
+                         else
+                           :medicaid_or_chip_program_short_name
+                         end
+
+      translation_keys = {
+        medicaid_or_chip_program_short_name: ::FinancialAssistanceRegistry[program_name_key].setting(:name).item
+      }
+
+      l10n("insured.group_selection.medicaid_eligible_warning", translation_keys)
     end
 
     def family_member_eligible_for_medicaid(family_member, family, year_param)

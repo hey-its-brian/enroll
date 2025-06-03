@@ -41,6 +41,18 @@ module Eligibilities
       ::Person.find(person_id)
     end
 
+    def outstanding?
+      outstanding_verification_status == 'outstanding'
+    end
+
+    def aptc_csr_eligibility_state
+      eligibility_states.by_type('aptc_csr_credit').first
+    end
+
+    def magi_medicaid_grant_by_year(year)
+      aptc_csr_eligibility_state&.magi_medicaid_grant_by_year(year)
+    end
+
     def is_active?
       family_member = GlobalID::Locator.locate(gid)
       raise "Family member not found" unless family_member

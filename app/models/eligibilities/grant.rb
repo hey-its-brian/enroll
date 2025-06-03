@@ -22,5 +22,8 @@ module Eligibilities
     embedded_in :determination, class_name: "::Eligibilities::Determination"
     embedded_in :eligibility_state, class_name: "::Eligibilities::EligibilityState"
 
+    scope :by_year, ->(year) { where(assistance_year: year) }
+    scope :aptc_qhp_magi_grants, -> { where(:key.in => %w[AdvancePremiumAdjustmentGrant QhpGrant MagiMedicaidGrant]) }
+    scope :by_key, ->(key) { where(key: key) }
   end
 end
