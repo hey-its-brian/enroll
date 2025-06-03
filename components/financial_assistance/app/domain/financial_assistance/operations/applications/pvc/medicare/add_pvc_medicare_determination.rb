@@ -40,7 +40,7 @@ module FinancialAssistance
             end
 
             def update_applicant(response_app_entity, application, applicant_identifier)
-              enrollments = HbxEnrollment.where(:aasm_state.in => HbxEnrollment::ENROLLED_STATUSES, family_id: application.family_id)
+              enrollments = HbxEnrollment.enrolled.by_health.where(family_id: application.family_id)
               response_applicant = response_app_entity.applicants.detect {|applicant| applicant.person_hbx_id == applicant_identifier}
               applicant = application.applicants.where(person_hbx_id: applicant_identifier).first
 
@@ -56,7 +56,6 @@ module FinancialAssistance
             def update_applicant_verifications(applicant, response_applicant_entity, enrollments)
               response_non_esi_evidence = response_applicant_entity.non_esi_evidence
               applicant_non_esi_evidence = applicant.non_esi_evidence
-
               if applicant_non_esi_evidence.present?
                 if response_non_esi_evidence.aasm_state == 'outstanding'
                   if enrolled?(applicant, enrollments)

@@ -4,6 +4,8 @@ require 'rails_helper'
 require "#{FinancialAssistance::Engine.root}/spec/shared_examples/pvc/medicare/test_pvc_medicare_response"
 
 RSpec.describe ::FinancialAssistance::Operations::Applications::Pvc::Medicare::AddPvcMedicareDetermination, dbclean: :after_each do
+  include_context 'FDSH PVC Medicare sample response'
+
   before :all do
     DatabaseCleaner.clean
   end
@@ -32,66 +34,99 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Pvc::Medicare::A
 
   context 'success' do
     context 'FDSH PVC Medicare outstanding response' do
-      include_context 'FDSH PVC Medicare sample response'
+      context 'when family is enrolled in health plans or no plans' do
+        before do
+          enrollment
+          @applicant = application.applicants.first
+          @applicant.build_non_esi_evidence(key: :non_esi_mec, title: "NON ESI MEC", aasm_state: aasm_state,
+                                            due_on: due_on)
+          @applicant.save!
+          @result = subject.call({payload: response_payload, applicant_identifier: '1629165429385938'})
 
-      before do
-        enrollment
-        @applicant = application.applicants.first
-        @applicant.build_non_esi_evidence(key: :non_esi_mec, title: "NON ESI MEC", aasm_state: aasm_state,
-                                          due_on: due_on)
-        @applicant.save!
-        @result = subject.call({payload: response_payload, applicant_identifier: '1629165429385938'})
+          @application = ::FinancialAssistance::Application.by_hbx_id(response_payload[:hbx_id]).first.reload
+          @app_entity = ::AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(response_payload).success
+        end
 
-        @application = ::FinancialAssistance::Application.by_hbx_id(response_payload[:hbx_id]).first.reload
-        @app_entity = ::AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(response_payload).success
+        it 'should return success' do
+          expect(@result).to be_success
+        end
+
+        it 'should update applicant verification' do
+          @applicant.reload
+          expect(@result.success).to eq('Successfully updated Applicant with evidences and verifications')
+        end
+
+        context "when response non_esi aasm_state is 'outstanding' and they have no active health enrollments" do
+          it "should update non_esi aasm_state to 'negative_response_received'" do
+            @applicant.reload
+            expect(@applicant.non_esi_evidence.aasm_state).to eq 'negative_response_received'
+          end
+        end
+
+        context "due_date does not exist and enrolled" do
+          let(:enrollment) do
+            FactoryBot.create(:hbx_enrollment, :with_enrollment_members,
+                              family: family, enrollment_members: family.family_members)
+          end
+
+          let(:request_result_hash) do
+            {
+              :result => "eligible",
+              :source => "MEDC",
+              :code => "7313",
+              :code_description => "Applicant Not Found",
+              :action => 'pvc_bulk_call'
+            }
+          end
+
+          it 'should set due date to system_date + 35.days it is a bulk call' do
+            due_date = TimeKeeper.date_of_record + EnrollRegistry[:bulk_call_verification_due_in_days].item.to_i
+            @applicant.reload
+            expect(@applicant.non_esi_evidence.due_on).to eq due_date
+          end
+
+          context "when response non_esi aasm_state is 'outstanding' and they have an active health enrollment" do
+            it "should update non_esi aasm_state to 'outstanding'" do
+              @applicant.reload
+              expect(@applicant.non_esi_evidence.aasm_state).to eq 'outstanding'
+            end
+          end
+        end
+
+        context 'due_date exists' do
+          let(:due_on) { TimeKeeper.date_of_record }
+          let(:aasm_state) { 'outstanding' }
+
+          it 'should not update due_on on local mec evidence' do
+            @applicant.reload
+            expect(@applicant.non_esi_evidence.due_on).to eq nil
+          end
+        end
       end
 
-      it 'should return success' do
-        expect(@result).to be_success
-      end
-
-      it 'should update applicant verification' do
-        @applicant.reload
-        expect(@applicant.non_esi_evidence.aasm_state).to eq 'negative_response_received'
-        expect(@result.success).to eq('Successfully updated Applicant with evidences and verifications')
-      end
-
-      context "due_date does not exists and enrolled" do
+      context 'when family is only enrolled in dental plans' do
         let(:enrollment) do
           FactoryBot.create(:hbx_enrollment, :with_enrollment_members,
-                            family: family, enrollment_members: family.family_members)
-        end
-        let(:request_result_hash) do
-          {
-            :result => "eligible",
-            :source => "MEDC",
-            :code => "7313",
-            :code_description => "Applicant Not Found",
-            :action => 'pvc_bulk_call'
-          }
+                            family: family, enrollment_members: family.family_members, coverage_kind: 'dental')
         end
 
-        it 'should set due date to system_date + 35.days it is a bulk call' do
-          due_date = TimeKeeper.date_of_record + EnrollRegistry[:bulk_call_verification_due_in_days].item.to_i
+        before do
+          @applicant = application.applicants.first
+          @applicant.build_non_esi_evidence(key: :non_esi_mec, title: "NON ESI MEC", aasm_state: aasm_state,
+                                            due_on: due_on)
+
+          @applicant.save!
+          subject.call({payload: response_payload, applicant_identifier: '1629165429385938'})
+        end
+
+        it "should update non_esi aasm_state to 'negative_response_received'" do
           @applicant.reload
-          expect(@applicant.non_esi_evidence.due_on).to eq due_date
-        end
-      end
-
-      context 'due_date exists' do
-        let(:due_on) { TimeKeeper.date_of_record }
-        let(:aasm_state) { 'outstanding' }
-
-        it 'should not update due_on on local mec evidence' do
-          @applicant.reload
-          expect(@applicant.non_esi_evidence.due_on).to eq nil
+          expect(@applicant.non_esi_evidence.aasm_state).to eq 'negative_response_received'
         end
       end
     end
 
     context 'FDSH PVC Medicare attested response' do
-      include_context 'FDSH PVC Medicare sample response'
-
       before do
         @applicant = application.applicants.first
         @applicant.build_non_esi_evidence(key: :non_esi_mec, title: "NON ESI MEC")
@@ -116,8 +151,6 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Pvc::Medicare::A
   end
 
   context 'failure' do
-    include_context 'FDSH PVC Medicare sample response'
-
     let(:identifier) { '1629165429385938' }
 
     context 'the application cannot be found' do
