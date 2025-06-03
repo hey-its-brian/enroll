@@ -105,7 +105,6 @@ module VerificationHelper
 
   def can_display_evidence_state?(evidence_state, is_admin: current_user.has_hbx_staff_role?)
     return true if is_admin
-    return false if evidence_state.inactive
 
     case evidence_state.evidence_group
     when 'aca_individual_market_eligibility'

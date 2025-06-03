@@ -435,6 +435,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.insured.families.verifications.members.in_review' => "In Review",
   :'en.insured.families.verifications.members.unverified' => "Unverified",
   :'en.insured.families.verifications.individual' => "Individual",
+  :'en.insured.families.verifications.individual.inactive_verifications' => "Inactive Verifications",
   :'en.insured.families.verifications.individual.disclaimer_1' => "We verify the information you provide on your application using electronic data sources. A data matching inconsistency (DMI) occurs if the data sources do not match the information you provided. When this occurs your verification status will be 'Outstanding' and you will need to provide documents to prove what you told us.",
   :'en.insured.families.verifications.individual.disclaimer_2' => "We will send you reminder notices about which documents you must submit to verify the information. If you do not provide documentation or resolve your DMI by the due date, you could lose your coverage or access to financial assistance, such as APTC and CSR.",
   :'en.insured.families.verifications.individual.disclaimer_old' => "We verify the information you provide us using electronic data sources. The data sources we check for each person depend on the information you provided on the application, such as whether or not this person need health coverage. Select a type of information we verify to view details and take any action needed.",

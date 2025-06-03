@@ -74,4 +74,8 @@ class IvlDocumentsPage
   def self.individual_verifications_section
     '[data-cuke="individual-verifications"]'
   end
+
+  def self.individual_inactive_verifications_section
+    '[data-cuke="individual-inactive-verifications"]'
+  end
 end

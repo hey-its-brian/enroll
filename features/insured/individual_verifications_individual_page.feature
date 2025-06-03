@@ -35,12 +35,14 @@ Feature: Individual Verification Individual Page
     And that the consumer has inactive verifications
     And Hbx Admin exists
     When the consumer selects a household member
-    Then the user should see the Individual verifications table without inactive verifications
+    Then the user should see the Individual verifications table
+    And the user should not see the Individual inactive verifications table
     And consumer logs out
     And that a user with a HBX staff role with HBX staff subrole exists and is logged in
     And the admin visits the verification tab
-    Then the admin selects a household member
-    Then the admin should see the Individual verifications table with inactive verifications
+    And the admin selects a household member
+    Then the admin should see the Individual verifications table
+    And the admin should see the Individual inactive verifications table
 
   Scenario: Consumer goes to the Verification Detail page from the Individual table
     And the consumer selects a household member

@@ -274,18 +274,24 @@ Then(/the consumer should see only active members in the Household Members table
   expect(page).not_to have_content('Inactive Member')
 end
 
-Then(/the .* should see the Individual verifications table (.*) inactive verifications/) do |inactive_negation|
-  should_display_inactives = !inactive_negation.include?('out')
-  within IvlDocumentsPage.individual_verifications_section do
-    expect(page).to have_content "Verifications"
-    within 'table' do
-      within 'thead tr' do
-        headers = ['Document Name', 'Status', ('Active' if should_display_inactives), 'Due Date']
-        headers.compact.each_with_index do |header, index|
-          expect(find("th:nth-child(#{index + 1})")).to have_content(header)
+
+Then(/the .* should (not )?see the Individual (.*) table/) do |negation, table_type|
+  is_visible = negation.nil?
+  section_selector = "individual_#{table_type.split.join('_').downcase}_section"
+  if is_visible
+    within IvlDocumentsPage.send(section_selector) do
+      expect(page).to have_content "Verifications"
+      within 'table' do
+        within 'thead tr' do
+          headers = ['Document Name', 'Status', 'Due Date']
+          headers.compact.each_with_index do |header, index|
+            expect(find("th:nth-child(#{index + 1})")).to have_content(header)
+          end
         end
       end
     end
+  else
+    expect(page).not_to have_selector(IvlDocumentsPage.send(section_selector))
   end
 end
 
