@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/CyclomaticComplexity, Metrics/AbcSize
 module FinancialAssistance
   module Forms
     class Applicant
@@ -8,6 +7,7 @@ module FinancialAssistance
       include ActiveModel::Validations
       include Config::AcaModelConcern
       include AddressValidator
+      include ::ResourceRegistryHelper
 
       attr_accessor :id, :family_id, :is_consumer_role, :is_resident_role, :vlp_document_id, :application_id, :applicant_id, :gender, :relationship, :relation_with_primary, :no_dc_address, :is_homeless, :is_temporarily_out_of_state,
                     :tribe_codes, :same_with_primary, :is_applying_coverage, :immigration_doc_statuses, :addresses, :phones, :emails, :addresses_attributes, :phones_attributes, :emails_attributes, :is_dependent
@@ -138,6 +138,12 @@ module FinancialAssistance
             applicant.mailing_address.destroy! if applicant.mailing_address.present? && addresses_attributes.values.any? { |address| destroy_mailing_address?(address) }
 
             applicant.update(values)
+          elsif qhp_application_feature_enabled?
+            result = ssn_is_taken?(values)
+            return [false, result[1]] if result[0]
+
+            applicant = application.applicants.build(values)
+            applicant.save!
           else
             applicant = application.applicants.build(values)
             applicant.save!
@@ -262,7 +268,11 @@ module FinancialAssistance
         end
       end
 
+      # Checks if the SSN is the same as the one already associated with an applicant of any application.
+      # This validation method is only executed if the QHP application feature is not enabled.
       def check_same_ssn
+        return if qhp_application_feature_enabled?
+
         return if ssn.blank?
         return if applicant && applicant.ssn == ssn
         encrypted_ssn = FinancialAssistance::Applicant.encrypt_ssn(ssn)
@@ -270,7 +280,40 @@ module FinancialAssistance
         self.errors.add(:base, "ssn is already taken") if same_ssn.present?
       end
 
+      # Checks if the SSN is already taken by a non-matching Person.
+      # This method is used to prevent duplicate SSNs from being saved in the system.
+      #
+      # @param values [Hash] the values to check, including the SSN
+      # @return [Boolean] true if the SSN is taken, false otherwise
+      def ssn_is_taken?(values)
+        return false if values[:ssn].blank?
+
+        result = ::Operations::People::SsnTaken.new.call(
+          {
+            dob: values[:dob],
+            first_name: values[:first_name],
+            last_name: values[:last_name],
+            ssn: values[:ssn]
+          }
+        )
+
+        if result.success?
+          if result.success
+            errors.add(:base, 'SSN is already taken.')
+            [result.success, 'SSN is already taken.']
+          else
+            [result.success, nil]
+          end
+        else
+          errors.add(:base, "Operation failure while checking SSN: #{result.failure}")
+          Rails.logger.error "QHP Application - SSN Taken Operation Failure: #{result.failure}"
+          [true, "Operation failure while checking SSN: #{result.failure}"]
+        end
+      rescue StandardError => e
+        errors.add(:base, "Error raised checking SSN: #{e.message}")
+        Rails.logger.error "QHP Application - SSN Taken Error: #{e.message}, backtrace: #{e.backtrace.join("\n")}"
+        [true, "Error raised checking SSN: #{e.message}"]
+      end
     end
   end
 end
-# rubocop:enable Metrics/CyclomaticComplexity, Metrics/AbcSize
