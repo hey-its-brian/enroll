@@ -291,7 +291,7 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   "en.faa.shop_check_success" => "It looks like you may already be enrolled in employer sponsored coverage. If you need to update information like your income, address, or who is in your household, visit the Manage Family page to make these changes before completing a CoverME.gov application.",
   "en.faa.mc_continue_application" => "Select '%{continue_text}' if you would still like to complete a CoverME.gov application.",
   # FAA display evidence type
-  "en.faa.evidence_type_aces" => "Coverage from MaineCare and Cub Care",
+  "en.faa.evidence_type_aces" => "Coverage from MaineCare",
   "en.faa.evidence_type_esi" => "Coverage from a job",
   "en.faa.evidence_type_non_esi" => "Coverage from another program",
   "en.faa.evidence_type_income" => "Income",

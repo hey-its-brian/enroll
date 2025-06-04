@@ -382,7 +382,7 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   "en.faa.mc_continue_application" => "Select '%{continue_text}' if you would still like to complete a CoverME.gov application.",
   "en.faa.mc_continue_bold" => "",
   # FAA display evidence type
-  "en.faa.evidence_type_aces" => "Coverage from MaineCare and Cub Care",
+  "en.faa.evidence_type_aces" => "Coverage from MaineCare",
   "en.faa.evidence_type_esi" => "Coverage from a job",
   "en.faa.evidence_type_non_esi" => "Coverage from another program",
   "en.faa.evidence_type_income" => "Income",
