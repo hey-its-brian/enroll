@@ -480,4 +480,86 @@ RSpec.describe IndividualMarket::Application, type: :model do
       end
     end
   end
+
+  describe '#build_attestation' do
+    let(:application) { FactoryBot.create(:individual_market_application, :with_primary) }
+    let(:person) { FactoryBot.create(:person, :with_hbx_staff_role) }
+    let(:user) { FactoryBot.create(:user, person: person) }
+    let(:attested) { true }
+    let(:given_name) { 'Johnny' }
+    let(:family_name) { 'Doe' }
+    let(:family) { application.family }
+
+    it 'builds an attestation with the correct signer role' do
+      application.build_attestation(attested, given_name, family_name, user)
+      expect(application.attestation).to be_present
+      expect(application.attestation.signed_at).to be_present
+      expect(application.attestation.signer_id).to eq(user.id)
+      expect(application.attestation.signer_role).to eq("admin")
+    end
+
+    it 'does not build an attestation if the given name is not valid' do
+      application.build_attestation(attested, "charles", family_name, user)
+      expect(application.attestation).to be_nil
+    end
+
+    it 'does not build an attestation if the family name is not valid' do
+      application.build_attestation(attested, given_name, "smith", user)
+      expect(application.attestation).to be_nil
+    end
+
+    it 'does not build an attestation if it is not attested' do
+      application.build_attestation(false, given_name, family_name, user)
+      expect(application.attestation).to be_nil
+    end
+
+    it 'does not set the signer_id if the signer is not a user' do
+      application.build_attestation(attested, given_name, family_name)
+      expect(application.attestation).to be_present
+      expect(application.attestation.signer_id).to be_nil
+    end
+
+    it 'sets the signer_role to consumer if the applicant person is the user' do
+      application.applicants.first.family_member.person = user.person
+      application.build_attestation(attested, given_name, family_name, user)
+      expect(application.attestation).to be_present
+      expect(application.attestation.signer_role).to eq("consumer")
+    end
+
+    context 'broker agent' do
+      let(:broker_person) { FactoryBot.create(:person) }
+      let(:broker_agency_profile) { FactoryBot.create(:benefit_sponsors_organizations_broker_agency_profile) }
+      let(:broker_role) { FactoryBot.create(:broker_role, aasm_state: 'active', benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id, person: broker_person) }
+      let(:broker_agency_account) { FactoryBot.create(:benefit_sponsors_accounts_broker_agency_account, broker_agency_profile: broker_agency_profile, writing_agent_id: broker_role.id, is_active: true) }
+      let(:broker_user) { FactoryBot.create(:user, person: broker_person) }
+
+      before do
+        allow(family).to receive(:active_broker_agency_account).and_return broker_agency_account
+      end
+
+      it 'sets the signer_role to broker if the writing agent is the user' do
+        application.build_attestation(attested, given_name, family_name, broker_user)
+        expect(application.attestation).to be_present
+        expect(application.attestation.signer_role).to eq("broker")
+      end
+    end
+
+    context 'assister agent' do
+      let(:assister_person) { FactoryBot.create(:person) }
+      let(:assister_agency_profile) { FactoryBot.create(:benefit_sponsors_organizations_assister_agency_profile) }
+      let(:assister_role) { FactoryBot.create(:assister_role, aasm_state: 'active', benefit_sponsors_assister_agency_profile_id: assister_agency_profile.id, person: assister_person) }
+      let(:assister_agency_account) { FactoryBot.create(:benefit_sponsors_accounts_assister_agency_account, assister_agency_profile: assister_agency_profile, writing_agent_id: assister_role.id, is_active: true) }
+      let(:assister_user) { FactoryBot.create(:user, person: assister_person) }
+
+      before do
+        allow(family).to receive(:active_assister_agency_account).and_return assister_agency_account
+      end
+
+      it 'sets the signer_role to assister if the writing agent is the user' do
+        application.build_attestation(attested, given_name, family_name, assister_user)
+        expect(application.attestation).to be_present
+        expect(application.attestation.signer_role).to eq("assister")
+      end
+    end
+  end
 end

@@ -14,6 +14,8 @@ module Entities
       attribute :is_homeless, Types::Bool.optional.meta(omittable: true)
       attribute :is_temporarily_out_of_state, Types::Bool.optional.meta(omittable: true)
       attribute :age_off_excluded, Types::Bool.optional.meta(omittable: true)
+      attribute :contact_method, Types::String.optional.meta(omittable: true)
+      attribute :language_preference, Types::String.optional.meta(omittable: true)
 
       # Nested PersonName attributes
       attribute :person_name do
@@ -65,6 +67,13 @@ module Entities
 
       # Addresses array
       attribute :addresses, Types::Array.of(Entities::Address).optional.meta(omittable: true)
+
+      # Phones array
+      attribute :phones, Types::Array.of(Entities::Phone).optional.meta(omittable: true)
+
+      # Emails array
+      attribute :emails, Types::Array.of(Entities::Email).optional.meta(omittable: true)
+
       # Eligibilities array
       attribute :eligibilities, Types::Array do
         attribute :key, Types::Symbol

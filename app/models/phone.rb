@@ -6,6 +6,7 @@ class Phone
   embedded_in :person
   embedded_in :office_location
   embedded_in :census_member, class_name: "CensusMember"
+  embedded_in :applicant, class_name: "IndividualMarket::Applicant"
 
   KINDS = ["home", "work", "mobile", "main", "fax"]
   OFFICE_KINDS = ["phone main"]

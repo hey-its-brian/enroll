@@ -8,6 +8,7 @@ class Email
   embedded_in :person
   embedded_in :office_location
   embedded_in :census_member, class_name: "CensusMember"
+  embedded_in :applicant, class_name: "IndividualMarket::Applicant"
 
   KINDS = %W(home work)
 

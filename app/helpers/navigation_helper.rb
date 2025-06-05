@@ -165,10 +165,9 @@ module NavigationHelper
 
     nav[:nav_options] = [
       {step: 1, page_key: :family_info, display_label: l10n('family_info')},
-      {step: 2, page_key: :voter_registration, display_label: l10n('qhp_application.nav.voter_registration')},
-      {step: 3, page_key: :contact_preferences, display_label: l10n('qhp_application.nav.preferences_label')},
+      {step: 2, page_key: :preferred_language, display_label: l10n('qhp_application.nav.preferences_label')},
       {step: 4, page_key: :review, display_label: l10n('qhp_application.nav.review_label')},
-      {step: 5, page_key: :attest, display_label: l10n('qhp_application.nav.attest')},
+      {step: 5, page_key: :attest, display_label: l10n('submit')},
       {step: 6, page_key: :results, display_label: l10n('qhp_application.nav.results')}
     ]
     nav[:step] = step

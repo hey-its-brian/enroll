@@ -83,6 +83,30 @@ RSpec.describe Operations::IndividualMarket::ParseApplicant, dbclean: :after_eac
         expect(result.success[:is_homeless]).to eq person.is_homeless
       end
 
+      it 'should return hash with age_off_excluded' do
+        expect(result.success[:age_off_excluded]).to eq person.age_off_excluded
+      end
+
+      it 'should have same contact method' do
+        expect(result.success[:contact_method]).to eq person.consumer_role.contact_method
+      end
+
+      it 'should have same language preference' do
+        expect(result.success[:language_preference]).to eq person.consumer_role.language_preference
+      end
+
+      it 'should have the same phone numbers' do
+        expect(result.success[:phones].count).to eq person.phones.count
+        expect(result.success[:phones].first[:kind]).to eq person.phones.first.kind
+        expect(result.success[:phones].first[:number]).to eq person.phones.first.number
+      end
+
+      it 'should have the same email' do
+        expect(result.success[:emails].count).to eq person.emails.count
+        expect(result.success[:emails].first[:kind]).to eq person.emails.first.kind
+        expect(result.success[:emails].first[:address]).to eq person.emails.first.address
+      end
+
       context 'when family member is not primary applicant' do
         context "when there is no home address" do
           it 'should return address_same_as_primary as false' do

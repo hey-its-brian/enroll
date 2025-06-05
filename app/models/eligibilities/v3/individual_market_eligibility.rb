@@ -114,19 +114,18 @@ module Eligibilities
       #
       # @return [Eligibilities::V3::Determinations::IndividualMarketDetermination] The new QHP determination
       def build_individual_market_determination
-        determinations.build(
-          _type: 'Eligibilities::V3::Determinations::IndividualMarketDetermination'
-        )
+        self.determinations.build({
+                                    _type: Eligibilities::V3::Determinations::IndividualMarketDetermination
+                                  })
       end
 
       # Builds a new CSR determination for this eligibility
       #
       # @return [Eligibilities::V3::Determinations::CsrDetermination] The new CSR determination
       def build_csr_determination
-        determinations.build(
-          _type: 'Eligibilities::V3::Determinations::CsrDetermination',
-          csr_type: 'csr_limited'
-        )
+        self.determinations.build({
+                                    _type: Eligibilities::V3::Determinations::CsrDetermination
+                                  })
       end
 
       private

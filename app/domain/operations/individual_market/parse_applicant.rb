@@ -36,7 +36,9 @@ module Operations
             is_primary_applicant: family_member.is_primary_applicant,
             address_same_as_primary: address_same_as_primary?(family_member),
             is_applying_coverage: family_member.person.consumer_role&.is_applying_coverage,
-            age_off_excluded: family_member.person&.age_off_excluded
+            age_off_excluded: family_member.person&.age_off_excluded,
+            contact_method: family_member.person.consumer_role&.contact_method,
+            language_preference: family_member.person.consumer_role&.language_preference
           )
           applicant_params
         end.or(Failure("Could not build applicant params for family member with id: #{family_member&.id}"))
@@ -52,8 +54,10 @@ module Operations
           demographics: demographics_attributes(person),
           immigration_information: immigration_information_attributes(person.consumer_role),
           eligibilities: eligibilities_attributes,
-          addresses: construct_association_fields(person.addresses),
-          is_homeless: person.is_homeless
+          addresses: construct_address_fields(person.addresses),
+          is_homeless: person.is_homeless,
+          phones: construct_phone_fields(person.phones),
+          emails: construct_email_fields(person.emails)
         }
       end
 
@@ -161,7 +165,7 @@ module Operations
       # Constructs association fields for a record
       # @param [Array<Mongoid::Document>] records The records to construct association fields for
       # @return [Array<Hash>] Array of association fields
-      def construct_association_fields(records)
+      def construct_address_fields(records)
         records.collect do |record|
           record.attributes.slice(
             "kind",
@@ -171,6 +175,36 @@ module Operations
             "state",
             "zip",
             "county"
+          ).symbolize_keys
+        end
+      end
+
+      # Constructs phone fields for a record
+      # @param [Array<Mongoid::Document>] records The records to construct phone fields for
+      # @return [Array<Hash>] Array of phone fields
+      def construct_phone_fields(records)
+        records.collect do |record|
+          record.attributes.slice(
+            "kind",
+            "number",
+            "country_code",
+            "area_code",
+            "number",
+            "extension",
+            "full_phone_number",
+            "primary"
+          ).symbolize_keys
+        end
+      end
+
+      # Constructs email fields for a record
+      # @param [Array<Mongoid::Document>] records The records to construct email fields for
+      # @return [Array<Hash>] Array of email fields
+      def construct_email_fields(records)
+        records.collect do |record|
+          record.attributes.slice(
+            "kind",
+            "address"
           ).symbolize_keys
         end
       end

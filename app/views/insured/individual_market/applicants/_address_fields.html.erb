@@ -66,9 +66,8 @@
       </div>
     </div>
   </div>
-
-  <% if type == 'home' && dependent == 'false' %>
-    <div class="address-row show no-dc-address-reasons mb-4">
+  <% if type == 'home' && dependent == false %>
+    <div class="mb-4">
       <% if EnrollRegistry.feature_enabled?(:moving_to_state) %>
         <label class="weight-n">
           <%= f.check_box :is_moving_to_state %>

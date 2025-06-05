@@ -32,11 +32,11 @@ class QhpApplicationPolicy < ApplicationPolicy
     edit?
   end
 
-  # Determines if the current user has permission to view the voter registration the application.
-  # The user can see the voter registration if they have permission to edit it.
+  # Determines if the current user has permission to view the preferences the application.
+  # The user can see the preferences if they have permission to edit it.
   #
-  # @return [Boolean] Returns true if the user has permission to see the voter registration page of the application, false otherwise.
-  def voter_registration?
+  # @return [Boolean] Returns true if the user has permission to see the preferences page of the application, false otherwise.
+  def preferences?
     edit?
   end
 

@@ -13,18 +13,11 @@ module Validators
         optional(:is_homeless).maybe(:bool)
         optional(:is_temporarily_out_of_state).maybe(:bool)
         optional(:age_off_excluded).maybe(:bool)
-        optional(:addresses).array(:hash) do
-          required(:kind).filled(:string)
-          required(:address_1).filled(:string)
-          optional(:address_2).maybe(:string)
-          optional(:address_3).maybe(:string)
-          required(:city).filled(:string)
-          optional(:county).maybe(:string)
-          required(:state).filled(:string)
-          required(:zip).filled(:string)
-          optional(:country_name).maybe(:string)
-          optional(:quadrant).maybe(:string)
-        end
+        optional(:contact_method).maybe(:string)
+        optional(:language_preference).maybe(:string)
+        optional(:addresses).maybe(:array)
+        optional(:phones).maybe(:array)
+        optional(:emails).maybe(:array)
 
         required(:person_name).hash do
           required(:given_name).filled(:string)
@@ -84,6 +77,28 @@ module Validators
             key.failure(text: "invalid address", error: result.errors.to_h) if result&.failure?
           else
             key.failure(text: "invalid addresses. Expected a hash.")
+          end
+        end
+      end
+
+      rule(:phones).each do
+        if key? && value
+          if value.is_a?(Hash)
+            result = ::FinancialAssistance::Validators::PhoneContract.new.call(value)
+            key.failure(text: "invalid phone", error: result.errors.to_h) if result&.failure?
+          else
+            key.failure(text: "invalid phones. Expected a hash.")
+          end
+        end
+      end
+
+      rule(:emails).each do
+        if key? && value
+          if value.is_a?(Hash)
+            result = ::FinancialAssistance::Validators::EmailContract.new.call(value)
+            key.failure(text: "invalid email", error: result.errors.to_h) if result&.failure?
+          else
+            key.failure(text: "invalid emails. Expected a hash.")
           end
         end
       end

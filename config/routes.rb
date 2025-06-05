@@ -257,13 +257,15 @@ Rails.application.routes.draw do
         member do
           get :review
           get :attestation
-          get :voter_registration
+          get :preferences
           post :submit
           get :eligibility_results
+          get :copy
         end
 
         resources :applicants do
           get :show_ssn, on: :member
+          post :update_preferences
         end
       end
     end

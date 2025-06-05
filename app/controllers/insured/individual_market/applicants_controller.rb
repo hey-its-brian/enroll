@@ -10,7 +10,8 @@ module Insured
       before_action :set_family
       before_action :find_application
       before_action :find_applicant, only: [:edit, :update, :destroy, :show]
-      before_action :set_consumer_bookmark_url, except: [:new]
+      before_action :check_for_editable_application, only: [:index, :create, :update, :destroy, :new, :edit, :update_preferences]
+      before_action :set_consumer_bookmark_url, except: [:new, :edit, :destroy, :create, :update]
       before_action :enable_bs4_layout
 
       layout "progress"
@@ -108,6 +109,25 @@ module Insured
         respond_to :js
       end
 
+      def update_preferences
+        authorize @application, :edit?
+
+        @applicant = @application.applicants.where(id: params[:applicant_id]).first
+
+        transform_contact_method
+
+        @applicant.update_attributes(preferences_params)
+
+        if @applicant.save
+          redirect_to review_insured_individual_market_application_path(@application)
+        else
+          flash.now[:error] = @applicant.errors.full_messages.join(", ")
+          redirect_to insured_individual_market_application_applicants_path(@application)
+        end
+
+        respond_to :js, :html
+      end
+
       def show_ssn
         authorize @application, :can_show_ssn?
         @applicant = @application.applicants.where(id: params[:id]).first
@@ -139,6 +159,11 @@ module Insured
                        end
       end
 
+      def check_for_editable_application
+        return if @application&.current_state == :initial
+        redirect_to insured_individual_market_application_path(@application)
+      end
+
       def find_applicant
         @applicant = @application.applicants.find(params[:id])
       end
@@ -149,6 +174,13 @@ module Insured
 
       def enable_bs4_layout
         @bs4 = true if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+      end
+
+      def transform_contact_method
+        contact_method = params.dig("applicant", "contact_method")
+        return unless contact_method.is_a?(Array)
+        return if contact_method.empty?
+        params["applicant"]["contact_method"] = IndividualMarket::Applicant::CONTACT_METHOD_MAPPING[contact_method]
       end
 
       def base_attributes
@@ -165,6 +197,15 @@ module Insured
           relationship: applicant_params[:relationship],
           eligibilities: applicant_params[:eligibilities]
         }
+      end
+
+      def preferences_params
+        params.require(:individual_market_applicant).permit(
+          :contact_method,
+          :language_preference,
+          phones_attributes: [:id, :kind, :number, :country_code, :area_code, :extension, :full_phone_number, :_destroy],
+          emails_attributes: [:id, :kind, :address, :_destroy]
+        )
       end
 
       def applicant_params

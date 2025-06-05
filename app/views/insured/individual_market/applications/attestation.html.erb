@@ -1,0 +1,43 @@
+<%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(5)} %>
+<h1><%= l10n("qhp_application.attestation.title") %></h1>
+<p><%= l10n("qhp_application.attestation.attestation_info") %></p>
+<div data-controller="attestation">
+<%= form_for @application, {url: submit_insured_individual_market_application_path(@application), method: :post} do |f| %>
+  <section>
+    <h2><%= l10n("insured.individual_agreement.agreement.title") %></h2>
+    <p><%= l10n("insured.individual_agreement.agreement.report_changes", contact_center_name: contact_center_name, contact_center_phone_number: contact_center_phone_number) %></p>
+    <p><%= l10n("insured.individual_agreement.agreement.i_am_signature") %></p>
+    <p><%= l10n("insured.individual_agreement.agreement.reviewed_info") %></p>
+    <label class="agree weight-n d-flex align-items-center" for="terms_check"><%= check_box_tag 'terms_check', true, false, class: 'mr-2', data: {target: "attestation.Check", action: "attestation#canSubmitCheck"} %><%= l10n("insured.individual_agreement.agreement.i_agree") %></label>
+  </section>
+  <section class="mt-4">
+    <h3><%= l10n("insured.individual_agreement.electronic_signature.title") %></h3>
+    <p><%= l10n("insured.individual_agreement.electronic_signature.desc") %></p>
+    <div class="d-flex">
+      <div class="mr-3">
+        <label for="first_name" class="required"><%= l10n("first_name") %></label>
+        <%= text_field_tag 'first_name', "", :placeholder => l10n("first_name"), :class => "thank_you_field", data: {target: "attestation.FirstNameField", action: "attestation#canSubmitCheck"} %>
+      </div>
+      <div class="mr-3">
+        <label for="middle_name"><%= l10n("middle_name") %></label>
+        <%= text_field_tag 'middle_name', "", :placeholder => l10n("middle_name"), :class => "thank_you_field" %>
+      </div>
+      <div>
+        <label for="last_name" class="required"><%= l10n("last_name") %></label>
+        <%= text_field_tag 'last_name', "", :placeholder => l10n("last_name"), :class => "thank_you_field", data: {target: "attestation.LastNameField", action: "attestation#canSubmitCheck"} %>
+      </div>
+    </div>
+    <% applicant = @application.primary_applicant %>
+    <%= hidden_field_tag 'subscriber_first_name', applicant.person_name.given_name.downcase, data: {target: "attestation.FirstName", action: "attestation#canSubmitCheck"} %>
+    <%= hidden_field_tag 'subscriber_last_name', applicant.person_name.family_name.downcase, data: {target: "attestation.LastName", action: "attestation#canSubmitCheck"} %>
+  </section>
+
+  <%= content_for :submit_button do %>
+    <%= submit_tag l10n("qhp_application.attestation.submit"), class: "btn disabled", disabled: true, data: {target: "attestation.SubmitButton"} %>
+  <% end %>
+
+  <div class="mt-md-5">
+    <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: submit_insured_individual_market_application_path(@application), show_back_to_household_button: true } %>
+  </div>
+<% end %>
+</div>

@@ -27,7 +27,8 @@ FactoryBot.define do
           :with_person_name,
           :with_demographics,
           :with_eligibilities,
-          application: application
+          application: application,
+          family_member_id: application.family.primary_family_member.id
         )
       end
     end

@@ -1,0 +1,8 @@
+<%= render partial: 'shared/family_side_nav' %>
+<ul class="breadcrumbs mb-3">
+  <li><%= l10n("insured.qhp_application.show.applications") %></li>
+  <li><%= l10n("insured.qhp_application.show.member_details") %></li>
+</ul>
+<h1><%= l10n("insured.qhp_application.show.member_details") %></h1>
+<%= render partial: 'insured/individual_market/applicants/summary', locals: {applicant: @applicant, internal_review: false} %>
+<%= link_to "Return to Application Page", insured_individual_market_application_path(@application), class: 'button' %>

@@ -15,6 +15,7 @@ module Operations
         # @return [Dry::Monads::Result]
         def call(params)
           application, applicant = yield validate(params)
+          _eligibility = yield build_determinations(application, applicant)
           _qhp_determination = yield determine_qhp_eligibility(application, applicant)
           _csr_determination = yield determine_csr_eligibility(applicant)
           Success(applicant)
@@ -32,21 +33,31 @@ module Operations
           Success([application, applicant])
         end
 
+        def build_determinations(_application, applicant)
+          applicant.individual_market_eligibility.build_individual_market_determination
+          applicant.individual_market_eligibility.build_csr_determination
+          applicant.individual_market_eligibility.save!
+
+          Success(applicant.individual_market_eligibility.reload)
+        end
+
         # Determines the QHP eligibility
         # @param [IndividualMarket::Application] application
         # @param [IndividualMarket::Applicant] applicant
         # @return [Dry::Monads::Result]
         def determine_qhp_eligibility(application, applicant)
-          @qhp_determination = applicant.individual_market_eligibility.build_individual_market_determination
-          generate_incarceration_basis(applicant)
+          @qhp_determination = applicant.individual_market_eligibility.qhp_determination
           generate_applying_coverage_basis(applicant)
-          generate_is_alive_basis(applicant)
-          generate_state_resident_basis(applicant, application)
-          generate_lawfully_present_in_us_basis(applicant)
+          @applying_coverage = applicant.is_applying_coverage
+          if @applying_coverage
+            generate_incarceration_basis(applicant)
+            generate_is_alive_basis(applicant)
+            generate_state_resident_basis(applicant, application)
+            generate_lawfully_present_in_us_basis(applicant)
+          end
 
           Try do
             @qhp_determination.determine_eligibility
-            applicant.save!
           end.or(Failure("Failed to determine QHP eligibility for applicant #{applicant.id}"))
         end
 
@@ -110,13 +121,13 @@ module Operations
         # @param [IndividualMarket::Applicant] applicant
         # @return [Dry::Monads::Result]
         def determine_csr_eligibility(applicant)
-          @csr_determination = applicant.individual_market_eligibility.build_csr_determination
-
-          generate_ai_na_attested_basis(applicant)
+          @csr_determination = applicant.individual_market_eligibility.csr_determination
+          generate_ai_na_attested_basis(applicant) if @applying_coverage
 
           Try do
-            @csr_determination.determine_individual_market_eligibility
-            applicant.save!
+            @csr_determination.update(csr_type: 'csr_limited')
+            @csr_determination.determine_individual_market_eligibility if @applying_coverage
+            applicant.individual_market_eligibility.save!
           end.or(Failure("Failed to determine CSR eligibility for applicant #{applicant.id}"))
         end
 

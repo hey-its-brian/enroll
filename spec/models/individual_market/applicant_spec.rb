@@ -12,6 +12,8 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
       :with_demographics,
       :with_eligibilities,
       :with_home_address,
+      :with_phone_number,
+      :with_email,
       application: application,
       family_member_id: family_member.id,
       is_primary_applicant: true
@@ -55,6 +57,14 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
     it 'embeds many addresses' do
       expect(applicant.addresses.first).to be_a(Locations::Address)
     end
+
+    it 'embeds many phones' do
+      expect(applicant.phones.first).to be_a(Phone)
+    end
+
+    it 'embeds many emails' do
+      expect(applicant.emails.first).to be_a(Email)
+    end
   end
 
   describe 'fields' do
@@ -63,6 +73,9 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
     it { is_expected.to have_field(:address_same_as_primary).of_type(Mongoid::Boolean) }
     it { is_expected.to have_field(:is_applying_coverage).of_type(Mongoid::Boolean) }
     it { is_expected.to have_field(:is_homeless).of_type(Mongoid::Boolean) }
+    it { is_expected.to have_field(:age_off_excluded).of_type(Mongoid::Boolean) }
+    it { is_expected.to have_field(:contact_method).of_type(String) }
+    it { is_expected.to have_field(:language_preference).of_type(String) }
   end
 
   describe '#family_member' do

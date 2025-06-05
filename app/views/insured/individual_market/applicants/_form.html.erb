@@ -18,7 +18,7 @@
   <% end %>
 
   <div id="personal_info" data-controller="family-information">
-    <h3><%= l10n("personal_info") %></h3>
+    <h3><%= l10n("personal_information") %></h3>
 
     <%# Person Name Form %>
     <%= f.fields_for :person_name, @person_name_form do |name| %>
@@ -308,7 +308,7 @@
             </template>
           </div>
 
-          <div data-target="family-information.ConsumerFields">
+          
             <div class="mb-4 <%= "no_coverage_tribe_details" if FinancialAssistanceRegistry.feature_enabled?(:no_coverage_tribe_details) %>
               <%= "featured_tribes_selection" if FinancialAssistanceRegistry.feature_enabled?(:featured_tribes_selection) %>" id='indian_tribe_area'
               data-target="family-information.IndianTribeMember">
@@ -404,8 +404,7 @@
                 </div>
               <% end %>
             </div>
-          </div>
-
+          <div data-target="family-information.ConsumerFields">
           <%# Add target to incarcerated section %>
           <div class="mb-4" data-target="family-information.IncarceratedFields">
             <fieldset>
@@ -467,7 +466,7 @@
             f: f,
             address: address,
             type: address.object.kind,
-            dependent: true
+            dependent: is_dependent
           } %>
     <% end %>
   </div>

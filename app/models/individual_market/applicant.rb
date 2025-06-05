@@ -18,6 +18,17 @@ module IndividualMarket
     include Config::AcaModelConcern
     include Eligibilities::Visitors::Visitable
 
+  # contact preference mapping
+    CONTACT_METHOD_MAPPING = {
+      ["Email", "Mail", "Text"] => "Paper, Electronic and Text Message communications",
+      ["Email", "Text"] => "Electronic and Text Message communications",
+      ["Email", "Mail"] => "Paper and Electronic communications",
+      ["Mail", "Text"] => "Paper and Text Message communications",
+      ["Text"] => "Only Text Message communication",
+      ["Mail"] => "Only Paper communication",
+      ["Email"] => "Only Electronic communications"
+    }.freeze
+
     # @!attribute application
     #   @return [IndividualMarket::Application] The application this applicant belongs to
     embedded_in :application, class_name: 'IndividualMarket::Application'
@@ -48,6 +59,9 @@ module IndividualMarket
     #   @return [Array<Locations::Address>] Collection of addresses associated with this applicant
     embeds_many :addresses, class_name: 'Locations::Address', as: :addressable, cascade_callbacks: true
 
+    embeds_many :phones, cascade_callbacks: true, validate: true
+    embeds_many :emails, cascade_callbacks: true, validate: true
+
     # @!attribute family_member_id
     #   @return [BSON::ObjectId] The ID of the family member associated with this applicant
     field :family_member_id, type: BSON::ObjectId
@@ -73,9 +87,16 @@ module IndividualMarket
     # @return [Boolean] Indicates if this applicant is should be kept on their parent's plan when they are 26+
     field :age_off_excluded, type: Boolean
 
+    field :contact_method, type: String, default: EnrollRegistry.feature_enabled?(:contact_method_via_dropdown) ? "Paper and Electronic communications" : "Paper, Electronic and Text Message communications"
+
+    field :language_preference, type: String, default: "English"
+
     validate :unique_eligibilities
 
-    accepts_nested_attributes_for :person_name, :demographics, :eligibilities, :immigration_information, :addresses
+    accepts_nested_attributes_for :person_name, :demographics, :eligibilities, :immigration_information, :addresses, :phones, :emails
+
+    accepts_nested_attributes_for :phones, :reject_if => proc { |addy| addy[:full_phone_number].blank? }, allow_destroy: true
+    accepts_nested_attributes_for :emails, :reject_if => proc { |addy| addy[:address].blank? }, allow_destroy: true
 
     # Finds and returns the family member associated with this applicant
     #

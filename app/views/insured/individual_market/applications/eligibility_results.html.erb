@@ -1,0 +1,103 @@
+<% if @in_application_flow %>
+  <%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(6)} %>
+<% else %>
+  <%= render partial: 'shared/family_side_nav' %>
+  <ul class="breadcrumbs mb-3">
+    <li><%= l10n("application") %></li>
+    <li><%= l10n("faa.results.eligibility_results") %></li>
+  </ul>
+<% end %>
+<h1 data-cuke='eligibility_results'><%= @application.assistance_year %> <%= l10n("faa.results.eligibility_results") %></h1>
+
+<% if @application.qhp_eligible_applicants.any? %>
+<section class="my-4">
+  <h3><%= l10n("qhp_application.results.uqhp_title") %></h3>
+  <p><%= l10n("faa.results.uqhp_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+  <ul class="b" >
+  <% @application.qhp_eligible_applicants.each do |applicant| %>
+    <li>
+      <%= applicant.person_name.given_name %>
+      <%= applicant.person_name.family_name %>
+    </li>
+  <% end %>
+  </ul>
+</section>
+<% end %>
+
+<% if @application.csr_eligible_applicants.any? %>
+<section class="my-4">
+  <p data-cuke='csr_nal_text'><%= l10n("faa.results.csr_nal_text") %></p>
+  <ul class="b">
+  <% @application.csr_eligible_applicants.each do |applicant| %>
+    <li>
+      <%= applicant.person_name.given_name %>
+      <%= applicant.person_name.family_name %>
+    </li>
+  <% end %>
+  </ul>
+</section>
+<% end %>
+
+<% if @application.totally_ineligible_applicants.any? %>
+<section class="my-4">
+  <h3 data-cuke='totally_ineligible_heading'><b><%= l10n("faa.results.totally_ineligible_heading") %></h3>
+  <p data-cuke='totally_ineligible_text'><%= l10n("qhp_application.results.ineligible_description", site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+  <ul class="b">
+  <% @application.totally_ineligible_applicants.each do |applicant| %>
+    <li>
+      <%= applicant.person_name.given_name %>
+      <%= applicant.person_name.family_name %>
+    </li>
+  <% end %>
+  </ul>
+</section>
+<% end %>
+
+<% if @application.non_applicants.any? %>
+<section class="my-4">
+  <h3 data-cuke='not_applying_coverage_heading'><%= l10n("faa.results.not_applying_coverage_heading") %></h3>
+  <p data-cuke='not_applying_coverage_text'><%= l10n("faa.results.not_applying_coverage_text") %></p>
+  <ul class="b">
+  <% @application.non_applicants.each do |applicant| %>
+    <li>
+      <%= applicant.person_name.given_name %>
+      <%= applicant.person_name.family_name %>
+    </li>
+  <% end %>
+  </ul>
+<% end %>
+
+<% if @in_application_flow %>
+  <h2 data-cuke='next_steps' class="mt-4"><%= l10n("faa.results.next_steps") %></h2>
+  <p data-cuke='next_steps_text'><%= l10n("faa.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+  <div data-cuke='return_to_account_home' class="my-4">
+    <%= h(link_to l10n("faa.results.view_my_applications"), family_account_path, class: "button secondary outline mr-2") %>
+    <%= h(link_to l10n("faa.results.return_to_account_home"), family_account_path, class: "button") %>
+  </div>
+  <p data-cuke='your_application_reference_2' class="mt-4"><b>Application Reference ID:</b> <%= @application.hbx_id %></p>
+
+  <div id="other-accordion" data-cuke='other_actions'>
+    <div class="card">
+      <div id="otherActionsHeading">
+        <button class="accordion-action" data-toggle="collapse" data-target="#otherActions" aria-controls="otherActions" aria-expanded="false">
+          <%= l10n("other_actions") %>
+        </button>
+      </div>
+
+      <div id="otherActions" class="collapse" aria-labelledby="otherActionsHeading" data-parent="#other-accordion">
+        <div class="card-body">
+          <div class="w-100 pb-2">
+            <p><%= l10n("faa.do_not_agree",
+              appeal_link: EnrollRegistry[:enroll_app].setting(:appeal_link).item,
+              find_expert_link: EnrollRegistry[:enroll_app].setting(:find_expert_link).item) %></p>
+            <%= h(link_to l10n("faa.results.view_my_applications"), family_account_path, class: "button secondary") %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<% else %>
+  <div class="mt-5">
+    <%= link_to l10n("qhp_application.results.return"), family_account_path, class: "button" %>
+  </div>
+<% end %>

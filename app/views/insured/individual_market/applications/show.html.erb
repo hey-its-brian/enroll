@@ -1,39 +1,36 @@
-<div class="container">
-  <div class="row">
-    <div class="col-md-12">
-      <h1>Application Details</h1>
+<%= render partial: 'shared/family_side_nav' %>
+<ul class="breadcrumbs mb-3">
+  <li><%= l10n("insured.qhp_application.show.applications") %></li>
+  <li><%= l10n("insured.qhp_application.show.application_details") %></li>
+</ul>
+<h1><%= @application.assistance_year %> <%= l10n("insured.qhp_application.show.application_details") %></h1>
+<p><%= l10n("insured.qhp_application.show.application_details_description") %></p>
 
-      <div class="card">
-        <div class="card-header">
-          <h2>Application Information</h2>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-6">
-              <dl class="row">
-                <dt class="col-sm-4">Application ID:</dt>
-                <dd class="col-sm-8"><%= @application.id %></dd>
+<% if current_user.has_hbx_staff_role? %>
+  <aside class="mb-3" id="admin-designation-descriptor">
+    <span class="admin-designation"></span>
+    <%= l10n('admin.admin_designation_descriptor') %>
+  </aside>
+  <dl class="parent">
+    <dt><%= l10n("application_id") %>:</dt>
+    <dd><%= @application.id %></dd>
+    <dt><%= l10n("insured.qhp_application.show.applied_for_fa") %>:</dt>
+    <dd><%= l10n("no") %></dd>
+    <dt><%= l10n("insured.qhp_application.origin") %>:</dt>
+    <dd class="admin-designation"><%= @application.origin %></dd>
+    <dt><%= l10n("insured.qhp_application.generation_reason") %>:</dt>
+    <dd class="admin-designation"><%= @application.generation_reason %></dd>
+  </dl>
+<% end %>
 
-                <dt class="col-sm-4">Assistance Year:</dt>
-                <dd class="col-sm-8"><%= @application.assistance_year %></dd>
+<% primary_person = @application.primary_applicant %>
+<%= render partial: 'insured/individual_market/applicants/summary', locals: {applicant: primary_person, internal_review: false} %>
 
-                <dt class="col-sm-4">Origin:</dt>
-                <dd class="col-sm-8"><%= @application.origin %></dd>
+<% @application.non_primary_applicants.each do |applicant| %>
+  <%= render partial: 'insured/individual_market/applicants/summary', locals: {applicant: applicant, internal_review: false} %>
+<% end %>
 
-                <dt class="col-sm-4">Generation Reason:</dt>
-                <dd class="col-sm-8"><%= @application.generation_reason %></dd>
-
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
-      <% @application.applicants.each do |applicant| %>
-        <div class="card my-4">
-          <%= applicant.inspect %>
-        </div>
-      <% end %>
-
-    </div>
-  </div>
+<!-- TODO: Correct link to add member to household -->
+<div class="mt-3">
+  <%= link_to l10n("insured.qhp_application.show.add_member"), insured_individual_market_application_applicants_path(@application, applicant: "new"), class: 'btn secondary' %>
 </div>

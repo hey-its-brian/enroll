@@ -27,6 +27,8 @@ module Eligibilities
       # @!attribute is_satisfied
       #   @return [Boolean] Whether this specific basis has been satisfied
       field :is_satisfied, type: Boolean
+
+      scope :non_applicant, -> { where(basis_kind: 'applying_coverage', is_satisfied: false) }
     end
   end
 end

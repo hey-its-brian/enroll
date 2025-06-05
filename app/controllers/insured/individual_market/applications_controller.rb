@@ -10,6 +10,7 @@ module Insured
       before_action :set_current_person
       before_action :set_family
       before_action :find_application
+      before_action :check_for_editable_application, only: [:review, :preferences, :attestation, :submit]
       before_action :set_consumer_bookmark_url, except: [:submit]
       before_action :enable_bs4_layout
 
@@ -23,9 +24,10 @@ module Insured
         respond_to :html
       end
 
-      def voter_registration
-        authorize @application, :voter_registration?
+      def preferences
+        authorize @application, :preferences?
 
+        @applicant = @application.primary_applicant
         respond_to :html
       end
 
@@ -40,19 +42,25 @@ module Insured
 
         authorize @application, :submit?
 
-        # this operation has not yet been created!!!
-        # result = Operations::IndividualMarket::Application::Submit.new.call(application: @application)
-
-        # if result.success?
-        #   redirect_to eligibility_results_insured_individual_market_application_path(@application)
-        # else
-        #   flash[:error] = result.failure
-        #   redirect_to review_insured_individual_market_application_path(@application)
-        # end
+        if valid_attestation(params)
+          result = Operations::IndividualMarket::SubmitAndDetermineApplication.new.call(@application)
+          if result.success?
+            redirect_to eligibility_results_insured_individual_market_application_path(@application, internal: true)
+          else
+            @application.failed_determination
+            flash[:error] = result.failure
+            redirect_to insured_individual_market_application_path(@application)
+          end
+        else
+          flash[:error] = @application.errors.full_messages.join(", ")
+          redirect_to insured_individual_market_application_path(@application)
+        end
       end
 
       def eligibility_results
         authorize @application, :eligibility_results?
+
+        @in_application_flow = true if params.keys.include?('internal')
 
         respond_to :html
       end
@@ -62,6 +70,13 @@ module Insured
       def show
         authorize @application, :application_details?
 
+        respond_to :html
+      end
+
+      def copy
+        authorize @application, :copy?
+
+        # TODO: implement copy operation
         respond_to :html
       end
 
@@ -82,8 +97,21 @@ module Insured
                        end
       end
 
+      def check_for_editable_application
+        return if @application.current_state == :initial
+        redirect_to insured_individual_market_application_path(@application)
+      end
+
       def set_family
         @family = @person.primary_family
+      end
+
+      def valid_attestation(params)
+        return false unless params[:terms_check]
+        return false unless params[:first_name]
+        return false unless params[:last_name]
+
+        @application.build_attestation(params[:terms_check] == "true", params[:first_name], params[:last_name], current_user)
       end
 
       def application_params

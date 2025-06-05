@@ -66,5 +66,18 @@ FactoryBot.define do
         applicant.addresses << FactoryBot.build(:location_address)
       end
     end
+
+    trait :with_phone_number do
+      after(:build) do |applicant|
+        applicant.phones << FactoryBot.build(:phone)
+      end
+    end
+
+    trait :with_email do
+      after(:build) do |applicant|
+        applicant.emails << FactoryBot.build(:email)
+      end
+    end
+
   end
 end

@@ -1,0 +1,30 @@
+<%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(4)} %>
+
+<h1><%= l10n("faa.review.review_and_submit") %></h1>
+<p><%= l10n("qhp_application.review_description") %></p>
+
+<% if current_user.has_hbx_staff_role? %>
+  <aside class="mb-3" id="admin-designation-descriptor">
+    <span class="admin-designation"></span>
+    <%= l10n('admin.admin_designation_descriptor') %>
+  </aside>
+  <dl class="parent">
+    <dt><%= l10n("qhp_application.origin") %>:</dt>
+    <dd class="admin-designation"><%= @application.origin&.to_s&.titleize %></dd>
+    <dt><%= l10n("qhp_application.generation_reason") %>:</dt>
+    <dd class="admin-designation"><%= @application.generation_reason&.to_s&.titleize %></dd>
+  </dl>
+<% end %>
+<div class="mt-md-3">
+  <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: attestation_insured_individual_market_application_path(@application) } %>
+</div>
+<% primary_person = @application.primary_applicant %>
+<%= render partial: 'insured/individual_market/applicants/summary', locals: {applicant: primary_person, internal_review: true} %>
+
+<% @application.non_primary_applicants.each do |applicant| %>
+  <%= render partial: 'insured/individual_market/applicants/summary', locals: {applicant: applicant, internal_review: true} %>
+<% end %>
+
+<div class="mt-md-5">
+  <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: attestation_insured_individual_market_application_path(@application) } %>
+</div>

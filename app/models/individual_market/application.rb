@@ -172,6 +172,51 @@ module IndividualMarket
       applicants.collect{|applicant| applicant.accept(visitor) }
     end
 
+    # Builds the attestation for the application
+    #
+    # @param attested [Boolean] Whether the attestation is valid
+    # @param given_name [String] The given name of the person
+    # @param family_name [String] The family name of the person
+    # @param user [User] The user who is signing the attestation
+    # @return [Boolean] True if the attestation is valid, false otherwise
+    def build_attestation(attested, given_name, family_name, user = nil)
+      return false unless attested
+      return false unless check_person_name(given_name, family_name)
+      signer_role = fetch_signer_role(primary_applicant&.family_member&.person, user&.person)
+      self.attestation = IndividualMarket::Attestation.new(signer_role: signer_role, signer_id: user&.id, signed_at: Time.now)
+      return false unless attestation.valid?
+      self.save!
+    end
+
+    # Validates the person name of the primary applicant
+    #
+    # @param given_name [String] The given name of the person
+    # @param family_name [String] The family name of the person
+    # @return [Boolean] True if the person name is valid, false otherwise
+    def check_person_name(given_name, family_name)
+      person_name = primary_applicant&.person_name
+      return false unless person_name.present?
+      return false unless person_name.given_name&.downcase == given_name&.downcase && person_name.family_name&.downcase == family_name&.downcase
+      true
+    end
+
+    def qhp_eligible_applicants
+      @qhp_eligible_applicants ||= applicants.select{|a| a.individual_market_eligibility.qhp_determination.is_eligible == true}
+    end
+
+    def csr_eligible_applicants
+      @csr_eligible_applicants ||= applicants.select{|a| a.individual_market_eligibility.csr_determination.is_eligible == true}
+    end
+
+    def totally_ineligible_applicants
+      @noneligible ||= applicants.select{|a| a.individual_market_eligibility.qhp_determination.is_eligible == false}
+      @totally_ineligible_applicants ||= (@noneligible - non_applicants)
+    end
+
+    def non_applicants
+      @non_applicants ||= applicants.select{|a| a.individual_market_eligibility.qhp_determination.bases.non_applicant.any?}
+    end
+
     private
 
     # Validates that there is exactly one primary applicant in the application if there are any applicants
@@ -195,6 +240,29 @@ module IndividualMarket
 
       # If duplicates exist, add an error
       errors.add(:relationships, 'contains duplicate relationships (same source and relative)') if duplicates.any?
+    end
+
+    # Determines the application signer based on the relationship between logged_in user and applicant
+    #
+    # @param person [Person] The person applying for financial assistance
+    # @param logged_in_user [User] The current user making the request
+    # @return [Symbol] The source of the action (:user, :admin, :broker, :assister, or :unknown)
+    #
+    # @note This method applies for the Individual market only.
+    def fetch_signer_role(person, current_user_person)
+      return :unknown unless current_user_person.present?
+      return :consumer if current_user_person == person
+      return :admin if current_user_person&.hbx_staff_role.present?
+
+      writing_agent_id = family&.active_broker_agency_account&.writing_agent_id || family&.active_assister_agency_account&.writing_agent_id
+      check_writing_agent(current_user_person, writing_agent_id)
+    end
+
+    def check_writing_agent(person, writing_agent_id)
+      return :unknown unless writing_agent_id.present?
+      return :broker if person.broker_role&.active? && person.broker_role.id == writing_agent_id
+      return :assister if person.assister_role&.active? && person.assister_role.id == writing_agent_id
+      :unknown
     end
   end
 end
