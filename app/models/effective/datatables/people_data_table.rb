@@ -7,6 +7,7 @@ module Effective
       include ApplicationHelper
       include HtmlScrubberUtil
       include DropdownHelper
+      include ::ResourceRegistryHelper
 
       datatable do
         table_column :name, :label => l10n('hbx_profiles.people.table.name'), :proc => proc { |row| row.full_name }, :filter => false, :sortable => false
@@ -32,11 +33,22 @@ module Effective
         person.all_active_role_names.join(', ')
       end
 
+      # Determines if the edit DOB/SSN action should be enabled or disabled based on the person's family status and the QHP application feature flag.
+      #
+      # @param person [Person] the person object
+      # @param allow [Boolean] whether the action is allowed
+      #
+      # @return [String] 'disabled' or 'ajax' based on the conditions
       def can_display_edit_dob_ssn?(person, allow)
         return 'disabled' unless allow
-        return 'ajax' if person.families.present?
 
-        'disabled'
+        if qhp_application_feature_enabled?
+          person.has_an_active_family_member? ? 'disabled' : 'ajax'
+        else
+          return 'ajax' if person.families.present?
+
+          'disabled'
+        end
       end
 
       def global_search?

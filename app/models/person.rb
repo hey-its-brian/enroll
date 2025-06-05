@@ -643,6 +643,15 @@ class Person
     @primary_family ||= Family.find_primary_applicant_by_person(self).first
   end
 
+  # The method checks if the person has an active family member.
+  #
+  # It uses the `Family.person_has_an_active_family?` method to determine if the person is associated with an active family.
+  #
+  # @return [Boolean] true if the person has an active family member, false otherwise.
+  def has_an_active_family_member?
+    Family.person_has_an_active_family?(self)
+  end
+
   def families
     Family.find_all_by_person(self)
   end

@@ -1328,6 +1328,13 @@ class Family
       end
     end
 
+    # Check if the given person has an active family member record in any family
+    # @param person [Person] The person to check
+    # @return [Boolean] true if the person has an active family member record, false otherwise
+    def person_has_an_active_family?(person)
+      where(family_members: { :$elemMatch => { is_active: true, person_id: person.id } }).limit(1).present?
+    end
+
     # Get all families where this person is a member
     # @param person [ Person ] Person to match
     # @return [ Array<Family> ] The families where this person is a member
@@ -1505,6 +1512,8 @@ class Family
     end
     due_date || contingent_enrolled_family_members_due_dates.last
   end
+
+
 
   def contingent_enrolled_family_members_due_dates
     due_dates = []
