@@ -124,7 +124,7 @@ module FinancialAssistance
       end
 
       def save
-        return false unless valid?
+        return [false, errors.full_messages.first] unless valid?
         is_living_in_state = has_in_state_home_addresses?(addresses_attributes)
         applicant_entity = FinancialAssistance::Operations::Applicant::Build.new.call(params: extract_applicant_params.merge(is_living_in_state: is_living_in_state))
 
@@ -268,16 +268,28 @@ module FinancialAssistance
         end
       end
 
-      # Checks if the SSN is the same as the one already associated with an applicant of any application.
-      # This validation method is only executed if the QHP application feature is not enabled.
+      # Validates that the applicant's SSN is not already used by another applicant
+      # in the same application or elsewhere in the system, depending on feature configuration.
+      #
+      # The method checks for SSN uniqueness by:
+      # 1. Comparing the encrypted SSN with other applicants in the same application
+      # 2. Comparing with all applicants across applications if the QHP application feature is disabled
+      #
+      # @return [nil] Adds an error to the model if the SSN is already taken
       def check_same_ssn
-        return if qhp_application_feature_enabled?
-
         return if ssn.blank?
         return if applicant && applicant.ssn == ssn
         encrypted_ssn = FinancialAssistance::Applicant.encrypt_ssn(ssn)
-        same_ssn = ::FinancialAssistance::Application.where("applicants.encrypted_ssn" => encrypted_ssn)
-        self.errors.add(:base, "ssn is already taken") if same_ssn.present?
+
+        if qhp_application_feature_enabled?
+          matching_applicants = application.applicants.where(encrypted_ssn: encrypted_ssn)
+          return unless (applicant_id.present? && matching_applicants.where(:id.ne => applicant_id).exists?) || (applicant_id.blank? && matching_applicants.exists?)
+
+          errors.add(:base, 'Same SSN is already taken by another applicant in this application.')
+        else
+          same_ssn = ::FinancialAssistance::Application.where("applicants.encrypted_ssn" => encrypted_ssn)
+          errors.add(:base, "ssn is already taken") if same_ssn.present?
+        end
       end
 
       # Checks if the SSN is already taken by a non-matching Person.

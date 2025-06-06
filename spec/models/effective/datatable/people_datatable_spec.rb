@@ -42,7 +42,7 @@ describe Effective::Datatables::PeopleDataTable, "with correct access permission
         end
       end
 
-      context 'when person is accociated with a family but family member is not active' do
+      context 'when person is associated with a family but family member is not active' do
         before do
           primary_applicant.update!(is_active: false)
         end

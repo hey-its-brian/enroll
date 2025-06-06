@@ -648,7 +648,7 @@ class Person
   # It uses the `Family.person_has_an_active_family?` method to determine if the person is associated with an active family.
   #
   # @return [Boolean] true if the person has an active family member, false otherwise.
-  def has_an_active_family_member?
+  def is_active_in_any_family?
     Family.person_has_an_active_family?(self)
   end
 

@@ -43,7 +43,7 @@ module Effective
         return 'disabled' unless allow
 
         if qhp_application_feature_enabled?
-          person.has_an_active_family_member? ? 'disabled' : 'ajax'
+          person.is_active_in_any_family? ? 'disabled' : 'ajax'
         else
           return 'ajax' if person.families.present?
 
