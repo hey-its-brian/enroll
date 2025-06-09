@@ -99,10 +99,18 @@ module Migrations
       nested_field = old_field.to_s.gsub('_attributes', '')
       return unless old_model.respond_to?(nested_field)
 
-      old_model.public_send(nested_field).each do |old_nested_model|
+      value = resolve_nested_object(nested_field)
+
+      looper = value.present? ? old_model.public_send(nested_field).order_by(:"#{value}".asc) : old_model.public_send(nested_field)
+
+      looper.each do |old_nested_model|
         new_nested_model = new_model.public_send(new_field).build
         perform(old_nested_model, new_nested_model)
       end
+    end
+
+    def resolve_nested_object(resolution_key)
+      self.class.field_mappings('nested_object_resolution')[resolution_key]
     end
   end
 end

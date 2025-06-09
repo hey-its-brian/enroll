@@ -43,8 +43,10 @@ module Operations
             application_id = yield validate(params)
             application = yield find_application(application_id)
             result = yield migrate_evidence(application)
-            yield publish(result)
-            Success(result)
+            comparison_result = yield compare_migrated_values(application, result)
+            yield publish(comparison_result)
+
+            Success(comparison_result)
           end
 
           private
@@ -111,6 +113,7 @@ module Operations
             #   - To optimize performance and avoid redundant saves, callbacks on the `Applicant` and `Relationship` models are temporarily skipped during the migration process.
             ::FinancialAssistance::Applicant.skip_callback(:update, :after, :propagate_applicant, raise: false)
             ::FinancialAssistance::Relationship.skip_callback(:save, :after, :propagate_applicant)
+
             migration_result = if application.save!
                                  [app_hbx_id, "migrated",""]
                                else
@@ -120,7 +123,7 @@ module Operations
             ::FinancialAssistance::Applicant.set_callback(:update, :after, :propagate_applicant)
             ::FinancialAssistance::Relationship.set_callback(:save, :after, :propagate_applicant)
 
-            Success("Evidence migration completed successfully, results: #{migration_result}")
+            Success(migration_result)
           rescue StandardError => e
             Failure("Evidence migration failed: #{e.message}")
           end
@@ -171,8 +174,29 @@ module Operations
             )
           end
 
-          def publish(row)
-            event = event("events.migration_results.enqueue_result", attributes: {row: row})
+          def compare_migrated_values(application, result)
+            if result[1] == "migrated"
+              Operations::AsyncMigrations::Handlers::FAApplication::CompareMigratedEvidenceValues.new.call(application: application)
+            else
+              Success(result)
+            end
+          end
+
+          def publish(rows)
+            csv_headers = ["Application HBX ID",
+                           "Migration Result",
+                           "Errors",
+                           "Applicant HBX ID",
+                           "evidence_type",
+                           "evidence_values_matched?",
+                           "evidence_verification_history",
+                           "evidence_verification_histories_matched?",
+                           "evidence_request_result",
+                           "evidence_request_results_matched?",
+                           "evidence_state_transition",
+                           "evidence_state_transitions_matched?"]
+
+            event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "migrated_evidences_1.0_to_3.0_report.csv", csv_headers: csv_headers, rows: rows})
 
             if event.success?
               event.success.publish

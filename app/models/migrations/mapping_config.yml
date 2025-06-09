@@ -61,3 +61,8 @@ evidence:
   request_results_attributes: request_results
   workflow_state_transitions_attributes: state_histories
   documents_attributes: documents
+
+nested_object_resolution:
+  verification_histories: date_of_action
+  request_results: date_of_action
+  workflow_state_transitions: transition_at
