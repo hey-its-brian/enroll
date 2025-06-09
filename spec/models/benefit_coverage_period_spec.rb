@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 # TODO: This needs refactoring for Maine.
@@ -268,7 +270,6 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
       TimeKeeper.set_date_of_record_unprotected!(Date.new(2015,10,20))
       Plan.delete_all
       allow(benefit_coverage_period).to receive(:benefit_packages).and_return(all_benefit_packages)
-      allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
       plan1.update_attributes(benefit_market_kind: :aca_individual, metal_level_kind: 'gold', csr_variant_id: '01')
       plan2.update_attributes(benefit_market_kind: :aca_individual, metal_level_kind: 'gold', csr_variant_id: '01', application_period: {"min" => Date.new(2018,0o1,0o1), "max" => Date.new(2018,12,31)})
       plan3.update_attributes(benefit_market_kind: :aca_individual, metal_level_kind: 'gold', csr_variant_id: '01')
@@ -291,6 +292,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
         end
 
         it 'should return plans' do
+          allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
           allow(rule).to receive(:satisfied?).and_return [true, 'ok']
           elected_plans_by_enrollment_members = benefit_coverage_period.elected_plans_by_enrollment_members([member1, member2], 'health')
           expect(elected_plans_by_enrollment_members).to include(plan1)
@@ -302,6 +304,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
       context 'when not satisfied' do
 
         it 'should not return any plans' do
+          allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
           allow(rule).to receive(:satisfied?).and_return [false, 'ok']
           expect(benefit_coverage_period.elected_plans_by_enrollment_members([member1, member2], 'health')).to eq []
         end
@@ -323,12 +326,14 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
           end
 
           it 'should return plans' do
+            allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
             allow(rule).to receive(:satisfied?).and_return [true, 'ok']
             elected_plans_by_enrollment_members = benefit_coverage_period.elected_plans_by_enrollment_members([member1, member2], 'health')
             expect(elected_plans_by_enrollment_members.length).to eq(3)
           end
 
           it 'should not include plans outside service area' do
+            allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
             allow(rule).to receive(:satisfied?).and_return [true, 'ok']
             allow(::BenefitMarkets::Locations::ServiceArea).to receive(:service_areas_for).and_return([service_area])
             outside_plan = ::BenefitMarkets::Products::Product.where(:service_area_id.ne => service_area.id).first
@@ -340,6 +345,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
         context 'when not satisfied' do
 
           it 'should not return any plans' do
+            allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
             allow(rule).to receive(:satisfied?).and_return [false, 'ok']
             expect(benefit_coverage_period.elected_plans_by_enrollment_members([member1, member2], 'health')).to eq []
           end
@@ -349,6 +355,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
 
     context 'When tax_household members have different csr_kind 87 and 100' do
       before :each do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
         plan1.update_attributes(benefit_market_kind: :aca_individual, metal_level_kind: 'silver', csr_variant_id: '05')
         plan2.update_attributes(benefit_market_kind: :aca_individual, metal_level_kind: 'silver', csr_variant_id: '02')
         allow(benefit_package1).to receive(:cost_sharing).and_return('csr_87')
@@ -363,6 +370,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
 
     context 'When tax_household members have different csr_kind 100 and one of member is AI/AN' do
       before :each do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
         FinancialAssistanceRegistry[:native_american_csr].feature.stub(:is_enabled).and_return(true)
         tax_household_member1.update_attributes(csr_percent_as_integer: 100)
         tax_household_member2.family_member.person.update_attributes(indian_tribe_member: true)
@@ -382,6 +390,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
 
     context 'When all tax_household members are AI/AN' do
       before :each do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
         FinancialAssistanceRegistry[:native_american_csr].feature.stub(:is_enabled).and_return(true)
         tax_household_member1.update_attributes(csr_percent_as_integer: 0) # default value
         tax_household_member2.update_attributes(csr_percent_as_integer: 0) # default value
@@ -400,6 +409,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
 
     context 'When both tax_household members are AI/AN and not ia_eligible' do
       before :each do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
         FinancialAssistanceRegistry[:native_american_csr].feature.stub(:is_enabled).and_return(true)
         tax_household_member1.update_attributes(csr_percent_as_integer: 0, is_ia_eligible: false) # default value
         tax_household_member2.update_attributes(csr_percent_as_integer: 0, is_ia_eligible: false) # default value
@@ -417,6 +427,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
 
     context 'When tax_household members are AI/AN and one of them are not ia_eligible' do
       before :each do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
         FinancialAssistanceRegistry[:native_american_csr].feature.stub(:is_enabled).and_return(true)
         tax_household_member1.update_attributes(csr_percent_as_integer: 0, is_ia_eligible: true) # default value
         tax_household_member2.update_attributes(csr_percent_as_integer: 0, is_ia_eligible: false) # default value
@@ -434,6 +445,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
 
     context 'When tax_household members have different csr_kind 87 and one of member is AI/AN' do
       before :each do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
         FinancialAssistanceRegistry[:native_american_csr].feature.stub(:is_enabled).and_return(true)
         tax_household_member1.update_attributes(csr_percent_as_integer: 87)
         tax_household_member2.family_member.person.update_attributes(indian_tribe_member: true)
@@ -452,6 +464,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
 
     context 'When tax_household members have different csr_kind 94 and 100' do
       before :each do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
         tax_household_member1.update_attributes(csr_percent_as_integer: 94)
         plan1.update_attributes(benefit_market_kind: :aca_individual, metal_level_kind: 'silver', csr_variant_id: '06')
         plan2.update_attributes(benefit_market_kind: :aca_individual, metal_level_kind: 'silver', csr_variant_id: '02')
@@ -467,6 +480,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
 
     context 'When tax_household members have different csr_kind 73 and 100' do
       before :each do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
         tax_household_member1.update_attributes(csr_percent_as_integer: 73)
         plan1.update_attributes(benefit_market_kind: :aca_individual, metal_level_kind: 'silver', csr_variant_id: '04')
         plan2.update_attributes(benefit_market_kind: :aca_individual, metal_level_kind: 'silver', csr_variant_id: '02')
@@ -482,6 +496,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
 
     context 'When tax_household members have different csr_kind 73 and 94' do
       before :each do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
         tax_household_member1.update_attributes(csr_percent_as_integer: 73)
         tax_household_member2.update_attributes(csr_percent_as_integer: 94)
         plan1.update_attributes(benefit_market_kind: :aca_individual, metal_level_kind: 'silver', csr_variant_id: '04')
@@ -498,7 +513,10 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
     end
 
     context 'with catastrophic_health_benefits' do
-      before { FinancialAssistanceRegistry[:native_american_csr].feature.stub(:is_enabled).and_return(true) }
+      before do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
+        FinancialAssistanceRegistry[:native_american_csr].feature.stub(:is_enabled).and_return(true)
+      end
       let(:cat_product) { FactoryBot.create(:benefit_markets_products_health_products_health_product, :catastrophic, issuer_profile: issuer_profile)}
       let!(:catastrophic_benefit_package) { double(benefit_categories: ['health'], title: "catastrophic_health_benefits_#{cat_product.active_year}", benefit_ids: [cat_product.id], cost_sharing: '') }
       let(:all_benefit_packages)  { [benefit_package1, benefit_package2, benefit_package3, benefit_package4, catastrophic_benefit_package] }
@@ -527,6 +545,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
     context "When hbx enrollment members are AI/AN and apply for dental coverage" do
 
       before :each do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
         FinancialAssistanceRegistry[:native_american_csr].feature.stub(:is_enabled).and_return(true)
       end
 
@@ -539,6 +558,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
 
     context "When hbx enrollment members are AI/AN and apply for health coverage" do
       before :each do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
         FinancialAssistanceRegistry[:native_american_csr].feature.stub(:is_enabled).and_return(true)
       end
 
@@ -550,6 +570,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
 
     context "When hbx enrollment members are not AI/AN and apply for health coverage" do
       before :each do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
         allow(benefit_package1).to receive(:cost_sharing).and_return('csr_100')
         FinancialAssistanceRegistry[:native_american_csr].feature.stub(:is_enabled).and_return(true)
       end
@@ -562,6 +583,10 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
     end
 
     context "When hbx enrollment members are not AI/AN and apply for dental coverage" do
+      before do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
+      end
+
       it 'should return benefit package with dental plan' do
         eligible_packages = benefit_coverage_period.fetch_benefit_packages(true, nil, 'dental')
         expect(eligible_packages.flat_map(&:benefit_ids)).to include(dental_plan.id)
@@ -571,6 +596,7 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
     context 'when native american csr feature is enabled' do
 
       before do
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_return rule
         [benefit_package1, benefit_package2].each do |b_package|
           allow(b_package).to receive(:cost_sharing).and_return('csr_100')
         end
@@ -595,7 +621,72 @@ RSpec.describe BenefitCoveragePeriod, type: :model, dbclean: :after_each do
         expect(benefit_packages.map(&:cost_sharing)).to include(benefit_package3.cost_sharing)
       end
     end
+
+    context 'when family has eligibility determination with no eligible grants' do
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+      let!(:hbx_profile) {FactoryBot.create(:hbx_profile)}
+      let!(:benefit_group) { FactoryBot.create(:benefit_group)}
+      let!(:benefit_package) do
+        FactoryBot.build(:benefit_package,
+                         benefit_coverage_period: hbx_profile.benefit_sponsorship.benefit_coverage_periods.first,
+                         title: "individual_health_benefits_2015",
+                         elected_premium_credit_strategy: "unassisted",
+                         benefit_eligibility_element_group: BenefitEligibilityElementGroup.new(
+                           market_places: ["individual"],
+                           enrollment_periods: ["open_enrollment", "special_enrollment"],
+                           family_relationships: BenefitEligibilityElementGroup::INDIVIDUAL_MARKET_RELATIONSHIP_CATEGORY_KINDS,
+                           benefit_categories: ["health"],
+                           incarceration_status: ["unincarcerated"],
+                           cost_sharing: 'csr_0',
+                           age_range: 0..0,
+                           citizenship_status: ["us_citizen", "naturalized_citizen", "alien_lawfully_present", "lawful_permanent_resident"],
+                           residency_status: ["state_resident"],
+                           ethnicity: ["any"]
+                         ))
+      end
+
+      let(:person_2) {FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role)}
+      let(:family_2) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member,
+                          :with_eligibility_determination_and_subjects,
+                          person: person_2,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: TimeKeeper.date_of_record.year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
+      let(:hbx_enrollment_1) do
+        enr = FactoryBot.create(:hbx_enrollment, kind: "individual", product: plan1, effective_on: TimeKeeper.date_of_record, household: family_2.latest_household, enrollment_signature: true, family: family_2)
+        hbx_enrollment_member = FactoryBot.create(:hbx_enrollment_member, applicant_id: family_2.family_members.where(is_primary_applicant: true).first.id, hbx_enrollment: enr)
+        enr.hbx_enrollment_members << hbx_enrollment_member
+        enr
+      end
+
+      let(:member_1){ FactoryBot.build(:hbx_enrollment_member, hbx_enrollment: hbx_enrollment_1, family_member: family_2.family_members.where(is_primary_applicant: true).first, applicant_id: family_2.family_members.first.id) }
+
+      before do
+        allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(true)
+        allow(InsuredEligibleForBenefitRule).to receive(:new).and_call_original
+        allow(benefit_coverage_period).to receive(:benefit_packages).and_return([benefit_package])
+        allow(EnrollRegistry[:choose_coverage_medicaid_warning].feature).to receive(:is_enabled).and_return(true)
+        allow(FinancialAssistanceRegistry[:remove_cubcare_references].feature).to receive(:is_enabled).and_return(true)
+      end
+
+      it 'should run rules and do not throw errors' do
+        elected_plans_by_enrollment_members = benefit_coverage_period.elected_plans_by_enrollment_members([member_1], 'health', tax_household, 'individual')
+        expect(elected_plans_by_enrollment_members).to eq []
+      end
+    end
   end
+
   # TODO: This needs refactoring
   # is this some special thing for DC that we don't have for Maine speced out yet?
   if EnrollRegistry[:enroll_app].setting(:site_key) == :dc

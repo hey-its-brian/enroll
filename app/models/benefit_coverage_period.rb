@@ -6,6 +6,7 @@ class BenefitCoveragePeriod
   include Mongoid::Document
   include Mongoid::Timestamps
   include GlobalID::Identification
+  include ResourceRegistryHelper
 
   embedded_in :benefit_sponsorship
 
@@ -193,12 +194,18 @@ class BenefitCoveragePeriod
       attrs[:family_members].each do |family_member|
         consumer_role = family_member.person.consumer_role if family_member.person.is_consumer_role_active?
         resident_role = family_member.person.resident_role if family_member.person.is_resident_role_active?
+        eligibility_determination = attrs[:family].eligibility_determination
+        options = { coverage_kind: attrs[:coverage_kind], family: attrs[:family],
+                    new_effective_on: attrs[:effective_on],
+                    market_kind: attrs[:market],
+                    shopping_family_members_ids: attrs[:shopping_family_members_ids],
+                    csr_kind: attrs[:csr_kind] }
+        options.merge!(eligibility_determination: eligibility_determination, family_member_id: family_member.id.to_s) if qhp_application_feature_enabled?
+
         rule = if resident_role.nil?
-                 InsuredEligibleForBenefitRule.new(consumer_role, bg, { coverage_kind: attrs[:coverage_kind], family: attrs[:family],
-                                                                        new_effective_on: attrs[:effective_on],  market_kind: attrs[:market], shopping_family_members_ids: attrs[:shopping_family_members_ids], csr_kind: attrs[:csr_kind]})
+                 InsuredEligibleForBenefitRule.new(consumer_role, bg, options)
                else
-                 InsuredEligibleForBenefitRule.new(resident_role, bg, coverage_kind: attrs[:coverage_kind], family: attrs[:family], market_kind: attrs[:market], shopping_family_members_ids: attrs[:shopping_family_members_ids],
-                                                                      csr_kind: attrs[:csr_kind])
+                 InsuredEligibleForBenefitRule.new(resident_role, bg, options)
                end
         satisfied = false and break unless rule.satisfied?[0]
       end
