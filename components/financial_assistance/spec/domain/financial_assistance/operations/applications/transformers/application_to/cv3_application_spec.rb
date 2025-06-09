@@ -2490,6 +2490,39 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Transformers::Ap
       end
     end
   end
+
+  describe 'applicant with aptc_csr_eligibility/individual_market_eligibility and evidences' do
+    let(:operation_result) do
+      update_benchmark_premiums
+      application.build_ivl_eligibility_with_evidences
+      application.build_aptc_eligibilities_evidences
+      application.save!
+      subject.call(application.reload)
+    end
+
+    let(:application_entity) do
+      AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(operation_result.success).success
+    end
+    let(:applicant_entity) { application_entity.applicants.first }
+
+    before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+    end
+
+    context 'with eligibilities' do
+      let(:code_description) { TimeKeeper.date_of_record }
+
+      it 'returns success' do
+        expect(operation_result).to be_success
+        individual_market_eligibility = applicant_entity.eligibilities.detect{ |elig| elig.key == :individual_market_eligibility }
+        aptc_csr_eligibility = applicant_entity.eligibilities.detect{ |elig| elig.key == :aptc_csr_eligibility }
+
+        expect(individual_market_eligibility.evidences.count).to eq 1
+        expect(aptc_csr_eligibility.evidences).to be_present
+        expect(aptc_csr_eligibility.evidences.map(&:key)).to include("income_evidence")
+      end
+    end
+  end
 end
 
 def update_benchmark_premiums

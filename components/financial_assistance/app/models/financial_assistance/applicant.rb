@@ -1673,7 +1673,7 @@ module FinancialAssistance
     def build_individual_market_eligibility
       eligibilities.build(
         _type: 'Eligibilities::V3::IndividualMarketEligibility',
-        title: 'Individua lMarket Eligibility',
+        title: 'Individual Market Eligibility',
         key: :individual_market_eligibility
       )
     end

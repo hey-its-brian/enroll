@@ -15,6 +15,7 @@ module FinancialAssistance
 
             include Dry::Monads[:do, :result]
             include Acapi::Notifiers
+            include ::ResourceRegistryHelper
 
             FAA_MITC_RELATIONSHIP_MAP = {
               'spouse' => :husband_or_wife,
@@ -256,6 +257,7 @@ module FinancialAssistance
                   mitc_state_resident: mitc_state_resident(applicant, application.us_state)
                 }
                 primary_reason_code = select_primary_reason_code(applicant, application)
+                applicant_hash[:eligibilities] = eligibilities(applicant) if qhp_application_feature_enabled?
                 applicant_hash[:reason_code] = primary_reason_code if primary_reason_code
                 applicant_hash[:additional_reason_codes] = select_additional_reason_codes(application) if EnrollRegistry.feature_enabled?(:multiple_determination_submission_reasons)
                 result << applicant_hash
@@ -264,6 +266,45 @@ module FinancialAssistance
             end
             # rubocop:enable Metrics/AbcSize
             # rubocop:enable Metrics/MethodLength
+
+            def eligibilities(applicant)
+              applicant.eligibilities.inject([]) do |result, eligibility|
+                eligibility_hash = {
+                  key: eligibility.key,
+                  title: eligibility.title,
+                  description: eligibility.description,
+                  current_state: eligibility.current_state,
+                  is_satisfied: eligibility.is_satisfied,
+                  determined_at: eligibility.determined_at,
+                  is_disqualified: eligibility.is_disqualified,
+                  disqualified_at: eligibility.disqualified_at,
+                  disqualified_reason: eligibility.disqualified_reason,
+                  evidences: eligibility_evidences_info(eligibility)
+                }
+                result << eligibility_hash
+              end
+            end
+
+            def eligibility_evidences_info(eligibility)
+              return [] unless eligibility.evidences.present?
+
+              eligibility.evidences.collect do |evidence|
+                {
+                  key: evidence.key,
+                  title: evidence.title,
+                  description: evidence.description,
+                  is_satisfied: evidence.is_satisfied,
+                  determined_at: evidence.determined_at,
+                  current_state: evidence.current_state,
+                  verification_outstanding: evidence.verification_outstanding,
+                  due_on: evidence.due_on,
+                  is_active: evidence.is_active,
+                  external_service: evidence.external_service,
+                  verification_histories: evidence.verification_histories.collect { |v_his| v_his.serializable_hash.symbolize_keys },
+                  request_results: evidence_request_results(evidence.request_results)
+                }
+              end
+            end
 
             def select_primary_reason_code(applicant, application)
               if applicant.is_gap_filling
@@ -278,6 +319,7 @@ module FinancialAssistance
             end
 
             def evidence_info(applicant_evidence)
+              return if qhp_application_feature_enabled?
               return if applicant_evidence.nil?
 
               {
@@ -293,17 +335,23 @@ module FinancialAssistance
                 external_service: applicant_evidence.external_service,
                 updated_by: applicant_evidence.updated_by,
                 verification_histories: applicant_evidence.verification_histories.collect { |v_his| v_his.serializable_hash.symbolize_keys },
-                request_results: applicant_evidence.request_results.collect do |req_res|
-                  {
-                    result: req_res.result,
-                    source: req_res.source,
-                    source_transaction_id: req_res.source_transaction_id,
-                    code: req_res.code,
-                    code_description: req_res.code_description&.strftime('%F'),
-                    raw_payload: req_res.raw_payload
-                  }
-                end
+                request_results: evidence_request_results(applicant_evidence.request_results)
               }
+            end
+
+            def evidence_request_results(request_results)
+              return [] unless request_results.present?
+
+              request_results.collect do |req_res|
+                {
+                  result: req_res.result,
+                  source: req_res.source,
+                  source_transaction_id: req_res.source_transaction_id,
+                  code: req_res.code,
+                  code_description: req_res.code_description&.strftime('%F'),
+                  raw_payload: req_res.raw_payload
+                }
+              end
             end
 
             def native_american_information(applicant)
