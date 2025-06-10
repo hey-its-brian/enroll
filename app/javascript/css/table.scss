@@ -88,6 +88,16 @@ table {
   }
 }
 
+table.eligibility-history {
+  thead {
+    tr {
+      th {
+        color: var(--text-secondary);
+      }
+    }
+  }
+}
+
 table[data-controller="navigateable-table"] {
   tbody {
     tr[data-href] {

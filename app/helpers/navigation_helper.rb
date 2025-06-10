@@ -160,6 +160,16 @@ module NavigationHelper
     { breadcrumbs: steps.values[0..current_step_index], previous_step: steps.values[current_step_index - 1] }
   end
 
+  def eligibility_navigation
+    steps = {
+      "show" => {title: l10n('insured.sbm.applications.eligibility'), link: "#"},
+      "index" => {title: l10n('insured.sbm.applications.eligibility.history'), link: insured_sbm_applications_path}
+    }
+
+    current_step_index = steps.keys.find_index(action_name)
+    { breadcrumbs: steps.values[0..current_step_index], previous_step: steps.values[current_step_index - 1] }
+  end
+
   def individual_market_nav_options(step)
     nav = {}
 

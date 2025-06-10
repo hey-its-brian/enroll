@@ -6,6 +6,11 @@
       <li>
         <a href="<%= main_app.family_account_path(tab: 'home') %>" class="<%= 'active' if action_name == "home"  %>" data-turbolinks=<%= !genesys_feature_enabled %>><%= l10n("layout.header.home") %></a>
       </li>
+      <% if @person.has_consumer_role? && qhp_application_feature_enabled? %>
+        <li>
+          <%= h(link_to l10n("insured.sbm.applications.eligibility"), main_app.insured_sbm_applications_path, class: "#{'active' if action_name == 'index'}", data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
+        </li>
+      <% end %>
       <% if EnrollRegistry.feature_enabled?(:enrollment_history_page) %>
         <li>
           <%= h(link_to l10n("enrollment_history_nav_label"), main_app.enrollment_history_insured_families_path, class: "#{'active' if action_name == 'enrollment_history'}", data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
@@ -40,7 +45,7 @@
           </div>
         </li>
       <% end %>
-      <% if @person.has_consumer_role? && EnrollRegistry.feature_enabled?(:financial_assistance) %>
+      <% if @person.has_consumer_role? && EnrollRegistry.feature_enabled?(:financial_assistance) && !qhp_application_feature_enabled? %>
         <li>
           <%= h(link_to(financial_assistance.applications_path(tab: 'cost_savings'), class: "#{'active' if ['index', 'index_with_filter', 'applications', 'review', 'raw_application'].include?(action_name)}", data: genesys_feature_enabled ? {turbolinks: false} : {}) do %>
             <%= l10n("faa.cost_savings_nav") %>

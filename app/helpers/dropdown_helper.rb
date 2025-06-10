@@ -6,16 +6,34 @@ module DropdownHelper
   def application_dropdowns(application, copyable_application_ids)
     option_args = [
       (if application.is_draft? || (application.imported? && current_user.has_hbx_staff_role?)
-         [l10n('faa.applications.actions.update'),
-          FinancialAssistanceRegistry.feature_enabled?(:qhp_application) ? application_applicants_path(application) : edit_application_path(application),
+         [l10n('insured.sbm.applications.actions.update'),
+          FinancialAssistanceRegistry.feature_enabled?(:qhp_application) ? financial_assistance.application_applicants_path(application) : financial_assistance.edit_application_path(application),
           :default]
        end),
-      ([l10n('faa.applications.actions.copy'), copy_application_path(application), :default] unless do_not_allow_copy?(application, current_user, copyable_application_ids)),
-      ([l10n('faa.applications.actions.view_eligibility'), eligibility_results_application_path(application), :default] if application.is_determined? || application.is_terminated?),
-      ([l10n('faa.applications.actions.review'), review_application_path(application), :default] if application.is_reviewable?)
+      ([l10n('insured.sbm.applications.actions.copy'), financial_assistance.copy_application_path(application), :default] unless do_not_allow_copy?(application, current_user, copyable_application_ids)),
+      ([l10n('insured.sbm.applications.actions.view_eligibility'), financial_assistance.eligibility_results_application_path(application), :default] if application.is_determined? || application.is_terminated?),
+      ([l10n('insured.sbm.applications.actions.review'), financial_assistance.review_application_path(application), :default] if application.is_reviewable?)
     ]
     option_args = add_hbx_only_dropdowns(application, option_args)
     construct_options(option_args)
+  end
+
+  def qhp_application_dropdowns(application, copyable_application_ids)
+    option_args = [
+      ([l10n('insured.sbm.applications.actions.copy'), "#", :default] unless do_not_allow_copy?(application, current_user, copyable_application_ids)),
+      ([l10n('insured.sbm.applications.actions.view_eligibility'), "#", :default] if application.is_determined?),
+      ([l10n('insured.sbm.applications.actions.review'),"#", :default] if application.is_reviewable?)
+    ]
+    option_args = add_hbx_only_dropdowns(application, option_args)
+    construct_options(option_args)
+  end
+
+  def sbm_applications_dropdowns(application, copyable_application_ids)
+    if application.is_a?(::FinancialAssistance::Application)
+      application_dropdowns(application, copyable_application_ids)
+    else
+      qhp_application_dropdowns(application, copyable_application_ids)
+    end
   end
 
   def verification_dropdowns(verification, document)
@@ -107,8 +125,13 @@ module DropdownHelper
 
   def add_hbx_only_dropdowns(application, options)
     return options unless current_user.has_hbx_staff_role?
-    options << ([l10n('faa.applications.actions.transfer_history'), transfer_history_application_path(application), :default] if FinancialAssistanceRegistry.feature_enabled?(:transfer_history_page))
-    options << ([l10n('faa.applications.actions.full_application'), raw_application_application_path(application), :default] if current_user.has_hbx_staff_role? && application.is_reviewable?)
+
+    options << ([l10n('insured.sbm.applications.actions.eligibility_criteria'), "#", :default] if qhp_application_feature_enabled? && current_user.has_hbx_staff_role? && application.is_reviewable?)
+    if application.is_a?(::FinancialAssistance::Application)
+      options << ([l10n('insured.sbm.applications.actions.transfer_history'), financial_assistance.transfer_history_application_path(application), :default] if FinancialAssistanceRegistry.feature_enabled?(:transfer_history_page))
+      options << ([l10n('insured.sbm.applications.actions.full_application'), financial_assistance.raw_application_application_path(application), :default] if current_user.has_hbx_staff_role? && application.is_reviewable?)
+    end
+    options
   end
 
   # map legacy dropdown types to BS4 dropdown types

@@ -252,6 +252,10 @@ Rails.application.routes.draw do
     get 'ridp_documents/download/:key', to: 'ridp_documents#download'
     resources :ridp_documents, only: [:destroy]
 
+    namespace :sbm do
+      resources :applications, only: [:index]
+    end
+
     namespace :individual_market do
       resources :applications, only: [:show] do
         member do

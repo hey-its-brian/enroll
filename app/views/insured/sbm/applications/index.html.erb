@@ -1,0 +1,69 @@
+<%= render partial: 'shared/family_side_nav' %>
+
+<% navigation = eligibility_navigation %>
+
+<ul class="breadcrumbs">
+  <% navigation[:breadcrumbs].each do |step| %>
+    <li><%= link_to(*step.values) %></li>
+  <% end %>
+</ul>
+
+<h1><%= l10n('insured.sbm.applications.eligibility_history') %></h1>
+<p><b><%= l10n('insured.sbm.applications.eligibility_history.header',
+               previous_year: TimeKeeper.date_of_record.year - 1,
+               current_year: TimeKeeper.date_of_record.year) %></b></p>
+
+<div class="d-flex align-items-center">
+  <% if @applications.present? %>
+    <%= form_with url: nil, :method => :get, class: "col-2 mr-auto px-0",  data: { controller: "eligibility-history" } do %>
+      <label>
+        <div class="mb-1"><%= l10n('year')  %></div>
+        <%= select("filter", "year", @applications.map(&:assistance_year)&.uniq&.compact&.sort&.reverse&.each, {include_blank: l10n('faa.applications.all_years'), :selected => params.dig(:filter, :year)}, {class: "col", data: { action: "change->eligibility-history#submit" }})%>
+      </label>
+    <% end %>
+  <% end %>
+</div>
+
+<% if @filtered_applications.present? %>
+  <div class="table-responsive">
+    <table class="eligibility-history">
+      <thead>
+      <tr>
+        <th><%= l10n('ID') %></th>
+        <th><%= l10n('insured.sbm.applications.table.program_eligibility') %></th>
+        <th><%= l10n('insured.sbm.applications.table.year') %></th>
+        <th><%= l10n('insured.sbm.applications.table.status') %></th>
+        <th><%= l10n('insured.sbm.applications.table.started') %></th>
+        <th><%= l10n('insured.sbm.applications.table.submission') %></th>
+        <th><%= l10n('actions') %></th>
+      </tr>
+      </thead>
+      <tbody>
+      <% @filtered_applications.each do |application| %>
+        <tr>
+          <td>
+            <div class="d-flex row align-items-center mx-0">
+              <div class="col-md-auto text-nowrap pl-0">
+                <%= application.hbx_id %>
+              </div>
+              <% if application.hbx_id == @recent_determined_hbx_id %>
+                <div class="col-md-auto px-0 pt-lg-0 pt-1">
+                  <span class="badge badge-current-application p-2"><%= l10n('current') %></span>
+                </div>
+              <% end %>
+            </div>
+          </td>
+          <td><%= fetch_program_eligibility(application) %></td>
+          <td><%= application.assistance_year %></td>
+          <td><%= application_state_for_display(application) %></td>
+          <td><%= to_est application.created_at %></td>
+          <td><%= format_submission_date(application) %></td>
+          <td>
+            <%= render partial: 'datatables/shared/dropdown', locals: { dropdowns: sbm_applications_dropdowns(application, @copyable_application_ids) } %>
+          </td>
+        </tr>
+      <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

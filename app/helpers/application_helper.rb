@@ -1214,4 +1214,65 @@ module ApplicationHelper
       l10n('not_applicable')
     end
   end
+
+  # Determines if copying an application should be disallowed
+  #
+  # @param [FinancialAssistance::Application] application The application being evaluated for copy eligibility
+  # @param [User] logged_in_user The current user attempting to copy the application
+  # @param [Array<BSON::ObjectId>] copyable_application_ids Array of application IDs that are eligible for copying
+  # @return [Boolean] Returns true if copying should be disallowed, false if copying is allowed
+  def do_not_allow_copy?(application, logged_in_user, copyable_application_ids)
+    return true if prospective_year_application?(application)
+
+    if logged_in_user.person.hbx_staff_role.present?
+      !application.is_determined?
+    else
+      !copyable_application_ids.include?(application.id)
+    end
+  end
+
+  # Restrict the ability to copy prospective year applications until the start of OE for all users, consumers, admin, brokers, etc.
+  def prospective_year_application?(application)
+    return false unless FinancialAssistanceRegistry.feature_enabled?(:block_prospective_year_application_copy_before_oe)
+    return false if HbxProfile.current_hbx.under_open_enrollment?
+
+    # Handles applications which are not submitted.
+    return false if application.assistance_year.nil?
+
+    TimeKeeper.date_of_record.year < application.assistance_year
+  end
+
+  # Formats the submission date of an application to Eastern Time
+  #
+  # @param [Object] application The application object with submitted_at attribute
+  # @return [String] Formatted date in Eastern Time or "N/A" if not available
+  def format_submission_date(application)
+    submission = to_est(application.submitted_at)
+    submission.present? ? submission : l10n('insured.not_applicable_abbreviation')
+  end
+
+  # Converts a datetime to Eastern Time (US & Canada) timezone
+  #
+  # @param [DateTime] datetime The datetime to convert
+  # @return [ActiveSupport::TimeWithZone, nil] The converted time or nil if datetime is not present
+  def to_est(datetime)
+    datetime.in_time_zone("Eastern Time (US & Canada)") if datetime.present?
+  end
+
+  def application_state_for_display(application)
+    return application.current_state.to_s.titleize if application.is_a?(IndividualMarket::Application)
+    return 'IRS Consent' if application.income_verification_extension_required?
+    return 'Submission Error' if application.mitc_magi_medicaid_eligibility_request_errored?
+    return 'Submission Error' if FinancialAssistanceRegistry[:application_submission_error_status].enabled? && application.aasm_state == "submitted" && DateTime.now.utc > application.submitted_at + 2.minutes
+
+    application.aasm_state.titleize
+  end
+
+  def fetch_program_eligibility(application)
+    if application.is_a?(FinancialAssistance::Application)
+      l10n('financial_assistance')
+    else
+      l10n('insured.marketplace_plan')
+    end
+  end
 end

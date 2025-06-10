@@ -60,6 +60,8 @@ module IndividualMarket
     # @return [Array<Symbol>] Collection of all possible generation reasons
     GENERATION_REASONS = %i[manual renewal rop_expiration].freeze
 
+    REVIEWABLE_STATUSES = %w[initial submission_failed submitted determination_failed].freeze
+
     # Validates the origin field to ensure it is a valid kind
     validates :origin, inclusion: { in: ORIGIN_KINDS }
 
@@ -170,6 +172,18 @@ module IndividualMarket
     # @param visitor [Object] The visitor object that will perform operations on each applicant
     def accept(visitor)
       applicants.collect{|applicant| applicant.accept(visitor) }
+    end
+
+    def is_initial?
+      self.current_state == :initial
+    end
+
+    def is_determined?
+      self.current_state == :determined
+    end
+
+    def is_reviewable?
+      REVIEWABLE_STATUSES.include?(current_state.to_s)
     end
 
     # Builds the attestation for the application
