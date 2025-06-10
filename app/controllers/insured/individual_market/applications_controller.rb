@@ -47,7 +47,7 @@ module Insured
           result = operation.call(@application)
 
           if result.success?
-            application = result.success[:application]
+            application = result.success
             redirect_to eligibility_results_insured_individual_market_application_path(application, internal: true) and return
           else
             @application.failed_submission

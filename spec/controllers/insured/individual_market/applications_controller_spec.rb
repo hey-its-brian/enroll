@@ -8,11 +8,11 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
   let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, first_name: "John", last_name: "Smith") }
   let(:user) { FactoryBot.create(:user, person: person) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
-
+  let(:current_state) { :initial }
   # Only create the application since it's central to our tests
   let(:application) do
     app = FactoryBot.create(:individual_market_application,
-                            :initial,
+                            current_state: current_state,
                             family: family,
                             applicants: [
                               FactoryBot.build(:individual_market_applicant,
@@ -38,7 +38,6 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
   end
 
   let(:operation) { instance_double(Operations::IndividualMarket::SubmitAndDetermineApplication) }
-  let(:success_result) { instance_double("Dry::Monads::Result::Success", success?: true, success: { application: application }) }
 
   before(:all) do
     DatabaseCleaner.clean
@@ -48,8 +47,6 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
     allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(true)
     allow(EnrollRegistry[:bs4_consumer_flow].feature).to receive(:is_enabled).and_return(true)
     person.consumer_role.move_identity_documents_to_verified
-    allow(Operations::IndividualMarket::SubmitAndDetermineApplication).to receive(:new).and_return(operation)
-    allow(operation).to receive(:call).with(application).and_return(success_result)
   end
 
   shared_examples_for "html only endpoint" do |action, method|
@@ -173,12 +170,8 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
     end
 
     describe "POST submit" do
-      let(:operation) { instance_double(Operations::IndividualMarket::SubmitAndDetermineApplication) }
-      let(:success_result) { instance_double("Dry::Monads::Result::Success", success?: true, success: { application: application }) }
-      let(:failure_result) { instance_double("Dry::Monads::Result::Failure", success?: false, failure: "Invalid attestation") }
-
       before do
-        allow(Operations::IndividualMarket::SubmitAndDetermineApplication).to receive(:new).and_return(operation)
+        allow(Operations::IndividualMarket::SubmitAndDetermineApplication).to receive(:new).and_call_original
       end
 
       case authorization_type
@@ -196,7 +189,6 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
       else
         context "with valid attestation parameters" do
           before do
-            allow(operation).to receive(:call).with(application).and_return(success_result)
             post :submit, params: {
               id: application.id,
               terms_check: "true",
@@ -208,12 +200,15 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
           it "redirects to eligibility results" do
             expect(response).to redirect_to(eligibility_results_insured_individual_market_application_path(application, internal: true))
           end
+
+          it "sets submitted_at timestamp on application" do
+            expect(application.reload.submitted_at).to be_present
+          end
         end
 
         context "with invalid attestation parameters" do
           before do
-            allow(operation).to receive(:call).with(application).and_return(failure_result)
-            post :submit, params: { id: application.id }.merge(valid_params)
+            post :submit, params: { id: application.id }.merge(valid_params.merge(terms_check: "false"))
           end
 
           it "redirects back to application with error" do

@@ -34,11 +34,15 @@ module Operations
 
       def submit_application(application)
         application.submit
-        if application.save
-          Success(application.reload)
+        application.set_submit
+        if application.save!
+          Success(application)
         else
           Failure("Failed to submit application due to #{application.errors.full_messages.join(', ')}")
         end
+      rescue StandardError => e
+        Rails.logger.error("QHP Application - Failed to submit application due to #{e.message}, #{e.backtrace.join("\n")}")
+        Failure("An error occurred while submitting the application: #{application.errors.full_messages.join(', ')}")
       end
 
       def determine_applicants(application)
@@ -55,13 +59,15 @@ module Operations
 
       def determine_application(application)
         application.determine
-        if application.save
-          Success(application.reload)
+        if application.save!
+          Success(application)
         else
           Failure("Failed to determine application due to #{application.errors.full_messages.join(', ')}")
         end
+      rescue StandardError => e
+        Rails.logger.error("QHP Application - Failed to determine application due to #{e.message}, #{e.backtrace.join("\n")}")
+        Failure("An error occurred while determining the application: #{application.errors.full_messages.join(', ')}")
       end
-
     end
   end
 end

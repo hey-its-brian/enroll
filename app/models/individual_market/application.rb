@@ -218,7 +218,15 @@ module IndividualMarket
       @non_applicants ||= applicants.select{|a| a.individual_market_eligibility.qhp_determination.bases.non_applicant.any?}
     end
 
+    def set_submit
+      assign_submitted_at
+    end
+
     private
+
+    def assign_submitted_at
+      self.submitted_at = Time.current
+    end
 
     # Validates that there is exactly one primary applicant in the application if there are any applicants
     def only_one_primary_applicant
