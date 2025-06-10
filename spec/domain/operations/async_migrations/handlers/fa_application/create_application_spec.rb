@@ -274,7 +274,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           expect(@individual_market_eligibility.state_histories.first.from_state).to eq(:initial)
           expect(@individual_market_eligibility.state_histories.first.transition_at).to be_present
           expect(@individual_market_eligibility.state_histories.first.event).to eq(:pend)
-          expect(@individual_market_eligibility.state_histories.first.reason).to eq("migrating from the application #{@new_application.hbx_id} to create individual_market_eligibility")
+          expect(@individual_market_eligibility.state_histories.first.reason).to eq("migrating for the family #{@new_application.family_id} to create individual_market_eligibility")
         end
 
         context 'should migrate ssn_verification_type' do

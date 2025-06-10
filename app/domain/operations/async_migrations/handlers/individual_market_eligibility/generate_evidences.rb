@@ -97,7 +97,7 @@ module Operations
             @migrator = ::Migrations::DataModelMigrator.new
             # Build individual_market_eligibility evidences
             individual_market_eligibility = applicant.build_individual_market_eligibility
-            person_hbx_id = applicant.person_hbx_id
+            person_hbx_id = applicant.instance_of?(::IndividualMarket::Applicant) ? applicant.family_member.person.hbx_id : applicant.person_hbx_id
             person = Person.where(hbx_id: person_hbx_id).first
             lawful_presence_determination = person.consumer_role.lawful_presence_determination
             alive_status_responses = person.consumer_role.alive_status_responses
@@ -128,14 +128,14 @@ module Operations
 
             Success(applicant)
           rescue StandardError => e
-            Failure("Failed to convert verification types to evidences for applicant: #{applicant.person_hbx_id} with error: #{e.message}")
+            Failure("Failed to convert verification types to evidences for family: #{applicant.application.family_id} with error: #{e.message}")
           end
 
           def assign_individual_market_eligibility_attributes(individual_market_eligibility, evidences_result, applicant)
             individual_market_eligibility_current_state = determine_eligibility_state(evidences_result)
             individual_market_eligibility_is_satisfied = evidences_result.all?{ |array|  array[1] == true}
 
-            reason = "migrating from the application #{applicant.application.hbx_id} to create individual_market_eligibility"
+            reason = "migrating for the family #{applicant.application.family_id} to create individual_market_eligibility"
             case individual_market_eligibility_current_state
             when :satisfy
               individual_market_eligibility.satisfy(reason: reason)

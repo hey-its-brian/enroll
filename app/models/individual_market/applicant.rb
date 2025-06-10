@@ -179,6 +179,14 @@ module IndividualMarket
       visitor.visit(self)
     end
 
+    def build_individual_market_eligibility
+      eligibilities.build(
+        _type: 'Eligibilities::V3::IndividualMarketEligibility',
+        title: 'Individual Market Eligibility',
+        key: :individual_market_eligibility
+      )
+    end
+
     private
 
     # Adds to errors collection if duplicate eligibilities are found
