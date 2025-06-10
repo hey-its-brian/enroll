@@ -1,8 +1,12 @@
 <% qhp_enabled = qhp_application_feature_enabled? %>
 <% content_for :side_nav do %>
   <nav class="progress-nav">
-    <% if nav[:title_link].present? %>
-      <h3>
+    <% if nav[:title].present? %>
+      <% element_tag = qhp_enabled ? "div" : "h3" %>
+      <% element_class = qhp_enabled ? "nav-header" : "" %>
+
+      <<%= element_tag %> <%= "class=#{element_class}" if element_class.present? %>>
+      <% if nav[:title_link].present? %>
         <a href="<%= nav[:title_link] %>">
           <% if qhp_enabled %>
             <span class="arrow-back-icon vertical-align-middle mr-2"></span>
@@ -12,9 +16,10 @@
             <%= nav[:title] %>
           <% end %>
         </a>
-      </h3>
-    <% elsif nav[:title].present? %>
-      <h3><%= nav[:title] %></h3>
+      <% else %>
+        <%= nav[:title] %>
+      <% end %>
+      </<%= element_tag %>>
     <% end %>
 
     <% if nav[:subheading].present? %>

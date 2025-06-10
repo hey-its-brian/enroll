@@ -10,6 +10,7 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   "en.faa.nav.family_relationships" => "Family Relationships",
   "en.faa.nav.review" => "Review & Submit",
   "en.faa.nav.my_household" => "My Household",
+  "en.faa.nav.enroll_in_coverage" => "Enroll in Coverage",
   "en.faa.nav.tax_info" => "Tax Info",
   "en.faa.nav.job_income" => "Job Income",
   "en.faa.nav.income_adjustments" => "Income Adjustments",

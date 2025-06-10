@@ -418,7 +418,7 @@ module FinancialAssistance
       nav[:step] = step
       view_applications = (applicant.present? || step != 1) && application.is_draft?
       if qhp_enabled
-        nav[:title] = applicant.present? ? l10n("faa.nav.my_household") : nil
+        nav[:title] = applicant.present? ? l10n("faa.nav.my_household") : l10n("faa.nav.enroll_in_coverage")
         nav[:title_link] = applicant.present? ? financial_assistance.application_applicants_path(application) : nil
       else
         nav[:title] = view_applications ? l10n("faa.nav.my_household") : l10n("faa.results.view_my_applications").titleize
