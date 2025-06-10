@@ -1,0 +1,343 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :after_each, type: :controller do
+
+  # Create person and user since they are critical for auth testing
+  let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, first_name: "John", last_name: "Smith") }
+  let(:user) { FactoryBot.create(:user, person: person) }
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+
+  # Only create the application since it's central to our tests
+  let(:application) do
+    app = FactoryBot.create(:individual_market_application,
+                            :initial,
+                            family: family,
+                            applicants: [
+                              FactoryBot.build(:individual_market_applicant,
+                                               :with_demographics,
+                                               :with_eligibilities,
+                                               family_member_id: family.primary_family_member.id,
+                                               is_primary_applicant: true,
+                                               person_name: {
+                                                 given_name: person.first_name,
+                                                 family_name: person.last_name
+                                               })
+                            ])
+    app.save!
+    app
+  end
+
+  let(:valid_params) do
+    {
+      terms_check: "true",
+      first_name: person.first_name,
+      last_name: person.last_name
+    }
+  end
+
+  let(:operation) { instance_double(Operations::IndividualMarket::SubmitAndDetermineApplication) }
+  let(:success_result) { instance_double("Dry::Monads::Result::Success", success?: true, success: { application: application }) }
+
+  before(:all) do
+    DatabaseCleaner.clean
+  end
+
+  before do
+    allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(true)
+    allow(EnrollRegistry[:bs4_consumer_flow].feature).to receive(:is_enabled).and_return(true)
+    person.consumer_role.move_identity_documents_to_verified
+    allow(Operations::IndividualMarket::SubmitAndDetermineApplication).to receive(:new).and_return(operation)
+    allow(operation).to receive(:call).with(application).and_return(success_result)
+  end
+
+  shared_examples_for "html only endpoint" do |action, method|
+    [:json, :js].each do |format|
+      it "returns 406 for #{format} format" do
+        sign_in user
+        params = { id: application.id, format: format }
+        if method == :get
+          get action, params: params
+        else
+          post action, params: params.merge(valid_params)
+        end
+        expect(response.status).to eq(406)
+      end
+    end
+  end
+
+  shared_examples_for "application endpoints" do |authorization_type|
+    before do
+      case authorization_type
+      when :unauthorized
+        # Don't sign in
+      when :unassociated
+        other_person = FactoryBot.create(:person, :with_consumer_role, first_name: "Jane", last_name: "Doe")
+        other_person.consumer_role.move_identity_documents_to_verified
+        other_user = FactoryBot.create(:user, person: other_person)
+        sign_in other_user
+      when :authorized
+        sign_in user
+      end
+    end
+
+    describe "GET review" do
+      before { get :review, params: { id: application.id } }
+
+      case authorization_type
+      when :unauthorized
+        it "redirects to sign in" do
+          expect(response).to redirect_to(new_user_session_path)
+        end
+      when :unassociated
+        it "redirects with access denied" do
+          expect(response).to redirect_to(root_path)
+          expect(flash[:error]).to match(/Access not allowed/)
+        end
+      else
+        it "returns success" do
+          expect(response).to be_successful
+        end
+
+        it "assigns @application" do
+          expect(assigns(:application)).to eq application
+        end
+
+        it "renders the review template" do
+          expect(response).to render_template(:review)
+        end
+
+        it_behaves_like "html only endpoint", :review, :get
+      end
+    end
+
+    describe "GET preferences" do
+      before { get :preferences, params: { id: application.id } }
+
+      case authorization_type
+      when :unauthorized
+        it "redirects to sign in" do
+          expect(response).to redirect_to(new_user_session_path)
+        end
+      when :unassociated
+        it "redirects with access denied" do
+          expect(response).to redirect_to(root_path)
+          expect(flash[:error]).to match(/Access not allowed/)
+        end
+      else
+        it "returns success" do
+          expect(response).to be_successful
+        end
+
+        it "assigns @applicant" do
+          expect(assigns(:applicant)).to eq(application.primary_applicant)
+        end
+
+        it "renders the preferences template" do
+          expect(response).to render_template(:preferences)
+        end
+
+        it_behaves_like "html only endpoint", :preferences, :get
+      end
+    end
+
+    describe "GET attestation" do
+      before { get :attestation, params: { id: application.id } }
+
+      case authorization_type
+      when :unauthorized
+        it "redirects to sign in" do
+          expect(response).to redirect_to(new_user_session_path)
+        end
+      when :unassociated
+        it "redirects with access denied" do
+          expect(response).to redirect_to(root_path)
+          expect(flash[:error]).to match(/Access not allowed/)
+        end
+      else
+        it "returns success" do
+          expect(response).to be_successful
+        end
+
+        it "assigns @application" do
+          expect(assigns(:application)).to eq application
+        end
+
+        it "renders the attestation template" do
+          expect(response).to render_template(:attestation)
+        end
+
+        it_behaves_like "html only endpoint", :attestation, :get
+      end
+    end
+
+    describe "POST submit" do
+      let(:operation) { instance_double(Operations::IndividualMarket::SubmitAndDetermineApplication) }
+      let(:success_result) { instance_double("Dry::Monads::Result::Success", success?: true, success: { application: application }) }
+      let(:failure_result) { instance_double("Dry::Monads::Result::Failure", success?: false, failure: "Invalid attestation") }
+
+      before do
+        allow(Operations::IndividualMarket::SubmitAndDetermineApplication).to receive(:new).and_return(operation)
+      end
+
+      case authorization_type
+      when :unauthorized
+        it "redirects to sign in" do
+          post :submit, params: { id: application.id }
+          expect(response).to redirect_to(new_user_session_path)
+        end
+      when :unassociated
+        it "redirects with access denied" do
+          post :submit, params: { id: application.id }
+          expect(response).to redirect_to(root_path)
+          expect(flash[:error]).to match(/Access not allowed/)
+        end
+      else
+        context "with valid attestation parameters" do
+          before do
+            allow(operation).to receive(:call).with(application).and_return(success_result)
+            post :submit, params: {
+              id: application.id,
+              terms_check: "true",
+              first_name: application.primary_applicant.person_name.given_name,
+              last_name: application.primary_applicant.person_name.family_name
+            }
+          end
+
+          it "redirects to eligibility results" do
+            expect(response).to redirect_to(eligibility_results_insured_individual_market_application_path(application, internal: true))
+          end
+        end
+
+        context "with invalid attestation parameters" do
+          before do
+            allow(operation).to receive(:call).with(application).and_return(failure_result)
+            post :submit, params: { id: application.id }.merge(valid_params)
+          end
+
+          it "redirects back to application with error" do
+            expect(response).to redirect_to(insured_individual_market_application_path(application))
+            expect(flash[:error]).to eq("Invalid attestation")
+          end
+        end
+
+        it_behaves_like "html only endpoint", :submit, :post
+      end
+    end
+
+    describe "GET eligibility_results" do
+      before { get :eligibility_results, params: { id: application.id } }
+
+      case authorization_type
+      when :unauthorized
+        it "redirects to sign in" do
+          expect(response).to redirect_to(new_user_session_path)
+        end
+      when :unassociated
+        it "redirects with access denied" do
+          expect(response).to redirect_to(root_path)
+          expect(flash[:error]).to match(/Access not allowed/)
+        end
+      else
+        it "returns success" do
+          expect(response).to be_successful
+        end
+
+        it "assigns @application" do
+          expect(assigns(:application)).to eq application
+        end
+
+        it "renders the eligibility_results template" do
+          expect(response).to render_template(:eligibility_results)
+        end
+
+        it_behaves_like "html only endpoint", :eligibility_results, :get
+      end
+    end
+  end
+
+  context "when user is not signed in" do
+    it_behaves_like "application endpoints", :unauthorized
+  end
+
+  context "when user does not own the application" do
+    it_behaves_like "application endpoints", :unassociated
+  end
+
+  context "when user owns the application" do
+    it_behaves_like "application endpoints", :authorized
+  end
+
+  context "when user is a broker" do
+    let(:site) { FactoryBot.create(:benefit_sponsors_site, :with_benefit_market, :as_hbx_profile, :cca) }
+    let(:broker_organization) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_broker_agency_profile, site: site) }
+    let(:broker_agency_profile) { broker_organization.broker_agency_profile }
+    let(:broker_person) { FactoryBot.create(:person) }
+    let(:broker_role) do
+      FactoryBot.create(:broker_role,
+                        person: broker_person,
+                        benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id,
+                        broker_agency_profile: broker_agency_profile)
+    end
+    let(:broker_agency_staff_role) do
+      FactoryBot.create(:broker_agency_staff_role,
+                        person: broker_person,
+                        benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id,
+                        broker_agency_profile: broker_agency_profile,
+                        aasm_state: 'active')
+    end
+    let(:broker_user) { FactoryBot.create(:user, person: broker_person) }
+
+    before do
+      broker_person.broker_role = broker_role
+      broker_person.broker_agency_staff_roles = [broker_agency_staff_role]
+      broker_person.save!
+      broker_user.roles << "broker" unless broker_user.roles.include?("broker")
+      broker_user.roles << "broker_agency_staff" unless broker_user.roles.include?("broker_agency_staff")
+      broker_user.save!
+      family.hire_broker_agency(broker_agency_profile)
+      sign_in broker_user
+    end
+
+    it_behaves_like "application endpoints", :authorized
+  end
+
+  context "when user is HBX staff" do
+    let(:admin_person) { FactoryBot.create(:person, :with_hbx_staff_role) }
+    let(:permission) { FactoryBot.create(:permission, :super_admin) }
+    let(:admin_user) { FactoryBot.create(:user, :with_hbx_staff_role, person: admin_person) }
+
+    before do
+      admin_person.hbx_staff_role.update!(permission_id: permission.id)
+      sign_in admin_user
+    end
+
+    it_behaves_like "application endpoints", :authorized
+  end
+
+  describe "feature flag behavior" do
+    before do
+      allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(false)
+      sign_in user
+    end
+
+    it "returns 404 when feature is disabled" do
+      get :review, params: { id: application.id }
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "when application is not found" do
+    before do
+      sign_in user
+      get :review, params: { id: "invalid_id" }
+    end
+
+    it "redirects to root path" do
+      expect(response).to have_http_status(:found) # 302 redirect
+      expect(response).to redirect_to(root_path)
+      expect(flash[:error]).to match(/Access not allowed/)
+    end
+  end
+end

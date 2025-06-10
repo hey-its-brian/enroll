@@ -6,7 +6,7 @@
 <%= form_for(@applicant, url: insured_individual_market_application_applicant_update_preferences_path(@application, @applicant), method: :post) do |f| %>
   <section>
     <%= render partial: 'shared/phone_fields', locals: {f: f, bs4: true} %>
-    <div id="email_info" class="">
+    <div id="email_info">
       <div class="email d-flex mb-md-4 row col-sm">
         <%= f.fields_for :emails, errors: {}, fieldset: true do |email| %>
           <%= render partial: 'shared/email_fields', locals: {f: email, bs4: true} %>

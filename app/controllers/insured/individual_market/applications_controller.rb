@@ -42,18 +42,21 @@ module Insured
 
         authorize @application, :submit?
 
-        if valid_attestation(params)
-          result = Operations::IndividualMarket::SubmitAndDetermineApplication.new.call(@application)
+        if @application.build_attestation(params[:terms_check] == "true", params[:first_name], params[:last_name], current_user)
+          operation = Operations::IndividualMarket::SubmitAndDetermineApplication.new
+          result = operation.call(@application)
+
           if result.success?
-            redirect_to eligibility_results_insured_individual_market_application_path(@application, internal: true)
+            application = result.success[:application]
+            redirect_to eligibility_results_insured_individual_market_application_path(application, internal: true) and return
           else
-            @application.failed_determination
+            @application.failed_submission
             flash[:error] = result.failure
-            redirect_to insured_individual_market_application_path(@application)
+            redirect_to insured_individual_market_application_path(@application) and return
           end
         else
-          flash[:error] = @application.errors.full_messages.join(", ")
-          redirect_to insured_individual_market_application_path(@application)
+          flash[:error] = "Invalid attestation"
+          redirect_to insured_individual_market_application_path(@application) and return
         end
       end
 
@@ -95,6 +98,8 @@ module Insured
                        else
                          ::IndividualMarket::Application.find_by(id: application_id, family_id: get_current_person&.primary_family&.id)
                        end
+      rescue Mongoid::Errors::DocumentNotFound
+        authorize ::IndividualMarket::Application.new, :find_application?
       end
 
       def check_for_editable_application
@@ -104,14 +109,6 @@ module Insured
 
       def set_family
         @family = @person.primary_family
-      end
-
-      def valid_attestation(params)
-        return false unless params[:terms_check]
-        return false unless params[:first_name]
-        return false unless params[:last_name]
-
-        @application.build_attestation(params[:terms_check] == "true", params[:first_name], params[:last_name], current_user)
       end
 
       def application_params

@@ -60,7 +60,7 @@ RSpec.describe Eligibilities::V3::Determinations::CsrDetermination, type: :model
 
   describe '#unique_basis_kinds' do
     it 'when there are duplicate basis kinds' do
-      determination.bases << build(:v3_basis, basis_kind: 'ai_na_attested', determination: determination)
+      determination.bases << build(:v3_basis, basis_kind: 'ai_an_attested', determination: determination)
       expect(determination).not_to be_valid
       expect(determination.errors[:bases]).to include('Duplicate basis kinds')
     end

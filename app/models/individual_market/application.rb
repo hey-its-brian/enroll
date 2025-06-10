@@ -180,12 +180,14 @@ module IndividualMarket
     # @param user [User] The user who is signing the attestation
     # @return [Boolean] True if the attestation is valid, false otherwise
     def build_attestation(attested, given_name, family_name, user = nil)
-      return false unless attested
+      return false unless attested && given_name.present? && family_name.present?
       return false unless check_person_name(given_name, family_name)
+
       signer_role = fetch_signer_role(primary_applicant&.family_member&.person, user&.person)
       self.attestation = IndividualMarket::Attestation.new(signer_role: signer_role, signer_id: user&.id, signed_at: Time.now)
+
       return false unless attestation.valid?
-      self.save!
+      save
     end
 
     # Validates the person name of the primary applicant
@@ -196,8 +198,7 @@ module IndividualMarket
     def check_person_name(given_name, family_name)
       person_name = primary_applicant&.person_name
       return false unless person_name.present?
-      return false unless person_name.given_name&.downcase == given_name&.downcase && person_name.family_name&.downcase == family_name&.downcase
-      true
+      person_name.given_name&.downcase == given_name&.downcase && person_name.family_name&.downcase == family_name&.downcase
     end
 
     def qhp_eligible_applicants

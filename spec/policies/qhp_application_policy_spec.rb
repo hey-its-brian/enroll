@@ -15,6 +15,20 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
       consumer_role.move_identity_documents_to_verified
     end
 
+    permissions :find_application? do
+      let(:user_of_family) { FactoryBot.create(:user, person: person) }
+      let(:logged_in_user) { user_of_family }
+
+      it 'denies access when the application does not have a family' do
+        application.family = nil
+        expect(subject).not_to permit(logged_in_user, application)
+      end
+
+      it 'grants access when the application has a family' do
+        expect(subject).to permit(logged_in_user, application)
+      end
+    end
+
     permissions :edit? do
       context 'when a valid user is logged in' do
         context 'when the user is a consumer' do

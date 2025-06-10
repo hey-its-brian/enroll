@@ -154,7 +154,7 @@ RSpec.describe Operations::IndividualMarket::Applicant::Determine, dbclean: :aft
       primary_applicant.demographics.indian_tribe_member = true
       result = subject.call(params)
       csr_determination = result.success.individual_market_eligibility.determinations.where(_type: 'Eligibilities::V3::Determinations::CsrDetermination').first
-      native_american_basis = csr_determination.bases.where(basis_kind: 'ai_na_attested').first
+      native_american_basis = csr_determination.bases.where(basis_kind: 'ai_an_attested').first
       expect(csr_determination.is_eligible).to eq true
       expect(native_american_basis.is_satisfied).to eq true
     end

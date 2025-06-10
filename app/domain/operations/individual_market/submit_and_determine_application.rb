@@ -15,7 +15,7 @@ module Operations
         _applicants = yield determine_applicants(application)
         # create evidences for each applicant
         # create or update family members
-        # deactive current tax household
+        # deactivate current tax household
         # create new tax household
         # update family determination
         determined_application = yield determine_application(application)

@@ -3,9 +3,17 @@
 # The QhpApplicationPolicy class defines the policy for accessing individual market applications.
 # It provides methods to check if a user has the necessary permissions to perform various actions on an application.
 class QhpApplicationPolicy < ApplicationPolicy
+
   def initialize(user, record)
     super
     @family ||= record.family
+  end
+
+  # States if a family is present on the application.
+  # This is used to determine if the application is a true application or a placeholder for a new/missing application.
+  # @return [Boolean] Returns true if the application has a family, false otherwise.
+  def find_application?
+    @family.present?
   end
 
   # Determines if the current user has permission to edit.
@@ -85,6 +93,22 @@ class QhpApplicationPolicy < ApplicationPolicy
   #
   # @return [Boolean] Returns true if the user has permission to show the ssn of the applicant, false otherwise.
   def can_show_ssn?
+    edit?
+  end
+
+  # Determines if the current user has permission to copy the application.
+  # The user can copy the application if they have permission to edit it.
+  #
+  # @return [Boolean] Returns true if the user has permission to copy the application, false otherwise.
+  def copy?
+    edit?
+  end
+
+  # Determines if the current user has permission to view the index of applicant.
+  # The user can view the index of the applicant if they have permission to edit it.
+  #
+  # @return [Boolean] Returns true if the user has permission to view the index of the application's applicant, false otherwise.
+  def applicants?
     edit?
   end
 end

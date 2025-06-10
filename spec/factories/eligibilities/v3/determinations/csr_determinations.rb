@@ -34,7 +34,7 @@ FactoryBot.define do
 
     trait :with_basis do
       after(:build) do |determination|
-        determination.bases << build(:v3_basis, basis_kind: 'ai_na_attested', determination: determination)
+        determination.bases << build(:v3_basis, basis_kind: 'ai_an_attested', determination: determination)
       end
     end
   end

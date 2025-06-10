@@ -122,7 +122,7 @@ module Operations
         # @return [Dry::Monads::Result]
         def determine_csr_eligibility(applicant)
           @csr_determination = applicant.individual_market_eligibility.csr_determination
-          generate_ai_na_attested_basis(applicant) if @applying_coverage
+          generate_ai_an_attested_basis(applicant) if @applying_coverage
 
           Try do
             @csr_determination.update(csr_type: 'csr_limited')
@@ -134,8 +134,8 @@ module Operations
         # Generates the AI/NA attested basis
         # @param [IndividualMarket::Applicant] applicant
         # @return [Dry::Monads::Result]
-        def generate_ai_na_attested_basis(applicant)
-          @csr_determination.bases.build({basis_kind: 'ai_na_attested', is_satisfied: applicant.demographics.indian_tribe_member})
+        def generate_ai_an_attested_basis(applicant)
+          @csr_determination.bases.build({basis_kind: 'ai_an_attested', is_satisfied: applicant.demographics.indian_tribe_member})
         end
       end
     end

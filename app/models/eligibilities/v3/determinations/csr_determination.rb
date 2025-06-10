@@ -28,11 +28,11 @@ module Eligibilities
         CSR_TYPE_KINDS = %w[csr_100 csr_94 csr_87 csr_73 csr_0 csr_limited].freeze
 
         # @return [Array<String>] List of valid individual market basis kinds
-        INDIVIDUAL_MARKET_BASIS_KINDS = %w[ai_na_attested].freeze
+        INDIVIDUAL_MARKET_BASIS_KINDS = %w[ai_an_attested].freeze
 
         # @return [Array<String>] List of valid financial assistance basis kinds
         # this list will be expanded when financial assistance determinations are switched to this pattern
-        FINANCIAL_ASSISTANCE_BASIS_KINDS = %w[ai_na_attested].freeze
+        FINANCIAL_ASSISTANCE_BASIS_KINDS = %w[ai_an_attested].freeze
 
         # @!attribute csr_type
         # @return [String] The determined CSR type

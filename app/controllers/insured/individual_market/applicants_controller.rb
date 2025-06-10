@@ -20,7 +20,7 @@ module Insured
       include ::ApplicationHelper
 
       def index
-        authorize @application, :index?
+        authorize @application, :applicants?
 
         respond_to :html
       end
@@ -67,7 +67,7 @@ module Insured
       end
 
       def edit
-        authorize @application, :index?
+        authorize @applicant, :edit?
 
         # Load existing eligibilities if present
         @applicant.eligibilities ||= @applicant.initialize_eligibilities
@@ -86,7 +86,6 @@ module Insured
         @applicant.address_forms = applicant_params[:addresses_attributes]&.values&.map do |addr_attrs|
           ::Forms::Locations::AddressForm.new(addr_attrs)
         end || []
-
         success, result = @applicant.save
 
         respond_to do |format|
@@ -104,9 +103,8 @@ module Insured
       def destroy
         authorize @applicant, :destroy?
         ::Operations::IndividualMarket::Applicant::Destroy.new.call(@applicant)
-        redirect_to insured_individual_market_application_applicants_path(@application)
 
-        respond_to :js
+        redirect_to insured_individual_market_application_applicants_path(@application)
       end
 
       def update_preferences
@@ -122,15 +120,13 @@ module Insured
           redirect_to review_insured_individual_market_application_path(@application)
         else
           flash.now[:error] = @applicant.errors.full_messages.join(", ")
-          redirect_to insured_individual_market_application_applicants_path(@application)
+          redirect_to preferences_insured_individual_market_application_path(@application)
         end
-
-        respond_to :js, :html
       end
 
       def show_ssn
         authorize @application, :can_show_ssn?
-        @applicant = @application.applicants.where(id: params[:id]).first
+        @applicant = @application.applicants.find_by(id: params[:id])
         if @applicant
           payload = number_to_ssn(@applicant.demographics.ssn)
           render json: { payload: payload, status: 200 }
@@ -157,6 +153,8 @@ module Insured
                            family_id: get_current_person&.primary_family&.id
                          )
                        end
+      rescue Mongoid::Errors::DocumentNotFound
+        authorize ::IndividualMarket::Application.new, :find_application?
       end
 
       def check_for_editable_application
