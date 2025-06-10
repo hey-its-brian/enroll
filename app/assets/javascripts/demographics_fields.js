@@ -914,4 +914,20 @@ function demographicValidations() {
   );
 
   isApplyingCoverage('person');
+
+  // Reset phone field validity when Text contact method is unchecked
+  $('#contact_type_text').on('change', function () {
+    if (!this.checked) {
+      const mobilePhoneInput = $('input[name="person[phones_attributes][1][full_phone_number]"]');
+      const homePhoneInput = $('input[name="person[phones_attributes][0][full_phone_number]"]');
+
+      mobilePhoneInput.each(function () {
+        this.setCustomValidity('');
+      });
+
+      homePhoneInput.each(function () {
+        this.setCustomValidity('');
+      });
+    }
+  });
 }

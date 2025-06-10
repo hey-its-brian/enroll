@@ -1658,3 +1658,24 @@ end
 Then(/^Individual should not see the immigration field warning$/) do
   expect(page).not_to have_content "It's important to enter as many fields from your immigration documents as possible"
 end
+
+
+And(/^Individual unchecks contact text check box/i) do
+  find(IvlPersonalInformation.text_checkbox).click
+  sleep 30
+end
+
+Then(/^.+ removes phone number$/) do
+  fill_in IvlPersonalInformation.mobile_phone, :with => ''
+  sleep 2
+end
+
+Then(/Individual should see validity message for mobile phone input/) do
+  custom_message = page.evaluate_script("document.querySelector(\"input[name='person[phones_attributes][1][full_phone_number]']\").validationMessage")
+  expect(custom_message).to eq('You must enter a mobile phone number to receive notices and updates by text.')
+end
+
+Then(/Individual should not see validity message for mobile phone input/) do
+  custom_message = page.evaluate_script("document.querySelector(\"input[name='person[phones_attributes][1][full_phone_number]']\").validationMessage")
+  expect(custom_message).to eq('')
+end
