@@ -1194,7 +1194,8 @@ module FinancialAssistance
     end
 
     def is_reviewable?
-      REVIEWABLE_STATUSES.include?(aasm_state)
+      reviewable_statuses = qhp_application_feature_enabled? ? REVIEWABLE_STATUSES.dup.push("draft") : REVIEWABLE_STATUSES
+      reviewable_statuses.include?(aasm_state)
     end
 
     def is_closed?

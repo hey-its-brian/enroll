@@ -977,6 +977,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.qhp_application.review.address_info' => "Address Information",
   :'en.qhp_application.review.edit_section' => "Edit Section",
   :'en.qhp_application.review.personal_email' => "Personal",
+  :'en.qhp_application.review.relationship_to_primary_member' => "Relationship to Primary Member",
   :'en.qhp_application.attestation.submit' => "Submit Application",
   :'en.qhp_application.attestation.title' => "Submit Your Application",
   :'en.qhp_application.attestation.attestation_info' => "This is the last step. Carefully read the information below. Select 'I agree' after each statement to acknowledge your agreement. Then, enter your name to electronically sign the application. When you're finished, select ‘Submit Application’.",
@@ -1003,8 +1004,10 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.qhp_application.show.add_member' => "Add Member to Household",
   :'en.qhp_application.results.eligibility_results' => 'Eligibility Results',
   :'en.qhp_application.results.uqhp_title' => 'Qualifies for a Plan',
+  :'en.qhp_application.results.uqhp_description' => "These people are eligible to enroll in an insurance plan on %{short_name}.",
   :'en.qhp_application.results.ineligible_description' => 'These people are not eligible to enroll in an insurance plan on %{site_short_name}.</p>',
   :'en.qhp_application.results.view_my_applications' => 'View My Applications',
   :'en.qhp_application.results.return' => 'Return to Application Info',
+  :'en.qhp_application.results.application_reference_id' => 'Application Reference ID',
   :'en.error_header_text' => "You need to correct the following errors:",
 }.freeze

@@ -249,7 +249,7 @@ module FinancialAssistance
         return
       end
 
-      if @application.nil? || @application.is_draft?
+      if @application.nil? || (@application.is_draft? && !qhp_application_feature_enabled?)
         redirect_to applications_path
       else
         @all_relationships = @application.relationships
