@@ -22,7 +22,7 @@ module Operations
         '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility,
         '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally,
         'migrate_fa_evidences' => ::Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvidence,
-        'create_financial_assistance_application' => ::Operations::AsyncMigrations::Handlers::AptcCsrEligibility::CreateApplication,
+        'create_financial_assistance_application' => ::Operations::AsyncMigrations::Handlers::FAApplication::CreateApplication,
         'create_qhp_application' => ::Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::CreateApplication
       }.freeze
     end

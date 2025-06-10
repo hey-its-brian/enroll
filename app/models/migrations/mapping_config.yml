@@ -1,3 +1,10 @@
+income_evidence: evidence
+esi_mec_evidence: evidence
+non_esi_mec_evidence: evidence
+local_mec_evidence: evidence
+aptc_csr_eligibility: v3_eligibility
+individual_market_eligibility: v3_eligibility
+
 workflow_state_transition:
   from_state: from_state
   to_state: to_state
@@ -6,6 +13,17 @@ workflow_state_transition:
   comment: comment
   reason: reason
   metadata: metadata
+
+state_history:
+  event: event
+  from_state: from_state
+  to_state: to_state
+  transition_at: transition_at
+  comment: comment
+  reason: reason
+  metadata: metadata
+  effective_on: effective_on
+  is_eligible: is_eligible
 
 request_result:
   result: result
@@ -46,21 +64,71 @@ verification_history:
   due_on: due_on
   date_of_action: date_of_action
 
+type_history_element:
+  action: action
+  update_reason: update_reason
+  modifier: updated_by
+  created_at: date_of_action
+
+vlp_document:
+  title: title
+  creator: creator
+  subject: subject
+  description: description
+  publisher: publisher
+  contributor: contributor
+  date: date
+  type: type
+  format: format
+  identifier: identifier
+  source: source
+  language: language
+  relation: relation
+  coverage: coverage
+  rights: rights
+  tags: tags
+  size: size
+  doc_identifier: doc_identifier
+
 evidence:
   aasm_state: current_state
+  current_state: current_state
   update_reason: update_reason
   verification_outstanding: verification_outstanding
   due_on: due_on
   updated_by: updated_by
   external_service: external_service
-  title: title
   description: description
   is_satisfied: is_satisfied
-  determined_at: -> {}
+  determined_at: determined_at
   verification_histories_attributes: verification_histories
   request_results_attributes: request_results
   workflow_state_transitions_attributes: state_histories
+  state_histories_attributes: state_histories
   documents_attributes: documents
+
+verification_type:
+  validation_status: current_state
+  external_service: external_service
+  due_date: due_on
+  updated_by: updated_by
+  inactive: "resolve_is_active"
+  vlp_documents_attributes: documents
+
+field_resolutions:
+  resolve_is_active: "!inactive"
+
+v3_eligibility:
+  key: key
+  title: title
+  description: description
+  current_state: :current_state
+  is_satisfied: is_satisfied
+  determined_at: determined_at
+  is_disqualified: is_disqualified
+  disqualified_at: disqualified_at
+  disqualified_reason: disqualified_reason
+  state_histories_attributes: state_histories
 
 nested_object_resolution:
   verification_histories: date_of_action

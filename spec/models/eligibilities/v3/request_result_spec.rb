@@ -19,7 +19,7 @@ RSpec.describe Eligibilities::V3::RequestResult, type: :model do
     it { should have_field(:source).of_type(String) }
     it { should have_field(:source_transaction_id).of_type(String) }
     it { should have_field(:code).of_type(String) }
-    it { should have_field(:code_description).of_type(Date) }
+    it { should have_field(:code_description).of_type(String) }
     it { should have_field(:raw_payload).of_type(String) }
     it { should have_field(:date_of_action).of_type(DateTime) }
     it { should have_field(:action).of_type(String) }

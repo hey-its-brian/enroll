@@ -202,6 +202,7 @@ module FinancialAssistance
           return if source_applicant.blank?
 
           source_applicant.clone_evidences(new_applicant) unless qhp_application_feature_enabled?
+
           build_new_incomes(source_applicant, new_applicant)
           build_new_deductions(source_applicant, new_applicant)
           build_new_benefits(source_applicant, new_applicant)

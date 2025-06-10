@@ -213,7 +213,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvid
         expect(@new_income_evidence.created_at).to be_present
         expect(@new_income_evidence.updated_at).to be_present
         expect(@new_income_evidence.key.to_s).to eq("#{@old_income_evidence.key}_evidence")
-        expect(@new_income_evidence.title).to eq(@old_income_evidence.title)
+        expect(@new_income_evidence.title).to eq("#{@old_income_evidence.title} Evidence")
         expect(@new_income_evidence._type).to eq('FinancialAssistance::Evidences::IncomeEvidence')
         expect(@new_income_evidence.current_state.to_s).to eq(@old_income_evidence.aasm_state.to_s)
         expect(@new_income_evidence.verification_outstanding).to eq(@old_income_evidence.verification_outstanding)

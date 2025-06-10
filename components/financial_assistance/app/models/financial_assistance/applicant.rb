@@ -1654,6 +1654,14 @@ module FinancialAssistance
       build_aptc_csr_evidences
     end
 
+    def build_individual_market_eligibility
+      eligibilities.build(
+        _type: 'Eligibilities::V3::IndividualMarketEligibility',
+        title: 'Individual Market Eligibility',
+        key: :individual_market_eligibility
+      )
+    end
+
     # Builds a new APTC/CSR eligibility for the applicant.
     #
     # @param applicant [FinancialAssistance::Applicant] The applicant for whom the eligibility is being built.

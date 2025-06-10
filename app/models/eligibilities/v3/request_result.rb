@@ -13,7 +13,7 @@ module Eligibilities
       field :source, type: String
       field :source_transaction_id, type: String
       field :code, type: String
-      field :code_description, type: Date
+      field :code_description, type: String
       field :raw_payload, type: String
       field :date_of_action, type: DateTime
       field :action, type: String

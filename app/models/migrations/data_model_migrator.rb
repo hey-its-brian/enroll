@@ -36,10 +36,6 @@ module Migrations
     # @raise [StandardError] If the mappings are invalid.
     def self.validate_mappings(mappings)
       raise "Invalid mappings format" unless mappings.is_a?(Hash)
-
-      mappings.each do |model, fields|
-        raise "Invalid fields for model #{model}" unless fields.is_a?(Hash)
-      end
     end
 
     # Performs the migration process.
@@ -52,14 +48,13 @@ module Migrations
     # @return [Object] The new model with migrated data.
     def perform(old_model, new_model)
       validate_models!(old_model, new_model)
-
       class_name = old_model.class.name.split('::').last.underscore
       mappings = self.class.field_mappings(class_name)
+      mappings = self.class.field_mappings(mappings) unless mappings.is_a?(Hash)
 
       mappings.each do |old_field, new_field|
         migrate_field(old_model, new_model, old_field, new_field)
       end
-
       new_model
     end
 
@@ -84,8 +79,19 @@ module Migrations
     def migrate_field(old_model, new_model, old_field, new_field)
       if old_field.to_s.end_with?('_attributes')
         migrate_nested_attributes(old_model, new_model, old_field, new_field)
+      elsif old_model.respond_to?(old_field) && new_field.start_with?('resolve_')
+        resolve_field(old_model, new_model, old_field, new_field)
       elsif old_model.respond_to?(old_field)
         new_model[new_field] = old_model[old_field]
+      end
+    end
+
+    def resolve_field(old_model, new_model, old_field, resolution_key)
+      resolution = self.class.field_mappings('field_resolutions')[resolution_key]
+      case resolution
+      when /^!(.+)/
+        field_name = resolution_key.to_s.gsub('resolve_', '')
+        new_model[field_name] = !old_model[old_field]
       end
     end
 
@@ -100,7 +106,6 @@ module Migrations
       return unless old_model.respond_to?(nested_field)
 
       value = resolve_nested_object(nested_field)
-
       looper = value.present? ? old_model.public_send(nested_field).order_by(:"#{value}".asc) : old_model.public_send(nested_field)
 
       looper.each do |old_nested_model|
