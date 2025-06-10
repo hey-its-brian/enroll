@@ -52,7 +52,7 @@ module Operations
         {
           person_name: person_name_attributes(person),
           demographics: demographics_attributes(person),
-          immigration_information: immigration_information_attributes(person.consumer_role),
+          immigration_information: immigration_information_attributes(person.consumer_role, person&.immigration_doc_statuses),
           eligibilities: eligibilities_attributes,
           addresses: construct_address_fields(person.addresses),
           is_homeless: person.is_homeless,
@@ -92,7 +92,7 @@ module Operations
         }
       end
 
-      def immigration_information_attributes(consumer_role)
+      def immigration_information_attributes(consumer_role, doc_statuses)
         return {} unless consumer_role.active_vlp_document
         vlp_object = consumer_role.active_vlp_document
         vlp_attrs = vlp_object.attributes.symbolize_keys.slice(:alien_number,
@@ -109,6 +109,7 @@ module Operations
                                                                :issuing_country)
         vlp_attrs.merge!({expiration_date: vlp_attrs[:expiration_date].strftime("%d/%m/%Y")}) if vlp_attrs[:expiration_date].present?
         vlp_attrs.merge!({subject: vlp_object[:subject], description: vlp_object[:description]})
+        vlp_attrs.merge!({immigration_doc_statuses: doc_statuses}) if doc_statuses.present?
         vlp_attrs
       end
 

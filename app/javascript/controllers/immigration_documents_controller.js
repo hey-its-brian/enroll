@@ -6,7 +6,8 @@ export default class extends Controller {
     "documentFields",      // Container for the dynamic fields
     "template",            // Templates for different document types
     "ImmigrationDocumentsContainer",
-    "NewNaturalizedCitizenStatusTemplate" // Add this new target
+    "NewNaturalizedCitizenStatusTemplate",
+    "immigrationDocStatus"
   ]
 
   connect() {
@@ -105,6 +106,15 @@ export default class extends Controller {
     this.documentFieldsTarget.innerHTML = "";
     if (template) {
       this.documentFieldsTarget.innerHTML = this.sanitize(template.innerHTML)
+
+      if (this.hasImmigrationDocStatusTarget) {
+        var docStatusTemplate = this.immigrationDocStatusTarget
+        let container = document.createElement("div");
+        container.classList.add("mb-3")
+        container.innerHTML = this.sanitize(docStatusTemplate.innerHTML)
+        this.documentFieldsTarget.append(container)
+      }
+
       this.documentFieldsTarget.classList.remove('hidden')
 
       // Add required validation for specific fields based on document type
@@ -161,19 +171,23 @@ export default class extends Controller {
   }
 
   sanitize(dirty) {
-    const allowedTags = sanitizeHtml.defaults.allowedTags.concat([ 'input', 'label', 'select', 'option', 'template' ])
+    const allowedTags = sanitizeHtml.defaults.allowedTags.concat([ 'input', 'label', 'select', 'option', 'template', 'span', 'small', 'fieldset', 'legend' ])
 
     return sanitizeHtml(dirty, {
       allowedTags: allowedTags,
       allowedAttributes: {
         'input': [ 'pattern','type', 'name', 'id', 'value', 'placeholder', 'required', 'checked', 'disabled', 'readonly', 'class', 'style', 'data-*' ],
-        'label': [ 'for' ],
+        'label': [ 'for', 'class' ],
         'select': [ 'name', 'id', 'class', 'style', 'data-*' ],
         'option': [ 'value', 'selected' ],
         'div': [ 'data-*', 'class', 'id' ],
         'i': [ 'class' ],
         'h4': [ 'class' ],
-        'template': [ 'id', 'data-*' ]
+        'template': [ 'id', 'data-*' ],
+        'fieldset': [ 'id', 'class' ],
+        'legend': [ 'class' ],
+        'span': [ 'class' ],
+        'small': [ 'class' ]
       }
     });
   }

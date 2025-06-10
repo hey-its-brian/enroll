@@ -62,6 +62,7 @@ module Validators
           optional(:expiration_date).maybe(:date)
           optional(:issuing_country).maybe(:string)
           optional(:description).maybe(:string)
+          optional(:immigration_doc_statuses).array(:string)
         end
 
         required(:eligibilities).array(:hash) do

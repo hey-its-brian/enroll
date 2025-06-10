@@ -20,6 +20,7 @@ module Forms
                     :expiration_date,
                     :issuing_country,
                     :description,
+                    :immigration_doc_statuses,
                     :id
 
       def to_h
@@ -37,7 +38,8 @@ module Forms
           country_of_citizenship: country_of_citizenship,
           expiration_date: expiration_date,
           issuing_country: issuing_country,
-          description: description
+          description: description,
+          immigration_doc_statuses: immigration_doc_statuses&.compact_blank
         }.compact
       end
     end

@@ -263,7 +263,8 @@ module Insured
             :country_of_citizenship,
             :expiration_date,
             :issuing_country,
-            :description
+            :description,
+            :immigration_doc_statuses
           ],
           addresses_attributes: [
             :id,

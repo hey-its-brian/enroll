@@ -63,6 +63,7 @@ module Entities
         attribute :expiration_date, Types::Date.optional.meta(omittable: true)
         attribute :issuing_country, Types::String.optional.meta(omittable: true)
         attribute :description, Types::String.optional.meta(omittable: true)
+        attribute :immigration_doc_statuses, Types::Array.of(Types::String).optional.meta(omittable: true)
       end
 
       # Addresses array

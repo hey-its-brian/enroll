@@ -163,3 +163,11 @@
     </div>
   </div>
 </template>
+
+<% if EnrollRegistry[:enroll_app].setting(:verifiable_immigration_statuses).item %>
+  <template id="immigration_doc_statuses_template" data-target="immigration-documents.immigrationDocStatus">
+    <div class="document-fields">
+      <%= render :partial => "insured/consumer_roles/immigration_statuses", locals: {c: f} %>
+    </div>
+  </template>
+<% end %>
