@@ -30,9 +30,12 @@ module Operations
             application_id = yield validate(params)
             application = yield find_application(application_id)
             draft_application = yield generate_new_draft_application(application)
-            yield  generate_eligibilities(draft_application, application)
-            determined_application = yield  move_to_determined(draft_application, application)
-            Success(determined_application)
+            yield generate_eligibilities(draft_application, application)
+            determined_application = yield move_to_determined(draft_application, application)
+            comparison_result = yield compare_migrated_values(determined_application, application)
+            yield publish(comparison_result)
+
+            Success(["New application created for family: #{determined_application.family_id} with new_application_hbx_id:", determined_application.hbx_id])
           end
 
           private
@@ -144,6 +147,101 @@ module Operations
           def enable_callback
             ::FinancialAssistance::Applicant.set_callback(:update, :after, :propagate_applicant, raise: false)
             ::FinancialAssistance::Relationship.set_callback(:save, :after, :propagate_applicant)
+          end
+
+          def compare_migrated_values(application, old_application)
+            application_result = []
+            application.applicants.each do |applicant|
+              status = [application.hbx_id, "migrated", "", applicant.person_hbx_id]
+              old_aptc_csr_eligibility = old_application.applicants.where(person_hbx_id: applicant.person_hbx_id).first.aptc_csr_eligibility
+              old_income_evidence = old_aptc_csr_eligibility.income_evidence
+              old_esi_evidence = old_aptc_csr_eligibility.esi_mec_evidence
+              old_local_mec_evidence = old_aptc_csr_eligibility.local_mec_evidence
+              old_non_esi_evidence = old_aptc_csr_eligibility.non_esi_mec_evidence
+
+              aptc_csr_eligibility = applicant.aptc_csr_eligibility
+              new_income_evidence = aptc_csr_eligibility.income_evidence
+              new_esi_evidence = aptc_csr_eligibility.esi_mec_evidence
+              new_local_mec_evidence = aptc_csr_eligibility.local_mec_evidence
+              new_non_esi_evidence = aptc_csr_eligibility.non_esi_mec_evidence
+
+              [[old_income_evidence, new_income_evidence], [old_esi_evidence, new_esi_evidence], [old_local_mec_evidence, new_local_mec_evidence], [old_non_esi_evidence, new_non_esi_evidence]].each do |old_evidence, new_evidence|
+                compare_aptc_csr_eligibility_evidences(old_evidence, new_evidence, status)
+              end
+
+              application_result << status
+            end
+
+            individual_market_evidences_result = Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::CompareMigratedEvidenceValues.new.call(application: application)
+
+            if individual_market_evidences_result.success?
+              Success(application_result.push(individual_market_evidences_result.value!))
+            else
+              Failure("Failed to compare migrated values")
+            end
+          end
+
+          def compare_aptc_csr_eligibility_evidences(old_evidence, new_evidence, status)
+            return unless old_evidence.present?
+
+            if new_evidence.present?
+              evidence_attributes = ["key", "current_state", "verification_outstanding", "due_on", "updated_by", "external_service", "title", "description", "is_satisfied", "determined_at", "is_active"]
+              if attributes_match?(old_evidence, new_evidence, evidence_attributes)
+                status.push(new_evidence.key.to_s, true)
+              else
+                status.push(new_evidence.key.to_s, false)
+              end
+
+              verification_history_attributes = ["action", "updated_by", "update_reason", "is_satisfied", "verification_outstanding", "due_on", "date_of_action"]
+              if attributes_match?(old_evidence.verification_histories.first, new_evidence.verification_histories.first, verification_history_attributes)
+                status.push("#{new_evidence.key}_verification_history", true)
+              elsif old_evidence.verification_histories.first
+                status.push("#{new_evidence.key}_verification_history", false)
+              end
+
+              request_result_attributes = ["result", "source_transaction_id", "source", "code", "code_description", "raw_payload", "action"]
+              status.push("#{new_evidence.key}_request_result", true) if attributes_match?(old_evidence.request_results.first, new_evidence.request_results.first, request_result_attributes)
+
+              state_history_attributes = ["effective_on", "is_eligible", "metadata", "from_state", "to_state", "transition_at", "event", "comment", "reason"]
+              if attributes_match?(old_evidence.state_histories.first, new_evidence.state_histories.first, state_history_attributes)
+                status.push("#{new_evidence.key}_state_history", true)
+              elsif old_evidence.state_histories.first
+                status.push("#{new_evidence.key}_state_history", false)
+              end
+
+            else
+              status.push(new_evidence.key.to_s, false)
+            end
+          end
+
+          def attributes_match?(obj1, obj2, attributes)
+            obj1.as_json(only: attributes) == obj2.as_json(only: attributes)
+          end
+
+          def publish(rows)
+            csv_headers = ["Application HBX ID",
+                           "Migration Result",
+                           "Errors",
+                           "Applicant HBX ID",
+                           "evidence_type",
+                           "evidence_values_matched?",
+                           "evidence_verification_history",
+                           "evidence_verification_histories_matched?",
+                           "evidence_request_result",
+                           "evidence_request_results_matched?",
+                           "evidence_state_transition",
+                           "evidence_state_transitions_matched?",
+                           "evidence_document_type",
+                           "evidence_document_matched?"]
+
+            event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "new_fa_application_report.csv", csv_headers: csv_headers, rows: rows})
+
+            if event.success?
+              event.success.publish
+              Success("Evidence migration event published successfully")
+            else
+              Failure(event.failure)
+            end
           end
         end
       end

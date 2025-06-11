@@ -239,7 +239,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
         @result = subject.call({document_id: application.id.to_s})
         application.reload
         @old_applicant = application.applicants.first
-        @new_application = @result.value!
+        @new_application_hbx_id = @result.value![1]
+        @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
         @new_application.reload
         @new_applicant = @new_application.applicants.first
         @individual_market_eligibility = @new_applicant.individual_market_eligibility
@@ -551,7 +552,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
 
       context 'should migrate aptc csr eligibility' do
         before do
-          new_application = @result.value!
+          new_application_hbx_id = @result.value![1]
+          new_application = FinancialAssistance::Application.where(hbx_id: new_application_hbx_id).first
           @new_aptc_csr_eligibility = new_application.applicants.first.aptc_csr_eligibility
           @old_aptc_csr_eligibility = application.applicants.first.aptc_csr_eligibility
           @old_income_evidence = application.applicants.first.aptc_csr_eligibility.evidences.first
