@@ -285,7 +285,7 @@ module FinancialAssistance
           matching_applicants = application.applicants.where(encrypted_ssn: encrypted_ssn)
           return unless (applicant_id.present? && matching_applicants.where(:id.ne => applicant_id).exists?) || (applicant_id.blank? && matching_applicants.exists?)
 
-          errors.add(:base, 'Same SSN is already taken by another applicant in this application.')
+          errors.add(:base, 'The entered SSN is already taken by another applicant in this application.')
         else
           same_ssn = ::FinancialAssistance::Application.where("applicants.encrypted_ssn" => encrypted_ssn)
           errors.add(:base, "ssn is already taken") if same_ssn.present?
@@ -298,7 +298,7 @@ module FinancialAssistance
       # @param values [Hash] the values to check, including the SSN
       # @return [Boolean] true if the SSN is taken, false otherwise
       def ssn_is_taken?(values)
-        return false if values[:ssn].blank?
+        return [false, nil] if values[:ssn].blank?
 
         result = ::Operations::People::SsnTaken.new.call(
           {
@@ -311,8 +311,8 @@ module FinancialAssistance
 
         if result.success?
           if result.success
-            errors.add(:base, 'SSN is already taken.')
-            [result.success, 'SSN is already taken.']
+            errors.add(:base, 'ssn is already taken')
+            [result.success, 'ssn is already taken']
           else
             [result.success, nil]
           end

@@ -95,7 +95,30 @@ RSpec.describe FinancialAssistance::Forms::Applicant, type: :model, dbclean: :af
 
           it 'returns false with errors' do
             expect(applicant_form.save[0]).to be_falsey
-            expect(applicant_form.errors.full_messages).to include('SSN is already taken.')
+            expect(applicant_form.errors.full_messages).to include('ssn is already taken')
+          end
+        end
+
+        context 'when a new applicant is being added without an ssn' do
+          let(:dependent_ssn) { '' }
+
+          let(:applicant_form) do
+            form_obj = described_class.new(dependent_params)
+            form_obj.application_id = primary_applicant.application.id
+            form_obj.is_dependent = true
+            form_obj
+          end
+
+          it 'saves successfully without errors' do
+            expect(applicant_form.save[0]).to be_truthy
+            expect(applicant_form.errors.full_messages).to be_empty
+          end
+
+          it 'saves the applicant' do
+            applicant_form.save
+            expect(application.reload.applicants.count).to eq(2)
+            new_applicant = application.applicants.where(:id.ne => primary_applicant.id).first
+            expect(new_applicant.ssn).to be_blank
           end
         end
       end
@@ -107,7 +130,7 @@ RSpec.describe FinancialAssistance::Forms::Applicant, type: :model, dbclean: :af
           it 'returns false with errors' do
             expect(applicant_form.save[0]).to be_falsey
             expect(applicant_form.errors.full_messages).to include(
-              'Same SSN is already taken by another applicant in this application.'
+              'The entered SSN is already taken by another applicant in this application.'
             )
           end
         end
@@ -133,7 +156,7 @@ RSpec.describe FinancialAssistance::Forms::Applicant, type: :model, dbclean: :af
           it 'returns false with errors' do
             expect(applicant_form.save[0]).to be_falsey
             expect(applicant_form.errors.full_messages).to include(
-              'Same SSN is already taken by another applicant in this application.'
+              'The entered SSN is already taken by another applicant in this application.'
             )
           end
         end
