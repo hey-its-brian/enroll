@@ -11,6 +11,11 @@ module IndividualMarket
     include Eligibilities::Visitors::Visitable
     include Eligibilities::V3::StateMachine
 
+    # @!attribute COPYABLE_STATES
+    # @return [Array<Symbol>] Collection of application states that can be copied
+    # @note These states are defined as those that can be copied to create a new application
+    COPYABLE_STATES = %i[determined expired].freeze
+
     # @!attribute applicants
     # @return [Array<IndividualMarket::Applicant>] Collection of individuals within the application
     embeds_many :applicants, class_name: 'IndividualMarket::Applicant', cascade_callbacks: true
@@ -105,13 +110,6 @@ module IndividualMarket
     # @option rop_expiration [Symbol] Created due to Reasonable Opportunity Period (ROP) expiration
     # @option renewal [Symbol] Created as part of the annual renewal process
     field :generation_reason, type: Symbol
-
-    # -- State Machine Start --
-
-    # Replacement for aasm_state. Tells the current state of the eligibility.
-    # @!attribute current_state
-    # @return [Symbol] The current state of the application
-    field :current_state, type: Symbol, default: :initial
 
     # @!attribute is_renewal
     # @return [Boolean] Indicates if the application is a renewal application
@@ -234,6 +232,47 @@ module IndividualMarket
 
     def set_submit
       assign_submitted_at
+    end
+
+    # Creates a copy of the current application with copied applicants and relationships
+    #
+    # @param [Symbol, nil] origin The source that created the copied application (must be one of ORIGIN_KINDS)
+    # @param [Symbol, nil] generation_reason The reason why the application was copied (must be one of GENERATION_REASONS)
+    # @return [IndividualMarket::Application] A new application instance with copied applicants and relationships
+    # @raise [ArgumentError] If origin or generation_reason are not included in their respective allowed values
+    # @example Create a renewal application
+    #   original_app.copy_application(origin: :system, generation_reason: :renewal)
+    def copy_application(origin: nil, generation_reason: nil)
+      raise ArgumentError, 'Origin must be one of the defined ORIGIN_KINDS' if ORIGIN_KINDS.exclude?(origin)
+      raise ArgumentError, 'Generation reason must be one of the defined GENERATION_REASONS' if GENERATION_REASONS.exclude?(generation_reason)
+
+      new_app = self.class.new(
+        assistance_year: assistance_year,
+        family_id: family_id,
+        generation_reason: generation_reason,
+        origin: origin,
+        predecessor_id: id
+      )
+
+      applicants.each do |applicant|
+        applicant.copy_applicant(new_app)
+      end
+
+      relationships.each do |relationship|
+        relationship.copy_relationship(new_app)
+      end
+
+      new_app
+    end
+
+    # Finds the predecessor application that this application is copied from.
+    # The reasons for copying an can include manual copy, renewal, or system-generated applications.
+    #
+    # @return [IndividualMarket::Application, nil] The predecessor application or nil if not found
+    def predecessor
+      return nil unless predecessor_id.present?
+
+      self.class.where(id: predecessor_id).first
     end
 
     private

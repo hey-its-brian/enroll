@@ -57,7 +57,8 @@ module Locations
 
     # Scopes
     scope :mailing, -> { where(kind: 'mailing') }
-    scope :home, -> { where(kind: 'home') }
+    scope :home,    -> { where(kind: 'home') }
+    scope :work,    -> { where(kind: 'work') }
 
     def county_check
       return unless EnrollRegistry.feature_enabled?(:display_county)
@@ -74,6 +75,27 @@ module Locations
 
     def full_address
       [address_1, address_2, address_3, city, state, zip].reject(&:blank?).join(', ')
+    end
+
+    # Creates a copy of this address for a new addressable entity
+    #
+    # @param [Object] new_addressable The addressable that will embed the cloned address
+    # @return [Locations::Address] The newly created address with identical attributes
+    # @example Clone an address to a new applicant
+    #   existing_address.copy_address(new_addressable)
+    def copy_address(new_addressable)
+      new_addressable.addresses.build(
+        kind: kind,
+        address_1: address_1,
+        address_2: address_2,
+        address_3: address_3,
+        city: city,
+        county: county,
+        state: state,
+        zip: zip,
+        country_name: country_name,
+        quadrant: quadrant
+      )
     end
   end
 end

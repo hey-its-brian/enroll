@@ -1750,6 +1750,30 @@ class Family
       .values
   end
 
+  # Retrieves the IDs of copyable applications (both FAA and QHP) for this family
+  #
+  # This method combines the results of both FAA and QHP applications, ensuring that
+  # only the most recent application for each assistance year is returned irrespective of the application type.
+  # It groups applications by assistance year and selects the most recent one based on submission date.
+  #
+  # @return [Array<BSON::ObjectId>] Array of application IDs - one per assistance year
+  def fetch_copyable_application_ids
+    faa_apps = ::FinancialAssistance::Application.where(
+      aasm_state: 'determined', family_id: id
+    ).only(:id, :family_id, :assistance_year, :submitted_at, :aasm_state)
+
+    qhp_apps = ::IndividualMarket::Application.where(
+      :current_state.in => ::IndividualMarket::Application::COPYABLE_STATES, family_id: id
+    ).only(:id, :family_id, :assistance_year, :submitted_at, :current_state)
+
+    all_apps = faa_apps + qhp_apps
+
+    # Group applications by assistance year and select the most recent one for each year by submitted_at
+    all_apps.group_by(&:assistance_year).transform_values do |apps|
+      apps.max_by(&:submitted_at).id
+    end.values
+  end
+
   # Retrieves the type of the latest application for this family
   #
   # This method checks the class of the latest application and returns a string

@@ -172,6 +172,32 @@ module IndividualMarket
     # Validation for the presence of no_ssn
     validates :no_ssn, inclusion: { in: [true, false] }
 
+    # Creates a copy of this demographics information for a new applicant
+    #
+    # @param [IndividualMarket::Applicant] new_applicant The applicant to associate the copied demographics with
+    # @return [IndividualMarket::Demographics] The newly created demographics with identical attributes
+    # @example Copy demographics to a new applicant
+    #   demographics.copy_demographics(new_applicant)
+    def copy_demographics(new_applicant)
+      new_applicant.build_demographics(
+        encrypted_ssn: encrypted_ssn,
+        no_ssn: no_ssn,
+        gender: gender,
+        dob: dob,
+        is_incarcerated: is_incarcerated,
+        is_physically_disabled: is_physically_disabled,
+        indian_tribe_member: indian_tribe_member,
+        tribal_id: tribal_id,
+        tribal_name: tribal_name,
+        tribal_state: tribal_state,
+        tribe_codes: tribe_codes,
+        language_code: language_code,
+        ethnicity: ethnicity,
+        race: race,
+        citizen_status: citizen_status
+      )
+    end
+
     private
 
     # Validates that either no_ssn or encrypted_ssn is present

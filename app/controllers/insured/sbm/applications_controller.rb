@@ -14,7 +14,7 @@ module Insured
       def index
         authorize @family, :index?
 
-        @copyable_application_ids = @family.fetch_copyable_faa_application_ids
+        @copyable_application_ids = @family.fetch_copyable_application_ids
 
         result = Operations::Sbm::Applications::QueryFilteredApplications.new.call(
           {

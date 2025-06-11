@@ -335,4 +335,66 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
       expect(flash[:error]).to match(/Access not allowed/)
     end
   end
+
+  describe 'GET #copy' do
+    let(:new_user)          { FactoryBot.create(:user, person: new_person) }
+    let(:new_person)        { FactoryBot.create(:person) }
+    let(:new_consumer_role) { FactoryBot.create(:consumer_role, person: new_person, identity_validation: 'valid') }
+    let(:new_family)        { FactoryBot.create(:family, :with_primary_family_member, person: new_consumer_role.person) }
+    let(:new_application)   { FactoryBot.create(:individual_market_application, current_state: current_state, family: new_family) }
+    let(:current_state)     { :determined }
+
+    before :each do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+    end
+
+    context 'when:
+      - authorized user is signed in
+      - valid application exists
+      ' do
+
+      let(:new_app) do
+        IndividualMarket::Application.find_by(
+          predecessor_id: new_application.id,
+          family_id: new_family.id
+        )
+      end
+
+      before do
+        sign_in new_user
+        get :copy, params: { id: new_application.id }, session: { person_id: new_family.primary_person.id }
+      end
+
+      it 'redirects to the applicants index page of the copied application' do
+        expect(response).to redirect_to(insured_individual_market_application_applicants_path(application_id: new_app.id))
+      end
+
+      it 'creates a new application with copied attributes' do
+        expect(new_app).to be_persisted
+        expect(new_app.initial?).to be_truthy
+        expect(new_app.predecessor_id).to eq(new_application.id)
+        expect(new_app.family).to eq(new_family)
+      end
+    end
+
+    context 'when:
+      - user is signed in
+      - application with invalid current state
+      ' do
+
+      let(:current_state) { :initial }
+
+      before do
+        sign_in new_user
+        get :copy, params: { id: new_application.id }, session: { person_id: new_family.primary_person.id }
+      end
+
+      it 'redirects to the sbm applications index page' do
+        expect(response).to redirect_to(insured_sbm_applications_path)
+        expect(flash[:error]).to eq(
+          "Application cannot be copied as it is not in one of the #{::IndividualMarket::Application::COPYABLE_STATES.join(', ')} states"
+        )
+      end
+    end
+  end
 end

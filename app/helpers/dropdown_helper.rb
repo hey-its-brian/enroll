@@ -20,7 +20,7 @@ module DropdownHelper
 
   def qhp_application_dropdowns(application, copyable_application_ids)
     option_args = [
-      ([l10n('insured.sbm.applications.actions.copy'), "#", :default] unless do_not_allow_copy?(application, current_user, copyable_application_ids)),
+      ([l10n('insured.sbm.applications.actions.copy'), copy_insured_individual_market_application_path(application_id: application.id), :default] unless do_not_allow_copy?(application, current_user, copyable_application_ids)),
       ([l10n('insured.sbm.applications.actions.view_eligibility'), "#", :default] if application.is_determined?),
       ([l10n('insured.sbm.applications.actions.review'),"#", :default] if application.is_reviewable?)
     ]

@@ -72,4 +72,21 @@ class PersonName
 
     @full_name = [name_pfx, given_name, middle_name, family_name, name_sfx].compact.join(' ')
   end
+
+  # Creates a copy of this person name for a new nameable entity
+  #
+  # @param [Object] new_person_nameable The object that will embed the cloned person name
+  # @return [PersonName] The newly created person name with identical attributes
+  # @example Clone a person name to a new applicant
+  #   existing_name.copy_person_name(new_applicant)
+  def copy_person_name(new_person_nameable)
+    new_person_nameable.build_person_name(
+      given_name: given_name,
+      middle_name: middle_name,
+      family_name: family_name,
+      name_sfx: name_sfx,
+      name_pfx: name_pfx,
+      alternate_name: alternate_name
+    )
+  end
 end

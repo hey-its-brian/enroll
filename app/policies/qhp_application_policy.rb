@@ -16,6 +16,14 @@ class QhpApplicationPolicy < ApplicationPolicy
     @family.present?
   end
 
+  # Determines if the current user has permission to copy the application.
+  # The user can copy the application if they have permission to edit it.
+  #
+  # @return [Boolean] Returns true if the user has permission to copy the application, false otherwise.
+  def copy?
+    edit?
+  end
+
   # Determines if the current user has permission to edit.
   # The user can edit if they are a primary family member,
   # an active associated broker or assister staff, an active associated broker, or an admin in the individual market.
@@ -93,14 +101,6 @@ class QhpApplicationPolicy < ApplicationPolicy
   #
   # @return [Boolean] Returns true if the user has permission to show the ssn of the applicant, false otherwise.
   def can_show_ssn?
-    edit?
-  end
-
-  # Determines if the current user has permission to copy the application.
-  # The user can copy the application if they have permission to edit it.
-  #
-  # @return [Boolean] Returns true if the user has permission to copy the application, false otherwise.
-  def copy?
     edit?
   end
 

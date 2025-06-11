@@ -59,6 +59,7 @@ module IndividualMarket
     #   @return [Array<Locations::Address>] Collection of addresses associated with this applicant
     embeds_many :addresses, class_name: 'Locations::Address', as: :addressable, cascade_callbacks: true
 
+    # TODO: Update copy operation to use the corrected phone and email models.
     embeds_many :phones, cascade_callbacks: true, validate: true
     embeds_many :emails, cascade_callbacks: true, validate: true
 
@@ -159,6 +160,13 @@ module IndividualMarket
       addresses.home.first
     end
 
+    # Returns the first work address of the applicant.
+    #
+    # @return [Address, nil] the first work address if one exists, otherwise nil
+    def work_address
+      addresses.work.first
+    end
+
     def is_state_resident?
       return true if is_homeless?
 
@@ -185,6 +193,35 @@ module IndividualMarket
         title: 'Individual Market Eligibility',
         key: :individual_market_eligibility
       )
+    end
+
+    # Creates a copy of this applicant in a new application
+    #
+    # @param [IndividualMarket::Application] new_application The application where the copied applicant will be created
+    # @return [IndividualMarket::Applicant] The newly created applicant with copied attributes and embedded documents
+    # @example Copy an applicant to a new application
+    #   original_applicant.copy_applicant(new_application)
+    def copy_applicant(new_application)
+      new_applicant = new_application.applicants.build(
+        family_member_id: family_member_id,
+        is_primary_applicant: is_primary_applicant,
+        address_same_as_primary: address_same_as_primary,
+        is_applying_coverage: is_applying_coverage,
+        is_homeless: is_homeless,
+        age_off_excluded: age_off_excluded,
+        contact_method: contact_method,
+        language_preference: language_preference
+      )
+
+      person_name.copy_person_name(new_applicant) if person_name.present?
+      demographics.copy_demographics(new_applicant) if demographics.present?
+      immigration_information.copy_immigration_information(new_applicant) if immigration_information.present?
+
+      addresses.each do |address|
+        address.copy_address(new_applicant)
+      end
+
+      new_applicant
     end
 
     private

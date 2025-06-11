@@ -76,15 +76,41 @@ module Insured
         respond_to :html
       end
 
+      # GET endpoint for copying an existing application
+      # This action allows users to create a copy of an existing application
+      # and redirect them to the applicants page of the new application.
+      #
+      # @return [Redirect] Redirects to the applicants page of the new application or back to applications list with an error message.
       def copy
         authorize @application, :copy?
+        copy_result = ::Operations::IndividualMarket::Application::Copy.new.call(
+          **copy_params(@application, @person, current_user)
+        )
 
-        # TODO: implement copy operation
-        respond_to :html
+        if copy_result.success?
+          new_application = copy_result.success
+          redirect_to insured_individual_market_application_applicants_path(application_id: new_application.id)
+        else
+          flash[:error] = copy_result.failure
+          redirect_to insured_sbm_applications_path
+        end
       end
 
-
       private
+
+      # Prepares parameters for copying an existing Individual Market application
+      #
+      # @param application [IndividualMarket::Application] The application to copy
+      # @param person [Person] The person who is the primary applicant of the application
+      # @param current_user [User] The current user making the request
+      # @return [Hash] Parameters to pass to the Individual Market application creation
+      def copy_params(application, person, logged_in_user)
+        {
+          application: application,
+          origin: fetch_origin(person, logged_in_user),
+          generation_reason: :manual
+        }
+      end
 
       def verify_qhp_application_enabled
         return render(file: 'public/404.html', status: 404) unless EnrollRegistry.feature_enabled?(:qhp_application)
