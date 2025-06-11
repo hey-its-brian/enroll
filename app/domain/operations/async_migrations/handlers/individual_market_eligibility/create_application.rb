@@ -7,6 +7,8 @@ module Operations
         # This class is responsible for creating QHP applications.
         class CreateApplication
           include Dry::Monads[:do, :result]
+          include EventSource::Command
+          include ::ResourceRegistryHelper
 
           def call(params)
             # Extract the necessary parameters
@@ -15,8 +17,11 @@ module Operations
             family = yield find_family(family_id)
             application = yield transform_family(family)
             draft_application = yield build_application(application)
-            result = yield persist(draft_application)
-            Success(result)
+            determined_application = yield persist(draft_application)
+            comparison_result = yield compare_migrated_values(determined_application)
+            yield publish(comparison_result)
+
+            Success(["QHP application created successfully for the family: #{family_id} with application ID:", determined_application.hbx_id])
           end
 
           private
@@ -131,6 +136,36 @@ module Operations
               Success(draft_application)
             else
               Failure(draft_application.errors)
+            end
+          end
+
+          def compare_migrated_values(application)
+            Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::CompareMigratedEvidenceValues.new.call(application: application)
+          end
+
+          def publish(rows)
+            csv_headers = ["Application HBX ID",
+                           "Migration Result",
+                           "Errors",
+                           "Applicant HBX ID",
+                           "evidence_type",
+                           "evidence_values_matched?",
+                           "evidence_verification_history",
+                           "evidence_verification_histories_matched?",
+                           "evidence_request_result",
+                           "evidence_request_results_matched?",
+                           "evidence_state_transition",
+                           "evidence_state_transitions_matched?",
+                           "evidence_document_type",
+                           "evidence_document_matched?"]
+
+            event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "new_qhp_application_report.csv", csv_headers: csv_headers, rows: rows})
+
+            if event.success?
+              event.success.publish
+              Success("Evidence migration event published successfully")
+            else
+              Failure(event.failure)
             end
           end
         end

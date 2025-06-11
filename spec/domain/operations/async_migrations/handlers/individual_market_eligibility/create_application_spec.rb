@@ -190,7 +190,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
     FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period)
     FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile)
     @result = subject.call({document_id: family.id})
-    @new_application = @result.value!
+    @new_application_hbx_id = @result.value![1]
+    @new_application = IndividualMarket::Application.where(hbx_id: @new_application_hbx_id).first
     @new_applicant = @new_application.applicants.first
     @individual_market_eligibility = @new_applicant.individual_market_eligibility
 
