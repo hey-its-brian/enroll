@@ -13,6 +13,7 @@ module Operations
           include VerificationHelper
           include Dry::Monads[:do, :result]
           include SubjectMemberFinder
+          include ResourceRegistryHelper
 
           def call(params)
             valid_params     = yield validate(params)
@@ -41,11 +42,13 @@ module Operations
 
             person = subject.person
 
-            # Inactive verifications are not available from the determination, fetch them directly
-            inactive_verifications = person.verification_types.inactive.map do |verification|
-              ::Adapters::EvidenceAdapter.new(verification)
+            unless qhp_application_feature_enabled?
+              # Inactive verifications are not available from the determination, fetch them directly
+              inactive_verifications = person.verification_types.inactive.map do |verification|
+                ::Adapters::EvidenceAdapter.new(verification)
+              end
+              evidences += inactive_verifications if EnrollRegistry.feature_enabled?(:show_inactive_verifications)
             end
-            evidences += inactive_verifications if EnrollRegistry.feature_enabled?(:show_inactive_verifications)
 
             # Fetch identity verification if available
             ridp_verified = person.consumer_role&.application_verified? || person.consumer_role&.identity_verified?

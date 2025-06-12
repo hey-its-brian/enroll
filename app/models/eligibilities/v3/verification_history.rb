@@ -17,6 +17,13 @@ module Eligibilities
       field :due_on, type: Date
       field :date_of_action, type: DateTime
 
+      # @!scope class
+      # @return [Mongoid::Criteria] The most recent VerificationHistory based on creation timestamp
+      # @note Uses limit(1) to optimize query performance by instructing MongoDB to stop
+      #   after finding the first matching record, reducing database load and network transfer.
+      #   Without this limit, MongoDB would retrieve and sort all records unnecessarily.
+      scope :newest,      -> { order_by(created_at: :desc).limit(1) }
+
       before_create :set_date_of_action, unless: -> { date_of_action.present? }
 
       private

@@ -38,5 +38,12 @@ FactoryBot.define do
         create_list(:state_history, 2, status_trackable: evidence)
       end
     end
+
+    # With verification histories
+    trait :with_verification_histories do
+      after(:create) do |evidence|
+        create_list(:v3_verification_history, 2, evidence: evidence)
+      end
+    end
   end
 end

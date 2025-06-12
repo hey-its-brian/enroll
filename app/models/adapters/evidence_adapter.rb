@@ -17,6 +17,7 @@ module Adapters
   # @see IdentityEvidenceDelegate Handles identity verification
   # @see VerificationTypeDelegate Handles verification types
   class EvidenceAdapter
+    include ResourceRegistryHelper
 
     INTERFACE_CONTRACT = %i[
       person
@@ -153,27 +154,104 @@ module Adapters
 
         attr_reader :person, :evidence_group, :status, :update_reason, :documents, :history, :history_tracks, :inactive
 
+        # Initializes a new instance of EligibilityEvidenceStateDelegate
+        #
+        # @param [Object] evidence The evidence object to delegate to and extract data from
+        # @return [EligibilityEvidenceStateDelegate] A new instance with populated attributes
         def initialize(evidence)
           super(evidence)
 
           specific_evidence = evidence.locate_evidence
+          setup_common_attributes(evidence, specific_evidence)
+          setup_evidence_details(evidence, specific_evidence)
+        end
+
+        private
+
+        # Sets up common attributes shared by all evidence types
+        #
+        # @param [Object] evidence The original evidence object
+        # @param [Object] specific_evidence The located specific evidence
+        # @return [void]
+        def setup_common_attributes(evidence, specific_evidence)
           @person = evidence.eligibility_state.subject.person
           @evidence_group = evidence.eligibility_state.eligibility_item_key
-          @update_reason = specific_evidence.update_reason
+          @update_reason = determine_update_reason(specific_evidence)
           @inactive = false
+        end
 
+        # Determines the update reason based on application configuration
+        #
+        # @param [Object] specific_evidence The specific evidence object
+        # @return [String, nil] The determined update reason
+        def determine_update_reason(specific_evidence)
+          if qhp_application_feature_enabled?
+            specific_evidence.latest_verification_history&.update_reason
+          else
+            specific_evidence.update_reason
+          end
+        end
+
+        # Sets up evidence-specific details based on application configuration and evidence type
+        #
+        # @param [Object] evidence The original evidence object
+        # @param [Object] specific_evidence The located specific evidence
+        # @return [void]
+        def setup_evidence_details(evidence, specific_evidence)
+          if qhp_application_feature_enabled?
+            setup_qhp_evidence(evidence, specific_evidence)
+          else
+            setup_evidence_by_type(evidence, specific_evidence)
+          end
+        end
+
+        # Sets up evidence details for QHP application
+        #
+        # @param [Object] evidence The original evidence object
+        # @param [Object] specific_evidence The located specific evidence
+        # @return [void]
+        def setup_qhp_evidence(evidence, specific_evidence)
+          @documents = specific_evidence.documents
+          @status = evidence.status
+          @history = format_history(specific_evidence.verification_histories + specific_evidence.request_results)
+          @history_tracks = nil
+        end
+
+        # Sets up evidence details based on the type of evidence
+        #
+        # @param [Object] evidence The original evidence object
+        # @param [Object] specific_evidence The located specific evidence
+        # @return [void]
+        def setup_evidence_by_type(evidence, specific_evidence)
           case specific_evidence
           when VerificationType
-            @status = specific_evidence.validation_status
-            @documents = specific_evidence.type_documents
-            @history = format_history(specific_evidence.type_history_elements)
-            @history_tracks = specific_evidence.history_tracks
+            setup_verification_type(specific_evidence)
           when Eligibilities::Evidence
-            @documents = specific_evidence.documents
-            @status = evidence.status
-            @history = format_history(specific_evidence.verification_histories + specific_evidence.request_results)
-            @history_tracks = nil
+            setup_eligibility_evidence(evidence, specific_evidence)
           end
+        end
+
+        # Sets up verification type specific details
+        #
+        # @param [VerificationType] specific_evidence The verification type evidence
+        # @return [void]
+        def setup_verification_type(specific_evidence)
+          @status = specific_evidence.validation_status
+          @documents = specific_evidence.type_documents
+          @history = format_history(specific_evidence.type_history_elements)
+          @history_tracks = specific_evidence.history_tracks
+        end
+
+        # Sets up eligibility evidence specific details
+        #
+        # @param [Object] evidence The original evidence object
+        # @param [Eligibilities::Evidence] specific_evidence The eligibility evidence
+        # @return [void]
+        def setup_eligibility_evidence(evidence, specific_evidence)
+          @documents = specific_evidence.documents
+          @status = evidence.status
+          @history = format_history(specific_evidence.verification_histories + specific_evidence.request_results)
+          @history_tracks = nil
         end
       end
     end

@@ -15,6 +15,12 @@ module Eligibilities
     field :outstanding_verification_earliest_due_date, type: Date
     field :outstanding_verification_document_status, type: String
 
+    # @!attribute application_gid
+    #   @return [String] The global ID of the application associated with this determination.
+    #
+    # @note The application GlobalID URI is persisted for performance reasons.
+    field :application_gid, type: String
+
     accepts_nested_attributes_for :subjects, :grants
 
     def subjects_action_needed?

@@ -11,10 +11,12 @@ module Operations
         # @see EvidenceAdapter Used to normalize evidence states for consistent display
         class HouseholdQuery
           include Dry::Monads[:do, :result]
+          include ResourceRegistryHelper
 
           def call(params)
             valid_params    = yield validate(params)
-            subjects        = yield find_subjects(valid_params)
+            eligibility_determination = yield find_eligibility_determination(params)
+            subjects        = yield find_subjects(valid_params, eligibility_determination)
             action_items    = yield find_action_items_and_sort(subjects)
             sorted_subjects = yield find_subjects_items_and_sort(subjects)
 
@@ -29,10 +31,17 @@ module Operations
             Success(params)
           end
 
-          def find_subjects(params)
+          def find_eligibility_determination(params)
             family = params[:family]
-            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family) if family.eligibility_determination.nil?
-            all_subjects = family.eligibility_determination.subjects
+            if family.eligibility_determination.nil?
+              ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
+            else
+              Success(family.eligibility_determination)
+            end
+          end
+
+          def find_subjects(params, eligibility_determination)
+            all_subjects = eligibility_determination.subjects
 
             return Success(all_subjects) if params[:include_inactives] && EnrollRegistry.feature_enabled?(:show_inactive_verification_members)
             Success(all_subjects.select(&:is_active?))

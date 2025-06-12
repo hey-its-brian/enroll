@@ -81,6 +81,18 @@ module Eligibilities
 
           @latest_state_history = state_histories.newest.first
         end
+
+        # Returns the most recent verification history record
+        #
+        # This method retrieves the newest verification history record for this eligibility.
+        # The result is memoized to avoid repeated database queries.
+        #
+        # @return [VerificationHistory, nil] The most recent verification history record, or nil if none exists
+        def latest_verification_history
+          return @latest_verification_history if defined?(@latest_verification_history)
+
+          @latest_verification_history = verification_histories.newest.first
+        end
       end
     end
   end
