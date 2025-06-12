@@ -19,6 +19,8 @@ module FinancialAssistance
         optional(:ext_app_id).maybe(:string)
         optional(:family_member_id).maybe(Types::Bson)
 
+        optional(:age_off_excluded).maybe(:bool)
+
         optional(:is_incarcerated).maybe(:bool)
         optional(:is_disabled).filled(:bool)
         optional(:ethnicity).maybe(:array)

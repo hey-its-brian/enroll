@@ -6,6 +6,13 @@
     <div id="personal_info" class="house">
       <div class="@applicant_notice_div_<%= @applicant.id%>"></div>
 
+      <% if current_user.has_hbx_staff_role? %>
+        <aside class="mb-3" id="admin-designation-descriptor">
+          <span class="admin-designation"></span>
+          <%= l10n('admin.admin_designation_descriptor') %>
+        </aside>
+      <% end %>
+
       <div class="d-flex mb-md-4">
         <div class="col-md-6 col-lg-3 p-0">
           <%= f.label :first_name, l10n("first_name"), class: "required" %>
@@ -74,6 +81,15 @@
           <%= render 'shared/is_applying_for_coverage', f: f, first_checked: @applicant.is_applying_coverage, second_checked: !@applicant.is_applying_coverage %>
         </div>
       </fieldset>
+
+      <% if current_user.does_not_have_any_staff_role? && !current_user.has_insured_role? %>
+        <div class="d-flex flex-row align-items-center my-md-4">
+          <%= f.check_box :age_off_excluded, {id: 'age_off_excluded'}, "true", "false"%>
+          <label for="age_off_excluded" class="my-0 admin-designation">
+            <span for="age_off_excluded"><%= l10n('ageoff_exclusion')%> </span>
+          </label>
+        </div>
+      <% end %>
 
       <% unless @applicant.is_primary_applicant? %>
       <div class="d-flex mb-md-4">

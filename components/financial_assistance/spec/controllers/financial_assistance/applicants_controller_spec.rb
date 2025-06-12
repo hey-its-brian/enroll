@@ -799,6 +799,21 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
           expect(dependent.tribe_codes).not_to eq []
         end
       end
+
+      context 'when dependent is age off excluded' do
+        let!(:is_applying_coverage) { true }
+        let(:us_citizen) { true }
+
+        before do
+          patch :update, params: dependent_params.merge(applicant: applicant_params.merge(age_off_excluded: "true"))
+          application.reload
+          dependent.reload
+        end
+
+        it "should update age_off_excluded" do
+          expect(dependent.age_off_excluded).to eq true
+        end
+      end
     end
 
     context "when the people tab flag is enabled" do

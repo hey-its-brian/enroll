@@ -43,7 +43,7 @@ module Operations
         person = family_member.person
         attrs = [:first_name, :last_name, :middle_name, :name_pfx, :name_sfx,
                  :gender, :ethnicity, :tribal_id, :tribal_state, :tribal_name, :tribe_codes, :no_ssn, :is_tobacco_user,
-                 :is_homeless, :is_temporarily_out_of_state].inject({}) do |att_hash, attribute|
+                 :is_homeless, :is_temporarily_out_of_state, :age_off_excluded].inject({}) do |att_hash, attribute|
           att_hash[attribute] = person.send(attribute)
           att_hash
         end

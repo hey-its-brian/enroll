@@ -98,6 +98,14 @@ RSpec.describe FinancialAssistance::Forms::Applicant, type: :model do
     end
   end
 
+  context 'when age_off_excluded is true ' do
+    subject { FinancialAssistance::Forms::Applicant.new(applicant_properties.merge({age_off_excluded: "true"})) }
+
+    it "should return true" do
+      expect(subject.age_off_excluded).to eq "true"
+    end
+  end
+
   context 'when us_citizen is false and immigration_status_question is not required' do
     before do
       allow(EnrollRegistry[:immigration_status_question_required].feature).to receive(:is_enabled).and_return(false)

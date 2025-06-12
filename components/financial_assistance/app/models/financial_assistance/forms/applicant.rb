@@ -10,7 +10,8 @@ module FinancialAssistance
       include ::ResourceRegistryHelper
 
       attr_accessor :id, :family_id, :is_consumer_role, :is_resident_role, :vlp_document_id, :application_id, :applicant_id, :gender, :relationship, :relation_with_primary, :no_dc_address, :is_homeless, :is_temporarily_out_of_state,
-                    :tribe_codes, :same_with_primary, :is_applying_coverage, :immigration_doc_statuses, :addresses, :phones, :emails, :addresses_attributes, :phones_attributes, :emails_attributes, :is_dependent
+                    :tribe_codes, :same_with_primary, :is_applying_coverage, :immigration_doc_statuses, :addresses, :phones, :emails, :addresses_attributes, :phones_attributes, :emails_attributes, :is_dependent,
+                    :age_off_excluded
 
       attr_writer :family
 
@@ -190,7 +191,8 @@ module FinancialAssistance
           tribe_codes: tribe_codes.to_a.reject(&:blank?),
           citizen_status: citizen_status,
           is_temporarily_out_of_state: is_temporarily_out_of_state,
-          immigration_doc_statuses: immigration_doc_statuses.to_a.reject(&:blank?)
+          immigration_doc_statuses: immigration_doc_statuses.to_a.reject(&:blank?),
+          age_off_excluded: age_off_excluded
         } #.reject{|_k, val| val.nil?}
 
         # This will update both the relationship being passed through,

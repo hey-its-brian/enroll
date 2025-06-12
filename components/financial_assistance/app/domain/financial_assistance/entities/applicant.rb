@@ -29,6 +29,7 @@ module FinancialAssistance
       attribute :tribe_codes, Types::Array.optional.meta(omittable: true)
       attribute :health_service_eligible, Types::Bool.optional.meta(omittable: true)
       attribute :health_service_through_referral, Types::Bool.optional.meta(omittable: true)
+      attribute :age_off_excluded, Types::Bool.optional.meta(omittable: true)
 
       attribute :language_code, Types::String.optional.meta(omittable: true)
       attribute :no_dc_address, Types::Strict::Bool.meta(omittable: true)

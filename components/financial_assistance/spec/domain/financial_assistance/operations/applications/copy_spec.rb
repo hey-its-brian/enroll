@@ -35,7 +35,8 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
                       dob: TimeKeeper.date_of_record - 40.years,
                       is_primary_applicant: true,
                       family_member_id: family.family_members[0].id,
-                      person_hbx_id: person1.hbx_id)
+                      person_hbx_id: person1.hbx_id,
+                      age_off_excluded: false)
   end
 
   let!(:applicant2) do
@@ -43,7 +44,8 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
                       application: application,
                       dob: TimeKeeper.date_of_record - 10.years,
                       family_member_id: family_member_12.id,
-                      person_hbx_id: person2.hbx_id)
+                      person_hbx_id: person2.hbx_id,
+                      age_off_excluded: true)
   end
 
   let(:enabled) { false }
@@ -222,6 +224,17 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
 
       it 'should return created_at timestamps for both relationships' do
         expect(@copied_application.relationships.pluck(:created_at)).not_to include(nil)
+      end
+    end
+
+    context 'should copy age_off_excluded field' do
+      before do
+        @copied_application = subject.call(application_id: application.id).success
+      end
+
+      it 'should only return 2 relationships' do
+        expect(@copied_application.applicants.first.age_off_excluded).to eq false
+        expect(@copied_application.applicants.last.age_off_excluded).to eq true
       end
     end
 
