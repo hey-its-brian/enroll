@@ -271,6 +271,72 @@ RSpec.describe Insured::ConsumerRolesController do
       end
     end
 
+    context 'when the logged in user is an active broker staff' do
+      let(:market_kind) { :individual }
+      let(:broker_person) { FactoryBot.create(:person) }
+      let(:broker_role) { FactoryBot.create(:broker_role, person: broker_person) }
+      let(:broker_staff_person) { FactoryBot.create(:person) }
+      let(:broker_staff_state) { 'active' }
+      let(:broker_staff) do
+        FactoryBot.create(
+          :broker_agency_staff_role,
+          person: broker_staff_person,
+          aasm_state: broker_staff_state,
+          benefit_sponsors_broker_agency_profile_id: broker_agency_id
+        )
+      end
+      let(:broker_staff_user) { FactoryBot.create(:user, person: broker_staff_person) }
+
+      let(:site) do
+        FactoryBot.create(
+          :benefit_sponsors_site,
+          :with_benefit_market,
+          :as_hbx_profile,
+          site_key: ::EnrollRegistry[:enroll_app].settings(:site_key).item
+        )
+      end
+
+      let(:broker_agency_organization) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_broker_agency_profile, site: site) }
+      let(:broker_agency_profile) { broker_agency_organization.broker_agency_profile }
+      let(:broker_agency_id) { broker_agency_profile.id }
+      let(:baa_active) { true }
+      let(:user) { broker_staff_user }
+
+      let(:broker_agency_account) do
+        new_family.broker_agency_accounts.create!(
+          benefit_sponsors_broker_agency_profile_id: broker_agency_id,
+          writing_agent_id: broker_role.id,
+          is_active: baa_active,
+          start_on: TimeKeeper.date_of_record
+        )
+      end
+
+      before do
+        broker_role.update_attributes!(benefit_sponsors_broker_agency_profile_id: broker_agency_id)
+        broker_person.create_broker_agency_staff_role(
+          benefit_sponsors_broker_agency_profile_id: broker_role.benefit_sponsors_broker_agency_profile_id
+        )
+        broker_agency_profile.update_attributes!(primary_broker_role_id: broker_role.id, market_kind: market_kind)
+        broker_role.approve!
+        broker_agency_account
+        broker_staff
+
+        get :help_paying_coverage_response, params: {
+          id: primary_person.id, is_applying_for_assistance: true
+        }
+      end
+
+      it 'returns success' do
+        expect(response).to have_http_status(:redirect)
+      end
+
+      it 'creates a financial assistance application' do
+        expect(application).to be_present
+        expect(application.origin).to eq(:broker_staff)
+        expect(application.generation_reason).to eq(:manual)
+      end
+    end
+
     # context 'when the logged in user is an active assister' do
     # end
   end

@@ -52,7 +52,7 @@ module FinancialAssistance
 
     # @!attribute ORIGIN_KINDS
     # @return [Array<Symbol>] Collection of all possible origin kinds
-    ORIGIN_KINDS = %i[admin assister broker data_import migration system user].freeze
+    ORIGIN_KINDS = %i[admin assister broker broker_staff data_import migration system user].freeze
 
     # @!attribute GENERATION_REASONS
     # @return [Array<Symbol>] Collection of all possible generation reasons

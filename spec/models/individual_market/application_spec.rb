@@ -561,5 +561,61 @@ RSpec.describe IndividualMarket::Application, type: :model do
         expect(application.attestation.signer_role).to eq("assister")
       end
     end
+
+    context 'broker agency staff' do
+      let(:market_kind) { :individual }
+      let(:broker_person) { FactoryBot.create(:person) }
+      let(:broker_role) { FactoryBot.create(:broker_role, person: broker_person) }
+      let(:broker_staff_person) { FactoryBot.create(:person) }
+      let(:broker_staff_state) { 'active' }
+      let(:broker_staff) do
+        FactoryBot.create(
+          :broker_agency_staff_role,
+          person: broker_staff_person,
+          aasm_state: broker_staff_state,
+          benefit_sponsors_broker_agency_profile_id: broker_agency_id
+        )
+      end
+
+      let(:site) do
+        FactoryBot.create(
+          :benefit_sponsors_site,
+          :with_benefit_market,
+          :as_hbx_profile,
+          site_key: ::EnrollRegistry[:enroll_app].settings(:site_key).item
+        )
+      end
+
+      let(:broker_agency_organization) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_broker_agency_profile, site: site) }
+      let(:broker_agency_profile) { broker_agency_organization.broker_agency_profile }
+      let(:broker_agency_id) { broker_agency_profile.id }
+      let(:baa_active) { true }
+      let(:broker_staff_user) { FactoryBot.create(:user, person: broker_staff_person) }
+      let(:broker_agency_account) do
+        family.broker_agency_accounts.create!(
+          benefit_sponsors_broker_agency_profile_id: broker_agency_id,
+          writing_agent_id: broker_role.id,
+          is_active: baa_active,
+          start_on: TimeKeeper.date_of_record
+        )
+      end
+
+      before do
+        broker_role.update_attributes!(benefit_sponsors_broker_agency_profile_id: broker_agency_id)
+        broker_person.create_broker_agency_staff_role(
+          benefit_sponsors_broker_agency_profile_id: broker_role.benefit_sponsors_broker_agency_profile_id
+        )
+        broker_agency_profile.update_attributes!(primary_broker_role_id: broker_role.id, market_kind: market_kind)
+        broker_role.approve!
+        broker_agency_account
+        broker_staff
+      end
+
+      it 'sets the signer_role to broker_staff' do
+        application.build_attestation(attested, given_name, family_name, broker_staff_user)
+        expect(application.attestation).to be_present
+        expect(application.attestation.signer_role).to eq('broker_staff')
+      end
+    end
   end
 end

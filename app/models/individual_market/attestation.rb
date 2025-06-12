@@ -21,12 +21,12 @@ module IndividualMarket
 
     # @!attribute SIGNER_ROLE_KINDS
     # @return [Array<String>] Collection of all possible signer roles
-    SIGNER_ROLE_KINDS = %w[admin assister broker consumer system].freeze
+    SIGNER_ROLE_KINDS = %w[admin assister broker broker_staff consumer system].freeze
 
     # SignerID and SignerAt are only required for certain roles. The below is a list if roles that require a signer_id
     # @!attribute SIGNER_ROLE_KINDS_WITH_USER_SIGNER_INFO
     # @return [Array<String>] Collection of signer roles that require a signer_id and signed_at
-    SIGNER_ROLE_KINDS_WITH_USER_SIGNER_INFO = %w[admin assister broker consumer].freeze
+    SIGNER_ROLE_KINDS_WITH_USER_SIGNER_INFO = %w[admin assister broker broker_staff consumer].freeze
 
     # @!attribute signer_role
     #   @return [String] The role of the person who signed (consumer, admin, broker)
@@ -57,17 +57,24 @@ module IndividualMarket
 
     # @return [Boolean] Whether the attestation was signed by a consumer
     def signed_by_consumer?
-      signer_role == :consumer
+      signer_role == 'consumer'
     end
 
     # @return [Boolean] Whether the attestation was signed by an admin
     def signed_by_admin?
-      signer_role == :admin
+      signer_role == 'admin'
     end
 
     # @return [Boolean] Whether the attestation was signed by a broker
     def signed_by_broker?
-      signer_role == :broker
+      signer_role == 'broker'
+    end
+
+    # Checks if the attestation was signed by broker staff
+    #
+    # @return [Boolean] Whether the attestation was signed by broker staff
+    def signed_by_broker_staff?
+      signer_role == 'broker_staff'
     end
 
     private

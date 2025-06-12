@@ -150,13 +150,35 @@ class ApplicationController < ActionController::Base
     return :user if current_user_person == person
     return :admin if current_user_person.hbx_staff_role.present?
 
-    writing_agent_id = person.primary_family.active_broker_agency_account&.writing_agent_id
-    return :unknown unless writing_agent_id.present?
+    family = person.primary_family
+    broker_agency_account = family.active_broker_agency_account
 
-    return :broker if broker_match?(current_user_person, writing_agent_id)
-    return :assister if assister_match?(current_user_person, writing_agent_id)
+    return :broker if broker_match?(current_user_person, broker_agency_account.writing_agent_id)
+    return :broker_staff if broker_staff?(broker_agency_account, current_user_person)
+
+    assister_agency_account = family.active_assister_agency_account
+    return :assister if assister_match?(current_user_person, assister_agency_account)
 
     :unknown
+  end
+
+  # Checks if the user is a broker staff for the given broker agency account
+  #
+  # @param broker_agency_account [BrokerAgencyAccount] The broker agency account to check against
+  # @param current_user_person [Person] The person associated with the current user
+  #
+  # @return [Boolean] True if the user is a broker staff for the given broker agency account, false otherwise
+  def broker_staff?(broker_agency_account, current_user_person)
+    return false if broker_agency_account.blank?
+
+    broker_staffs = current_user_person.broker_agency_staff_roles.active
+    return false if broker_staffs.blank?
+
+    broker_agency = broker_agency_account.broker_agency_profile
+
+    broker_staffs.any? do |staff|
+      staff.benefit_sponsors_broker_agency_profile_id == broker_agency.id
+    end
   end
 
   # Checks if the user person matches the family's broker
@@ -165,6 +187,8 @@ class ApplicationController < ActionController::Base
   # @param writing_agent_id [String] The ID of the writing agent from the family's broker agency account
   # @return [Boolean] True if the user is an active broker matching the writing agent
   def broker_match?(user_person, writing_agent_id)
+    return false if writing_agent_id.blank?
+
     user_person.broker_role&.active? &&
       user_person.broker_role.id == writing_agent_id
   end
@@ -174,7 +198,12 @@ class ApplicationController < ActionController::Base
   # @param user_person [Person] The person associated with the current user
   # @param writing_agent_id [String] The ID of the writing agent from the family's broker agency account
   # @return [Boolean] True if the user is an active assister matching the writing agent
-  def assister_match?(user_person, writing_agent_id)
+  def assister_match?(user_person, assister_agency_account)
+    return false if assister_agency_account.blank?
+
+    writing_agent_id = assister_agency_account.writing_agent_id
+    return false if writing_agent_id.blank?
+
     user_person.assister_role&.active? &&
       user_person.assister_role.id == writing_agent_id
   end

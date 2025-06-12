@@ -59,7 +59,7 @@ module IndividualMarket
 
     # @!attribute ORIGIN_KINDS
     # @return [Array<Symbol>] Collection of all possible origin kinds
-    ORIGIN_KINDS = %i[admin assister broker data_import migration system user].freeze
+    ORIGIN_KINDS = %i[admin assister broker broker_staff data_import migration system user].freeze
 
     # @!attribute GENERATION_REASONS
     # @return [Array<Symbol>] Collection of all possible generation reasons
@@ -308,23 +308,47 @@ module IndividualMarket
     #
     # @param person [Person] The person applying for financial assistance
     # @param logged_in_user [User] The current user making the request
-    # @return [Symbol] The source of the action (:user, :admin, :broker, :assister, or :unknown)
+    # @return [String] The role of the signer (consumer, admin, broker, broker_staff, or unknown)
     #
     # @note This method applies for the Individual market only.
     def fetch_signer_role(person, current_user_person)
-      return :unknown unless current_user_person.present?
-      return :consumer if current_user_person == person
-      return :admin if current_user_person&.hbx_staff_role.present?
+      return 'unknown' unless current_user_person.present?
+      return 'consumer' if current_user_person == person
+      return 'admin' if current_user_person&.hbx_staff_role.present?
+
+      return 'broker_staff' if broker_staff?(current_user_person, person)
 
       writing_agent_id = family&.active_broker_agency_account&.writing_agent_id || family&.active_assister_agency_account&.writing_agent_id
       check_writing_agent(current_user_person, writing_agent_id)
     end
 
+    # Checks if the current user is a broker staff for the given person
+    #
+    # @param current_user_person [Person] The person of the currently logged-in user
+    # @param person [Person] The person for whom the broker staff is being checked
+    # @return [Boolean] True if the current user is a broker staff for the given person, false otherwise
+    def broker_staff?(current_user_person, person)
+      family = person.primary_family
+      broker_agency_account = family.active_broker_agency_account
+
+      return false if broker_agency_account.blank?
+
+      broker_staffs = current_user_person.broker_agency_staff_roles.active
+      return false if broker_staffs.blank?
+
+      broker_agency = broker_agency_account.broker_agency_profile
+
+      broker_staffs.any? do |staff|
+        staff.benefit_sponsors_broker_agency_profile_id == broker_agency.id
+      end
+    end
+
     def check_writing_agent(person, writing_agent_id)
-      return :unknown unless writing_agent_id.present?
-      return :broker if person.broker_role&.active? && person.broker_role.id == writing_agent_id
-      return :assister if person.assister_role&.active? && person.assister_role.id == writing_agent_id
-      :unknown
+      return 'unknown' unless writing_agent_id.present?
+      return 'broker' if person.broker_role&.active? && person.broker_role.id == writing_agent_id
+      return 'assister' if person.assister_role&.active? && person.assister_role.id == writing_agent_id
+
+      'unknown'
     end
   end
 end
