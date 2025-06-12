@@ -156,6 +156,15 @@ FactoryBot.define do
                               evaluator.member_ids
                             end
 
+        grant_configs = grants_config['aptc_csr_credit'] || []
+        family.eligibility_determination.grants = grant_configs&.collect do |config|
+          build(:eligibilities_grant, key: config[:key], assistance_year: assistance_year, value: config[:value],
+                                      title: config[:title],
+                                      start_on: config[:start_on],
+                                      end_on: config[:end_on],
+                                      member_ids: actual_member_ids)
+        end
+
         # Combined loop that adds both eligibility states and grants
         family.eligibility_determination.subjects.each do |subject|
           # Add eligibility states
@@ -167,6 +176,9 @@ FactoryBot.define do
           subject.eligibility_states.each do |state|
             grant_configs = grants_config[state.eligibility_item_key]
             grant_configs&.each do |config|
+              # Skip if the key is 'AdvancePremiumAdjustmentGrant' as it is created on determination grants
+              next if config[:key] == 'AdvancePremiumAdjustmentGrant'
+
               state.grants << build(
                 :eligibilities_grant,
                 key: config[:key],

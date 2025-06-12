@@ -49,20 +49,27 @@ module Eligibilities
       magi_medicaid_grant_member_ids.include?(family_member.id.to_s)
     end
 
+    # APTC eligible member IDs
+    def aptc_eligible_member_ids
+      grants.flat_map(&:member_ids)
+    end
+
     # Returns an array of family member IDs that are eligible for plan shopping
     # Eligibility is determined by having eligible eligibility states (aptc_csr_credit or
     # aca_individual_market_eligibility) with qualifying grants (AdvancePremiumAdjustmentGrant,
     # QhpGrant or MagiMedicaidGrant)
     # @return [Array<String>] Array of family member IDs eligible for shopping
     def shopping_eligible_member_ids
-      subjects.flat_map do |subject|
+      eligible_ids = subjects.flat_map do |subject|
+        # Get relevant eligibility states
         eligibility_states = subject.eligibility_states.select do |state|
           %w[aptc_csr_credit aca_individual_market_eligibility].include?(state.eligibility_item_key)
         end
 
+        # Skip if no eligible states
         next [] if eligibility_states.empty?
 
-        # CSR Grant - If member is only eligible for CSR Grant, then it does not mean they are eligible for plan shopping
+        # Get member IDs from grants in eligible states
         eligibility_states.flat_map do |state|
           grants = state.grants.select do |grant|
             %w[AdvancePremiumAdjustmentGrant QhpGrant MagiMedicaidGrant].include?(grant.key)
@@ -73,6 +80,8 @@ module Eligibilities
           grants.flat_map(&:member_ids)
         end
       end
+      # Combine with APTC eligible members and ensure uniqueness
+      (eligible_ids + aptc_eligible_member_ids).flatten.compact.uniq
     end
   end
 end

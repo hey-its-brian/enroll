@@ -29,6 +29,7 @@ module Operations
             people_result         = yield create_or_update_people(application)
             _relationships_result = yield create_or_update_primary_relationships(people_result, application)
             family_members_result = yield build_or_update_family_members(application, family, people_result)
+            _ch_members_result    = yield build_coverage_household_members(family)
             _result               = yield deactivate_tax_household_groups(application, family)
             _result               = yield build_tax_household_group(application, family, family_members_result)
             family                = yield assign_latest_application_gid(family)
@@ -151,6 +152,25 @@ module Operations
                 is_primary_applicant: applicant.is_primary_applicant
               )
             end
+          end
+
+          # Builds coverage household members for the family based on immediate and extended family relationships
+          # @param family [Family] the family to build coverage household members for
+          # @return [Dry::Monads::Result] Success with message or Failure with error message
+          def build_coverage_household_members(family)
+            immediate_ch = family.active_household.immediate_family_coverage_household
+            extended_ch = family.active_household.extended_family_coverage_household
+            immediate_ch.coverage_household_members.clear
+            extended_ch.coverage_household_members.clear
+            family.active_family_members.each do |member|
+              relationship = member.primary_relationship
+              if  Family::IMMEDIATE_FAMILY.include?(relationship)
+                immediate_ch.add_coverage_household_member(member)
+              else
+                extended_ch.add_coverage_household_member(member)
+              end
+            end
+            Success('Successfully built coverage household members.')
           end
 
           # Deactivates all existing tax household groups for the application's assistance year

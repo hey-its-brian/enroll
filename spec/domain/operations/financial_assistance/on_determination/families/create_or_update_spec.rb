@@ -120,6 +120,11 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
         expect(secondary_family_member.reload.is_active).to be_falsey
       end
 
+      it 'removes coverage household member for the deleted family member' do
+        member_ids = family.reload.active_household.coverage_households.first.coverage_household_members.map(&:family_member_id)
+        expect(member_ids).not_to include(secondary_family_member.id)
+      end
+
       it 'updates applicants with family_member_id and person_hbx_id' do
         application.applicants.each do |applicant|
           expect(applicant.family_member_id).to be_present
@@ -271,6 +276,11 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
 
       it 'updates the secondary applicant with the new family member id' do
         expect(family.family_members.map(&:id)).to include(secondary_applicant.family_member_id)
+      end
+
+      it 'creates a coverage household member for the applicant' do
+        member_ids = family.active_household.coverage_households.first.coverage_household_members.map(&:family_member_id)
+        expect(member_ids).to include(secondary_applicant.family_member_id)
       end
 
       it "updates the existing person's gender" do
