@@ -1,0 +1,41 @@
+# frozen_string_literal: true
+
+FactoryBot.define do
+  factory :location_phone, class: 'Locations::Phone' do
+    kind { 'home' }
+    area_code { 202 }
+    sequence(:number, 1_111_111, &:to_s)
+    sequence(:extension, &:to_s)
+
+    trait :for_testing do
+      kind { 'home' }
+      area_code { "101" }
+      number { "1234567" }
+      extension { "111" }
+      country_code { "1" }
+    end
+
+    trait :without_kind do
+      kind { ' ' }
+    end
+
+    trait :without_area_code do
+      area_code { ' ' }
+    end
+
+    trait :without_number do
+      number { ' ' }
+    end
+
+    trait :work do
+      kind { 'work' }
+    end
+
+    trait :mobile do
+      kind { 'mobile' }
+    end
+
+    factory :invalid_location_phone, traits: [:without_kind, :without_area_code, :without_number]
+
+  end
+end

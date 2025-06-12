@@ -59,11 +59,11 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
     end
 
     it 'embeds many phones' do
-      expect(applicant.phones.first).to be_a(Phone)
+      expect(applicant.phones.first).to be_a(Locations::Phone)
     end
 
     it 'embeds many emails' do
-      expect(applicant.emails.first).to be_a(Email)
+      expect(applicant.emails.first).to be_a(Locations::Email)
     end
   end
 

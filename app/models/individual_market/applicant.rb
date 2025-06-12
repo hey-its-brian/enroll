@@ -59,9 +59,13 @@ module IndividualMarket
     #   @return [Array<Locations::Address>] Collection of addresses associated with this applicant
     embeds_many :addresses, class_name: 'Locations::Address', as: :addressable, cascade_callbacks: true
 
-    # TODO: Update copy operation to use the corrected phone and email models.
-    embeds_many :phones, cascade_callbacks: true, validate: true
-    embeds_many :emails, cascade_callbacks: true, validate: true
+    # @!attribute phones
+    #   @return [Array<Locations::Phone>] Collection of phones associated with this applicant
+    embeds_many :phones, class_name: 'Locations::Phone', as: :phoneable, cascade_callbacks: true, validate: true
+
+    # @!attribute emails
+    #   @return [Array<Locations::Email>] Collection of emails associated with this applicant
+    embeds_many :emails, class_name: 'Locations::Email', as: :emailable, cascade_callbacks: true, validate: true
 
     # @!attribute family_member_id
     #   @return [BSON::ObjectId] The ID of the family member associated with this applicant
@@ -158,6 +162,22 @@ module IndividualMarket
     # @return [Address, nil] the first home address if one exists, otherwise nil
     def home_address
       addresses.home.first
+    end
+
+    def home_phone
+      phones.detect { |phone| phone.kind == "home" }
+    end
+
+    def mobile_phone
+      phones.detect { |phone| phone.kind == "mobile" }
+    end
+
+    def home_email
+      emails.detect { |adr| adr.kind == "home" }
+    end
+
+    def work_email
+      emails.detect { |adr| adr.kind == "work" }
     end
 
     # Returns the first work address of the applicant.

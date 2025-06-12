@@ -69,13 +69,13 @@ FactoryBot.define do
 
     trait :with_phone_number do
       after(:build) do |applicant|
-        applicant.phones << FactoryBot.build(:phone)
+        applicant.phones << FactoryBot.build(:location_phone)
       end
     end
 
     trait :with_email do
       after(:build) do |applicant|
-        applicant.emails << FactoryBot.build(:email)
+        applicant.emails << FactoryBot.build(:location_email)
       end
     end
 
