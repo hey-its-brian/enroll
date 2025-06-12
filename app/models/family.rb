@@ -876,7 +876,7 @@ class Family
   # @return [ SpecialEnrollmentPeriod ] The Individual market SEP eligibility active on today's date with earliest
   #   coverage effective date
   def earliest_effective_ivl_sep
-    special_enrollment_periods.individual_market.order_by(:effective_on.asc).to_a.detect{ |sep| sep.is_active? }
+    special_enrollment_periods.order_by(:effective_on.asc).to_a.detect(&:is_active?)
   end
 
   # Get the most recently created, active SHOP market {SpecialEnrollmentPeriod} (SEP) eligibility currently available to this family

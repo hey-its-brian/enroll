@@ -490,6 +490,35 @@ describe Family, dbclean: :around_each do
     end
   end
 
+  context "earliest_effective_ivl_sep" do
+    before do
+      @qlek = FactoryBot.create(:qualifying_life_event_kind, market_kind: 'individual', is_active: true)
+      date1 = TimeKeeper.date_of_record - 20.days
+      @current_sep = FactoryBot.build(:special_enrollment_period, qle_on: date1, effective_on: date1, family: family)
+      date2 = TimeKeeper.date_of_record - 10.days
+      @another_current_sep = FactoryBot.build(:special_enrollment_period, qle_on: date2, effective_on: date2, family: family)
+    end
+
+    context "when there is no expired qle" do
+
+      it "returns earliest effective active sep" do
+        expect(family.earliest_effective_ivl_sep).to eq @current_sep
+      end
+    end
+
+    context "when there is an expired qle" do
+      before do
+        @qlek.update_attributes!(start_on: TimeKeeper.date_of_record - 2.days, end_on: TimeKeeper.date_of_record - 1.day, is_active: false)
+      end
+
+      it "returns earliest effective active sep" do
+        expect(@current_sep.is_active?).to eq true
+        expect(@another_current_sep.is_active?).to eq true
+        expect(family.earliest_effective_ivl_sep).to eq @current_sep
+      end
+    end
+  end
+
   context "best_verification_due_date" do
     let(:family) { FactoryBot.create(:family, :with_primary_family_member) }
 
