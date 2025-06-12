@@ -40,7 +40,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvid
     FactoryBot.create(:applicant,
                       application: application,
                       dob: TimeKeeper.date_of_record - 40.years,
-                      is_primary_applicant: true,
+                      is_primary_applicant: false,
                       family_member_id: family.family_members[1].id,
                       person_hbx_id: person2.hbx_id,
                       addresses: [FactoryBot.build(:financial_assistance_address)])
@@ -281,6 +281,55 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvid
         expect(new_income_evidence_document.id).not_to eq(old_income_evidence_document.id)
         expect_attributes_to_match(new_income_evidence_document, old_income_evidence_document, [:title, :creator, :subject, :publisher, :type, :identifier, :source, :language])
       end
+    end
+
+    context 'applicant is invalid' do
+      before do
+        applicant.addresses.update_all(county: nil, state: nil, kind: nil)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:display_county).and_return(true)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        @result = subject.call({document_id: application.id.to_s})
+        application.reload
+      end
+
+      it 'should be a success' do
+        expect(@result).to be_success
+        expect(@result.value!).to be_a(Array)
+        expect(@result.value!).to eq([application.hbx_id, application.aasm_state, "not migrated", "Applicants is invalid"])
+        expect(application.applicants.first.aptc_csr_eligibility.present?).to be_falsey
+      end
+    end
+  end
+
+  describe 'imported application with no evidences' do
+    before do
+      application.update_attributes!(aasm_state: 'imported')
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      @result = subject.call({document_id: application.id.to_s})
+      application.reload
+    end
+
+    it 'should be a success' do
+      expect(@result).to be_success
+      expect(@result.value!).to be_a(Array)
+      expect(@result.value!).to eq([application.hbx_id, application.aasm_state, "no evidences found", ""])
+      expect(application.applicants.first.aptc_csr_eligibility.present?).to be_falsey
+    end
+  end
+
+  describe 'draft application with no evidences' do
+    before do
+      application.update_attributes!(aasm_state: 'draft')
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      @result = subject.call({document_id: application.id.to_s})
+      application.reload
+    end
+
+    it 'should be a success' do
+      expect(@result).to be_success
+      expect(@result.value!).to be_a(Array)
+      expect(@result.value!).to eq([application.hbx_id, application.aasm_state, "no evidences found", ""])
+      expect(application.applicants.first.aptc_csr_eligibility.present?).to be_falsey
     end
   end
 end

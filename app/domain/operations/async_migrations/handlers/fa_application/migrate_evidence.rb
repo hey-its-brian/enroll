@@ -83,49 +83,58 @@ module Operations
           #   A success monad if the migration completes successfully, or a failure monad with an error message.
           def migrate_evidence(application)
             app_hbx_id = application.hbx_id
-
+            migration_status = []
             application.applicants.each do |applicant|
               aptc_csr_eligibility = applicant.build_aptc_csr_eligibility
               evidences_result = build_and_migrate_evidences(aptc_csr_eligibility, applicant)
-              aptc_csr_eligibility_current_state = determine_eligibility_state(evidences_result, application)
-              aptc_csr_eligibility_is_satisfied = evidences_result.all?{ |array|  array[1] == true}
-
-              if aptc_csr_eligibility_current_state == :move_to_initial
-                aptc_csr_eligibility.assign_attributes(is_satisfied: false, determined_at: nil, current_state: :initial)
-              else
-                reason = "migrating from the application #{app_hbx_id} to create aptc_csr_eligibility"
-                case aptc_csr_eligibility_current_state
-                when :satisfy
-                  aptc_csr_eligibility.satisfy(reason: reason)
-                when :pend
-                  aptc_csr_eligibility.pend(reason: reason)
-                when :verification_in_progress
-                  aptc_csr_eligibility.unsatisfy(reason: reason)
-                end
-
-                aptc_csr_eligibility.assign_attributes(is_satisfied: aptc_csr_eligibility_is_satisfied, determined_at: Time.now)
+              if evidences_result.compact.flatten.blank?
+                migration_status << false
+                next
               end
 
+              assign_attributes_to_aptc_csr_eligibility(aptc_csr_eligibility, evidences_result, application)
+              migration_status << true
             end
             # @note This section addresses the issue of multiple database saves caused by `aptc_csr_eligibility.save!` for each applicant.
             #   - Saving the `application` also saves its embedded documents (e.g., `aptc_csr_eligibility`) and triggers callbacks in the `Applicant` model.
             #   - However, saving `aptc_csr_eligibility` does not save the parent document (`application`) and does not trigger any callbacks.
             #   - To optimize performance and avoid redundant saves, callbacks on the `Applicant` and `Relationship` models are temporarily skipped during the migration process.
-            ::FinancialAssistance::Applicant.skip_callback(:update, :after, :propagate_applicant, raise: false)
-            ::FinancialAssistance::Relationship.skip_callback(:save, :after, :propagate_applicant)
+            disable_callback
 
-            migration_result = if application.save!
-                                 [app_hbx_id, "migrated",""]
+            migration_result = if migration_status.any?(true) && application.valid?
+                                 application.save!
+                                 [app_hbx_id, application.aasm_state, "migrated",""]
+                               elsif migration_status.all?(false)
+                                 [app_hbx_id, application.aasm_state, "no evidences found", ""]
                                else
-                                 [app_hbx_id, "not migrated", application.errors.full_messages.join(", ")]
+                                 [app_hbx_id, application.aasm_state,"not migrated", application.errors.full_messages.join(", ")]
                                end
 
-            ::FinancialAssistance::Applicant.set_callback(:update, :after, :propagate_applicant)
-            ::FinancialAssistance::Relationship.set_callback(:save, :after, :propagate_applicant)
-
+            enable_callback
             Success(migration_result)
           rescue StandardError => e
-            Failure("Evidence migration failed: #{e.message}")
+            enable_callback
+            Failure("Evidence migration failed for application hbx_id: #{application.hbx_id}, errors: #{e.message}")
+          end
+
+          def assign_attributes_to_aptc_csr_eligibility(aptc_csr_eligibility, evidences_result, application)
+            aptc_csr_eligibility_current_state = determine_eligibility_state(evidences_result, application)
+            aptc_csr_eligibility_is_satisfied = evidences_result.all?{ |array|  array[1] == true}
+            if aptc_csr_eligibility_current_state == :move_to_initial
+              aptc_csr_eligibility.assign_attributes(is_satisfied: false, determined_at: nil, current_state: :initial)
+            else
+              reason = "migrating from the application #{application.hbx_id} to create aptc_csr_eligibility"
+              case aptc_csr_eligibility_current_state
+              when :satisfy
+                aptc_csr_eligibility.satisfy(reason: reason)
+              when :pend
+                aptc_csr_eligibility.pend(reason: reason)
+              when :verification_in_progress
+                aptc_csr_eligibility.unsatisfy(reason: reason)
+              end
+
+              aptc_csr_eligibility.assign_attributes(is_satisfied: aptc_csr_eligibility_is_satisfied, determined_at: Time.now)
+            end
           end
 
           # Determines the eligibility state based on evidence states and application draft status.
@@ -136,7 +145,7 @@ module Operations
           def determine_eligibility_state(evidence_states, application)
             if application.draft?
               :move_to_initial
-            elsif evidence_states.all? { |state, _| %i[verified attested].include?(state) }
+            elsif evidence_states.present? && evidence_states.all? { |state, _| %i[verified attested].include?(state) }
               :satisfy
             else
               :pend
@@ -174,6 +183,16 @@ module Operations
             )
           end
 
+          def disable_callback
+            ::FinancialAssistance::Applicant.skip_callback(:update, :after, :propagate_applicant, raise: false)
+            ::FinancialAssistance::Relationship.skip_callback(:save, :after, :propagate_applicant)
+          end
+
+          def enable_callback
+            ::FinancialAssistance::Applicant.set_callback(:update, :after, :propagate_applicant, raise: false)
+            ::FinancialAssistance::Relationship.set_callback(:save, :after, :propagate_applicant)
+          end
+
           def compare_migrated_values(application, result)
             if result[1] == "migrated"
               Operations::AsyncMigrations::Handlers::FAApplication::CompareMigratedEvidenceValues.new.call(application: application)
@@ -184,6 +203,7 @@ module Operations
 
           def publish(rows)
             csv_headers = ["Application HBX ID",
+                           "Application State",
                            "Migration Result",
                            "Errors",
                            "Applicant HBX ID",

@@ -67,6 +67,12 @@ module Operations
                 else
                   status.push("#{new_evidence.key}_state_history", false)
                 end
+
+                if documents_matched?(old_evidence, new_evidence)
+                  status.push("#{new_evidence.key}_document", true)
+                else
+                  status.push("#{new_evidence.key}_document", false)
+                end
                 application_result << status
               end
             end
@@ -80,7 +86,7 @@ module Operations
           end
 
           def evidence_other_fields_matched?(old_evidence, new_evidence)
-            old_evidence.title == new_evidence.title &&
+            Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvidence::EVIDENCE_TITLE_MAPPING[old_evidence.title].to_s == new_evidence.title &&
               old_evidence.due_on == new_evidence.due_on &&
               old_evidence.external_service == new_evidence.external_service &&
               old_evidence.description == new_evidence.description &&
@@ -144,6 +150,17 @@ module Operations
               latest_old_transition.comment == latest_new_transition.comment &&
               latest_old_transition.reason == latest_new_transition.reason &&
               (latest_new_transition.is_eligible.nil? || !latest_new_transition.effective_on.present?)
+          end
+
+          def documents_matched?(old_evidence, new_evidence)
+            old_evidence.documents.count == new_evidence.documents.count &&
+              old_evidence.documents.all? do |old_doc|
+                new_evidence.documents.any? do |new_doc|
+                  old_doc.title == new_doc.title &&
+                    old_doc.subject == new_doc.subject &&
+                    old_doc.description == new_doc.description
+                end
+              end
           end
         end
       end
