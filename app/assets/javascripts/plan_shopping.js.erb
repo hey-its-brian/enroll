@@ -424,6 +424,7 @@ $(function() {
   }
 
   $(document).on('click', "#ivl_plans .plan-select.btn-default.select", function(e){
+    e.preventDefault();
     var url = $(this).data('url');
     if ($('.aptc').length > 0){
       var elected_aptc = $("input#elected_aptc").val();
