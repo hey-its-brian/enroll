@@ -59,6 +59,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Verifications::R
                      :with_local_mec_evidence,
                      application: application,
                      is_primary_applicant: false,
+                     is_ia_eligible: false,
                      ssn: '889984400',
                      dob: Date.new(2007,11,17),
                      first_name: person_3.first_name,
@@ -145,15 +146,14 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Verifications::R
     end
 
     it 'should add verification histories to all evidences' do
-      evidence_1 = applicant_1.esi_evidence
-      evidence_2 = applicant_2.esi_evidence
-      evidence_3 = applicant_3.esi_evidence
-
-      expect(evidence_1.verification_histories.length).to eq 1
-      expect(evidence_2.verification_histories.length).to eq 1
-      expect(evidence_3.verification_histories.length).to eq 1
-
-      expect(evidence_1.verification_histories.last.action).to eq 'application_determined'
+      evidence_kinds = FinancialAssistance::Applicant::EVIDENCES - [:income_evidence]
+      application.applicants.each do |applicant|
+        evidence_kinds.each do |evidence_kind|
+          evidence = applicant.send(evidence_kind)
+          expect(evidence.verification_histories.length).to eq 1
+          expect(evidence.verification_histories.last.action).to eq 'application_determined'
+        end
+      end
     end
   end
 

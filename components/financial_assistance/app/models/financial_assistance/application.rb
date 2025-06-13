@@ -1061,8 +1061,7 @@ module FinancialAssistance
     end
 
     def is_local_mec_checkable?
-      return unless FinancialAssistanceRegistry.feature_enabled?(:mec_check)
-      self.active_applicants.any?(&:is_ia_eligible?)
+      FinancialAssistanceRegistry.feature_enabled?(:mec_check)
     end
 
     def total_incomes_by_year
