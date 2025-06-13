@@ -38,8 +38,6 @@ module Operations
 
         return Failure('Consumer is not applying for coverage.') if payload[:previous].key?(:is_applying_coverage) && !role.is_applying_coverage
 
-        return Failure('Consumer has an active enrollment') if role.person.families.any? {|f| f.person_has_an_active_enrollment?(role.person) }
-
         result = ::Operations::Individual::DetermineVerifications.new.call(
           { id: role.id, skip_rr_config_and_active_enrollment_check: true }
         )

@@ -67,8 +67,10 @@ RSpec.describe Operations::ConsumerRoles::OnUpdate, dbclean: :after_each do
         )
       end
 
-      it 'returns failure' do
-        expect(subject.failure).to eq 'Consumer has an active enrollment'
+      it 'returns success' do
+        expect(subject.success).to eq(
+          "ConsumerRole DetermineVerifications success: Successfully triggered Hub Calls for ConsumerRole with person_hbx_id: #{person.hbx_id}"
+        )
       end
     end
   end
