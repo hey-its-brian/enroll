@@ -39,7 +39,7 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
           family_name: applicant.person_name.family_name
         },
         demographics_attributes: {
-          dob: applicant.demographics.dob,
+          dob: Date.strptime(applicant.demographics.dob.to_s, "%m/%d/%Y").strftime("%Y-%m-%d"),
           gender: applicant.demographics.gender,
           ssn: "263542644",
           encrypted_ssn: applicant.demographics.encrypted_ssn,
@@ -80,7 +80,7 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
           family_name: "jones"
         },
         demographics_attributes: {
-          dob: applicant.demographics.dob,
+          dob: Date.strptime(applicant.demographics.dob.to_s, "%m/%d/%Y").strftime("%Y-%m-%d"),
           gender: applicant.demographics.gender,
           no_ssn: 1,
           us_citizen: 'true',
