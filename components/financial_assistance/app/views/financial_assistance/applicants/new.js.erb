@@ -2,7 +2,7 @@ $('#dependents_info_wrapper h4:first').text("Please enter the information reques
 $('#btn-continue').addClass('disabled');
 
 <% if @applicant.errors.present?  %>
-  var dependent_response = $("<%= escape_javascript(render 'dependent_form') %>");
+  var dependent_response = $("<%= escape_javascript(render 'dependent_form') %>").ready(init_faa_partials_js());
 
   if($("#dependent_ul").find("form#new_applicant .alert-error").length){
       $("#dependent_ul").find("form#new_applicant .alert-error").replaceWith($(dependent_response).find(".alert-error"));
