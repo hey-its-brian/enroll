@@ -1282,22 +1282,33 @@ RSpec.describe Insured::FamiliesController, dbclean: :after_each do
     end
 
     context "delete delete_consumer_broker" do
-      let(:family) {FactoryBot.build(:family)}
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+      let(:broker_agency_profile) { FactoryBot.build(:benefit_sponsors_organizations_broker_agency_profile) }
+      let(:writing_agent) { FactoryBot.create(:broker_role, benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id) }
+      let(:broker_role) { FactoryBot.create(:broker_role, benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id) }
+
       before :each do
-        allow(EnrollRegistry[:send_broker_fired_event_to_edi].feature).to receive(:is_enabled).and_return(true)
-        allow(person).to receive(:hbx_staff_role).and_return(double('hbx_staff_role', permission: double('permission',modify_family: true)))
+        allow(person).to receive(:hbx_staff_role).and_return(double('hbx_staff_role', permission: double('permission', modify_family: true)))
         allow(person).to receive(:agent?).and_return(true)
-        family.broker_agency_accounts = [
-          FactoryBot.build(:broker_agency_account, family: family, employer_profile: nil)
-        ]
-        allow(Family).to receive(:find).and_return family
+
+        family.broker_agency_accounts.new(
+          benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id,
+          writing_agent_id: writing_agent.id,
+          start_on: Time.now,
+          is_active: true
+        )
+
+        family.save!
       end
 
-      it "should delete consumer broker" do
-        expect(family).to receive(:notify_broker_update_on_impacted_enrollments_to_edi)
-        delete :delete_consumer_broker, params: {:id => family.id }
+      it 'marks broker agency account as inactive instead of deleting it' do
+        expect(family.broker_agency_accounts.where(is_active: true).count).to eq 1
+        delete :delete_consumer_broker, params: { id: family.id }
         expect(response).to have_http_status(:redirect)
-        expect(family.current_broker_agency).to be nil
+        family.reload
+
+        expect(family.broker_agency_accounts.where(is_active: true).count).to eq 0
+        expect(family.current_broker_agency).to be_nil
       end
     end
 

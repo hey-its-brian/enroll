@@ -495,9 +495,18 @@ class Insured::FamiliesController < FamiliesController
     broker_agency = @family&.current_broker_agency
 
     if broker_agency.present?
-      @family&.notify_broker_update_on_impacted_enrollments_to_edi({family_id: @family&.id.to_s})
-      broker_agency.destroy
-      redirect_to :action => "home", flash: {notice: "Successfully deleted."}
+      result = ::Operations::Families::TerminateBrokerAgency.new.call(
+        family_id: @family.id,
+        broker_account_id: broker_agency.id,
+        terminate_date: TimeKeeper.date_of_record,
+        notify_edi: true
+      )
+
+      if result.success?
+        redirect_to :action => "home", flash: {notice: "Successfully deleted."}
+      else
+        redirect_to :action => "home", flash: {error: "Unable to terminate broker relationship: #{result.failure}"}
+      end
     else
       redirect_to :action => "home", flash: {notice: "Unable to remove expert from this account"}
     end
