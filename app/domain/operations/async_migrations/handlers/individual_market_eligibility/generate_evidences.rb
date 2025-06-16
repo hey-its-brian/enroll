@@ -103,7 +103,7 @@ module Operations
             alive_status_responses = person.consumer_role.alive_status_responses
             responses = lawful_presence_determination.ssa_responses + lawful_presence_determination.vlp_responses + alive_status_responses
 
-            evidences_result = person.verification_types.collect do |verification_type|
+            evidences_result = person.verification_types.where(:type_name.in => VerificationType::ALL_VERIFICATION_TYPES).collect do |verification_type|
               # build new evidence
               new_evidence = build_new_evidence(individual_market_eligibility, verification_type)
               type_history_elements = verification_type.type_history_elements

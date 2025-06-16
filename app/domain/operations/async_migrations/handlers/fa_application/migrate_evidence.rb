@@ -194,7 +194,7 @@ module Operations
           end
 
           def compare_migrated_values(application, result)
-            if result[1] == "migrated"
+            if result[2] == "migrated"
               Operations::AsyncMigrations::Handlers::FAApplication::CompareMigratedEvidenceValues.new.call(application: application)
             else
               Success(result)

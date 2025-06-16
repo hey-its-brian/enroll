@@ -167,6 +167,25 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
     end
   end
 
+  let!(:draft_application) do
+    FactoryBot.create(:application,
+                      family_id: family.id,
+                      aasm_state: "draft",
+                      effective_date: (TimeKeeper.date_of_record - 12.days),
+                      origin: :migration,
+                      generation_reason: :user)
+  end
+
+  let!(:draft_applicant) do
+    FactoryBot.create(:applicant,
+                      application: draft_application,
+                      dob: TimeKeeper.date_of_record - 40.years,
+                      is_primary_applicant: true,
+                      family_member_id: family.family_members[0].id,
+                      person_hbx_id: person.hbx_id,
+                      addresses: [FactoryBot.build(:financial_assistance_address)])
+  end
+
   let!(:application) do
     FactoryBot.create(:application,
                       family_id: family.id,
@@ -251,6 +270,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
         expect(@result).to be_success
         expect(@new_application.origin).to eq(:migration)
         expect(@new_application.generation_reason).to eq(:manual)
+        draft_application.reload
+        expect(draft_application.aasm_state).to eq("cancelled")
       end
 
       it 'should migrate contact method, language preference and age off excluded' do

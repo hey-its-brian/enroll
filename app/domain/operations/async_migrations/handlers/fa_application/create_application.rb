@@ -32,6 +32,7 @@ module Operations
             draft_application = yield generate_new_draft_application(application)
             yield generate_eligibilities(draft_application, application)
             determined_application = yield move_to_determined(draft_application, application)
+            yield cancel_previous_applications(draft_application)
             comparison_result = yield compare_migrated_values(determined_application, application)
             yield publish(comparison_result)
 
@@ -63,7 +64,8 @@ module Operations
           end
 
           def generate_new_draft_application(application)
-            copy_result = ::FinancialAssistance::Operations::Applications::Copy.new.call(
+            disable_callback
+            copy_result = ::Operations::AsyncMigrations::Handlers::FAApplication::CopyWithoutPersisting.new.call(
               {
                 application_id: application.id,
                 origin: :migration,
@@ -130,13 +132,29 @@ module Operations
               transition_at: Time.now,
               reason: "migrating from the latest determined application #{application.hbx_id} to create individual_market eligibilities"
             )
-            disable_callback
+
             draft_application.save!
             enable_callback
             Success(draft_application)
           rescue StandardError => e
             enable_callback
             Failure("Failed to move to determined: #{e.message}")
+          end
+
+          # Cancels previous draft applications when a new one is created
+          # @param [FinancialAssistance::Application] draft_app The newly created draft application
+          # @return [Dry::Monads::Result::Success] Success monad with a message
+          def cancel_previous_applications(draft_app)
+            if qhp_application_feature_enabled?
+              ::FinancialAssistance::Operations::Applications::CancelPreviousApplications.new.call(
+                application: draft_app
+              )
+              Success('Previous applications cancelled successfully')
+            else
+              # Returns success as we don't want to modify the application creation result
+              # when the feature flag is disabled
+              Success('Cannot cancel applications as feature flag is disabled')
+            end
           end
 
           def disable_callback
