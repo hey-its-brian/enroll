@@ -48,7 +48,7 @@ RSpec.describe Operations::AsyncMigrations::Exports::GenerateReport do
         allow(queue).to receive(:channel).and_return(channel)
         allow(delivery_info).to receive(:delivery_tag).and_return('tag1')
         message_payload = {
-          headers: headers,
+          csv_headers: headers,
           rows: rows,
           csv_file_name: file_name
         }.to_json

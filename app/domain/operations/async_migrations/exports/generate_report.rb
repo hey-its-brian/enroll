@@ -44,7 +44,7 @@ module Operations
 
           delivery_info, _props, payload = @queue.pop(manual_ack: true)
           parsed_payload = JSON.parse(payload, symbolize_names: true)
-          headers = parsed_payload[:headers]
+          headers = parsed_payload[:csv_headers]
           file_name = parsed_payload[:csv_file_name]
 
           array_collection = []
