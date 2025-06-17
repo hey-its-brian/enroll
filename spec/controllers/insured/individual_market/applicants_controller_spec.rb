@@ -137,352 +137,375 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
     end
   end
 
-  shared_examples_for "application endpoints" do |authorization_type|
-    describe "GET index" do
-      before { get :index, params: { application_id: application.id, id: applicant.id } }
+  # to locally test the endpoints, you can pass in the action_name as a parameter
+  # e.g. it_behaves_like "application endpoints", :authorized, :index
+  # make sure to return to :all after testing the endpoints
+  shared_examples_for "application endpoints" do |authorization_type, action_name|
 
-      case authorization_type
-      when :unauthorized
-        it "redirects to sign in" do
-          expect(response).to redirect_to(new_user_session_path)
-        end
-      when :unassociated
-        it "redirects with access denied" do
-          expect(response).to redirect_to(root_path)
-          expect(flash[:error]).to match(/Access not allowed/)
-        end
-      else
-        it "returns success" do
-          expect(response).to be_successful
-        end
+    if [:all, :index].include?(action_name)
+      describe "GET index" do
+        before { get :index, params: { application_id: application.id, id: applicant.id } }
 
-        it "assigns @application" do
-          expect(assigns(:application)).to eq application
-        end
+        case authorization_type
+        when :unauthorized
+          it "redirects to sign in" do
+            expect(response).to redirect_to(new_user_session_path)
+          end
+        when :unassociated
+          it "redirects with access denied" do
+            expect(response).to redirect_to(root_path)
+            expect(flash[:error]).to match(/Access not allowed/)
+          end
+        else
+          it "returns success" do
+            expect(response).to be_successful
+          end
 
-        it "renders the index template" do
-          expect(response).to render_template(:index)
-        end
+          it "assigns @application" do
+            expect(assigns(:application)).to eq application
+          end
 
-        it_behaves_like "html only endpoint", :index, :get
+          it "renders the index template" do
+            expect(response).to render_template(:index)
+          end
+
+          it_behaves_like "html only endpoint", :index, :get
+        end
       end
     end
 
-    describe "GET show" do
-      before { get :show, params: { application_id: application.id, id: applicant.id } }
+    if [:all, :show].include?(action_name)
+      describe "GET show" do
+        before { get :show, params: { application_id: application.id, id: applicant.id } }
 
-      case authorization_type
-      when :unauthorized
-        it "redirects to sign in" do
-          expect(response).to redirect_to(new_user_session_path)
-        end
-      when :unassociated
-        it "redirects with access denied" do
-          expect(response).to redirect_to(root_path)
-          expect(flash[:error]).to match(/Access not allowed/)
-        end
-      else
-        it "returns success" do
-          expect(response).to be_successful
-        end
+        case authorization_type
+        when :unauthorized
+          it "redirects to sign in" do
+            expect(response).to redirect_to(new_user_session_path)
+          end
+        when :unassociated
+          it "redirects with access denied" do
+            expect(response).to redirect_to(root_path)
+            expect(flash[:error]).to match(/Access not allowed/)
+          end
+        else
+          it "returns success" do
+            expect(response).to be_successful
+          end
 
-        it "assigns @applicant" do
-          expect(assigns(:applicant)).to eq(application.primary_applicant)
-        end
+          it "assigns @applicant" do
+            expect(assigns(:applicant)).to eq(application.primary_applicant)
+          end
 
-        it "renders the show template" do
-          expect(response).to render_template(:show)
-        end
+          it "renders the show template" do
+            expect(response).to render_template(:show)
+          end
 
-        it_behaves_like "html only endpoint", :show, :get
+          it_behaves_like "html only endpoint", :show, :get
+        end
       end
     end
 
-    describe "GET new" do
-      before { get :new, params: { application_id: application.id } }
+    if [:all, :new].include?(action_name)
+      describe "GET new" do
+        before { get :new, params: { application_id: application.id } }
 
-      case authorization_type
-      when :unauthorized
-        it "redirects to sign in" do
-          expect(response).to redirect_to(new_user_session_path)
-        end
-      when :unassociated
-        it "redirects with access denied" do
-          expect(response).to redirect_to(root_path)
-          expect(flash[:error]).to match(/Access not allowed/)
-        end
-      else
-        it "returns success" do
-          expect(response).to be_successful
-        end
+        case authorization_type
+        when :unauthorized
+          it "redirects to sign in" do
+            expect(response).to redirect_to(new_user_session_path)
+          end
+        when :unassociated
+          it "redirects with access denied" do
+            expect(response).to redirect_to(root_path)
+            expect(flash[:error]).to match(/Access not allowed/)
+          end
+        else
+          it "returns success" do
+            expect(response).to be_successful
+          end
 
-        it "assigns @application" do
-          expect(assigns(:application)).to eq application
-        end
+          it "assigns @application" do
+            expect(assigns(:application)).to eq application
+          end
 
-        it "assigns @applicant" do
-          expect(assigns(:applicant)).to be_a(::Forms::IndividualMarket::Applicant)
-        end
+          it "assigns @applicant" do
+            expect(assigns(:applicant)).to be_a(::Forms::IndividualMarket::Applicant)
+          end
 
-        it "assigns @person_name_form" do
-          expect(assigns(:person_name_form)).to be_a(::Forms::IndividualMarket::PersonNameForm)
-        end
+          it "assigns @person_name_form" do
+            expect(assigns(:person_name_form)).to be_a(::Forms::IndividualMarket::PersonNameForm)
+          end
 
-        it "assigns @demographics_form" do
-          expect(assigns(:demographics_form)).to be_a(::Forms::IndividualMarket::DemographicsForm)
-        end
+          it "assigns @demographics_form" do
+            expect(assigns(:demographics_form)).to be_a(::Forms::IndividualMarket::DemographicsForm)
+          end
 
-        it "assigns @immigration_information_form" do
-          expect(assigns(:immigration_information_form)).to be_a(::Forms::IndividualMarket::ImmigrationInformationForm)
-        end
+          it "assigns @immigration_information_form" do
+            expect(assigns(:immigration_information_form)).to be_a(::Forms::IndividualMarket::ImmigrationInformationForm)
+          end
 
-        it "assigns @address_forms" do
-          expect(assigns(:address_forms)).to be_an(Array)
-          expect(assigns(:address_forms).first).to be_a(::Forms::Locations::AddressForm)
-        end
+          it "assigns @address_forms" do
+            expect(assigns(:address_forms)).to be_an(Array)
+            expect(assigns(:address_forms).first).to be_a(::Forms::Locations::AddressForm)
+          end
 
-        it "renders the new template" do
-          expect(response).to render_template(:new)
-        end
+          it "renders the new template" do
+            expect(response).to render_template(:new)
+          end
 
-        it_behaves_like "html only endpoint", :new, :get
+          it_behaves_like "html only endpoint", :new, :get
+        end
       end
     end
 
-    describe "POST create" do
-      if authorization_type == :authorized
+    if [:all, :create].include?(action_name)
+      describe "POST create" do
+        if authorization_type == :authorized
 
-        context "when the applicant is saved" do
-          before do
-            @applicants_count = application.applicants.count
-            post :create, params: dependent_params
+          context "when the applicant is saved" do
+            before do
+              @applicants_count = application.applicants.count
+              post :create, params: dependent_params
+              application.reload
+            end
+
+            it "assigns @applicant" do
+              expect(assigns(:applicant)).to be_a(::Forms::IndividualMarket::Applicant)
+            end
+
+            it "creates a new applicant" do
+              expect(application.applicants.count).to eq(@applicants_count + 1)
+            end
+
+            it "redirects to the applicants index page" do
+              expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
+            end
+
+            it "does not have a flash error" do
+              expect(flash[:error]).to be_nil
+            end
+          end
+
+          context "when the applicant is not saved" do
+            before do
+              post :create, params: { application_id: application.id, applicant: { first_name: "John", last_name: "Smith" } }
+            end
+
+            it "sets a flash message if the applicant is not saved" do
+              post :create, params: { application_id: application.id, applicant: { first_name: "John", last_name: "Smith" } }
+              expect(flash[:error]).to include("Failed to create applicant due to response:")
+            end
+          end
+        end
+      end
+    end
+
+    if [:all, :edit].include?(action_name)
+      describe "GET edit" do
+        before { get :edit, params: { application_id: application.id, id: applicant.id } }
+
+        case authorization_type
+        when :unauthorized
+          it "redirects to sign in" do
+            expect(response).to redirect_to(new_user_session_path)
+          end
+        when :unassociated
+          it "redirects with access denied" do
+            expect(response).to redirect_to(root_path)
+            expect(flash[:error]).to match(/Access not allowed/)
+          end
+        else
+          it "returns success" do
+            expect(response).to be_successful
+          end
+
+          it "assigns @application" do
+            expect(assigns(:application)).to eq application
+          end
+
+          it "assigns @applicant" do
+            expect(assigns(:applicant)).to eq(application.primary_applicant)
+          end
+
+          it "renders the edit template" do
+            expect(response).to render_template(:new)
+          end
+
+          it_behaves_like "html only endpoint", :edit, :get
+        end
+      end
+    end
+
+    if [:all, :update].include?(action_name)
+      describe "POST update" do
+        if authorization_type == :authorized
+
+          context "when the applicant is saved" do
+            before do
+              post :update, params: primary_applicant_params
+              applicant.reload
+            end
+
+            it "assigns @applicant" do
+              expect(assigns(:applicant)).to be_a(::Forms::IndividualMarket::Applicant)
+            end
+
+            it "updates the applicant" do
+              expect(applicant.demographics.is_incarcerated).to eq(true)
+            end
+
+            it "does not have a flash error" do
+              expect(flash[:error]).to be_nil
+            end
+
+            it "redirects to the applicants index page" do
+              expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
+            end
+          end
+
+          context "when the applicant is not saved" do
+            before do
+              post :update, params: { application_id: application.id, id: applicant.id, applicant: { first_name: "John", last_name: "Smith" } }
+            end
+
+            it "sets a flash message if the applicant is not saved" do
+              expect(flash[:error]).to include("Failed to update applicant due to")
+            end
+
+            it "redirects to the applicants index page" do
+              expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
+            end
+          end
+        end
+      end
+    end
+
+    if [:all, :destroy].include?(action_name)
+      describe "DELETE destroy" do
+        let(:dependent_applicant) do
+          FactoryBot.build(:individual_market_applicant,
+                           :with_demographics,
+                           :with_eligibilities,
+                           :dependent,
+                           application: application)
+        end
+
+        before do
+          application.applicants << dependent_applicant
+          application.save
+        end
+
+        if authorization_type == :authorized
+          it "deletes the dependent applicant" do
+            delete :destroy, params: { application_id: application.id, id: dependent_applicant.id }
             application.reload
+            expect(application.applicants.where(id: dependent_applicant.id).first).to be_nil
           end
 
-          it "assigns @applicant" do
-            expect(assigns(:applicant)).to be_a(::Forms::IndividualMarket::Applicant)
+          it "does not delete the primary applicant" do
+            delete :destroy, params: { application_id: application.id, id: applicant.id }
+            application.reload
+            expect(application.applicants.where(id: applicant.id).first).to eq(applicant)
           end
 
-          it "creates a new applicant" do
-            expect(application.applicants.count).to eq(@applicants_count + 1)
-          end
-
-          it "redirects to the applicants index page" do
-            expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
-          end
-
-          it "does not have a flash error" do
-            expect(flash[:error]).to be_nil
-          end
-        end
-
-        context "when the applicant is not saved" do
-          before do
-            post :create, params: { application_id: application.id, applicant: { first_name: "John", last_name: "Smith" } }
-          end
-
-          it "sets a flash message if the applicant is not saved" do
-            post :create, params: { application_id: application.id, applicant: { first_name: "John", last_name: "Smith" } }
-            expect(flash[:error]).to include("Failed to create applicant due to response:")
+          it 'destroys the dependents relationship' do
+            delete :destroy, params: { application_id: application.id, id: dependent_applicant.id }
+            application.reload
+            expect(application.relationships.where(source_id: dependent_applicant.id).first).to be_nil
           end
         end
       end
     end
 
-    describe "GET edit" do
-      before { get :edit, params: { application_id: application.id, id: applicant.id } }
-
-      case authorization_type
-      when :unauthorized
-        it "redirects to sign in" do
-          expect(response).to redirect_to(new_user_session_path)
-        end
-      when :unassociated
-        it "redirects with access denied" do
-          expect(response).to redirect_to(root_path)
-          expect(flash[:error]).to match(/Access not allowed/)
-        end
-      else
-        it "returns success" do
-          expect(response).to be_successful
-        end
-
-        it "assigns @application" do
-          expect(assigns(:application)).to eq application
-        end
-
-        it "assigns @applicant" do
-          expect(assigns(:applicant)).to eq(application.primary_applicant)
-        end
-
-        it "renders the edit template" do
-          expect(response).to render_template(:new)
-        end
-
-        it_behaves_like "html only endpoint", :edit, :get
-      end
-    end
-
-    describe "POST update" do
-      if authorization_type == :authorized
-
-        context "when the applicant is saved" do
-          before do
-            post :update, params: primary_applicant_params
-            applicant.reload
-          end
-
-          it "assigns @applicant" do
-            expect(assigns(:applicant)).to be_a(::Forms::IndividualMarket::Applicant)
-          end
-
-          it "updates the applicant" do
-            expect(applicant.demographics.is_incarcerated).to eq(true)
-          end
-
-          it "does not have a flash error" do
-            expect(flash[:error]).to be_nil
-          end
-
-          it "redirects to the applicants index page" do
-            expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
-          end
-        end
-
-        context "when the applicant is not saved" do
-          before do
-            post :update, params: { application_id: application.id, id: applicant.id, applicant: { first_name: "John", last_name: "Smith" } }
-          end
-
-          it "sets a flash message if the applicant is not saved" do
-            expect(flash[:error]).to include("Failed to update applicant due to")
-          end
-
-          it "redirects to the applicants index page" do
-            expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
-          end
-        end
-      end
-    end
-
-    describe "DELETE destroy" do
-      let(:dependent_applicant) do
-        FactoryBot.build(:individual_market_applicant,
-                         :with_demographics,
-                         :with_eligibilities,
-                         :dependent,
-                         application: application)
-      end
-
-      before do
-        application.applicants << dependent_applicant
-        application.save
-      end
-
-      if authorization_type == :authorized
-        it "deletes the dependent applicant" do
-          delete :destroy, params: { application_id: application.id, id: dependent_applicant.id }
-          application.reload
-          expect(application.applicants.where(id: dependent_applicant.id).first).to be_nil
-        end
-
-        it "does not delete the primary applicant" do
-          delete :destroy, params: { application_id: application.id, id: applicant.id }
-          application.reload
-          expect(application.applicants.where(id: applicant.id).first).to eq(applicant)
-        end
-
-        it 'destroys the dependents relationship' do
-          delete :destroy, params: { application_id: application.id, id: dependent_applicant.id }
-          application.reload
-          expect(application.relationships.where(source_id: dependent_applicant.id).first).to be_nil
-        end
-      end
-    end
-
-    describe "POST update_preferences" do
-      if authorization_type == :authorized
-        it "transforms the preferences if it is an array" do
-          post :update_preferences, params: {
-            application_id: application.id,
-            applicant_id: applicant.id,
-            individual_market_applicant: { contact_method: ["Email"] }
-          }
-          application.reload
-          expect(applicant.contact_method).to include("Paper ")
-        end
-
-        it "does not transform the preferences if it is not an array" do
-          post :update_preferences, params: {
-            application_id: application.id,
-            applicant_id: applicant.id,
-            individual_market_applicant: { contact_method: "Email" }
-          }
-          application.reload
-          expect(applicant.contact_method).not_to eq("Email")
-        end
-
-        it "only updates fields from the permitted params" do
-          post :update_preferences, params: {
-            application_id: application.id,
-            applicant_id: applicant.id,
-            individual_market_applicant: {
-              contact_method: ["Email", "Mail", "Text"],
-              is_homeless: true
+    if [:all, :update_preferences].include?(action_name)
+      describe "POST update_preferences" do
+        if authorization_type == :authorized
+          it "transforms the preferences if it is an array" do
+            post :update_preferences, params: {
+              application_id: application.id,
+              applicant_id: applicant.id,
+              individual_market_applicant: { contact_method: ["Email"] }
             }
-          }
-          application.reload
-          expect(applicant.contact_method).to include("Paper ")
-          expect(applicant.is_homeless).to be_falsey
-        end
+            application.reload
+            expect(applicant.contact_method).to include("Paper")
+          end
 
-        it "redirects to the applicants review page" do
-          post :update_preferences, params: {
-            application_id: application.id,
-            applicant_id: applicant.id,
-            individual_market_applicant: { contact_method: "Email" }
-          }
-          expect(response).to redirect_to(review_insured_individual_market_application_path(application))
+          it "does not transform the preferences if it is not an array" do
+            post :update_preferences, params: {
+              application_id: application.id,
+              applicant_id: applicant.id,
+              individual_market_applicant: { contact_method: "Email" }
+            }
+            application.reload
+            expect(applicant.contact_method).not_to eq("Email")
+          end
+
+          it "only updates fields from the permitted params" do
+            post :update_preferences, params: {
+              application_id: application.id,
+              applicant_id: applicant.id,
+              individual_market_applicant: {
+                contact_method: ["Email", "Mail", "Text"],
+                is_homeless: true
+              }
+            }
+            application.reload
+            expect(applicant.contact_method).to include("Paper")
+            expect(applicant.is_homeless).to be_falsey
+          end
+
+          it "redirects to the applicants review page" do
+            post :update_preferences, params: {
+              application_id: application.id,
+              applicant_id: applicant.id,
+              individual_market_applicant: { contact_method: "Email" }
+            }
+            expect(response).to redirect_to(review_insured_individual_market_application_path(application))
+          end
         end
       end
     end
 
-    describe "GET show_ssn" do
-      let(:ssn) { "123456789" }
-      let(:formatted_ssn) { "123-45-6789" }
+    if [:all, :show_ssn].include?(action_name)
+      describe "GET show_ssn" do
+        let(:ssn) { "123456789" }
+        let(:formatted_ssn) { "123-45-6789" }
 
-      if authorization_type.in?([:unauthorized, :unassociated])
-        it "is not successful" do
-          get :show_ssn, params: { application_id: application.id, id: applicant.id }
-          expect(response).not_to have_http_status(200)
-        end
-      else
-        it "returns the formatted SSN in JSON response" do
-          applicant.demographics.update_attributes(ssn: ssn, no_ssn: 0)
-          get :show_ssn, params: { application_id: application.id, id: applicant.id }
-          expect(response).to have_http_status(200)
-          parsed_response = JSON.parse(response.body)
-          expect(parsed_response["payload"]).to eq(formatted_ssn)
-          expect(parsed_response["status"]).to eq(200)
+        if authorization_type.in?([:unauthorized, :unassociated])
+          it "is not successful" do
+            get :show_ssn, params: { application_id: application.id, id: applicant.id }
+            expect(response).not_to have_http_status(200)
+          end
+        else
+          it "returns the formatted SSN in JSON response" do
+            applicant.demographics.update_attributes(ssn: ssn, no_ssn: 0)
+            get :show_ssn, params: { application_id: application.id, id: applicant.id }
+            expect(response).to have_http_status(200)
+            parsed_response = JSON.parse(response.body)
+            expect(parsed_response["payload"]).to eq(formatted_ssn)
+            expect(parsed_response["status"]).to eq(200)
+          end
         end
       end
     end
   end
 
   context "when user is not signed in" do
-    it_behaves_like "application endpoints", :unauthorized
+    it_behaves_like "application endpoints", :unauthorized, :all
   end
 
   context "when user does not own the application" do
     other_person = FactoryBot.create(:person, :with_consumer_role)
     other_person.consumer_role.move_identity_documents_to_verified
+    User.where(email: "other_user@example.com").destroy_all
     other_user = FactoryBot.create(:user, person: other_person, email: "other_user@example.com", password: "1!2bthree456Df", password_confirmation: "1!2bthree456Df", oim_id: "1234567890")
 
     before do
       sign_in other_user
     end
 
-    it_behaves_like "application endpoints", :unassociated
+    it_behaves_like "application endpoints", :unassociated, :all
   end
 
   context "when user owns the application" do
@@ -490,7 +513,7 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
       sign_in user
     end
 
-    it_behaves_like "application endpoints", :authorized
+    it_behaves_like "application endpoints", :authorized, :all
   end
 
   context "when user is an associated broker" do
@@ -503,7 +526,7 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
       family.reload
     end
 
-    it_behaves_like "application endpoints", :authorized
+    it_behaves_like "application endpoints", :authorized, :all
   end
 
   context 'when user is a broker who is not associated with the application' do
@@ -511,7 +534,7 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
       sign_in broker_role_user
     end
 
-    it_behaves_like "application endpoints", :unassociated
+    it_behaves_like "application endpoints", :unassociated, :all
   end
 
   context "when user is HBX staff" do
@@ -524,7 +547,7 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
       sign_in admin_user
     end
 
-    it_behaves_like "application endpoints", :authorized
+    it_behaves_like "application endpoints", :authorized, :all
   end
 
   describe "feature flag behavior" do

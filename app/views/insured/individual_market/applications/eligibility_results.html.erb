@@ -3,7 +3,7 @@
 <% else %>
   <%= render partial: 'shared/family_side_nav' %>
   <ul class="breadcrumbs mb-3">
-    <li><%= l10n("application") %></li>
+    <li><%= link_to l10n("application"), insured_individual_market_applications_path(@application) %></li>
     <li><%= l10n("faa.results.eligibility_results") %></li>
   </ul>
 <% end %>

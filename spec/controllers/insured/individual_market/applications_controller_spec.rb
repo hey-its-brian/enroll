@@ -417,18 +417,37 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
 
       before do
         sign_in new_user
-        get :copy, params: { id: new_application.id }, session: { person_id: new_family.primary_person.id }
       end
 
-      it 'redirects to the applicants index page of the copied application' do
-        expect(response).to redirect_to(insured_individual_market_application_applicants_path(application_id: new_app.id))
+      context "without applicant or preferences params" do
+        before { get :copy, params: { id: new_application.id }, session: { person_id: new_family.primary_person.id }}
+
+        it 'redirects to the applicants index page of the copied application' do
+          expect(response).to redirect_to(insured_individual_market_application_applicants_path(application_id: new_app.id))
+        end
+
+        it 'creates a new application with copied attributes' do
+          expect(new_app).to be_persisted
+          expect(new_app.initial?).to be_truthy
+          expect(new_app.predecessor_id).to eq(new_application.id)
+          expect(new_app.family).to eq(new_family)
+        end
       end
 
-      it 'creates a new application with copied attributes' do
-        expect(new_app).to be_persisted
-        expect(new_app.initial?).to be_truthy
-        expect(new_app.predecessor_id).to eq(new_application.id)
-        expect(new_app.family).to eq(new_family)
+      context "with applicant param" do
+        before { get :copy, params: { id: new_application.id, applicant: "12345" }, session: { person_id: new_family.primary_person.id }}
+
+        it 'redirects to the applicants index page of the copied application with an applicant param' do
+          expect(response).to redirect_to(insured_individual_market_application_applicants_path(application_id: new_app.id, applicant: "12345"))
+        end
+      end
+
+      context "with preferences param" do
+        before { get :copy, params: { id: new_application.id, preferences: true }, session: { person_id: new_family.primary_person.id }}
+
+        it 'redirects to the preferences page of the copied application with a preferences param' do
+          expect(response).to redirect_to(preferences_insured_individual_market_application_path(new_app.id))
+        end
       end
     end
 

@@ -1,10 +1,11 @@
 <%= render partial: 'shared/family_side_nav' %>
 <ul class="breadcrumbs mb-3">
-  <li><%= l10n("insured.qhp_application.show.applications") %></li>
-  <li><%= l10n("insured.qhp_application.show.application_details") %></li>
+  <!-- TODO: Add link to applications page -->
+  <li><%= l10n("qhp_application.show.applications") %></li>
+  <li><%= l10n("qhp_application.show.application_details") %></li>
 </ul>
-<h1><%= @application.assistance_year %> <%= l10n("insured.qhp_application.show.application_details") %></h1>
-<p><%= l10n("insured.qhp_application.show.application_details_description") %></p>
+<h1><%= @application.assistance_year %> <%= l10n("qhp_application.show.application_details") %></h1>
+<p><%= l10n("qhp_application.show.application_details_description") %></p>
 
 <% if current_user.has_hbx_staff_role? %>
   <aside class="mb-3" id="admin-designation-descriptor">
@@ -14,13 +15,21 @@
   <dl class="parent">
     <dt><%= l10n("application_id") %>:</dt>
     <dd><%= @application.id %></dd>
-    <dt><%= l10n("insured.qhp_application.show.applied_for_fa") %>:</dt>
+    <dt><%= l10n("qhp_application.show.applied_for_fa") %>:</dt>
     <dd><%= l10n("no") %></dd>
-    <dt><%= l10n("insured.qhp_application.origin") %>:</dt>
-    <dd class="admin-designation"><%= @application.origin %></dd>
-    <dt><%= l10n("insured.qhp_application.generation_reason") %>:</dt>
-    <dd class="admin-designation"><%= @application.generation_reason %></dd>
+    <dt><%= l10n("qhp_application.origin") %>:</dt>
+    <dd class="admin-designation"><%= @application.origin&.to_s&.humanize&.titleize %></dd>
+    <dt><%= l10n("qhp_application.generation_reason") %>:</dt>
+    <dd class="admin-designation"><%= @application.generation_reason&.to_s&.humanize&.titleize %></dd>
   </dl>
+<% end %>
+
+<%= form_tag(main_app.help_paying_coverage_response_insured_consumer_role_index_path, method: :get, id: 'start-new-app-form', class: "d-inline") do %>
+  <%= hidden_field_tag :is_applying_for_assistance, 'true' %>
+  <%= submit_tag l10n("qhp_application.show.apply_for_fa"), id: "start-new-app", class: "btn secondary" %>
+<% end %>
+<% if @application.is_determined? %>
+  <%= link_to l10n("qhp_application.show.eligibility_results"), eligibility_results_insured_individual_market_application_path(@application), class: "btn secondary outline ml-2" %>
 <% end %>
 
 <% primary_person = @application.primary_applicant %>
@@ -30,7 +39,11 @@
   <%= render partial: 'insured/individual_market/applicants/summary', locals: {applicant: applicant, internal_review: false} %>
 <% end %>
 
-<!-- TODO: Correct link to add member to household -->
 <div class="mt-3">
-  <%= link_to l10n("insured.qhp_application.show.add_member"), insured_individual_market_application_applicants_path(@application, applicant: "new"), class: 'btn secondary' %>
+  <%= link_to l10n("qhp_application.show.add_member"), copy_insured_individual_market_application_path(@application, applicant: "new"), class: 'btn secondary' %>
+</div>
+
+<!-- TODO: Add link to return to application -->
+<div class="mt-3">
+  <%= link_to l10n("qhp_applicantion.show.return"), "#", class: 'btn' %>
 </div>

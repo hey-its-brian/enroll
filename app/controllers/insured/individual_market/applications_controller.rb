@@ -96,10 +96,10 @@ module Insured
 
         if copy_result.success?
           new_application = copy_result.success
-          redirect_to insured_individual_market_application_applicants_path(application_id: new_application.id)
+          redirect_to get_redirect_path(new_application)
         else
           flash[:error] = copy_result.failure
-          redirect_to insured_sbm_applications_path
+          redirect_back(fallback_location: insured_sbm_applications_path)
         end
       end
 
@@ -117,6 +117,16 @@ module Insured
           origin: fetch_origin(person, logged_in_user),
           generation_reason: :manual
         }
+      end
+
+      def get_redirect_path(application)
+        if params[:applicant]
+          insured_individual_market_application_applicants_path(application, applicant: params[:applicant])
+        elsif params[:preferences]
+          preferences_insured_individual_market_application_path(application)
+        else
+          insured_individual_market_application_applicants_path(application)
+        end
       end
 
       def verify_qhp_application_enabled
