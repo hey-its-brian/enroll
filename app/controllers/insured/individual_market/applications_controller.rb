@@ -10,6 +10,7 @@ module Insured
       before_action :set_current_person
       before_action :set_family
       before_action :find_application
+      before_action :check_for_non_editable_application, only: [:eligibility_criteria]
       before_action :check_for_editable_application, only: [:review, :preferences, :attestation, :submit]
       before_action :set_consumer_bookmark_url, except: [:submit]
       before_action :enable_bs4_layout
@@ -76,6 +77,12 @@ module Insured
         respond_to :html
       end
 
+      def eligibility_criteria
+        authorize @application, :eligibility_criteria?
+
+        respond_to :html
+      end
+
       # GET endpoint for copying an existing application
       # This action allows users to create a copy of an existing application
       # and redirect them to the applicants page of the new application.
@@ -131,6 +138,11 @@ module Insured
       def check_for_editable_application
         return if @application.current_state == :initial
         redirect_to insured_individual_market_application_path(@application)
+      end
+
+      def check_for_non_editable_application
+        return if @application.is_determined?
+        redirect_to review_insured_individual_market_application_path(@application)
       end
 
       def set_family

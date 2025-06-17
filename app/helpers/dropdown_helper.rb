@@ -21,8 +21,9 @@ module DropdownHelper
   def qhp_application_dropdowns(application, copyable_application_ids)
     option_args = [
       ([l10n('insured.sbm.applications.actions.copy'), copy_insured_individual_market_application_path(application), :default] unless do_not_allow_copy?(application, current_user, copyable_application_ids)),
-      ([l10n('insured.sbm.applications.actions.view_eligibility'), "#", :default] if application.is_determined?),
-      ([l10n('insured.sbm.applications.actions.review'),"#", :default] if application.is_reviewable?)
+      ([l10n('insured.sbm.applications.actions.view_eligibility'), eligibility_results_insured_individual_market_application_path(application), :default] if application.is_determined?),
+      ([l10n('insured.sbm.applications.actions.eligibility_criteria'), eligibility_criteria_insured_individual_market_application_path(application), :default] if application.is_determined? && current_user.has_hbx_staff_role?),
+      ([l10n('insured.sbm.applications.actions.review'), insured_individual_market_application_path(application), :default] if application.is_reviewable?)
     ]
     option_args = add_hbx_only_dropdowns(application, option_args)
     construct_options(option_args)

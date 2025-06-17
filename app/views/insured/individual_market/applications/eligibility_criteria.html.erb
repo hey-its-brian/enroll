@@ -1,0 +1,71 @@
+<%= render partial: 'shared/family_side_nav' %>
+<ul class="breadcrumbs mb-3">
+  <!-- TODO: Add link to applications page when it's created -->
+  <li><%= l10n("applications") %></li>
+  <li><%= link_to l10n("application.detail"), insured_individual_market_application_path(@application) %></li>
+  <li><%= l10n("qhp_application.eligibility_criteria") %></li>
+</ul>
+
+<h1><%= l10n("qhp_application.eligibility_criteria") %></h1>
+
+<% if @application.qhp_eligible_applicants.any? %>
+  <% @application.qhp_eligible_applicants.each do |applicant| %>
+    <section class="card p-0 my-3 col-7 ml-0">
+      <div class="card-header px-2 py-3 d-flex justify-content-between align-items-center">
+        <h3 class="inline m-0 p-0"><%= applicant.person_name.full_name %></h3>
+        <div class="badge badge-status badge-success d-flex align-items-center">
+          <div class="badge-icon badge-success-icon" alt="success" aria-hidden="true">&nbsp;</div>
+          <div><%= l10n("qhp_application.eligible_for_coverage") %></div>
+        </div>
+      </div>
+      <div class="card-body px-2 py-3">
+        <% applicant.individual_market_eligibility.qhp_determination.bases.each do |base| %>
+          <div class="d-flex justify-content-between align-items-center">
+            <dt class="col-8 px-0"><%= l10n("qhp_application.eligibility_criteria.bases.#{base.basis_kind}") %></dt>
+            <dd class="text-right"><%= base.is_satisfied ? l10n("yes") : l10n("no") %></dd>
+          </div>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+<% end %>
+
+<% if @application.totally_ineligible_applicants.any? %>
+  <% @application.totally_ineligible_applicants.each do |applicant| %>
+    <section class="card p-0 my-3 col-7 ml-0">
+      <div class="card-header px-2 py-3 d-flex justify-content-between align-items-center">
+        <h3 class="inline m-0 p-0"><%= applicant.person_name.full_name %></h3>
+        <div class="badge badge-status badge-danger d-flex align-items-center">
+          <div class="badge-icon badge-danger-icon" alt="danger" aria-hidden="true">&nbsp;</div>
+          <div><%= l10n("qhp_application.not_eligible_for_coverage") %></div>
+        </div>
+      </div>
+      <div class="card-body px-2 py-3">
+        <% applicant.individual_market_eligibility.qhp_determination.bases.each do |base| %>
+          <div class="d-flex justify-content-between align-items-center">
+            <dt class="col-8 px-0"><%= l10n("qhp_application.eligibility_criteria.bases.#{base.basis_kind}") %></dt>
+            <dd class="text-right"><%= base.is_satisfied ? l10n("yes") : l10n("no") %></dd>
+          </div>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+<% end %>
+
+<% if @application.non_applicants.any? %>
+  <% @application.non_applicants.each do |applicant| %>
+    <section class="card p-0 my-3 col-7 ml-0">
+      <div class="card-header px-2 py-3 d-flex justify-content-between align-items-center">
+        <h3 class="inline m-0 p-0"><%= applicant.person_name.full_name %></h3>
+        <div class="badge badge-status badge-absent"><%= l10n("qhp_application.not_applying_for_coverage") %></div>
+      </div>
+      <div class="card-body px-2 py-3">
+        <% base = applicant.individual_market_eligibility.qhp_determination.bases.detect { |base| base.basis_kind == "applying_coverage" } %>
+        <div class="d-flex justify-content-between align-items-center">
+          <dt class="col-8 px-0"><%= l10n("qhp_application.eligibility_criteria.bases.applying_coverage") %></dt>
+          <dd class="text-right"><%= base.is_satisfied ? l10n("yes") : l10n("no") %></dd>
+        </div>
+      </div>
+    </section>
+  <% end %>
+<% end %>

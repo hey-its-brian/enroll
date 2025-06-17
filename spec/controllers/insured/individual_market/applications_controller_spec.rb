@@ -39,6 +39,14 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
 
   let(:operation) { instance_double(Operations::IndividualMarket::SubmitAndDetermineApplication) }
 
+  let(:site) { FactoryBot.create(:benefit_sponsors_site, :with_benefit_market, :as_hbx_profile, :cca) }
+  let(:broker_agency_profile) { FactoryBot.create(:benefit_sponsors_organizations_broker_agency_profile, market_kind: :individual) }
+  let!(:broker_role) { FactoryBot.create(:broker_role, benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id, aasm_state: :active) }
+  let!(:broker_role_user) {FactoryBot.create(:user, :person => broker_role.person, roles: ['broker_role'])}
+
+  let!(:broker_agency_staff_role) { FactoryBot.create(:broker_agency_staff_role, benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id, aasm_state: 'active')}
+  let!(:broker_agency_staff_user) {FactoryBot.create(:user, :person => broker_agency_staff_role.person, roles: ['broker_agency_staff_role'])}
+
   before(:all) do
     DatabaseCleaner.clean
   end
@@ -65,20 +73,6 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
   end
 
   shared_examples_for "application endpoints" do |authorization_type|
-    before do
-      case authorization_type
-      when :unauthorized
-        # Don't sign in
-      when :unassociated
-        other_person = FactoryBot.create(:person, :with_consumer_role, first_name: "Jane", last_name: "Doe")
-        other_person.consumer_role.move_identity_documents_to_verified
-        other_user = FactoryBot.create(:user, person: other_person)
-        sign_in other_user
-      when :authorized
-        sign_in user
-      end
-    end
-
     describe "GET review" do
       before { get :review, params: { id: application.id } }
 
@@ -252,50 +246,110 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
     end
   end
 
+  shared_examples_for "admin only endpoints" do |authorization_type|
+
+    describe "GET eligibility_criteria" do
+      if authorization_type == :authorized
+        context "when application is still in initial state" do
+          before do
+            application.update_attributes(current_state: :initial)
+            application.reload
+            allow(application).to receive(:is_determined?).and_return(false)
+            get :eligibility_criteria, params: { id: application.id }
+          end
+
+          it "redirects to review path" do
+            expect(response).to redirect_to(review_insured_individual_market_application_path(application))
+          end
+        end
+      end
+
+      context "when application is in determined state" do
+        before do
+          application.update_attributes(current_state: :determined)
+          application.reload
+          allow(application).to receive(:is_determined?).and_return(true)
+          get :eligibility_criteria, params: { id: application.id }
+        end
+
+        case authorization_type
+        when :unauthorized
+          it "redirects to sign in" do
+            expect(response).to redirect_to(new_user_session_path)
+          end
+        when :unassociated
+          it "redirects with access denied" do
+            expect(response).to redirect_to(root_path)
+            expect(flash[:error]).to match(/Access not allowed/)
+          end
+        else
+          it "returns success" do
+            expect(response).to be_successful
+          end
+
+          it "assigns @application" do
+            expect(assigns(:application)).to eq application
+          end
+
+          it "renders the eligibility_criteria template" do
+            expect(response).to render_template(:eligibility_criteria)
+          end
+
+          it_behaves_like "html only endpoint", :eligibility_criteria, :get
+        end
+      end
+    end
+  end
+
   context "when user is not signed in" do
     it_behaves_like "application endpoints", :unauthorized
+    it_behaves_like "admin only endpoints", :unauthorized
   end
 
   context "when user does not own the application" do
+    other_person = FactoryBot.create(:person, :with_consumer_role)
+    other_person.consumer_role.move_identity_documents_to_verified
+    User.where(email: "other_user@example.com").destroy_all
+    other_user = FactoryBot.create(:user, person: other_person, email: "other_user@example.com", password: "1!2bthree456Df", password_confirmation: "1!2bthree456Df", oim_id: "1234567890")
+
+    before do
+      sign_in other_user
+    end
+
     it_behaves_like "application endpoints", :unassociated
+    it_behaves_like "admin only endpoints", :unassociated
   end
 
   context "when user owns the application" do
+    before do
+      sign_in user
+    end
+
     it_behaves_like "application endpoints", :authorized
+    it_behaves_like "admin only endpoints", :unassociated
   end
 
-  context "when user is a broker" do
-    let(:site) { FactoryBot.create(:benefit_sponsors_site, :with_benefit_market, :as_hbx_profile, :cca) }
-    let(:broker_organization) { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_broker_agency_profile, site: site) }
-    let(:broker_agency_profile) { broker_organization.broker_agency_profile }
-    let(:broker_person) { FactoryBot.create(:person) }
-    let(:broker_role) do
-      FactoryBot.create(:broker_role,
-                        person: broker_person,
-                        benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id,
-                        broker_agency_profile: broker_agency_profile)
-    end
-    let(:broker_agency_staff_role) do
-      FactoryBot.create(:broker_agency_staff_role,
-                        person: broker_person,
-                        benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id,
-                        broker_agency_profile: broker_agency_profile,
-                        aasm_state: 'active')
-    end
-    let(:broker_user) { FactoryBot.create(:user, person: broker_person) }
-
+  context "when user is an associated broker" do
     before do
-      broker_person.broker_role = broker_role
-      broker_person.broker_agency_staff_roles = [broker_agency_staff_role]
-      broker_person.save!
-      broker_user.roles << "broker" unless broker_user.roles.include?("broker")
-      broker_user.roles << "broker_agency_staff" unless broker_user.roles.include?("broker_agency_staff")
-      broker_user.save!
-      family.hire_broker_agency(broker_agency_profile)
-      sign_in broker_user
+      family.broker_agency_accounts << BenefitSponsors::Accounts::BrokerAgencyAccount.new(benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id,
+                                                                                          start_on: Time.now,
+                                                                                          writing_agent_id: broker_role.id,
+                                                                                          is_active: true)
+      sign_in broker_role_user
+      family.reload
     end
 
     it_behaves_like "application endpoints", :authorized
+    it_behaves_like "admin only endpoints", :unassociated
+  end
+
+  context 'when user is a broker who is not associated with the application' do
+    before do
+      sign_in broker_role_user
+    end
+
+    it_behaves_like "application endpoints", :unassociated
+    it_behaves_like "admin only endpoints", :unassociated
   end
 
   context "when user is HBX staff" do
@@ -309,6 +363,7 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
     end
 
     it_behaves_like "application endpoints", :authorized
+    it_behaves_like "admin only endpoints", :authorized
   end
 
   describe "feature flag behavior" do

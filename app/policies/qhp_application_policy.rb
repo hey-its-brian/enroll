@@ -111,4 +111,14 @@ class QhpApplicationPolicy < ApplicationPolicy
   def applicants?
     edit?
   end
+
+  # Determines if the current user has permission to view the eligibility criteria of the application.
+  # The user can view the eligibility criteria if they have permission to edit it.
+  #
+  # @return [Boolean] Returns true if the user has permission to view the eligibility criteria of the application, false otherwise.
+  def eligibility_criteria?
+    return true if individual_market_admin?
+
+    false
+  end
 end
