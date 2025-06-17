@@ -31,7 +31,7 @@
       <% end %>
       <% if insured %>
         <% if eligible_to_redirect_to_home_page?(current_user) %>
-          <li><%= link_to l10n('.my_insured_portal'), main_app.family_account_path(tab: 'home'), class: 'header-text' %></li>
+          <li><%= link_to l10n('.my_insured_portal'), main_app.resume_enrollment_exchanges_agents_path(person_id: current_user.person.id), class: 'header-text' %></li>
         <% else %>
           <li><%= sanitize link_to l10n('.my_insured_portal'), current_user.person&.consumer_role&.bookmark_url, class: 'header-text' %></li>
         <% end %>

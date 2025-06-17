@@ -41,6 +41,8 @@ describe 'shared/_my_portal_links.html.erb', dbclean: :after_each do
     let!(:employee_role) { FactoryBot.create(:employee_role, person: person)}
     let(:census_employee) {FactoryBot.create(:benefit_sponsors_census_employee, employer_profile: employer_profile, employee_role_id: employee_role.id)}
 
+    let(:resume_enrollment_url) { "/exchanges/agents/resume_enrollment?person_id=#{person.id}" }
+
     before do
       allow(EnrollRegistry[:aca_shop_market].feature).to receive(:is_enabled).and_return(true)
     end
@@ -52,7 +54,7 @@ describe 'shared/_my_portal_links.html.erb', dbclean: :after_each do
       allow(user).to receive(:has_employee_role?).and_return(true)
       sign_in(user)
       render 'shared/my_portal_links'
-      expect(rendered).to have_link('My Insured Portal', href: families_home_url)
+      expect(rendered).to have_link('My Insured Portal', href: resume_enrollment_url)
       expect(rendered).to have_content(census_employee.employer_profile.legal_name)
       expect(rendered).to have_selector('.dropdown-menu')
       expect(rendered).to have_selector('.dropdown-menu')
@@ -70,6 +72,8 @@ describe 'shared/_my_portal_links.html.erb', dbclean: :after_each do
     let!(:employee_role) { FactoryBot.create(:employee_role, person: person)}
     let(:benefit_sponsorship)    { BenefitSponsors::BenefitSponsorships::BenefitSponsorship.new(profile: employer_profile) }
 
+    let(:resume_enrollment_url) { "/exchanges/agents/resume_enrollment?person_id=#{person.id}" }
+
     before do
       allow(EnrollRegistry[:aca_shop_market].feature).to receive(:is_enabled).and_return(true)
     end
@@ -85,7 +89,7 @@ describe 'shared/_my_portal_links.html.erb', dbclean: :after_each do
       person.employee_roles.first.save!
       sign_in(user)
       render 'shared/my_portal_links'
-      expect(rendered).to have_link('My Insured Portal', href: families_home_url)
+      expect(rendered).to have_link('My Insured Portal', href: resume_enrollment_url)
       expect(rendered).to have_content(all_er_profile.legal_name)
       expect(rendered).to have_content('Second Company')
       expect(rendered).to have_selector('.dropdown-menu')
@@ -148,6 +152,7 @@ describe 'shared/_my_portal_links.html.erb', dbclean: :after_each do
     let(:auth_and_consent_url) { '/insured/consumer_role/ridp_agreement' }
     let(:broker_agency_registration_url) { '/benefit_sponsors/profiles/registrations/new?profile_type=broker_agency' }
     let(:broker_agency_portal_url) { "/benefit_sponsors/profiles/broker_agencies/broker_agency_profiles/#{broker_agency_id}?tab=home" }
+    let(:resume_enrollment_url) { "/exchanges/agents/resume_enrollment?person_id=#{person.id}" }
 
     before do
       person.broker_agency_staff_roles.create!(
@@ -168,8 +173,8 @@ describe 'shared/_my_portal_links.html.erb', dbclean: :after_each do
       let(:identity_verified) { false }
 
       context 'when the feature is disabled' do
-        it 'does not have families home link' do
-          expect(rendered).not_to have_link('My Insured Portal', href: families_home_url)
+        it 'does not have resume enrollment URL' do
+          expect(rendered).not_to have_link('My Insured Portal', href: resume_enrollment_url)
         end
 
         it 'has broker agency portal link' do
@@ -182,8 +187,8 @@ describe 'shared/_my_portal_links.html.erb', dbclean: :after_each do
       context 'when the feature is enabled' do
         let(:brce_enabled_or_disabled) { true }
 
-        it 'does not have families home link' do
-          expect(rendered).not_to have_link('My Insured Portal', href: families_home_url)
+        it 'does not have resume enrollment URL' do
+          expect(rendered).not_to have_link('My Insured Portal', href: resume_enrollment_url)
         end
 
         it 'has RIDP failed validation page' do
@@ -202,8 +207,8 @@ describe 'shared/_my_portal_links.html.erb', dbclean: :after_each do
       let(:identity_verified) { true }
 
       context 'when the feature is disabled' do
-        it 'does not have families home link' do
-          expect(rendered).not_to have_link('My Insured Portal', href: families_home_url)
+        it 'does not have resume enrollment URL' do
+          expect(rendered).not_to have_link('My Insured Portal', href: resume_enrollment_url)
         end
 
         it 'has broker agency portal link' do
