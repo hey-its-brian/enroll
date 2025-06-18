@@ -257,6 +257,11 @@ When(/^user clicks Begin Application$/) do
   page.all(".button", text: "Begin Application").last.click
 end
 
+Then(/^consumer should see family information page$/) do
+  expect(page).to have_content l10n('family_information').to_s
+  expect(page).to_not have_css('.interaction-click-control-add-income---coverage-info', text: l10n('add_income_coverage_info').upcase)
+end
+
 Then(/^the user will navigate to Family Relationships page$/) do
   expect(page).to have_content('Family Relationships')
 end

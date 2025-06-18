@@ -49,6 +49,19 @@ When(/^selects yes they would like help paying for coverage$/) do
   find('a.interaction-click-control-continue').click
 end
 
+When(/^consumer selects yes$/) do
+  find(IvlIapHelpPayingForCoverage.yes_radiobtn).click
+  find(IvlIapHelpPayingForCoverage.continue_btn).click
+end
+
+Then(/^consumer should be on the application checklist page$/) do
+  expect(page).to have_content("Application Checklist")
+end
+
+When(/^consumer begins finanical assistance application$/) do
+  page.all(".button", text: "Begin Application").last.click
+end
+
 When(/^.+ click 'Start New Application' button$/) do
   click_button 'Start New Application'
 end

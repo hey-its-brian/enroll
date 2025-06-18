@@ -30,3 +30,12 @@ Feature: Start a new Financial Assistance Application
     And they should see each of their dependents listed
     And consumer clicks on pencil symbol next to primary person
     Then consumer should see today date and clicks continue
+
+  Scenario: Consumer should see family information page upon clicking begin application
+    Given bs4_consumer_flow feature is enabled
+    Given qhp_application feature is enabled
+    When a consumer visits the Get Help Paying for coverage page
+    And consumer selects yes
+    Then consumer should be on the application checklist page
+    When consumer begins finanical assistance application
+    Then consumer should see family information page
