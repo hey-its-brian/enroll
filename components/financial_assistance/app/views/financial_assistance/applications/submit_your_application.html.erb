@@ -5,7 +5,11 @@
   <%= render partial: '/financial_assistance/shared/faa_progress_options', locals: {step: step_number} %>
   <%= form_for @application, url: {action: "submit_your_application_save"}, method: :put do |f| %>
     <h1><%= l10n("submit_application_header") %></h1>
-    <p><%= l10n('faa.last_step_1') %> <%= l10n('faa.last_step_2') %></p>
+    <% if EnrollRegistry.feature_enabled?(:qhp_application) %>
+      <p><%= l10n('faa.last_step_3') %><b><%= l10n('faa.submit_application_text') %></b></p>
+    <% else %>
+      <p><%= l10n('faa.last_step_1') %> <%= l10n('faa.last_step_2') %></p>
+    <% end %>
     <h2><%= l10n("insured.preferences.agreements") %></h2>
 
     <div class="my-4">
@@ -86,24 +90,48 @@
       </fieldset>
     <% end %>
 
-    <fieldset class="my-4">
-      <legend class="beta"><%= l10n("electronic_signature") %></legend>
-      <% person = @application.try(:primary_applicant) %>
-      <%= hidden_field_tag 'subscriber_first_name', person.first_name.downcase %>
-      <%= hidden_field_tag 'subscriber_last_name', person.last_name.downcase %>
-      <div class="col-md-4 px-0">
-        <label for="first_name_thank_you" class="required"><%= l10n("first_name") %></label>
-        <%= text_field_tag "first_name_thank_you", nil, placeholder: l10n("first_name"), required: true, class: "thank_you_field w-100", id: "first_name_thank_you", pattern: match_char_pattern(person.first_name) %>
+    <% if EnrollRegistry.feature_enabled?(:qhp_application) %>
+      <div class="my-4">
+        <h2><%= l10n("electronic_signature") %></h2>
+        <p><%= l10n('faa.electronic_signature_additional_text') %></p>
+        <% person = @application.try(:primary_applicant) %>
+        <%= hidden_field_tag 'subscriber_first_name', person.first_name.downcase %>
+        <%= hidden_field_tag 'subscriber_last_name', person.last_name.downcase %>
+        <div class="d-flex">
+          <div class="col-md-4 px-0">
+            <label for="first_name_thank_you" class="required"><%= l10n("first_name") %></label>
+            <%= text_field_tag "first_name_thank_you", nil, placeholder: l10n("first_name"), required: true, class: "thank_you_field w-100", id: "first_name_thank_you", pattern: match_char_pattern(person.first_name) %>
+          </div>
+          <div class="col-md-4 px-3">
+            <label for="middle_name_thank_you"><%= l10n("middle_name") %></label>
+            <%= text_field_tag "middle_name_thank_you", nil, placeholder: l10n("middle_name"), required: false, class: "thank_you_field w-100", id: "middle_name_thank_you" %>
+          </div>
+          <div class="col-md-4 px-0">
+            <label for="last_name_thank_you" class="required"><%= l10n("last_name") %></label>
+            <%= text_field_tag "last_name_thank_you", nil, placeholder: l10n("last_name"), required: true, class: "thank_you_field w-100", id: "last_name_thank_you", pattern: match_char_pattern(person.last_name) %>
+          </div>
+        </div>
       </div>
-      <div class="col-md-4 px-3">
-        <label for="middle_name_thank_you"><%= l10n("middle_name") %></label>
-        <%= text_field_tag "middle_name_thank_you", nil, placeholder: l10n("middle_name"), required: false, class: "thank_you_field w-100", id: "middle_name_thank_you" %>
-      </div>
-      <div class="col-md-4 px-0">
-        <label for="last_name_thank_you" class="required"><%= l10n("last_name") %></label>
-        <%= text_field_tag "last_name_thank_you", nil, placeholder: l10n("last_name"), required: true, class: "thank_you_field w-100", id: "last_name_thank_you", pattern: match_char_pattern(person.last_name) %>
-      </div>
-    </fieldset>
+    <% else %>
+      <fieldset class="my-4">
+        <legend class="beta"><%= l10n("electronic_signature") %></legend>
+        <% person = @application.try(:primary_applicant) %>
+        <%= hidden_field_tag 'subscriber_first_name', person.first_name.downcase %>
+        <%= hidden_field_tag 'subscriber_last_name', person.last_name.downcase %>
+        <div class="col-md-4 px-0">
+          <label for="first_name_thank_you" class="required"><%= l10n("first_name") %></label>
+          <%= text_field_tag "first_name_thank_you", nil, placeholder: l10n("first_name"), required: true, class: "thank_you_field w-100", id: "first_name_thank_you", pattern: match_char_pattern(person.first_name) %>
+        </div>
+        <div class="col-md-4 px-3">
+          <label for="middle_name_thank_you"><%= l10n("middle_name") %></label>
+          <%= text_field_tag "middle_name_thank_you", nil, placeholder: l10n("middle_name"), required: false, class: "thank_you_field w-100", id: "middle_name_thank_you" %>
+        </div>
+        <div class="col-md-4 px-0">
+          <label for="last_name_thank_you" class="required"><%= l10n("last_name") %></label>
+          <%= text_field_tag "last_name_thank_you", nil, placeholder: l10n("last_name"), required: true, class: "thank_you_field w-100", id: "last_name_thank_you", pattern: match_char_pattern(person.last_name) %>
+        </div>
+      </fieldset>
+    <% end %>
     <div class="mt-4">
     <% content_for :submit_button do %>
       <%= f.submit l10n("submit_application"), class: "btn", id: 'btn-continue'  %>
