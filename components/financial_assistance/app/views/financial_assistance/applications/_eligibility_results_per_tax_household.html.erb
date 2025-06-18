@@ -1,7 +1,9 @@
 <% group_selection_url = main_app.new_insured_group_selection_path(person_id: @person.id, consumer_role_id: @person.consumer_role.id) %>
 <% find_sep_url = main_app.find_sep_insured_families_path(consumer_role_id: @person.consumer_role.id) %>
 <% if @bs4 %>
-  <% step_number = calculate_step_number(@application, "review_page") %>
+  <% qhp_enabled = qhp_application_feature_enabled? %>
+  <% page_title = qhp_enabled ? "eligibility_results_page" : "review_page" %>
+  <% step_number = calculate_step_number(@application, page_title) %>
   <%= render partial: '/financial_assistance/shared/faa_progress_options', locals: {step: step_number} %>
   <div class="<%= 'container mt-4' if !@in_application_flow %>">
     <h1 data-cuke='eligibility_results'><%= l10n("faa.results.eligibility_results") %></h1>

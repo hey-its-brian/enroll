@@ -36,6 +36,8 @@ module FinancialAssistance
       attribute :is_homeless, Types::Strict::Bool.meta(omittable: true)
       attribute :is_living_in_state, Types::Strict::Bool.meta(omittable: true)
 
+      attribute :contact_method, Types::String.optional.meta(omittable: true)
+      attribute :language_preference, Types::String.optional.meta(omittable: true)
       attribute :no_ssn, Types::String.optional.meta(omittable: true)
       attribute :citizen_status, Types::String.optional
       attribute :is_consumer_role, Types::Strict::Bool

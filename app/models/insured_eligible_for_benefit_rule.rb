@@ -246,12 +246,9 @@ class InsuredEligibleForBenefitRule
   end
 
   def is_lawful_presence_status_satisfied?
-    if qhp_application_feature_enabled? && @eligibility_determination.present?
-      subject = @eligibility_determination.subjects.by_person(@role.person.id).first
-      !subject.outstanding?
-    else
-      is_verification_satisfied? || is_person_vlp_verified?
-    end
+    return true if qhp_application_feature_enabled?
+
+    is_verification_satisfied? || is_person_vlp_verified?
   end
 
   def is_active_individual_role_satisfied?

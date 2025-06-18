@@ -1,7 +1,7 @@
 <%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(4)} %>
 
 <h1><%= l10n("faa.review.review_and_submit") %></h1>
-<p><%= l10n("qhp_application.review_description") %></p>
+<p><%= l10n("qhp_application.review_description") %><b><%= l10n("qhp_application.continue_to_next_step") %></b>.</p>
 
 <% if current_user.has_hbx_staff_role? %>
   <aside class="mb-3" id="admin-designation-descriptor">

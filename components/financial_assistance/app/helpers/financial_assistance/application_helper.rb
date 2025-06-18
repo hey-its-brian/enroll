@@ -472,14 +472,24 @@ module FinancialAssistance
         # For feature enabled, include an income and coverage step.
         income_step = { step: multiple_applicants ? 3 : 2, label: l10n('faa.nav.income_and_coverage'),
                         link: "#"}
-        review_step = { step: multiple_applicants ? 4 : 3, label: l10n('faa.nav.review'),
+        preferences_step = { step: multiple_applicants ? 4 : 3, label: l10n('qhp_application.nav.preferences_label'),
+                             link: "#" }
+        review_step = { step: multiple_applicants ? 5 : 4, label: l10n('qhp_application.nav.review_label'),
                         link: "#"}
+        submit_step = { step: multiple_applicants ? 6 : 5, label: l10n('submit'),
+                        link: "#" }
+        eligibility_results = { step: multiple_applicants ? 7 : 6, label: l10n('qhp_application.nav.results'),
+                                link: "#" }
         # Set the review step link only if the application is ready for attestation.
 
         application_ready_for_attestation = application.present? && application.ready_for_attestation? && application.is_draft?
-        income_step[:link] = financial_assistance.edit_application_path(application) if application_ready_for_attestation
-        review_step[:link] = financial_assistance.review_and_submit_application_path(application) if application_ready_for_attestation
-        links.push(income_step, review_step)
+        if application_ready_for_attestation
+          income_step[:link] = financial_assistance.edit_application_path(application)
+          preferences_step[:link] = financial_assistance.preferences_application_path(application)
+          review_step[:link] = financial_assistance.review_and_submit_application_path(application)
+          submit_step[:link] = financial_assistance.submit_your_application_application_path(application)
+        end
+        links.push(income_step, preferences_step, review_step, submit_step, eligibility_results)
       else
         # Without the feature flag, there is no income step.
         review_step = { step: multiple_applicants ? 3 : 2, label: l10n('faa.nav.review'), link: "javascript:void(0);" }
@@ -493,22 +503,32 @@ module FinancialAssistance
     def calculate_step_number(application, page_title)
       applicants_count = application.applicants.count
       has_multiple_applicants = applicants_count > 1
-      qhp_feature_enabled = qhp_application_feature_enabled?
+      qhp_enabled = qhp_application_feature_enabled?
 
-      case page_title
-      when "review_page"
-        if qhp_feature_enabled
-          has_multiple_applicants ? 4 : 3
-        else
-          (has_multiple_applicants ? 3 : 2)
-        end
-      when "income_page"
-        if qhp_feature_enabled
-          has_multiple_applicants ? 3 : 2
-        else
-          1
-        end
-      end
+      # Step mappings: [single_applicant, multiple_applicants]
+      step_mappings = {
+        qhp_enabled: {
+          'eligibility_results_page' => [6, 7],
+          'submit_page' => [5, 6],
+          'review_page' => [4, 5],
+          'preferences_page' => [3, 4],
+          'income_page' => [2, 3]
+        },
+        qhp_disabled: {
+          'eligibility_results_page' => [2, 3],
+          'submit_page' => [2, 3],
+          'review_page' => [2, 3],
+          'preferences_page' => [2, 3],
+          'income_page' => [1, 1]
+        }
+      }
+
+      feature_key = qhp_enabled ? :qhp_enabled : :qhp_disabled
+      steps = step_mappings[feature_key][page_title]
+
+      return nil unless steps
+
+      has_multiple_applicants ? steps[1] : steps[0]
     end
 
     def other_questions_prompt(key, use_applicant_name: false)
@@ -533,6 +553,21 @@ module FinancialAssistance
 
     def sanitize_insurance_kind(insurance_kind)
       insurance_kind == "child_health_insurance_plan" && FinancialAssistanceRegistry.feature_enabled?(:remove_cubcare_references) ? "medicaid" : insurance_kind
+    end
+
+    def personal_info_rows(class_name)
+      if qhp_application_feature_enabled?
+        [:dob, :gender, :ssn_provided, :relationship, :status, :coverage, :us_citizen,
+         :naturalized_citizen, :eligible, :american_indian_or_alaska_native_tribe, :is_incarcerated,
+         :age_off_excluded].freeze
+      else
+        case class_name
+        when 'ConsumerApplicantSummary'
+          [:age, :gender, :relationship, :status, :is_incarcerated, :coverage].freeze
+        when 'AdminApplicantSummary'
+          [:dob, :gender, :relationship, :coverage].freeze
+        end
+      end
     end
   end
 end

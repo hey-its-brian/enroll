@@ -1,5 +1,7 @@
 <% if @bs4 %>
-  <% step_number = calculate_step_number(@application, "review_page") %>
+  <% qhp_enabled = qhp_application_feature_enabled? %>
+  <% page_title = qhp_enabled ? "eligibility_results_page" : "review_page" %>
+  <% step_number = calculate_step_number(@application, page_title) %>
   <%= render partial: '/financial_assistance/shared/faa_progress_options', locals: {step: step_number} %>
   <h1><%= l10n("financial_assistance.applications.response_error")%></h1>
   <p><%= l10n("financial_assistance.applications.cant_determine_eligibility",

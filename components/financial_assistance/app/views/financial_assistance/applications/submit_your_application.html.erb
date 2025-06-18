@@ -1,5 +1,7 @@
 <% if @bs4 %>
-  <% step_number = calculate_step_number(@application, "review_page") %>
+  <% qhp_enabled = qhp_application_feature_enabled? %>
+  <% page_title = qhp_enabled ? "submit_page" : "review_page" %>
+  <% step_number = calculate_step_number(@application, page_title) %>
   <%= render partial: '/financial_assistance/shared/faa_progress_options', locals: {step: step_number} %>
   <%= form_for @application, url: {action: "submit_your_application_save"}, method: :put do |f| %>
     <h1><%= l10n("submit_application_header") %></h1>
@@ -106,12 +108,9 @@
     <% content_for :submit_button do %>
       <%= f.submit l10n("submit_application"), class: "btn", id: 'btn-continue'  %>
     <% end %>
-    <%= render partial: 'financial_assistance/shared/progress_navigation_buttons',
-        locals: {
-          previous_link: preferences_application_path(@application),
-          show_back_to_household_button: !EnrollRegistry.feature_enabled?(:qhp_application)
-        }
-    %>
+    <% previous_link = qhp_enabled ? review_and_submit_application_path(@application) : preferences_application_path(@application) %>
+    <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
+      previous_link: previous_link, show_back_to_household_button: !EnrollRegistry.feature_enabled?(:qhp_application) } %>
     </div>
   <% end %>
 

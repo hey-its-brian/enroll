@@ -36,7 +36,9 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
                       is_primary_applicant: true,
                       family_member_id: family.family_members[0].id,
                       person_hbx_id: person1.hbx_id,
-                      age_off_excluded: false)
+                      age_off_excluded: false,
+                      contact_method: 'Paper, Electronic and Text Message communications',
+                      language_preference: 'German')
   end
 
   let!(:applicant2) do
@@ -235,6 +237,17 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
       it 'should only return 2 relationships' do
         expect(@copied_application.applicants.first.age_off_excluded).to eq false
         expect(@copied_application.applicants.last.age_off_excluded).to eq true
+      end
+    end
+
+    context 'should copy contact_method and language_preference field' do
+      before do
+        @copied_application = subject.call(application_id: application.id).success
+      end
+
+      it 'should only return 2 relationships' do
+        expect(@copied_application.applicants.first.contact_method).to eq 'Paper, Electronic and Text Message communications'
+        expect(@copied_application.applicants.first.language_preference).to eq 'German'
       end
     end
 

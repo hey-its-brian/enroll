@@ -1,8 +1,11 @@
 <% if @bs4 %>
-  <% step_number = calculate_step_number(@application, "review_page") %>
+  <% qhp_enabled = qhp_application_feature_enabled? %>
+  <% page_title = qhp_enabled ? "preferences_page" : "review_page" %>
+  <% step_number = calculate_step_number(@application, page_title) %>
   <%= render partial: '/financial_assistance/shared/faa_progress_options', locals: {step: step_number} %>
-  <%= form_for @application, url: {action: "save_preferences"}, method: :put do |f| %>
-    <h1><%= l10n("insured.preferences.heading") %></h1>
+  <%= form_for @application, url: {action: "save_preferences"}, method: :put, html:   { data: { controller: "contact-methods",
+                                                                                                target: "contact-methods.preferencesForm" } } do |f| %>
+    <h1><%= l10n("qhp_application.nav.preferences_label") %></h1>
     <p><%= l10n("insured.preferences.instructions") %> <b><%= l10n("insured.preferences.instructions_continue") %></b>.</p>
     <h2><%= l10n("insured.preferences.agreements") %></h2>
     <fieldset class="mb-4">
@@ -21,8 +24,115 @@
     <div class="my-4" id="renewal_years">
       <p><%= l10n("insured.preferences.question2_description", site_short_name: site_short_name) %></p>
       <label class="weight-n required" for="application_years_to_renew"><%= l10n("insured.preferences.question2") %></label>
-      <%= f.select(:years_to_renew, options_for_select(renewal_year_select_options), {include_blank: l10n("insured.preferences.select")}, {prompt: true}) %>
+      <%= f.select(:years_to_renew, options_for_select(renewal_year_select_options, selected: f.object.years_to_renew), {include_blank: l10n("insured.preferences.select")}, {prompt: true}) %>
     </div>
+    <% if qhp_enabled %>
+      <% primary_applicant = @application.primary_applicant %>
+      <%= f.fields_for :applicants, primary_applicant do |app_f| %>
+        <h2><%= l10n("qhp_application.review.contact_preferences") %></h2>
+        <p><%= l10n("insured.preferences.contact_update_info") %><span class="primary-text"><%= link_to l10n("insured.preferences.family_info_page"), application_applicants_path(@application) %></span></p>
+        <section>
+          <div id="phone_info">
+            <div class="phone d-flex mb-md-2 row col-sm">
+              <% home_phone = primary_applicant.home_phone.present? ? primary_applicant.home_phone : primary_applicant.phones.build(kind: "home") %>
+              <% mobile_phone = primary_applicant.mobile_phone.present? ? primary_applicant.mobile_phone : primary_applicant.phones.build(kind: "mobile") %>
+              <% [home_phone, mobile_phone].each_with_index do |phone_obj, idx| %>
+                <%= app_f.fields_for :phones, phone_obj, child_index: idx, errors: {}, fieldset: true do |phone|  %>
+                  <% kind = phone.object.kind.upcase %>
+                  <% required = kind == 'HOME' ? "required" : "" %>
+                  <%= phone.hidden_field :kind %>
+                  <%= phone.hidden_field :_destroy %>
+                  <div class="col-sm col-md-6 p-0">
+                    <div class="col-md-12 <%= idx.even? ? 'pl-0' : 'pr-0'%>">
+                      <% unless kind == 'FAX' && params[:action] == "personal" %>
+                        <%= phone.label :full_phone_number, l10n(kind + "Phone") %>
+                        <%= phone.text_field :full_phone_number, placeholder: "(000) 000-0000", class: "#{required} full-width phone_number #{kind.downcase}-phone-number", data: {target: "contact-methods.#{kind.downcase}Phone", action: "change->contact-methods#canSubmitCheck"} %>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+          <div id="email_info">
+            <div class="email d-flex mb-md-4 row col-sm">
+              <% email = primary_applicant.home_email.present? ? primary_applicant.home_email : primary_applicant.emails.build(kind: "home") %>
+              <% work_email = primary_applicant.work_email.present? ? primary_applicant.work_email : primary_applicant.emails.build(kind: "work") %>
+              <% [email, work_email].each_with_index do |email_obj, idx| %>
+                <%= app_f.fields_for :emails, email_obj, child_index: idx, errors: {}, fieldset: true do |f| %>
+                  <% kind = f.object.kind %>
+                  <div class="col-sm col-md-6 p-0">
+                    <div class="col-md-12 <%= idx.even? ? 'pl-0' : 'pr-0'%>">
+                      <%= f.hidden_field :kind %>
+                      <%= f.hidden_field :_destroy %>
+                      <%= f.label :address, kind.upcase.eql?('HOME') ? l10n("personal_email_address") : l10n(kind + " Email Address").titleize %>
+                      <%= f.email_field :address, placeholder: "example@mail.com", class: "full-width", data: {target: "contact-methods.#{kind.downcase}Email", action: "change->contact-methods#canSubmitCheck"} %>
+                    </div>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3><%= l10n("notices") %></h3>
+          <p><%= l10n("insured.preferences.notices_description", site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %><br><%= l10n("insured.preferences.data_rates_notice") %></p>
+
+          <div class="<%= 'hidden' if @identifier %>">
+            <fieldset class="d-block col-sm-12 p-0">
+              <legend><%= l10n("insured.preferences.contact_methods") %></legend>
+              <% if EnrollRegistry.feature_enabled?(:contact_method_via_dropdown) %>
+                <%= app_f.select :contact_method,
+                                 options_for_select([
+                                                      [l10n("insured.preferences.paper_only"), "Only Paper communication"],
+                                                      [l10n("insured.preferences.electronic_only"), "Only Electronic communications"],
+                                                      [l10n("insured.preferences.both_methods"), "Paper and Electronic communications"]
+                                                    ], selected: app_f.object.contact_method),
+                                 {prompt: l10n("insured.preferences.select_communications")} %>
+              <% else %>
+                <div class="d-flex mb-md-4 row col-sm">
+                  <% {
+                       email: l10n("insured.contact_option.email"),
+                       mail: l10n("insured.contact_option.mail"),
+                       text: l10n("insured.contact_option.text")
+                     }.each do |type_key, type_string| %>
+                    <div class="col-sm col-md-3 p-0">
+                      <% check_box_id = "contact_type_#{type_key}" %>
+                      <%= app_f.label(:contact_method, for: check_box_id) do %>
+                        <div class="d-flex col-4 p-0 pr-3 align-items-center option weight-n">
+                      <span class="mr-2 contact-method">
+                        <%= app_f.check_box(:contact_method,
+                                            {
+                                              checked: (FinancialAssistance::Applicant::CONTACT_METHOD_MAPPING.invert)[app_f.object.contact_method].to_a.include?(type_string),
+                                              multiple: true,
+                                              id: check_box_id,
+                                              data: {target: "contact-methods.#{type_key}Preference", action: "change->contact-methods#canSubmitCheck"}
+                                            }, type_string, nil) %>
+                      </span>
+                          <%= type_string %>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </fieldset>
+
+            <div class="col-sm-12 mb-4 p-0">
+              <%= app_f.label :language_preference, l10n("insured.preferences.language_preferences"), class: 'personal_landing_page_label required' %>
+              <%= app_f.select :language_preference,
+                               options_for_select(
+                                 EnrollRegistry[:state_based_language_preferences].item || ["English"],
+                                 selected: app_f.object.language_preference
+                               ),
+                               {prompt: l10n("insured.preferences.select_language")} %>
+            </div>
+          </div>
+        </section>
+      <% end %>
+    <% end %>
+    <% primary_applicant = @application.primary_applicant %>
     <% if FinancialAssistanceRegistry.feature_enabled?(:voter_registration_through_ext_url) %>
       <section class="my-4">
         <h2><%= l10n("insured.preferences.voter_registration_header") %></h2>
@@ -72,12 +182,23 @@
       </section>
     <% end %>
     <% content_for :submit_button do %>
-      <%= f.submit l10n("continue_next"), class: 'btn btn-continue', id: 'btn-continue' %>
+      <%= f.submit(
+            l10n("continue_next"),
+            class:   "btn btn-continue",
+            id:      "btn-continue",
+            data:    (qhp_enabled ?
+                        { target: "contact-methods.submitButton",
+                          action: "click->contact-methods#alertForInvalidContactMethods" }
+                        : {})
+          ) %>
     <% end %>
+    <% previous_link = qhp_enabled ? edit_application_path(@application) : review_and_submit_application_path(@application)  %>
+    <% show_back_to_household_button = qhp_enabled ? false : true %>
     <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
-      previous_link: review_and_submit_application_path(@application), show_back_to_household_button: true
+      previous_link: previous_link, show_back_to_household_button: show_back_to_household_button
     } %>
   <% end %>
+
 <% else %>
   <%= form_for @application, url: {action: "save_preferences"}, method: :put do |f| %>
     <div class="col-lg-10 col-md-10 col-sm-10 col-xs-12 row">

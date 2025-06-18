@@ -6,7 +6,9 @@ RSpec.describe Operations::FinancialAssistance::ParseApplicant, type: :model, db
     per = FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role)
     addi_attrs = { active_vlp_document_id: per.consumer_role.vlp_documents.first.id,
                    is_applying_coverage: true, five_year_bar_applies: true, five_year_bar_met: true,
-                   age_off_excluded: true }
+                   age_off_excluded: true,
+                   language_preference: 'English',
+                   contact_method: 'Paper and Email Communications'}
     per.consumer_role.update_attributes!(addi_attrs)
     per.consumer_role.lawful_presence_determination.update!(qualified_non_citizenship_result: 'Y')
     per
@@ -54,6 +56,11 @@ RSpec.describe Operations::FinancialAssistance::ParseApplicant, type: :model, db
 
     it 'should return hash with member age_off_excluded flag' do
       expect(result.success[:age_off_excluded]).to eq person.age_off_excluded
+    end
+
+    it 'should return hash with member contact_method and language attributes' do
+      expect(result.success[:contact_method]).to eq person.consumer_role.contact_method
+      expect(result.success[:language_preference]).to eq person.consumer_role.language_preference
     end
 
     it 'should return consumer_role related attributes' do

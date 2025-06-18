@@ -8,6 +8,7 @@ module FinancialAssistance
     #
     # The application data is managed by `Summary::ApplicationSummary`, which loads the top-level Application data directly.
     class SummaryService
+      include ::ResourceRegistryHelper
 
       attr_reader :can_edit_incomes
 
@@ -24,7 +25,7 @@ module FinancialAssistance
       end
 
       def initialize(is_concise:, can_edit:, cfl_service:, application:, applicants:)
-        @application_summary = Summary::ApplicationSummary.new(application, cfl_service)
+        @application_summary = Summary::ApplicationSummary.new(application, cfl_service, can_edit)
         @applicant_summaries = create_applicant_summaries(is_concise, can_edit, cfl_service, application, applicants)
         @can_edit_incomes = can_edit
       end
@@ -67,8 +68,10 @@ module FinancialAssistance
 
       # Base class for a summary section. Provides an interface for section and subsection hashes.
       class Summary
-        def section_hash(title:, subsections:)
-          {section_title: title, subsections: subsections}
+        include FinancialAssistance::Engine.routes.url_helpers
+
+        def section_hash(title:, subsections:, edit_section_link:)
+          {section_title: title, subsections: subsections, edit_section_link: edit_section_link}
         end
 
         def subsection_hash(title:, rows:, edit_link: nil)
@@ -93,6 +96,7 @@ module FinancialAssistance
             include FinancialAssistance::ApplicationHelper
             include FinancialAssistance::Engine.routes.url_helpers
             include ActionView::Helpers::NumberHelper
+            include ::ResourceRegistryHelper
 
             def initialize(config:)
               @config = config
@@ -131,7 +135,8 @@ module FinancialAssistance
             # Config loader for the applicant base hash
             class ApplicantConfigLoader < ConfigLoader
               def initialize(applicant, application)
-                super(config: APPLICANT_CONFIGURATION)
+                config_path = determine_config_path
+                super(config: config_path)
                 @applicant = applicant
                 @application = application
               end
@@ -147,7 +152,15 @@ module FinancialAssistance
 
               private
 
-              APPLICANT_CONFIGURATION = "./components/financial_assistance/app/models/financial_assistance/services/raw_applicant.yml.erb"
+              def determine_config_path
+                if qhp_application_feature_enabled?
+                  "./components/financial_assistance/app/models/financial_assistance/services/qhp_enabled_raw_applicant.yml.erb"
+                else
+                  "./components/financial_assistance/app/models/financial_assistance/services/raw_applicant.yml.erb"
+                end
+              end
+
+              # APPLICANT_CONFIGURATION = "./components/financial_assistance/app/models/financial_assistance/services/raw_applicant.yml.erb"
 
               # Display the value of the immigration field based on the applicant's citizenship status
               def immigration_field_value(field)
@@ -197,7 +210,8 @@ module FinancialAssistance
               super()
               @application = application
               @applicant = applicant
-              @hash = section_hash(title: capitalize_full_name(applicant.full_name), subsections: applicant_subsections)
+              @hash = section_hash(title: capitalize_full_name(applicant.full_name), subsections: applicant_subsections,
+                                   edit_section_link: edit_application_applicant_path(application, applicant))
             end
 
             private
@@ -224,7 +238,8 @@ module FinancialAssistance
             #
             # @return [Hash] The modified applicant_map.
             def filter_subsections(map)
-              filter_rows(map, :personal_info, self.class::PERSONAL_INFO_ROWS)
+              class_name = self.class.to_s.split("::").last
+              filter_rows(map, :personal_info, personal_info_rows(class_name))
             end
 
             # @method filter_rows(base_map, section_key, rows)
@@ -254,9 +269,6 @@ module FinancialAssistance
             # Manages the applicant summary section for the Admin page context, containing nearly all raw application data.
             class AdminApplicantSummary < ApplicantSummary
               private
-
-              PERSONAL_INFO_ROWS = [:dob, :gender, :relationship, :coverage].freeze
-
               # @method filter_subsections(map)
               # Modifies the applicant_map for the Admin page context.
               # Removes the ai_an_income row from the Income section and the HRA rows if enrolled. Also filter the Personal Info rows and combines them with the Demographics rows.
@@ -267,8 +279,13 @@ module FinancialAssistance
               def filter_subsections(map)
                 super
                 map[:income][:rows].delete(:ai_an_income)
-                map[:personal_info][:rows].merge!(map[:demographics][:rows])
-                map.delete(:demographics)
+                if qhp_application_feature_enabled?
+                  map[:personal_info][:rows].merge!(map[:tribal_and_immigration_information][:rows]) if map.dig("tribal_and_immigration_information", "rows").present?
+                  map.delete(:tribal_and_immigration_information)
+                else
+                  map[:personal_info][:rows].merge!(map[:demographics][:rows])
+                  map.delete(:demographics)
+                end
                 filter_rows(map, :health_coverage, [:is_enrolled, :is_eligible]) if FinancialAssistanceRegistry[:has_enrolled_health_coverage].setting(:currently_enrolled).item
                 map
               end
@@ -284,8 +301,6 @@ module FinancialAssistance
               end
 
               private
-
-              PERSONAL_INFO_ROWS = [:age, :gender, :relationship, :status, :is_incarcerated, :coverage].freeze
 
               # @method applicant_subsection_hash(section_data)
               # Maps the raw section hash for the consumer into a view-ready hash of the form:
@@ -315,7 +330,12 @@ module FinancialAssistance
               # @return [Hash] The modified applicant_map.
               def filter_subsections(map)
                 super
-                map.delete(:demographics)
+                if qhp_application_feature_enabled?
+                  map[:personal_info][:rows].merge!(map[:tribal_and_immigration_information][:rows]) if map.dig("tribal_and_immigration_information", "rows").present?
+                  map.delete(:tribal_and_immigration_information)
+                else
+                  map.delete(:demographics)
+                end
                 income_section(map)
                 tax_info_section(map)
                 coverage_section(map)
@@ -395,9 +415,10 @@ module FinancialAssistance
           include FinancialAssistance::ApplicationHelper
           include FinancialAssistance::Engine.routes.url_helpers
 
-          def initialize(application, cfl_service)
+          def initialize(application, cfl_service, can_edit)
             super()
             @application = application
+            @can_edit = can_edit
             @application_displayable_helper = DisplayableHelper::ApplicationDisplayableHelper.new(cfl_service, @application.id)
           end
 
@@ -415,12 +436,17 @@ module FinancialAssistance
             end
 
             return if fr_hash.empty?
-            section_hash(title: l10n('faa.review.your_household'),
-                         subsections: [subsection_hash(
-                           title: l10n('faa.nav.family_relationships'),
-                           edit_link: application_relationships_path(@application),
-                           rows: fr_hash.compact
-                         )])
+            section_hash(
+              title: l10n('faa.review.your_household'),
+              subsections: [
+                subsection_hash(
+                  title: l10n('faa.nav.family_relationships'),
+                  rows: fr_hash.compact,
+                  edit_link: @can_edit ? application_relationships_path(@application) : nil
+                )
+              ],
+              edit_section_link: nil
+            )
           end
 
           # @method preferences_summary

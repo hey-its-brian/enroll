@@ -578,3 +578,38 @@ describe ::FinancialAssistance::Services::SummaryService do
     end
   end
 end
+
+RSpec.describe FinancialAssistance::Services::SummaryService::Summary::ApplicantSummary::ConfigLoader::ApplicantConfigLoader, dbclean: :after_each do
+  let!(:application) do
+    FactoryBot.create(:financial_assistance_application,
+                      family_id: BSON::ObjectId.new,
+                      aasm_state: 'draft',
+                      assistance_year: TimeKeeper.date_of_record.year,
+                      effective_date: Date.today)
+  end
+
+  let!(:applicant) do
+    FactoryBot.create(:financial_assistance_applicant,
+                      application: application,
+                      dob: Date.today - 40.years,
+                      is_primary_applicant: true,
+                      family_member_id: BSON::ObjectId.new)
+  end
+  let(:config_loader) { described_class.new(applicant, application) }
+
+  describe "#determine_config_path" do
+    context "when qhp_application_feature is enabled" do
+      it "returns the qhp enabled config path" do
+        allow(config_loader).to receive(:qhp_application_feature_enabled?).and_return(true)
+        expect(config_loader.send(:determine_config_path)).to include("qhp_enabled_raw_applicant.yml.erb")
+      end
+    end
+
+    context "when qhp_application_feature is disabled" do
+      it "returns the standard config path" do
+        allow(config_loader).to receive(:qhp_application_feature_enabled?).and_return(false)
+        expect(config_loader.send(:determine_config_path)).to include("raw_applicant.yml.erb")
+      end
+    end
+  end
+end

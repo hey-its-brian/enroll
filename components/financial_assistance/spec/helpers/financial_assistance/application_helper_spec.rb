@@ -504,6 +504,181 @@ RSpec.describe ::FinancialAssistance::ApplicationHelper, :type => :helper, dbcle
     end
   end
 
+  describe '#calculate_step_number' do
+    let!(:single_applicant_app) { FactoryBot.create(:financial_assistance_application, family_id: BSON::ObjectId.new) }
+    let!(:ed) { FactoryBot.create(:financial_assistance_eligibility_determination, application: single_applicant_app) }
+    let!(:single_applicant) do
+      FactoryBot.create(:financial_assistance_applicant,
+                        application: single_applicant_app,
+                        eligibility_determination_id: ed.id,
+                        is_ia_eligible: true,
+                        is_claimed_as_tax_dependent: false,
+                        is_required_to_file_taxes: true,
+                        first_name: 'Test',
+                        last_name: 'Test10')
+    end
+
+    context 'when QHP feature is enabled' do
+      before do
+        allow(helper).to receive(:qhp_application_feature_enabled?).and_return(true)
+      end
+
+      context 'with a single applicant' do
+        it 'returns step 6 for eligibility results page' do
+          expect(helper.calculate_step_number(single_applicant_app, 'eligibility_results_page')).to eq 6
+        end
+
+        it 'returns step 5 for submit page' do
+          expect(helper.calculate_step_number(single_applicant_app, 'submit_page')).to eq 5
+        end
+
+        it 'returns step 4 for review page' do
+          expect(helper.calculate_step_number(single_applicant_app, 'review_page')).to eq 4
+        end
+
+        it 'returns step 3 for preferences page' do
+          expect(helper.calculate_step_number(single_applicant_app, 'preferences_page')).to eq 3
+        end
+
+        it 'returns step 2 for income page' do
+          expect(helper.calculate_step_number(single_applicant_app, 'income_page')).to eq 2
+        end
+      end
+
+      context 'with multiple applicants' do
+        it 'returns step 7 for eligibility results page' do
+          expect(helper.calculate_step_number(application, 'eligibility_results_page')).to eq 7
+        end
+
+        it 'returns step 6 for submit page' do
+          expect(helper.calculate_step_number(application, 'submit_page')).to eq 6
+        end
+
+        it 'returns step 5 for review page' do
+          expect(helper.calculate_step_number(application, 'review_page')).to eq 5
+        end
+
+        it 'returns step 4 for preferences page' do
+          expect(helper.calculate_step_number(application, 'preferences_page')).to eq 4
+        end
+
+        it 'returns step 3 for income page' do
+          expect(helper.calculate_step_number(application, 'income_page')).to eq 3
+        end
+      end
+    end
+
+    context 'when QHP feature is disabled' do
+      before do
+        allow(helper).to receive(:qhp_application_feature_enabled?).and_return(false)
+      end
+
+      context 'with a single applicant' do
+        it 'returns step 2 for eligibility results page' do
+          expect(helper.calculate_step_number(single_applicant_app, 'eligibility_results_page')).to eq 2
+        end
+
+        it 'returns step 2 for submit page' do
+          expect(helper.calculate_step_number(single_applicant_app, 'submit_page')).to eq 2
+        end
+
+        it 'returns step 2 for review page' do
+          expect(helper.calculate_step_number(single_applicant_app, 'review_page')).to eq 2
+        end
+
+        it 'returns step 2 for preferences page' do
+          expect(helper.calculate_step_number(single_applicant_app, 'preferences_page')).to eq 2
+        end
+
+        it 'returns step 1 for income page' do
+          expect(helper.calculate_step_number(single_applicant_app, 'income_page')).to eq 1
+        end
+      end
+
+      context 'with multiple applicants' do
+        it 'returns step 3 for eligibility results page' do
+          expect(helper.calculate_step_number(application, 'eligibility_results_page')).to eq 3
+        end
+
+        it 'returns step 3 for submit page' do
+          expect(helper.calculate_step_number(application, 'submit_page')).to eq 3
+        end
+
+        it 'returns step 3 for review page' do
+          expect(helper.calculate_step_number(application, 'review_page')).to eq 3
+        end
+
+        it 'returns step 3 for preferences page' do
+          expect(helper.calculate_step_number(application, 'preferences_page')).to eq 3
+        end
+
+        it 'returns step 1 for income page' do
+          expect(helper.calculate_step_number(application, 'income_page')).to eq 1
+        end
+      end
+    end
+
+    context 'with an invalid page title' do
+      it 'returns nil' do
+        allow(helper).to receive(:qhp_application_feature_enabled?).and_return(true)
+        expect(helper.calculate_step_number(application, 'invalid_page')).to be_nil
+      end
+    end
+  end
+
+  describe "#personal_info_rows" do
+    context "when qhp_application_feature is enabled" do
+      before do
+        allow(helper).to receive(:qhp_application_feature_enabled?).and_return(true)
+      end
+
+      it "returns the full set of attributes" do
+        expected_attributes = [
+          :dob, :gender, :ssn_provided, :relationship, :status, :coverage, :us_citizen,
+          :naturalized_citizen, :eligible, :american_indian_or_alaska_native_tribe,
+          :is_incarcerated, :age_off_excluded
+        ].freeze
+
+        expect(helper.personal_info_rows('AnyClass')).to eq(expected_attributes)
+      end
+
+      it "returns a frozen array" do
+        expect(helper.personal_info_rows('AnyClass')).to be_frozen
+      end
+    end
+
+    context "when qhp_application_feature is disabled" do
+      before do
+        allow(helper).to receive(:qhp_application_feature_enabled?).and_return(false)
+      end
+
+      it "returns consumer-specific attributes for ConsumerApplicantSummary" do
+        expected_attributes = [
+          :age, :gender, :relationship, :status, :is_incarcerated, :coverage
+        ].freeze
+
+        expect(helper.personal_info_rows('ConsumerApplicantSummary')).to eq(expected_attributes)
+      end
+
+      it "returns admin-specific attributes for AdminApplicantSummary" do
+        expected_attributes = [
+          :dob, :gender, :relationship, :coverage
+        ].freeze
+
+        expect(helper.personal_info_rows('AdminApplicantSummary')).to eq(expected_attributes)
+      end
+
+      it "returns frozen arrays" do
+        expect(helper.personal_info_rows('ConsumerApplicantSummary')).to be_frozen
+        expect(helper.personal_info_rows('AdminApplicantSummary')).to be_frozen
+      end
+
+      it "returns nil for unhandled class names" do
+        expect(helper.personal_info_rows('UnhandledClassName')).to be_nil
+      end
+    end
+  end
+
   describe '#do_not_allow_copy?' do
     let(:copyable_application_ids) { [1, 2, 3, 4] }
 

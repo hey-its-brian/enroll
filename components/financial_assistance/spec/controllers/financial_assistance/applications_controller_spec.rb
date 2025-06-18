@@ -448,6 +448,58 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       controller.instance_variable_set(:@model, application.reload)
     end
 
+    context "with applicants_attributes containing contact_method" do
+      let(:params_with_contact_method) do
+        {
+          id: application.id,
+          application: {
+            applicants_attributes: {
+              "0" => {
+                id: applicant.id,
+                contact_method: ["Mail", "Text"]
+              }
+            }
+          }
+        }
+      end
+
+      it "transforms contact_method properly when saving" do
+        expect(controller).to receive(:transform_contact_methods!)
+        post :save_preferences, params: params_with_contact_method
+        expect(response).to redirect_to(submit_your_application_application_path(application))
+      end
+
+      it "transforms 'mail' and 'text' to 'paper and text message'" do
+        post :save_preferences, params: params_with_contact_method
+        expect(applicant.reload.contact_method).to eq("Paper and Text Message communications")
+      end
+
+      it "transforms only 'mail' to 'only paper'" do
+        params = params_with_contact_method
+        params[:application][:applicants_attributes]["0"][:contact_method] = ["Mail"]
+        post :save_preferences, params: params
+        expect(applicant.reload.contact_method).to eq("Only Paper communication")
+      end
+
+      it "transforms only 'Email' to 'electronic communication'" do
+        params = params_with_contact_method
+        params[:application][:applicants_attributes]["0"][:contact_method] = ["Email"]
+        post :save_preferences, params: params
+        expect(applicant.reload.contact_method).to eq("Only Electronic communications")
+      end
+    end
+
+    context "when qhp_application feature is enabled" do
+      before do
+        allow(controller).to receive(:qhp_application_feature_enabled?).and_return(true)
+      end
+
+      it "redirects to review_and_submit path when successful" do
+        post :save_preferences, params: { id: application.id, application: application_valid_params }
+        expect(response).to redirect_to(review_and_submit_application_path(application))
+      end
+    end
+
     it "shows errors when @application does not save" do
       allow(application).to receive_message_chain('errors.full_messages').and_return(
         ["Hbx id can't be blank", "fake errors can't be blank"]

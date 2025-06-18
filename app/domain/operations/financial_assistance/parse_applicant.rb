@@ -51,6 +51,8 @@ module Operations
         attrs.merge!(person_hbx_id: person.hbx_id,
                      ssn: person.ssn,
                      dob: person.dob.present? ? person.dob.strftime("%d/%m/%Y") : nil,
+                     contact_method: consumer_role.contact_method,
+                     language_preference: consumer_role.language_preference,
                      is_applying_coverage: consumer_role.is_applying_coverage,
                      five_year_bar_applies: consumer_role.five_year_bar_applies,
                      five_year_bar_met: consumer_role.five_year_bar_met,

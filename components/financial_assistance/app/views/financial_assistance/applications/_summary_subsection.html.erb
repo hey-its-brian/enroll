@@ -14,10 +14,17 @@
         <% edit_link = subsection[:edit_link] %>
         <% if edit_link.present? %>
           <div class="mb-2">
-            <%= h(link_to(subsection[:edit_link], class: "btn-secondary") do %>
-              <i class="fas fa-pencil-alt ml-0 mr-2"></i>
-              <span><%= l10n("edit") %></span>
-            <% end) %>
+            <% if qhp_application_feature_enabled? %>
+              <%= h(link_to(subsection[:edit_link], class: "btn outline secondary") do %>
+                <i class="fas fa-pencil-alt ml-0 mr-2"></i>
+                <span><%= l10n("qhp_application.review.edit_section") %></span>
+              <% end) %>
+            <% else %>
+              <%= h(link_to(subsection[:edit_link], class: "btn-secondary") do %>
+                <i class="fas fa-pencil-alt ml-0 mr-2"></i>
+                <span><%= l10n("edit") %></span>
+              <% end) %>
+            <% end %>
           </div>
         <% end %>
       </div>
@@ -31,7 +38,8 @@
           <%= render partial: 'financial_assistance/applications/summary_subsection', locals: {is_nested: true}, collection: row, as: :subsection %>
         <% else %> <%# single row %>
           <div class="d-flex justify-content-between align-items-center">
-            <dt class="col-8 px-0"><%= row[:key] %></dt>
+            <% admin_class = row[:key] == l10n('ageoff_exclusion') ? 'admin-designation' : "" %>
+            <dt class="col-8 px-0 <%= admin_class %>"><%= row[:key] %></dt>
             <dd class="text-right"><%= row[:value] %></dd>
           </div>
           <% row[:coverages]&.each do |coverage_set| %> <%# coverage subtables for Health Coverage section eligible or enrolled rows %>

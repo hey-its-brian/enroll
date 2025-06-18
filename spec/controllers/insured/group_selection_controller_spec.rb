@@ -608,7 +608,6 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
           )
           fm_hash = assigns(:fm_hash)
           expect(fm_hash.values.flatten.any?{|err| err.to_s.match(/Ineligible for Plan shopping/)}).to be_truthy
-          expect(fm_hash.values.flatten.any?{|err| err.to_s.match(/eligibility failed on lawful_presence_status/)}).to be_truthy
           expect(response).to have_http_status("200")
         end
       end

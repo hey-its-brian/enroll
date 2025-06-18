@@ -57,6 +57,16 @@ module FinancialAssistance
     INCOME_VALIDATION_STATES = %w[na valid outstanding pending].freeze
     MEC_VALIDATION_STATES = %w[na valid outstanding pending].freeze
     CSR_KINDS = ['csr_100', 'csr_94', 'csr_87', 'csr_73', 'csr_0', 'csr_limited'].freeze
+    # contact preference mapping
+    CONTACT_METHOD_MAPPING = {
+      ["Email", "Mail", "Text"] => "Paper, Electronic and Text Message communications",
+      ["Email", "Text"] => "Electronic and Text Message communications",
+      ["Email", "Mail"] => "Paper and Electronic communications",
+      ["Mail", "Text"] => "Paper and Text Message communications",
+      ["Text"] => "Only Text Message communication",
+      ["Mail"] => "Only Paper communication",
+      ["Email"] => "Only Electronic communications"
+    }.freeze
 
     DRIVER_QUESTION_ATTRIBUTES = [
       :has_job_income,
@@ -1684,6 +1694,29 @@ module FinancialAssistance
         title: 'Individual Market Eligibility',
         key: :individual_market_eligibility
       )
+    end
+
+    def home_phone
+      phones.detect { |phone| phone.kind == "home" }
+    end
+
+    def mobile_phone
+      phones.detect { |phone| phone.kind == "mobile" }
+    end
+
+    def home_email
+      emails.detect { |adr| adr.kind == "home" }
+    end
+
+    def work_email
+      emails.detect { |adr| adr.kind == "work" }
+    end
+
+    # Returns the first work address of the applicant.
+    #
+    # @return [Address, nil] the first work address if one exists, otherwise nil
+    def work_address
+      addresses.work.first
     end
 
     private

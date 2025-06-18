@@ -1,12 +1,30 @@
 <% if @bs4 %>
   <%# Left Nav %>
+  <% qhp_enabled = qhp_application_feature_enabled? %>
   <% step_number = calculate_step_number(@application, "review_page") %>
   <%= render partial: 'financial_assistance/shared/faa_progress_options', locals: {step: step_number } %>
 
   <%# Main Content (right) %>
   <div>
     <h1><%= l10n("faa.review.review_and_submit") %></h1>
-    <p><%= l10n("faa.review.almost_done", continue_text: "<b>#{l10n("continue_next")}</b>") %></p>
+    <% if qhp_enabled %>
+      <p><%= l10n("qhp_application.review_description") %><b><%= l10n("qhp_application.continue_to_next_step") %></b>.</p>
+    <% else %>
+      <p><%= l10n("faa.review.almost_done", continue_text: "<b>#{l10n("continue_next")}</b>") %></p>
+    <% end %>
+
+    <% if current_user.has_hbx_staff_role? && qhp_enabled %>
+      <aside class="mb-3" id="admin-designation-descriptor">
+        <span class="admin-designation"></span>
+        <%= l10n('admin.admin_designation_descriptor') %>
+      </aside>
+      <dl class="parent">
+        <dt><%= l10n("qhp_application.origin") %>:</dt>
+        <dd class="admin-designation"><%= @application.origin&.to_s&.titleize %></dd>
+        <dt><%= l10n("qhp_application.generation_reason") %>:</dt>
+        <dd class="admin-designation"><%= @application.generation_reason&.to_s&.titleize %></dd>
+      </dl>
+    <% end %>
 
     <%# MEC Alert %>
     <% if FinancialAssistanceRegistry[:coverage_check_banners].enabled? %>
@@ -23,13 +41,19 @@
       <% end %>
     <% end %>
 
+    <% next_link = if qhp_enabled
+                     submit_your_application_application_path(@application)
+                   else
+                     go_to_step_application_path(@application, 1)
+                   end
+    %>
     <div class="mt-3 mb-4">
-      <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: go_to_step_application_path(@application, 1), disable_link: @application.incomplete_applicants? } %>
+      <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_link, disable_link: @application.incomplete_applicants? } %>
     </div>
 
     <%= render partial: "summary" %>
 
-    <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: go_to_step_application_path(@application, 1), disable_link: @application.incomplete_applicants? } %>
+    <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_link, disable_link: @application.incomplete_applicants? } %>
   </div>
 <% else %>
   <div class="col-lg-10 col-md-10 col-sm-10 col-xs-12 row">

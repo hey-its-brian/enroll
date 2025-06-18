@@ -21,6 +21,8 @@ RSpec.describe FinancialAssistance::Validators::ApplicantContract,  dbclean: :af
       no_ssn: nil, addresses: [], phones: [], emails: [],same_with_primary:  true,
       five_year_bar_applies: true, five_year_bar_met: true, qualified_non_citizen: true,
       indian_tribe_member: false, is_incarcerated: false, immigration_doc_statuses: [],
+      contact_method: "paper and electronic communications",
+      language_preference: "English",
       age_off_excluded: true
     }
   end

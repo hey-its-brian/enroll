@@ -116,10 +116,16 @@ module FinancialAssistance
       authorize @application, :save_preferences?
       if params[:application].present?
         @application.clean_conditional_params(params[:application])
-        @application.assign_attributes(permit_params(params[:application]))
-
+        attrs = application_params.to_h
+        transform_contact_methods!(attrs[:applicants_attributes])
+        @application.assign_attributes(attrs)
         if @application.save
-          redirect_to submit_your_application_application_path(@application)
+          redirection_link = if qhp_application_feature_enabled?
+                               review_and_submit_application_path(@application)
+                             else
+                               submit_your_application_application_path(@application)
+                             end
+          redirect_to redirection_link
         else
           @application.save!(validate: false)
           flash[:error] = build_error_messages(@application).join(", ")
@@ -646,6 +652,38 @@ module FinancialAssistance
                         { error: "Submission Error: #{publish_result.failure}" }
                       end
       { path: application_publish_error_application_path(@application), flash: flash_message }
+    end
+
+    # Strong parameters: permit any nested attributes you need
+    def application_params
+      params.require(:application).permit(
+        :is_renewal_authorized,
+        :years_to_renew,
+        applicants_attributes: [
+          :id,
+          :language_preference,
+          # contact_method comes in as an Array; we'll map it below
+          { contact_method: [] },
+          { phones_attributes:   {} },
+          { emails_attributes:   {} }
+        ]
+      )
+    end
+
+    # Walks applicants_attributes
+    # and replaces each contact_method Array with the mapped value.
+    def transform_contact_methods!(applicants_attrs)
+      return unless applicants_attrs.is_a?(Hash)
+
+      applicants_attrs.each_value do |applicant_h|
+        cm = applicant_h["contact_method"] || applicant_h[:contact_method]
+        next unless cm.is_a?(Array) && cm.any?
+
+        # lookup in your mapping constant
+        mapped = IndividualMarket::Applicant::CONTACT_METHOD_MAPPING[cm]
+        # overwrite the array
+        applicant_h["contact_method"] = mapped
+      end
     end
   end
 end

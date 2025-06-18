@@ -20,6 +20,8 @@ module FinancialAssistance
         optional(:family_member_id).maybe(Types::Bson)
 
         optional(:age_off_excluded).maybe(:bool)
+        optional(:contact_method).maybe(:string)
+        optional(:language_preference).maybe(:string)
 
         optional(:is_incarcerated).maybe(:bool)
         optional(:is_disabled).filled(:bool)
