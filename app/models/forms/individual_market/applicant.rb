@@ -107,13 +107,18 @@ module Forms
       # @return [Array<(Boolean, IndividualMarket::Applicant, Hash)>] Success flag and either the applicant or error messages
       def save
         return [false, self.errors.full_messages] unless valid?
-
         applicant_entity = build_applicant_entity
         return handle_failure(applicant_entity) unless applicant_entity.success?
 
         values = applicant_entity.success.to_h
         applicant = find_or_build_applicant(values)
+        return [false, applicant.errors.full_messages] unless applicant.valid?
+
         build_relationship(applicant)
+
+        return [false, application.errors.full_messages] unless applicant.save
+
+        return [false, application.errors.full_messages] unless application.save
         application.reload
 
         [true, applicant]
@@ -165,6 +170,12 @@ module Forms
         @address_forms ||= []
       end
 
+      # Synchronizes the demographics coverage status with the form's status
+      # @return [void]
+      def sync_demographics_coverage
+        @demographics_form.is_applying_coverage = @is_applying_coverage if @demographics_form
+      end
+
       private
 
       # Initializes all nested form objects with provided attributes
@@ -176,7 +187,7 @@ module Forms
       # @return [void]
       def initialize_nested_forms(attributes)
         @person_name_form = PersonNameForm.new(attributes[:person_name_attributes] || {})
-        @demographics_form = DemographicsForm.new(attributes[:demographics_attributes] || {})
+        @demographics_form = DemographicsForm.new(demographics_params(attributes))
         @immigration_information_form = ImmigrationInformationForm.new(attributes[:immigration_information_attributes] || {})
         @address_forms = build_address_forms(attributes[:addresses_attributes])
       end
@@ -190,6 +201,27 @@ module Forms
         addresses_attributes.values.map do |addr_attrs|
           Forms::Locations::AddressForm.new(addr_attrs)
         end
+      end
+
+      # Builds demographics attributes
+      def demographics_params(attributes)
+        return {} unless attributes[:demographics_attributes].present?
+        demographics = attributes[:demographics_attributes]
+        demographics[:existing_ssn] = SymmetricEncryption.decrypt(find_existing_ssn) if find_existing_ssn.present?
+        build_ssn_attributes(demographics)
+      end
+
+      # Builds ssn attributes
+      # @param demographics [Hash] The demographics attributes
+      # @return [Hash] The updated demographics attributes
+      def build_ssn_attributes(demographics)
+        demographics[:ssn] = if demographics[:no_ssn]&.to_i == 1
+                               demographics[:ssn]
+                             else
+                               (demographics[:ssn].present? ? demographics[:ssn] : demographics[:existing_ssn])
+                             end
+        demographics[:encrypted_ssn] = SymmetricEncryption.encrypt(demographics[:ssn]) if demographics[:ssn].present?
+        demographics
       end
 
       # Initializes eligibilities data from attributes
@@ -225,12 +257,6 @@ module Forms
         @application_id = attributes['application_id'] || attributes[:application_id]
         @relationship = attributes[:relationship]
         @applicant_id = attributes['applicant_id'] || attributes[:applicant_id] || @id
-      end
-
-      # Synchronizes the demographics coverage status with the form's status
-      # @return [void]
-      def sync_demographics_coverage
-        @demographics_form.is_applying_coverage = @is_applying_coverage if @demographics_form
       end
 
       # Validates all nested form objects
@@ -307,7 +333,6 @@ module Forms
           primary = application.primary_applicant
           params.merge!(is_homeless: primary.is_homeless?)
         end
-
         params
       end
 
@@ -455,7 +480,6 @@ module Forms
                                           relative_id: primary_id,
                                           kind: @relationship
                                         })
-          application.save!
         end
       end
 
@@ -465,6 +489,13 @@ module Forms
         ::Operations::IndividualMarket::Applicant::Build.new.call(
           params: applicant_params
         )
+      end
+
+      # Builds existing ssn attribute
+      # @return [String] The encrypted ssn or nil if no existing ssn is present
+      def find_existing_ssn
+        return unless applicant&.demographics&.encrypted_ssn.present?
+        applicant&.demographics&.encrypted_ssn
       end
 
       # Handles failure cases from entity building
@@ -497,7 +528,6 @@ module Forms
         handle_address_changes(applicant)
         applicant.update(values.except(:eligibilities))
         handle_address_changes(applicant)
-        applicant.save!
         applicant
       end
 
@@ -508,7 +538,6 @@ module Forms
         applicant = application.applicants.build
         applicant.assign_attributes(values.except(:eligibilities))
         build_eligibilities(applicant, values[:eligibilities])
-        applicant.save!
         applicant
       end
 

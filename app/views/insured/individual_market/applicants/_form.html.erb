@@ -363,10 +363,10 @@
 
                 <fieldset class="mb-4 d-block featured-tribe-container hide" data-target="family-information.FeaturedTribeContainer">
                   <legend class="weight-n" for="tribe_codes"><%= l10n("insured.tribal_name") %> *</legend>
-                  <%= demographics.collection_check_boxes(:tribe_codes, featured_tribes_collection, :value, :name, {}, :class => 'tribe_codes', data: { action: "change->family-information#toggleOtherTribeName" })  do |tribe| %>
+                  <%= demographics.collection_check_boxes(:tribe_codes, featured_tribes_collection, :value, :name, {}, :class => 'tribe_codes')  do |tribe| %>
                     <div>
                       <%= tribe.label(:"data-value" => tribe.value) do %>
-                        <span class="mr-2 weight-n"><%= tribe.check_box %></span>
+                        <span class="mr-2 weight-n"><%= tribe.check_box(data: { action: "family-information#toggleOtherTribeName" }) %></span>
                         <%= tribe.text %>
                       <% end %>
                     </div>

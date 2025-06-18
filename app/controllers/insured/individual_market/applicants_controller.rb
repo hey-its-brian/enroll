@@ -79,13 +79,8 @@ module Insured
 
       def update
         authorize @applicant, :edit?
-        @applicant = ::Forms::IndividualMarket::Applicant.new(base_attributes)
-        @applicant.person_name_form = ::Forms::IndividualMarket::PersonNameForm.new(applicant_params[:person_name_attributes])
-        @applicant.demographics_form = ::Forms::IndividualMarket::DemographicsForm.new(applicant_params[:demographics_attributes])
-        @applicant.immigration_form = ::Forms::IndividualMarket::ImmigrationInformationForm.new(applicant_params[:immigration_information_attributes])
-        @applicant.address_forms = applicant_params[:addresses_attributes]&.values&.map do |addr_attrs|
-          ::Forms::Locations::AddressForm.new(addr_attrs)
-        end || []
+        @applicant = ::Forms::IndividualMarket::Applicant.new(applicant_params.merge(application_id: params[:application_id], id: params[:id]))
+
         success, result = @applicant.save
 
         respond_to do |format|

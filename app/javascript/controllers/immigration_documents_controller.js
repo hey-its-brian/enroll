@@ -176,7 +176,7 @@ export default class extends Controller {
     return sanitizeHtml(dirty, {
       allowedTags: allowedTags,
       allowedAttributes: {
-        'input': [ 'pattern','type', 'name', 'id', 'value', 'placeholder', 'required', 'checked', 'disabled', 'readonly', 'class', 'style', 'data-*' ],
+        'input': [ 'pattern','type', 'name', 'id', 'value', 'placeholder', 'required', 'checked', 'disabled', 'readonly', 'class', 'style', 'data-*', 'pattern', 'min', 'max'],
         'label': [ 'for', 'class' ],
         'select': [ 'name', 'id', 'class', 'style', 'data-*' ],
         'option': [ 'value', 'selected' ],

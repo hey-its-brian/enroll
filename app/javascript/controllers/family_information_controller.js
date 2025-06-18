@@ -35,6 +35,8 @@ export default class extends Controller {
     this.initializeCitizenshipFields()
     this.maskSSN()
     this.initializeRequiredFields()
+    // using existing init_glossary function for now to be consistent
+    init_glossary();
   }
 
   initializeTribalFields() {
@@ -82,22 +84,12 @@ export default class extends Controller {
     const enrollStateAbbr = this.element.querySelector('#enroll_state_abbr').value
     const isFeaturedTribesEnabled = this.element.querySelector('#is_featured_tribes_selection_enabled').value === 'true'
     const isTribalDetailsEnabled = this.element.querySelector('#is_indian_alaskan_tribe_details_enabled').value === 'true'
-
     if (!isTribalDetailsEnabled) return
 
     const selectedState = event.target.value
-    const otherTribeSelected = this.element.querySelector('input#person_tribe_codes_ot')?.checked
-
     if (isFeaturedTribesEnabled && selectedState === enrollStateAbbr) {
       this.FeaturedTribeContainerTarget.classList.remove('hide')
-      if (otherTribeSelected) {
-        this.TribalNameContainerTarget.classList.remove('hide')
-        this.setTribalNameRequired(true)
-      } else {
-        this.TribalNameTarget.value = ''
-        this.TribalNameContainerTarget.classList.add('hide')
-        this.setTribalNameRequired(false)
-      }
+      this.toggleOtherTribeName()
     } else {
       const tribeCheckboxes = this.element.querySelectorAll('.tribe_codes:checked')
       tribeCheckboxes.forEach(checkbox => checkbox.checked = false)
@@ -163,11 +155,12 @@ export default class extends Controller {
     }
   }
 
-  toggleOtherTribeName(event) {
-    if (event.target.checked && event.target.id === 'person_tribe_codes_ot') {
+  toggleOtherTribeName() {
+    let input = document.querySelector('input#applicant_demographics_attributes_tribe_codes_ot')
+    if (input.checked) {
       this.TribalNameContainerTarget.classList.remove('hide')
       this.setTribalNameRequired(true)
-    } else if (event.target.id === 'person_tribe_codes_ot') {
+    } else {
       this.TribalNameContainerTarget.classList.add('hide')
       this.setTribalNameRequired(false)
       this.TribalNameTarget.value = ''
@@ -482,9 +475,9 @@ export default class extends Controller {
     return sanitizeHtml(dirty, {
       allowedTags: allowedTags,
       allowedAttributes: {
-        'input': [ 'type', 'name', 'id', 'value', 'placeholder', 'required', 'checked', 'disabled', 'readonly', 'class', 'style', 'data-*' ],
+        'input': [ 'type', 'name', 'id', 'value', 'placeholder', 'required', 'checked', 'disabled', 'readonly', 'class', 'style', 'data-*', 'min', 'max' ],
         'label': [ 'for' ],
-        'select': [ 'name', 'id', 'class', 'style' ],
+        'select': [ 'name', 'id', 'class', 'style', 'data-*' ],
         'option': [ 'value', 'selected' ],
         'div': [ 'data-*', 'class', 'id' ],
         'i': [ 'class' ],

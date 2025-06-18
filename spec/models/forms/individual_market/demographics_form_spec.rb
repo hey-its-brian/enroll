@@ -122,13 +122,6 @@ RSpec.describe ::Forms::IndividualMarket::DemographicsForm, type: :model, dbclea
         params[:is_applying_coverage] = false
       end
 
-      it "should validate ssn presence" do
-        params[:ssn] = nil
-        params[:no_ssn] = '0'
-        form = described_class.new(params)
-        expect(form.valid?).to be_truthy
-      end
-
       it "should validate citizen status" do
         params[:us_citizen] = nil
         form = described_class.new(params)
@@ -152,6 +145,61 @@ RSpec.describe ::Forms::IndividualMarket::DemographicsForm, type: :model, dbclea
         params[:indian_tribe_member] = nil
         form = described_class.new(params)
         expect(form.valid?).to be_truthy
+      end
+
+      context 'validate no_ssn_or_ssn' do
+        it 'should be valid when no_ssn is true and encrypted_ssn is nil' do
+          params[:no_ssn] = 1
+          params[:encrypted_ssn] = nil
+          params[:ssn] = nil
+          params[:existing_ssn] = nil
+          @applicant_form = described_class.new(params)
+          expect(@applicant_form.valid?).to be_truthy
+        end
+
+        it 'should be valid when no_ssn is false and encrypted_ssn is not nil' do
+          params[:no_ssn] = 0
+          params[:encrypted_ssn] = SymmetricEncryption.encrypt("123456789")
+          params[:ssn] = nil
+          params[:existing_ssn] = nil
+          @applicant_form = described_class.new(params)
+          expect(@applicant_form.valid?).to be_truthy
+        end
+
+        it 'should should have a new encrypted_ssn when no_ssn is false and encrypted_ssn is not nil' do
+          params[:no_ssn] = 0
+          params[:encrypted_ssn] = SymmetricEncryption.encrypt("123456789")
+          params[:ssn] = "123456789"
+          params[:existing_ssn] = SymmetricEncryption.encrypt("423356785")
+          @applicant_form = described_class.new(params)
+          expect(@applicant_form.to_h[:encrypted_ssn]).to eq(SymmetricEncryption.encrypt("123456789"))
+        end
+
+        it 'should be valid when no_ssn is false and ssn is not nil' do
+          params[:no_ssn] = 0
+          params[:encrypted_ssn] = nil
+          params[:ssn] = "123456789"
+          @applicant_form = described_class.new(params)
+          expect(@applicant_form.valid?).to be_truthy
+        end
+
+        it 'should be valid when no_ssn is false and existing ssn' do
+          params[:no_ssn] = 0
+          params[:encrypted_ssn] = nil
+          params[:ssn] = nil
+          params[:existing_ssn] = "423456789"
+          @applicant_form = described_class.new(params)
+          expect(@applicant_form.valid?).to be_truthy
+        end
+
+        it 'should be invalid when no_ssn is false and no ssn of any type' do
+          params[:no_ssn] = 0
+          params[:encrypted_ssn] = nil
+          params[:ssn] = nil
+          params[:existing_ssn] = nil
+          @applicant_form = described_class.new(params)
+          expect(@applicant_form.valid?).to be_falsey
+        end
       end
     end
   end

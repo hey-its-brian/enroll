@@ -123,6 +123,56 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
       expect(@applicant_form.errors.full_messages).to include("given_name can't be blank")
     end
 
+    it 'should return false when the applicant is invalid' do
+      params[:person_name_attributes][:given_name] = nil
+      @applicant_form = described_class.new(params)
+      expect(@applicant_form.save.first).to be_falsey
+    end
+  end
+
+  context 'validate no_ssn_or_ssn' do
+    let(:input_applicant) {spouse_applicant}
+
+    it 'should be valid when no_ssn is true and encrypted_ssn is nil' do
+      params[:demographics_attributes][:no_ssn] = 1
+      params[:demographics_attributes][:encrypted_ssn] = nil
+      params[:demographics_attributes][:ssn] = nil
+      @applicant_form = described_class.new(params)
+      expect(@applicant_form.valid?).to be_truthy
+    end
+
+    it 'should be valid when no_ssn is false and encrypted_ssn is not nil' do
+      params[:demographics_attributes][:no_ssn] = 0
+      params[:demographics_attributes][:encrypted_ssn] = SymmetricEncryption.encrypt("123456789")
+      params[:demographics_attributes][:ssn] = nil
+      @applicant_form = described_class.new(params)
+      expect(@applicant_form.valid?).to be_truthy
+    end
+
+    it 'should be valid when no_ssn is false and ssn is not nil' do
+      params[:demographics_attributes][:no_ssn] = 0
+      params[:demographics_attributes][:encrypted_ssn] = nil
+      params[:demographics_attributes][:ssn] = "123456789"
+      @applicant_form = described_class.new(params)
+      expect(@applicant_form.valid?).to be_truthy
+    end
+
+    it 'should be valid when no_ssn is false and existing ssn' do
+      params[:demographics_attributes][:no_ssn] = 0
+      params[:demographics_attributes][:encrypted_ssn] = nil
+      params[:demographics_attributes][:ssn] = nil
+      @applicant_form = described_class.new(params)
+      expect(@applicant_form.valid?).to be_falsey
+    end
+
+    it 'should be invalid when no_ssn is false and no ssn of any type' do
+      params[:demographics_attributes][:no_ssn] = 0
+      params[:demographics_attributes][:encrypted_ssn] = nil
+      params[:demographics_attributes][:ssn] = nil
+      input_applicant.demographics.update(encrypted_ssn: nil, ssn: nil)
+      @applicant_form = described_class.new(params)
+      expect(@applicant_form.valid?).to be_falsey
+    end
   end
 
   context 'it should verify_unique_dependent' do
@@ -147,6 +197,44 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
       params[:person_name_attributes][:given_name] = "#{spouse_applicant.person_name.given_name}X"
       @applicant_form = described_class.new(params)
       expect(@applicant_form.valid?).to be_truthy
+    end
+  end
+
+  context 'an existing applicant with ssn' do
+    let(:input_applicant) {spouse_applicant}
+
+    it 'should still have the same encrypted ssn even if not in the params' do
+      [:ssn, :encrypted_ssn].each do |key|
+        params[:demographics_attributes].delete(key)
+      end
+      encrypted_ssn = input_applicant.demographics.encrypted_ssn
+      @applicant_form = described_class.new(params)
+      @applicant_form.save
+      expect(@applicant_form.demographics.encrypted_ssn).to eq(encrypted_ssn)
+      application.reload
+      expect(application.applicants.last.demographics.encrypted_ssn).to eq(encrypted_ssn)
+    end
+
+    it 'should not have the same ssn if ssn is in the params' do
+      params[:demographics_attributes][:ssn] = "423456789"
+      params[:demographics_attributes][:encrypted_ssn] = nil
+      @applicant_form = described_class.new(params)
+      @applicant_form.save
+      expect(@applicant_form.demographics.ssn).to eq("423456789")
+      application.reload
+      expect(application.applicants.last.demographics.encrypted_ssn).to eq(SymmetricEncryption.encrypt("423456789"))
+      expect(application.applicants.last.demographics.ssn).to eq("423456789")
+    end
+
+    it 'should not have the same ssn if encrypted_ssn is in the params' do
+      params[:demographics_attributes][:ssn] = nil
+      params[:demographics_attributes][:encrypted_ssn] = SymmetricEncryption.encrypt("423456789")
+      @applicant_form = described_class.new(params)
+      @applicant_form.save
+      expect(@applicant_form.demographics.ssn).to eq(nil)
+      application.reload
+      expect(application.applicants.last.demographics.encrypted_ssn).to eq(SymmetricEncryption.encrypt("423456789"))
+      expect(application.applicants.last.demographics.ssn).to eq("423456789")
     end
   end
 

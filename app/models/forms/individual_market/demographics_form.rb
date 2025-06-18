@@ -59,6 +59,7 @@ module Forms
                     :encrypted_ssn,
                     :no_ssn,
                     :is_applying_coverage,
+                    :existing_ssn,
                     :id
 
       validates :gender, :dob, presence: true
@@ -68,6 +69,7 @@ module Forms
                 numericality: true
       validate :ssn_validation
       validate :consumer_fields_validation
+      validate :no_ssn_or_encrypted_ssn
 
       # Initializes a new DemographicsForm
       # @param attributes [Hash] The attributes to initialize the form with
@@ -78,6 +80,7 @@ module Forms
       def initialize(attributes = {})
         super
         self.ssn = ssn&.to_s&.gsub(/\D/, '')
+        build_ssn_attributes
       end
 
       # Converts the form object to a hash of attributes
@@ -102,6 +105,15 @@ module Forms
           tribe_codes: Array(tribe_codes).reject(&:blank?),
           citizen_status: citizen_status
         }.compact
+      end
+
+      def build_ssn_attributes
+        self.ssn = if self.no_ssn&.to_i == 1
+                     ssn
+                   else
+                     (ssn.present? ? ssn : existing_ssn)
+                   end
+        self.encrypted_ssn = SymmetricEncryption.encrypt(ssn) if ssn.present?
       end
 
       # Sets the US citizen status
@@ -266,6 +278,12 @@ module Forms
         else
           errors.add(:tribal_name, "is required when native american / alaska native is selected") unless tribal_name.present?
         end
+      end
+
+      def no_ssn_or_encrypted_ssn
+        no_ssn = self.no_ssn.present? && self.no_ssn&.to_i == 1
+        errors.add(:base, 'One of no_ssn or ssn must be present') if !no_ssn && !(encrypted_ssn.present? || ssn.present?)
+        errors.add(:base, 'Only one of no_ssn or ssn must be present') if no_ssn && (encrypted_ssn.present? || ssn.present?)
       end
 
     end
