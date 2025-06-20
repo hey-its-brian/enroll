@@ -178,6 +178,29 @@ RSpec.describe Operations::Families::UpdateMember, type: :model, dbclean: :after
           expect(family.active_household.coverage_households[1].coverage_household_members.count).to eq(1)
         end
       end
+
+      context 'when only citizen status is changed without changing the immigration documents attributes' do
+        let(:original_citizen_status) { 'alien_lawfully_present' }
+        let(:new_citizen_status) { 'naturalized_citizen' }
+        before { dependent.update!(citizen_status: original_citizen_status) }
+        let(:params) do
+          params = member_hash
+          params[:consumer_role] = {
+            citizen_status: new_citizen_status,
+            immigration_documents_attributes: member_hash[:consumer_role][:immigration_documents_attributes]
+          }
+          params
+        end
+
+        it 'persists the citizen status and fires the lawful presence determination updated event' do
+          expect(Events::Individual::ConsumerRoles::LawfulPresenceDeterminations::Updated)
+            .to receive(:new)
+            .with({ attributes: { consumer_role_id: dependent.consumer_role.id, "citizen_status" => [original_citizen_status, new_citizen_status] } })
+            .and_call_original
+          subject.call({member_params: params, family_id: family.id, person_hbx_id: dependent.hbx_id})
+          expect(dependent.reload.citizen_status).to eq new_citizen_status
+        end
+      end
     end
 
     context 'failure' do

@@ -27,8 +27,8 @@ module Operations
         family = yield find_family(family_id)
         yield build_relationship(person, family, member_params[:relationship])
         family_member = yield build_family_member(person, family)
-        person_changes, consumer_role_changes = yield persist(person, family_member, active_vlp_document)
-        event = yield build_event(person_changes, consumer_role_changes, person)
+        person_changes, consumer_role_changes, lawful_presence_determination_changes = yield persist(person, family_member, active_vlp_document)
+        event = yield build_event(person_changes, consumer_role_changes, lawful_presence_determination_changes, person)
 
         fire_update_event(event) if event.present?
 
@@ -124,18 +124,20 @@ module Operations
         db_active_vlp_document_id = consumer_role.active_vlp_document_id
         consumer_role.active_vlp_document_id = active_vlp_document&.id if db_active_vlp_document_id != active_vlp_document&.id
 
+        lawful_presence_determination_changes = consumer_role.lawful_presence_determination.changes
         consumer_role_changes, person_changes = if person_changed?(person) && consumer_role_changed?(consumer_role)
                                                   [save_consumer_role(consumer_role), save_person(person)]
                                                 elsif person_changed?(person)
-                                                  [{}, save_person(person)]
+                                                  [{}, {}, save_person(person)]
                                                 elsif consumer_role_changed?(consumer_role)
                                                   [save_consumer_role(consumer_role), {}]
                                                 end
 
+
         family_member.save!
         family_member.family.active_household.coverage_households.each { |ch| ch.save! if ch.changed? }
         log_if_invalid(family_member)
-        Success([person_changes, consumer_role_changes])
+        Success([person_changes, consumer_role_changes, lawful_presence_determination_changes])
       end
 
       def log_if_invalid(family_member)
@@ -177,17 +179,29 @@ module Operations
         event('events.person_updated', attributes: { gid: person.to_global_id.uri, payload: person_changes }) if (valid_attributes & person_changes.symbolize_keys.keys).present?
       end
 
-      def build_event(person_changes, consumer_role_changes, person)
-        return Success(nil) if person_changes.blank? && consumer_role_changes.blank?
+      def build_event(person_changes, consumer_role_changes, lawful_presence_determination_changes, person)
+        person_event = build_person_event(person, person_changes)
+        return person_event if person_event.present?
 
-        event = build_person_event(person, person_changes)
-        return event if event.present?
+        return build_consumer_role_event(person.consumer_role) if consumer_role_changes.present?
 
-        build_consumer_role_event(person.consumer_role)
+        if lawful_presence_determination_changes.present?
+          return build_lawful_presence_determination_event(
+            person.consumer_role.lawful_presence_determination,
+            lawful_presence_determination_changes
+          )
+        end
+
+        Success(nil)
       end
 
       def build_consumer_role_event(consumer_role)
         event('events.individual.consumer_roles.updated', attributes: { gid: consumer_role.to_global_id.uri, previous: {is_applying_coverage: consumer_role.is_applying_coverage} })
+      end
+
+      def build_lawful_presence_determination_event(lawful_presence_determination, lawful_presence_determination_changes)
+        attrs = { consumer_role_id: lawful_presence_determination.ivl_role.id }.merge!(lawful_presence_determination_changes)
+        event('events.individual.consumer_roles.lawful_presence_determinations.updated', attributes: attrs)
       end
 
       # Checks if any applicant addresses are destroyed for the person.
