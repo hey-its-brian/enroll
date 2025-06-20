@@ -51,3 +51,12 @@ Feature: Insured Plan Shopping on Individual market
     Then Individual should see validity message for mobile phone input
     And Individual unchecks contact text check box
     Then Individual should not see validity message for mobile phone input
+
+  Scenario: Consumer clicks the personal match page continue button with number starting with zero
+    Given EnrollRegistry contact_method_via_dropdown feature is disabled
+    Given the Continue button is visible on Account Setup page
+    And Individual clicks on the Continue button of the Family Information page
+    And Individual sees form to enter personal information with phone number starting with zero
+    And Individual selects contact text check box
+    Then Individual clicks on continue
+    Then Individual should see validity warning message for mobilephone input

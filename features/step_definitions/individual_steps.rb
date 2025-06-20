@@ -1679,3 +1679,38 @@ Then(/Individual should not see validity message for mobile phone input/) do
   custom_message = page.evaluate_script("document.querySelector(\"input[name='person[phones_attributes][1][full_phone_number]']\").validationMessage")
   expect(custom_message).to eq('')
 end
+
+Then(/^.+ sees form to enter personal information with phone number starting with zero$/) do
+  find('#us_citizen_true').click
+  find('#naturalized_citizen_false').click
+  find('#indian_tribe_member_no').click
+  find("#is_incarcerated_false").click
+  fill_in IvlPersonalInformation.address_line_one, :with => "4900 USAA BLVD NE"
+  fill_in IvlPersonalInformation.address_line_two, :with => "212"
+
+  if EnrollRegistry[:bs4_consumer_flow].enabled?
+    fill_in IvlPersonalInformation.city, with: 'Augusta'
+    find_all(IvlPersonalInformation.select_me_state).first.click
+    fill_in IvlPersonalInformation.zip, with: '04330'
+    fill_in IvlPersonalInformation.mobile_phone, :with => "0023456789"
+    find("input[name='person[phones_attributes][1][full_phone_number]']").send_keys(:tab)
+  else
+    fill_in IvlPersonalInformation.city, with: personal_information[:city]
+    find_all(IvlPersonalInformation.select_state_dropdown).first.click
+    fill_in "person[addresses_attributes][0][zip]", with: personal_information[:zip]
+    find_all(:xpath, "//li[contains(., '#{EnrollRegistry[:enroll_app].setting(:state_abbreviation).item}')]").last.click
+    fill_in IvlPersonalInformation.zip, :with => EnrollRegistry[:enroll_app].setting(:contact_center_zip_code).item
+  end
+  fill_in IvlPersonalInformation.mobile_phone, with: '0023456789'
+  fill_in IvlPersonalInformation.home_phone, :with => "2456765439"
+  sleep 10
+end
+
+Then(/^Individual should see validity warning message for mobilephone input$/) do
+  field_selector = "input[name='person[phones_attributes][1][full_phone_number]']"
+  page.execute_script("document.querySelector(\"#{field_selector}\").reportValidity()")
+  sleep 5
+  custom_message = page.evaluate_script("document.querySelector(\"#{field_selector}\").validationMessage")
+
+  expect(custom_message).to eq("Phone numbers cannot begin with a 0. Please check the number you entered, remove any leading zeros, and resubmit.")
+end

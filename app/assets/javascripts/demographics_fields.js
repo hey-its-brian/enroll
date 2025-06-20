@@ -811,6 +811,10 @@ var PersonValidations = (function (window, undefined) {
           customValidityWithChangeEvent(phoneInput, "Mobile Phone number cannot be all zeros.");
           PersonValidations.restoreRequiredAttributes(e);
           phoneInput[0].reportValidity();
+        } else if (/^0\d+/.test(phoneValue)) {
+          customValidityWithChangeEvent(phoneInput, "Phone numbers cannot begin with a 0. Please check the number you entered, remove any leading zeros, and resubmit.");
+          PersonValidations.restoreRequiredAttributes(e);
+          phoneInput[0].reportValidity();
         } else if (phoneValue.length < 1 || phoneValue.length < 10) {
           customValidityWithChangeEvent(phoneInput, "You must enter a mobile phone number to receive notices and updates by text.");
           PersonValidations.restoreRequiredAttributes(e);
@@ -822,6 +826,10 @@ var PersonValidations = (function (window, undefined) {
 
         if (/^0+$/.test(homePhoneValue)) {
           customValidityWithChangeEvent(homePhoneInput, "Home Phone number cannot be all zeros.");
+          PersonValidations.restoreRequiredAttributes(e);
+          homePhoneInput[0].reportValidity();
+        } else if (/^0\d+/.test(homePhoneValue)) {
+          customValidityWithChangeEvent(homePhoneInput, "Phone numbers cannot begin with a 0. Please check the number you entered, remove any leading zeros, and resubmit.");
           PersonValidations.restoreRequiredAttributes(e);
           homePhoneInput[0].reportValidity();
         }
@@ -847,6 +855,10 @@ var PersonValidations = (function (window, undefined) {
           customValidityWithChangeEvent(mobilePhoneInput, "Mobile Phone number cannot be all zeros.");
           PersonValidations.restoreRequiredAttributes(e);
           mobilePhoneInput[0].reportValidity();
+        } else if (/^0\d+/.test(mobilePhoneValue)) {
+          customValidityWithChangeEvent(mobilePhoneInput, "Phone numbers cannot begin with a 0. Please check the number you entered, remove any leading zeros, and resubmit.");
+          PersonValidations.restoreRequiredAttributes(e);
+          mobilePhoneInput[0].reportValidity();
         }
 
         // Check home phone number
@@ -855,6 +867,10 @@ var PersonValidations = (function (window, undefined) {
 
         if (/^0+$/.test(homePhoneValue)) {
           customValidityWithChangeEvent(homePhoneInput, "Home Phone number cannot be all zeros.");
+          PersonValidations.restoreRequiredAttributes(e);
+          homePhoneInput[0].reportValidity();
+        } else if (/^0\d+/.test(homePhoneValue)) {
+          customValidityWithChangeEvent(homePhoneInput, "Phone numbers cannot begin with a 0. Please check the number you entered, remove any leading zeros, and resubmit.");
           PersonValidations.restoreRequiredAttributes(e);
           homePhoneInput[0].reportValidity();
         }

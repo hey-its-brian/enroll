@@ -25,7 +25,35 @@
 </div>
 
 <script>
-  $(document).ready( function() {
+  $(document).ready(function() {
     $.inputMasks();
+
+    $(document).on('input', '.phone_number', function() {
+      var phoneValue = $(this).val().replace(/\D/g, '');
+      var $input = $(this);
+
+      if (phoneValue.length > 0 && phoneValue.charAt(0) === '0') {
+        $input.val($input.val().replace(/^0+/, ''));
+        $input.addClass('is-invalid');
+        if (!$input.next('.invalid-feedback').length) {
+          $input.after('<div class="invalid-feedback">Phone numbers cannot start with 0</div>');
+        }
+      } else {
+        $input.removeClass('is-invalid');
+        $input.next('.invalid-feedback').remove();
+      }
+    });
+
+    $(document).on('blur', '.phone_number', function() {
+      var phoneValue = $(this).val().replace(/\D/g, '');
+      var $input = $(this);
+
+      if (phoneValue.length > 0 && phoneValue.charAt(0) === '0') {
+        $input.addClass('is-invalid');
+        if (!$input.next('.invalid-feedback').length) {
+          $input.after('<div class="invalid-feedback">Phone numbers cannot start with 0</div>');
+        }
+      }
+    });
   });
 </script>
