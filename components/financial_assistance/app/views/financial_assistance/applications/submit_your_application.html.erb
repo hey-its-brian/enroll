@@ -5,7 +5,7 @@
   <%= render partial: '/financial_assistance/shared/faa_progress_options', locals: {step: step_number} %>
   <%= form_for @application, url: {action: "submit_your_application_save"}, method: :put do |f| %>
     <h1><%= l10n("submit_application_header") %></h1>
-    <% if EnrollRegistry.feature_enabled?(:qhp_application) %>
+    <% if qhp_application_feature_enabled? %>
       <p><%= l10n('faa.last_step_3') %><b><%= l10n('faa.submit_application_text') %></b></p>
     <% else %>
       <p><%= l10n('faa.last_step_1') %> <%= l10n('faa.last_step_2') %></p>
@@ -90,7 +90,7 @@
       </fieldset>
     <% end %>
 
-    <% if EnrollRegistry.feature_enabled?(:qhp_application) %>
+    <% if qhp_application_feature_enabled? %>
       <div class="my-4">
         <h2><%= l10n("electronic_signature") %></h2>
         <p><%= l10n('faa.electronic_signature_additional_text') %></p>
@@ -138,7 +138,7 @@
     <% end %>
     <% previous_link = qhp_enabled ? review_and_submit_application_path(@application) : preferences_application_path(@application) %>
     <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
-      previous_link: previous_link, show_back_to_household_button: !EnrollRegistry.feature_enabled?(:qhp_application) } %>
+      previous_link: previous_link, show_back_to_household_button: !qhp_application_feature_enabled? } %>
     </div>
   <% end %>
 

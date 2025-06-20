@@ -13,11 +13,19 @@
       <div class="focus d-flex align-items-center mt-2 mb-2">
         <label class="radio-label radio" for="eligibility_easier_yes">
           <%= f.radio_button("is_renewal_authorized", true, class: "radio-yml", id: "eligibility_easier_yes") %>
-          <%= l10n("insured.preferences.i_agree") %>
+          <% if qhp_application_feature_enabled? %>
+            <%= l10n('qhp_application.preferences.i_agree') %>
+          <% else %>
+            <%= l10n("insured.preferences.i_agree") %>
+          <% end %>
         </label>
         <label class="radio-label radio" for="eligibility_easier_no">
           <%= f.radio_button("is_renewal_authorized", false, class: "radio-yml", id: "eligibility_easier_no") %>
-          <%= l10n("insured.preferences.i_disagree") %>
+          <% if qhp_application_feature_enabled? %>
+            <%= l10n('qhp_application.preferences.i_disagree') %>
+          <% else %>
+            <%= l10n("insured.preferences.i_disagree") %>
+          <% end %>
         </label>
       </div>
     </fieldset>

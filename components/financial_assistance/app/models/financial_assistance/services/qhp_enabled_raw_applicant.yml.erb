@@ -111,10 +111,10 @@ demographics:
   rows:
     race:
       key: <%= l10n('insured.shared.race_ethicity_label') %>
-      value: <%= @applicant.race&.compact_blank&.any? ? @applicant.race.join(", ") : "Not answered" %>
+      value: <%= @applicant.race.present? ? @applicant.race : 'Not answered' %>
     ethnicity:
       key: <%= l10n('insured.shared.hispanic_label') %>
-      value: <%= @applicant.ethnicity&.compact_blank&.any? ? @applicant.ethnicity.join(", ") : "Not answered" %>
+      value: <%= @applicant.ethnicity&.compact_blank&.any? ? @applicant.ethnicity.compact_blank.join(', ') : 'Not answered' %>
 
 addresses:
   title: <%= l10n('qhp_application.review.address_info') %>
