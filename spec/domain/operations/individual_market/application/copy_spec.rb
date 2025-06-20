@@ -35,6 +35,8 @@ RSpec.describe Operations::IndividualMarket::Application::Copy, dbclean: :after_
     let(:work_address) { applicant.addresses.work.first }
     let(:mailing_address) { applicant.addresses.mailing.first }
     let(:home_address) { applicant.addresses.home.first }
+    let(:email) { applicant.emails.first }
+    let(:phone) { applicant.phones.first }
 
     let(:origin) { :system }
     let(:generation_reason) { :manual }
@@ -57,6 +59,8 @@ RSpec.describe Operations::IndividualMarket::Application::Copy, dbclean: :after_
     let(:result_work_address) { result_applicant.addresses.work.first }
     let(:result_mailing_address) { result_applicant.addresses.mailing.first }
     let(:result_home_address) { result_applicant.addresses.home.first }
+    let(:result_email) { result_applicant.emails.first }
+    let(:result_phone) { result_applicant.phones.first }
 
     context 'with invalid params' do
       context 'when application is nil' do
@@ -113,7 +117,10 @@ RSpec.describe Operations::IndividualMarket::Application::Copy, dbclean: :after_
         - immigration information
         - work address
         - mailing address
-        - home address' do
+        - home address
+        - phone number
+        - email
+        ' do
 
         it 'returns success' do
           expect(result.success?).to be_truthy
@@ -137,6 +144,12 @@ RSpec.describe Operations::IndividualMarket::Application::Copy, dbclean: :after_
           expect(result_applicant.age_off_excluded).to eq(applicant.age_off_excluded)
           expect(result_applicant.contact_method).to eq(applicant.contact_method)
           expect(result_applicant.language_preference).to eq(applicant.language_preference)
+        end
+
+        it 'creates the individual market eligibility' do
+          expect(result_applicant.eligibilities).to be_present
+          expect(result_applicant.eligibilities.size).to eq(1)
+          expect(result_applicant.eligibilities.first).to be_a(::Eligibilities::V3::IndividualMarketEligibility)
         end
 
         it 'copies the person name' do
@@ -233,6 +246,28 @@ RSpec.describe Operations::IndividualMarket::Application::Copy, dbclean: :after_
             expect(result_home_address.zip).to eq(home_address.zip)
             expect(result_home_address.country_name).to eq(home_address.country_name)
             expect(result_home_address.quadrant).to eq(home_address.quadrant)
+          end
+        end
+
+        context 'for emails' do
+          it 'copies the email' do
+            expect(result_email).to be_a(::Locations::Email)
+            expect(result_email.emailable).to eq(result_applicant)
+            expect(result_email.kind).to eq(email.kind)
+            expect(result_email.address).to eq(email.address)
+          end
+        end
+
+        context 'for phones' do
+          it 'copies the phone' do
+            expect(result_phone).to be_a(::Locations::Phone)
+            expect(result_phone.phoneable).to eq(result_applicant)
+            expect(result_phone.kind).to eq(phone.kind)
+            expect(result_phone.country_code).to eq(phone.country_code)
+            expect(result_phone.area_code).to eq(phone.area_code)
+            expect(result_phone.number).to eq(phone.number)
+            expect(result_phone.extension).to eq(phone.extension)
+            expect(result_phone.primary).to eq(phone.primary)
           end
         end
       end

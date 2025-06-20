@@ -112,16 +112,14 @@ module IndividualMarket
       @family_member = FamilyMember.find(family_member_id)
     end
 
+    # Returns the APTC/CSR eligibility for the applicant.
     def aptc_csr_eligibility
-      return @aptc_csr_eligibility if defined?(@aptc_csr_eligibility)
-
-      @aptc_csr_eligibility = eligibilities.where(_type: 'Eligibilities::V3::AptcCsrEligibility').first
+      eligibilities.where(_type: 'Eligibilities::V3::AptcCsrEligibility').first
     end
 
+    # Returns the Individual Market eligibility for the applicant.
     def individual_market_eligibility
-      return @individual_market_eligibility if defined?(@individual_market_eligibility)
-
-      @individual_market_eligibility = eligibilities.where(_type: 'Eligibilities::V3::IndividualMarketEligibility').first
+      eligibilities.where(_type: 'Eligibilities::V3::IndividualMarketEligibility').first
     end
 
     # @!attribute age_on
@@ -207,6 +205,9 @@ module IndividualMarket
       visitor.visit(self)
     end
 
+    # Builds a new Individual Market eligibility for the applicant.
+    #
+    # @return [Eligibilities::V3::IndividualMarketEligibility] The newly built eligibility.
     def build_individual_market_eligibility
       eligibilities.build(
         _type: 'Eligibilities::V3::IndividualMarketEligibility',
@@ -236,9 +237,18 @@ module IndividualMarket
       person_name.copy_person_name(new_applicant) if person_name.present?
       demographics.copy_demographics(new_applicant) if demographics.present?
       immigration_information.copy_immigration_information(new_applicant) if immigration_information.present?
+      new_applicant.build_individual_market_eligibility
 
       addresses.each do |address|
         address.copy_address(new_applicant)
+      end
+
+      phones.each do |phone|
+        phone.copy_phone(new_applicant)
+      end
+
+      emails.each do |email|
+        email.copy_email(new_applicant)
       end
 
       new_applicant

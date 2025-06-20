@@ -36,6 +36,14 @@ module Locations
     validates :address,
               presence: true
 
+    # Copies the email to a new emailable entity.
+    #
+    # @param new_emailable [Object] The new emailable entity to copy the email to
+    # @return [Locations::Email] A new email instance with the same attributes as the current one
+    def copy_email(new_emailable)
+      new_emailable.emails.build(address: address, kind: kind)
+    end
+
     def blank?
       address.blank?
     end

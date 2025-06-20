@@ -40,6 +40,21 @@ module Locations
 
     validates_presence_of :area_code, :number
 
+    # Copies the phone number to a new phoneable entity.
+    #
+    # @param new_phoneable [Object] The new phoneable entity to copy the phone number to
+    # @return [Locations::Phone] A new phone instance with the same attributes as the current one
+    def copy_phone(new_phoneable)
+      new_phoneable.phones.build(
+        kind: kind,
+        country_code: country_code,
+        area_code: area_code,
+        number: number,
+        extension: extension,
+        primary: primary
+      )
+    end
+
     def blank?
       [:full_phone_number, :area_code, :number, :extension].all? do |attr|
         self.send(attr).blank?
