@@ -144,9 +144,11 @@
     <% if FinancialAssistanceRegistry.feature_enabled?(:voter_registration_through_ext_url) %>
       <section class="my-4">
         <h2><%= l10n("insured.preferences.voter_registration_header") %></h2>
-        <p>
-          <%= l10n("insured.preferences.voter_registration_description") %> <%= h(link_to(l10n("insured.preferences.voter_registration_link"), l10n("insured.preferences.voter_registration_link"), target: "_blank", rel: 'noopener noreferrer')) %>.
-        </p>
+        <% if qhp_application_feature_enabled? %>
+          <p><%= l10n("insured.preferences.voter_registration_description") %> <%= h(link_to(l10n("qhp_application.preferences.voter_registration_link_text"), l10n("insured.preferences.voter_registration_link"), target: "_blank", rel: 'noopener noreferrer')) %>.</p>
+        <% else %>
+          <p><%= l10n("insured.preferences.voter_registration_description") %> <%= h(link_to(l10n("insured.preferences.voter_registration_link"), l10n("insured.preferences.voter_registration_link"), target: "_blank", rel: 'noopener noreferrer')) %>.</p>
+        <% end %>
       </section>
     <% end %>
     <% if FinancialAssistanceRegistry.feature_enabled?(:voter_registration_through_hbx) %>

@@ -1044,6 +1044,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.qhp_application.eligibility_criteria.bases.not_incarcerated' => 'Not Incarcerated',
   :'en.qhp_application.eligibility_criteria.bases.is_alive' => 'Is Alive',
   :'en.qhp_application.eligibility_criteria.bases.lawfully_present_in_us' => 'Citizen or Lawfully Present in the US:',
+  :'en.qhp_application.preferences.voter_registration_link_text' => 'Maine.gov/vote',
   :'en.qhp_application.preferences.i_agree' => 'I agree',
   :'en.qhp_application.preferences.i_disagree' => 'I disagree',
   :'en.error_header_text' => "You need to correct the following errors:",
