@@ -88,6 +88,9 @@ module IndividualMarket
       appli = application.applicants.where(id: old_id).first
       raise ArgumentError, "Applicant with id: #{old_id} not found in application with id: #{application.id}" if appli.nil?
 
+      # Family Member ID is expected to be present for all applicants when the application is determined.
+      raise ArgumentError, "No family_member_id found for applicant with id: #{appli.id}" if appli.family_member_id.nil?
+
       new_appli = new_app.applicants.where(family_member_id: appli.family_member_id).first
       raise ArgumentError, "No matching applicant found in new application for family_member_id: #{appli.family_member_id}" if new_appli.nil?
 

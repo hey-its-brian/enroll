@@ -108,6 +108,37 @@ RSpec.describe Operations::IndividualMarket::Application::Copy, dbclean: :after_
           ).to eq('Invalid generation reason: invalid_reason')
         end
       end
+
+      context 'when multiple applicants are present but the depedents are not associated with any family members' do
+        let(:person2) do
+          per = FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role)
+          person.ensure_relationship_with(per, 'spouse')
+          per
+        end
+
+        let(:member2) { FactoryBot.create(:family_member, family: family, person: person2) }
+
+        let(:applicant2) do
+          FactoryBot.create(
+            :individual_market_applicant,
+            :dependent,
+            :with_person_name,
+            :with_eligibilities,
+            application: application,
+            family_member_id: nil # No family member association
+          )
+        end
+
+        let(:rel1) { FactoryBot.create(:individual_market_relationship, application: application, kind: 'spouse', relative_id: applicant.id, source_id: applicant2.id) }
+
+        before do
+          rel1
+        end
+
+        it 'returns failure with error message' do
+          expect(result.failure).to include("No family_member_id found for applicant with id: #{applicant2.id}")
+        end
+      end
     end
 
     context 'with valid params' do
@@ -317,6 +348,86 @@ RSpec.describe Operations::IndividualMarket::Application::Copy, dbclean: :after_
 
         it 'returns success without any errors raised' do
           expect(result.success?).to be_truthy
+        end
+      end
+
+      context 'when multiple applicants are present' do
+        let(:person2) do
+          per = FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role)
+          person.ensure_relationship_with(per, 'spouse')
+          per
+        end
+        let(:member2) { FactoryBot.create(:family_member, family: family, person: person2) }
+
+        let(:applicant2) do
+          FactoryBot.create(
+            :individual_market_applicant,
+            :dependent,
+            :with_person_name,
+            :with_eligibilities,
+            :with_work_address,
+            :with_mailing_address,
+            :with_home_address,
+            :with_phone_number,
+            :with_email,
+            application: application,
+            family_member_id: member2.id
+          )
+        end
+
+        let(:person3) do
+          per = FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role)
+          person.ensure_relationship_with(per, 'child')
+          per
+        end
+        let(:member3) { FactoryBot.create(:family_member, family: family, person: person3) }
+
+        let(:applicant3) do
+          FactoryBot.create(
+            :individual_market_applicant,
+            :dependent,
+            :with_person_name,
+            :with_eligibilities,
+            :with_work_address,
+            :with_mailing_address,
+            :with_home_address,
+            :with_phone_number,
+            :with_email,
+            application: application,
+            family_member_id: member3.id
+          )
+        end
+
+        let(:rel1) { FactoryBot.create(:individual_market_relationship, application: application, kind: 'spouse', relative_id: applicant.id, source_id: applicant2.id) }
+        let(:rel2) { FactoryBot.create(:individual_market_relationship, application: application, kind: 'child', relative_id: applicant.id, source_id: applicant3.id) }
+
+        before do
+          rel1
+          rel2
+        end
+
+        it 'copies all applicants' do
+          expect(result.success?).to be_truthy
+          expect(result_application.applicants.size).to eq(3)
+
+          expect(result_application.applicants.map(&:family_member_id)).to contain_exactly(
+            primary_applicant.id, member2.id, member3.id
+          )
+
+          expect(result_application.applicants.map(&:person_name).map(&:full_name)).to contain_exactly(
+            person_name.full_name, applicant2.person_name.full_name, applicant3.person_name.full_name
+          )
+        end
+
+        it 'copies all relationships' do
+          expect(result_application.relationships.size).to eq(2)
+          expect(result_application.relationships.map(&:kind)).to contain_exactly('spouse', 'child')
+          expect(result_application.relationships.map(&:source).map(&:family_member_id)).to contain_exactly(
+            applicant2.family_member_id, applicant3.family_member_id
+          )
+          expect(result_application.relationships.map(&:relative).map(&:family_member_id)).to contain_exactly(
+            applicant.family_member_id, applicant.family_member_id
+          )
         end
       end
     end
