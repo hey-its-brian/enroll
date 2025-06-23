@@ -36,7 +36,7 @@
         $input.val($input.val().replace(/^0+/, ''));
         $input.addClass('is-invalid');
         if (!$input.next('.invalid-feedback').length) {
-          $input.after('<div class="invalid-feedback">Phone numbers cannot start with 0</div>');
+          $input.after('<div class="invalid-feedback">Phone numbers cannot begin with a 0. Please check the number you entered, remove any leading zeros, and resubmit.</div>');
         }
       } else {
         $input.removeClass('is-invalid');
@@ -51,7 +51,7 @@
       if (phoneValue.length > 0 && phoneValue.charAt(0) === '0') {
         $input.addClass('is-invalid');
         if (!$input.next('.invalid-feedback').length) {
-          $input.after('<div class="invalid-feedback">Phone numbers cannot start with 0</div>');
+          $input.after('<div class="invalid-feedback">Phone numbers cannot begin with a 0. Please check the number you entered, remove any leading zeros, and resubmit.</div>');
         }
       }
     });
