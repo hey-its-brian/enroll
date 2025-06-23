@@ -61,3 +61,9 @@ Feature: Insured Plan Shopping on Individual market Document Errors
     And Individual selects not applying for coverage
     And Individual submits the person form
     Then Individual should not see the immigration field warning
+
+  Scenario: Individual should be able to continue when they see the immigration field warning
+    When Individual selects applying for coverage
+    And Individual selects eligible immigration status
+    And Individual submits the person form
+    Then Individual should see the continue button enabled 

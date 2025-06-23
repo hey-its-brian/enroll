@@ -217,6 +217,11 @@ And(/Individual enters a phone number/) do
   fill_in IvlPersonalInformation.home_phone, :with => "22075555555"
 end
 
+Then(/Individual should see the continue button enabled/) do
+  continue_btn = find(IvlPersonalInformation.continue_btn)
+  expect(continue_btn).not_to have_css('.disabled')
+end
+
 Then(/Individual should see an message warning about invalid phone/) do
   text = page.driver.browser.switch_to.alert.text
   expect(text).to eq 'Mobile Phone number cannot be all zeros.'

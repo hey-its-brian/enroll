@@ -36,7 +36,12 @@ $(document).on('click', '.manage-person-validations-click', function () {
 
   if (form.checkValidity()){
     disableButton($(element));
- }
+  }
+
+  if (!$('#showWarning').hasClass('hidden') && !immigrationDocWarning) {
+    immigrationDocWarning = true;
+    $(this).removeAttr('disabled').removeClass('disabled');
+  }
 });
 
 $(document).on('keydown', '.manage-person-validations-click', function (event) {

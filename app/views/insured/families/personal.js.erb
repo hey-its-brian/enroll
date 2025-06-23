@@ -27,7 +27,8 @@
   indicateRequiredFields()
   demographicValidations();
   init_glossary();
-
+  var immigrationDocWarning = immigrationDocWarning || false
+  
   function initPersonalJS() {
     initSecurityQuestionsModal();
     initSSNValidation();
