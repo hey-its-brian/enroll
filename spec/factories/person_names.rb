@@ -9,4 +9,10 @@ FactoryBot.define do
     name_pfx { 'Mr.' }
     alternate_name { 'John' }
   end
+
+  trait :alternate_name do
+    given_name { 'Blake' }
+    middle_name { 'B' }
+    family_name { 'Doe' }
+  end
 end

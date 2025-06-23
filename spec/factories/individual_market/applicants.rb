@@ -24,9 +24,21 @@ FactoryBot.define do
       end
     end
 
+    trait :with_alternate_person_name do
+      after(:build) do |applicant|
+        applicant.person_name = FactoryBot.build(:person_name, :alternate_name)
+      end
+    end
+
     trait :with_demographics do
       after(:build) do |applicant|
         applicant.demographics = FactoryBot.build(:individual_market_demographics)
+      end
+    end
+
+    trait :with_alternate_demographics do
+      after(:build) do |applicant|
+        applicant.demographics = FactoryBot.build(:individual_market_demographics, :alternate_demographics)
       end
     end
 
@@ -46,6 +58,12 @@ FactoryBot.define do
       after(:build) do |applicant|
         applicant.eligibilities << FactoryBot.build(:individual_market_eligibility)
         applicant.eligibilities << FactoryBot.build(:aptc_csr_eligibility)
+      end
+    end
+
+    trait :with_immigration_information do
+      after(:build) do |applicant|
+        applicant.immigration_information = FactoryBot.build(:individual_market_immigration_information)
       end
     end
 

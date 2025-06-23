@@ -101,10 +101,6 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
       expect(application.relationships.where(source_id: input_applicant.id, kind: "spouse").count).to eq(1)
     end
 
-    it 'should build the eligibilities' do
-      expect(@applicant_form.eligibilities).not_to be_empty
-    end
-
     it 'should handle address changes' do
       @applicant_form = described_class.new(params)
       @applicant_form.save

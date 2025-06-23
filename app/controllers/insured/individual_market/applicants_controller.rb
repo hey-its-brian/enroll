@@ -79,7 +79,8 @@ module Insured
 
       def update
         authorize @applicant, :edit?
-        @applicant = ::Forms::IndividualMarket::Applicant.new(applicant_params.merge(application_id: params[:application_id], id: params[:id]))
+        existing_ssn = @applicant.demographics.ssn
+        @applicant = ::Forms::IndividualMarket::Applicant.new(applicant_params.merge(application_id: params[:application_id], id: params[:id], existing_ssn: existing_ssn))
 
         success, result = @applicant.save
 
@@ -209,6 +210,7 @@ module Insured
           :is_dependent,
           :is_applying_coverage,
           :is_homeless,
+          :is_temporarily_out_of_state,
           :age_off_excluded,
           :address_same_as_primary,
           :relationship,
@@ -259,7 +261,7 @@ module Insured
             :expiration_date,
             :issuing_country,
             :description,
-            :immigration_doc_statuses
+            { immigration_doc_statuses: [] }
           ],
           addresses_attributes: [
             :id,

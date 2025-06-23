@@ -56,6 +56,7 @@ module Operations
           eligibilities: eligibilities_attributes,
           addresses: construct_address_fields(person.addresses),
           is_homeless: person.is_homeless,
+          is_temporarily_out_of_state: person.is_temporarily_out_of_state,
           phones: construct_phone_fields(person.phones),
           emails: construct_email_fields(person.emails)
         }

@@ -79,6 +79,7 @@ module Entities
       attribute :eligibilities, Types::Array do
         attribute :key, Types::Symbol
         attribute :title, Types::String
+        attribute :_type, Types::String.optional.meta(omittable: true)
       end
     end
   end

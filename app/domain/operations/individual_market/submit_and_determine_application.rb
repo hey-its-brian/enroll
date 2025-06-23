@@ -5,33 +5,49 @@ require 'dry/monads/do'
 
 module Operations
   module IndividualMarket
-    # In progress operation to submit an individual market application
+    # operation to submit an individual market application, determine applicants, generate evidences, and determine the application
     class SubmitAndDetermineApplication
-      include Dry::Monads[:do, :result]
+      include Dry::Monads[:do, :result, :try]
 
-      def call(application)
+      # submits the application
+      # determines each applicant
+      # generates evidences for each applicant
+      # sets the current state to determined, which triggers the on_determination callbacks
+      # this will trigger the creation of a new tax household and update or create a family determination etc
+      #
+      # @param application [FinancialAssistance::Application] the financial assistance application
+      # @return [Dry::Monads::Result] Success with message
+      def call(application:)
         application = yield validate(application)
         application = yield submit_application(application)
-        _applicants = yield determine_applicants(application)
-        # create evidences for each applicant
-        # create or update family members
-        # deactivate current tax household
-        # create new tax household
-        # update family determination
+        applicant_results = yield determine_applicants(application)
+        _applicants = yield generate_evidences(applicant_results)
         determined_application = yield determine_application(application)
+        # _calls = yield call_hubs(application)
+        # _old_thhg = yield deactivate_tax_household_groups(application)
+        _family = yield update_family(application)
+        # _new_thhg = yield build_tax_household_group(application, family, family_members_result)
         Success(determined_application)
       end
 
       private
 
+      # validates the application
+      #
+      # @param application [FinancialAssistance::Application] the financial assistance application
+      # @return [Dry::Monads::Result] Success with message
       def validate(application)
         return Failure('Invalid application type. Expected IndividualMarket::Application.') unless application.is_a?(::IndividualMarket::Application)
-        return Failure('Invalid application has not been submitted.') unless application.current_state == :initial
-        return Failure("Invalid application due to #{application.errors.full_messages.join(', ')}") unless application.valid?
+        return Failure('Invalid application is not initial.') unless application.current_state == :initial
         return Failure("Invalid Family for given application with hbx_id: #{application.hbx_id}") unless application.family.is_a?(::Family)
+        return Failure("Invalid application due to #{application.errors.full_messages.join(', ')}") unless application.valid?
         Success(application)
       end
 
+      # submits the application
+      #
+      # @param application [FinancialAssistance::Application] the financial assistance application
+      # @return [Dry::Monads::Result] Success with message
       def submit_application(application)
         application.submit
         application.set_submit
@@ -45,18 +61,45 @@ module Operations
         Failure("An error occurred while submitting the application: #{application.errors.full_messages.join(', ')}")
       end
 
+      # determines each applicant
+      #
+      # @param application [FinancialAssistance::Application] the financial assistance application
+      # @return [Dry::Monads::Result] Success with message
       def determine_applicants(application)
         applicants_results = application.applicants.map do |applicant|
           Operations::IndividualMarket::Applicant::Determine.new.call({application: application, applicant: applicant})
         end
-        Success(applicants_results)
+        failed_applicants = applicants_results.select(&:failure?)
+        if failed_applicants.any?
+          Rails.logger.error("QHP Application - Failed to determine applicants: #{failed_applicants.map(&:failure).join(', ')}")
+          Failure("Failed to determine applicants: #{failed_applicants.map(&:failure).join(', ')}")
+        else
+          Success(applicants_results.map(&:success))
+        end
       end
 
-      def generate_evidences(_application)
-        # TODO: Implement this once the FAA pattern is established
-        Success([])
+      # generates evidences for each applicant
+      #
+      # @param applicant_results [Array] array of applicant results
+      # @return [Dry::Monads::Result] Success with message
+      def generate_evidences(applicant_results)
+        applicants = applicant_results.map do |applicant|
+          Try do
+            applicant.build_individual_market_evidences
+            applicant.save
+          rescue StandardError => e
+            Failure("Failed to generate evidences for applicant #{applicant.id}: #{e.message}")
+          end
+        end
+        Success(applicants)
       end
 
+      # sets the current state to determined, which triggers the on_determination callbacks
+      # this will trigger the creation of a new tax household and update or create a family determination
+      # it will also trigger the hub calls
+      #
+      # @param application [FinancialAssistance::Application] the financial assistance application
+      # @return [Dry::Monads::Result] Success with message
       def determine_application(application)
         application.determine
         if application.save!
@@ -67,6 +110,31 @@ module Operations
       rescue StandardError => e
         Rails.logger.error("QHP Application - Failed to determine application due to #{e.message}, #{e.backtrace.join("\n")}")
         Failure("An error occurred while determining the application: #{application.errors.full_messages.join(', ')}")
+      end
+
+      # Deactivates all existing tax household groups for the application's assistance year
+      # not currently calling until set up to create new tax household group
+      #
+      # @param application [FinancialAssistance::Application] the financial assistance application
+      # @return [Dry::Monads::Result] Success with message
+      def deactivate_tax_household_groups(application)
+        family = application.family
+        family.tax_household_groups.by_year(application.assistance_year).each do |thhg|
+          thhg.end_on = application.effective_date > thhg.start_on ? (application.effective_date - 1.day) : thhg.start_on
+
+          thhg.tax_households.each do |thh|
+            thh.effective_ending_on = application.effective_date > thh.effective_starting_on ? (application.effective_date - 1.day) : thh.effective_starting_on
+          end
+        end
+
+        Success('Deactivated old Tax Household Groups')
+      rescue StandardError => e
+        Rails.logger.error("QHP Application - Failed to deactivate tax household groups due to #{e.message}, #{e.backtrace.join("\n")}")
+        Failure("An error occurred while deactivating tax household groups: #{e.message}")
+      end
+
+      def update_family(application)
+        Operations::IndividualMarket::Families::CreateOrUpdate.new.call(application: application)
       end
     end
   end

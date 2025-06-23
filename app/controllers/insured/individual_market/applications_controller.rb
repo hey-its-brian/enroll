@@ -12,7 +12,7 @@ module Insured
       before_action :find_application
       before_action :check_for_non_editable_application, only: [:eligibility_criteria]
       before_action :check_for_editable_application, only: [:review, :preferences, :attestation, :submit]
-      before_action :set_consumer_bookmark_url, except: [:submit]
+      before_action :set_consumer_bookmark_url, except: [:submit, :copy]
       before_action :enable_bs4_layout
 
       layout "progress"
@@ -45,13 +45,17 @@ module Insured
 
         if @application.build_attestation(params[:terms_check] == "true", params[:first_name], params[:last_name], current_user)
           operation = Operations::IndividualMarket::SubmitAndDetermineApplication.new
-          result = operation.call(@application)
+          result = operation.call(application: @application)
 
           if result.success?
             application = result.success
             redirect_to eligibility_results_insured_individual_market_application_path(application, internal: true) and return
           else
-            @application.failed_submission
+            if @application.current_state == :initial
+              @application.failed_submission
+            else
+              @application.failed_determination
+            end
             flash[:error] = result.failure
             redirect_to insured_individual_market_application_path(@application) and return
           end

@@ -88,6 +88,10 @@ module IndividualMarket
     #   @return [Boolean] Indicates if this applicant is homeless
     field :is_homeless, type: Boolean
 
+    # @!attribute is_temporarily_out_of_state
+    #   @return [Boolean] Indicates if this applicant is temporarily out of state
+    field :is_temporarily_out_of_state, type: Boolean
+
     # @!attribute age_off_excluded
     # @return [Boolean] Indicates if this applicant is should be kept on their parent's plan when they are 26+
     field :age_off_excluded, type: Boolean
@@ -205,12 +209,13 @@ module IndividualMarket
       visitor.visit(self)
     end
 
-    # Builds a new Individual Market eligibility for the applicant.
+    # Builds a new Individual Market Eligibility for this applicant
     #
-    # @return [Eligibilities::V3::IndividualMarketEligibility] The newly built eligibility.
+    # @return [Eligibilities::V3::IndividualMarketEligibility] The new Individual Market Eligibility
     def build_individual_market_eligibility
+      return if individual_market_eligibility.present?
       eligibilities.build(
-        _type: 'Eligibilities::V3::IndividualMarketEligibility',
+        _type: "Eligibilities::V3::IndividualMarketEligibility",
         title: 'Individual Market Eligibility',
         key: :individual_market_eligibility
       )
@@ -237,6 +242,7 @@ module IndividualMarket
       person_name.copy_person_name(new_applicant) if person_name.present?
       demographics.copy_demographics(new_applicant) if demographics.present?
       immigration_information.copy_immigration_information(new_applicant) if immigration_information.present?
+
       new_applicant.build_individual_market_eligibility
 
       addresses.each do |address|
@@ -252,6 +258,112 @@ module IndividualMarket
       end
 
       new_applicant
+    end
+
+    def build_individual_market_evidences
+      return unless individual_market_eligibility.present?
+      build_citizenship_evidence
+      build_immigration_evidence
+      build_american_indian_evidence
+      build_social_security_number_evidence
+
+      # We do not have residency evidence verification for any client we are currently supporting from this codebase
+      # build_residency_evidence
+
+      # We only verify alive evidence as part of the bulk verification process and not during every application
+      # build_alive_evidence
+    end
+
+    # Builds citizenship evidence if the applicant is applying for coverage, does not have citizenship evidence, and consumer is a US citizen or naturalized citizen.
+    #   It creates a citizenship evidence and moves it to pending state.
+    #
+    # @return [void]
+    def build_citizenship_evidence
+      return individual_market_eligibility.citizenship_evidence if individual_market_eligibility.citizenship_evidence
+      return unless is_applying_coverage
+      return if [ConsumerRole::US_CITIZEN_STATUS, ConsumerRole::NATURALIZED_CITIZEN_STATUS].exclude?(demographics.citizen_status)
+
+      evidence = individual_market_eligibility.evidences.build(
+        _type: 'Eligibilities::V3::Evidences::CitizenshipEvidence',
+        title: 'Citizenship Evidence',
+        key: :citizenship_evidence
+      )
+      evidence.move_to_pending(
+        comment: 'application_determination',
+        reason: 'Citizenship evidence is required for QHP eligibility'
+      )
+      evidence
+    end
+
+    # Builds immigration evidence if the applicant is applying for coverage, does not have immigration evidence, and consumer is alien lawfully present.
+    #   It creates an immigration evidence and moves it to pending state.
+    #
+    # @return [void]
+    def build_immigration_evidence
+      return individual_market_eligibility.immigration_evidence if individual_market_eligibility.immigration_evidence
+      return unless is_applying_coverage
+      return if ConsumerRole::ALIEN_LAWFULLY_PRESENT_STATUS != demographics.citizen_status
+
+      evidence = individual_market_eligibility.evidences.build(
+        _type: 'Eligibilities::V3::Evidences::ImmigrationEvidence',
+        title: 'Immigration Evidence',
+        key: :immigration_evidence
+      )
+
+      evidence.move_to_pending(
+        comment: 'application_determination',
+        reason: 'Immigration evidence is required for QHP eligibility'
+      )
+      evidence
+    end
+
+    # Builds American Indian evidence if the applicant is an Indian tribe member and does not have American Indian evidence.
+    #   It creates an American Indian evidence and moves it to attested or pending state based on the feature flag.
+    #
+    # @return [void]
+    def build_american_indian_evidence
+      return individual_market_eligibility.american_indian_evidence if individual_market_eligibility.american_indian_evidence
+      return unless demographics.indian_tribe_member
+
+      evidence = individual_market_eligibility.evidences.build(
+        _type: 'Eligibilities::V3::Evidences::AmericanIndianEvidence',
+        title: 'American Indian Evidence',
+        key: :american_indian_evidence
+      )
+
+      if EnrollRegistry.feature_enabled?(:ai_an_self_attestation)
+        evidence.move_to_attested(
+          comment: 'application_determination',
+          reason: 'American Indian evidence is required for QHP eligibility'
+        )
+      else
+        evidence.move_to_pending(
+          comment: 'application_determination',
+          reason: 'American Indian evidence is required for QHP eligibility'
+        )
+      end
+      evidence
+    end
+
+    # Builds social security number evidence if the applicant does not have it and has an encrypted SSN.
+    # It creates a social security number evidence and moves it to pending state.
+    #
+    # @return [void]
+    def build_social_security_number_evidence
+      return individual_market_eligibility.social_security_number_evidence if individual_market_eligibility.social_security_number_evidence
+      return if demographics.encrypted_ssn.blank?
+
+      evidence = individual_market_eligibility.evidences.build(
+        _type: 'Eligibilities::V3::Evidences::SocialSecurityNumberEvidence',
+        title: 'Social Security Number Evidence',
+        key: :social_security_number_evidence
+      )
+
+      evidence.move_to_pending(
+        comment: 'application_determination',
+        reason: 'Social Security Number evidence is required for QHP eligibility'
+      )
+      evidence
     end
 
     private

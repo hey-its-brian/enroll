@@ -1260,12 +1260,18 @@ module ApplicationHelper
   end
 
   def application_state_for_display(application)
-    return application.current_state.to_s.titleize if application.is_a?(IndividualMarket::Application)
+    return qhp_application_state(application) if application.is_a?(IndividualMarket::Application)
     return 'IRS Consent' if application.income_verification_extension_required?
     return 'Submission Error' if application.mitc_magi_medicaid_eligibility_request_errored?
     return 'Submission Error' if FinancialAssistanceRegistry[:application_submission_error_status].enabled? && application.aasm_state == "submitted" && DateTime.now.utc > application.submitted_at + 2.minutes
 
     application.aasm_state.titleize
+  end
+
+  def qhp_application_state(application)
+    return l10n('draft') if application.current_state == :initial
+
+    application.current_state.to_s.titleize
   end
 
   def fetch_program_eligibility(application)

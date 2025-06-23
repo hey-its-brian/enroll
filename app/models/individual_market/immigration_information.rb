@@ -25,9 +25,10 @@ module IndividualMarket
     field :expiration_date, type: Date
     field :issuing_country, type: String
     field :description, type: String
+    field :immigration_doc_statuses, type: Array
 
     def provided_information
-      attributes.except("_id", "created_at", "updated_at", "subject").select { |_key, value| value.present? }.collect { |key, value| {label: key.titleize, display_value: value} }
+      attributes.except("_id", "created_at", "updated_at", "subject").select { |_key, value| value.present? }.collect { |key, value| {label: key.titleize, display_value: standardize_display(value)} }
     end
 
     # Creates a copy of this immigration information for a new applicant
@@ -53,6 +54,14 @@ module IndividualMarket
         issuing_country: issuing_country,
         description: description
       )
+    end
+
+    private
+
+    def standardize_display(value)
+      return value.join(", ") if value.is_a?(Array)
+      return value.strftime("%m/%d/%Y") if value.is_a?(Date) || value.is_a?(Time) || value.is_a?(DateTime)
+      value
     end
   end
 end

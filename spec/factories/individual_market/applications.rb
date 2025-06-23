@@ -97,12 +97,14 @@ FactoryBot.define do
         app.state_histories.create(
           from_state: :initial,
           to_state: :submitted,
+          effective_on: DateTime.now - 1.hour,
           transition_at: DateTime.now - 1.hour,
           event: :submit
         )
         app.state_histories.create(
           from_state: :submitted,
           to_state: :determined,
+          effective_on: DateTime.now,
           transition_at: DateTime.now,
           event: :determine
         )

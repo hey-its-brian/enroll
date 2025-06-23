@@ -31,6 +31,7 @@ RSpec.describe IndividualMarket::Application, type: :model do
     it { is_expected.to have_field(:hbx_id).of_type(String) }
     it { is_expected.to have_field(:effective_on).of_type(Date) }
     it { is_expected.to have_field(:submitted_at).of_type(DateTime) }
+    it { is_expected.to have_field(:family_updated_at).of_type(DateTime) }
     it { is_expected.to have_field(:assistance_year).of_type(Integer) }
     it { is_expected.to have_field(:predecessor_id).of_type(BSON::ObjectId) }
     it { is_expected.to have_field(:origin).of_type(Symbol) }
@@ -429,6 +430,65 @@ RSpec.describe IndividualMarket::Application, type: :model do
       it 'is valid' do
         expect(application.valid?).to be true
       end
+    end
+  end
+
+  context 'newest_determined_by_family_id' do
+    let(:family_id) { application.family.id }
+    let!(:current_application_1) do
+      FactoryBot.create(
+        :individual_market_application,
+        :determined,
+        family: application.family,
+        submitted_at: TimeKeeper.date_of_record - 1.month,
+        created_at: TimeKeeper.date_of_record + 1.year
+      )
+    end
+    let!(:current_application_2) do
+      FactoryBot.create(
+        :individual_market_application,
+        :determined,
+        family: application.family,
+        submitted_at: TimeKeeper.date_of_record - 2.month
+      )
+    end
+
+    it 'should return only the most recently submitted determined application with the greatest assistance year' do
+      application = IndividualMarket::Application.newest_determined_by_family_id(family_id).first
+      expect(application).to eq current_application_1
+    end
+  end
+
+  context 'for_determined_family' do
+    let(:family_id) { application.family.id }
+    let!(:determined_application) do
+      FactoryBot.create(
+        :individual_market_application,
+        :determined,
+        family: application.family,
+        submitted_at: TimeKeeper.date_of_record - 1.month,
+        created_at: TimeKeeper.date_of_record + 1.year
+      )
+    end
+
+    let!(:submitted_application) do
+      FactoryBot.create(
+        :individual_market_application,
+        :submitted,
+        family: application.family,
+        submitted_at: TimeKeeper.date_of_record - 1.month,
+        created_at: TimeKeeper.date_of_record + 1.year
+      )
+    end
+
+    it 'should return only determined applications' do
+      applications = IndividualMarket::Application.for_determined_family(family_id)
+      expect(applications.map(&:current_state)).to include :determined
+    end
+
+    it 'should not return any submitted applications' do
+      expect(IndividualMarket::Application.for_determined_family(family_id).to_a).to include(determined_application)
+      expect(IndividualMarket::Application.for_determined_family(family_id).to_a).not_to include(submitted_application)
     end
   end
 

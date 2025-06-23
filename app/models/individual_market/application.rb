@@ -116,6 +116,23 @@ module IndividualMarket
     # @note This field is used to track if the application is a renewal of a previous application
     field :is_renewal, type: Boolean, default: false
 
+    # @!attribute family_updated_at
+    # @return [DateTime] The timestamp when the family was updated successfully without errors on application determination
+    # @note Used to track which applications failed to update their family successfully for debugging and refactoring purposes
+    field :family_updated_at, type: DateTime
+
+    # @!scope class
+    # @return [Mongoid::Criteria] The most recent determined IndividualMarket::Application based on assistance year and submitted_at
+    scope :newest_determined_by_family_id, lambda { |family_id|
+      for_determined_family(family_id).order_by(assistance_year: -1, submitted_at: -1).limit(1)
+    }
+
+    # @!scope class
+    # @return [Mongoid::Criteria] The most recent determined IndividualMarket::Application based on assistance year and submitted_at
+    scope :for_determined_family, lambda { |family_id|
+      where(current_state: :determined, family_id: family_id)
+    }
+
     # All possible states for an application
     # @!attribute ALL_STATES
     # @return [Array<Symbol>] Collection of all possible states

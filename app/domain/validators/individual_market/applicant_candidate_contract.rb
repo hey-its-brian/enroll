@@ -68,6 +68,7 @@ module Validators
         required(:eligibilities).array(:hash) do
           required(:key).filled(:symbol)
           required(:title).filled(:string)
+          optional(:_type).maybe(:string)
         end
       end
 

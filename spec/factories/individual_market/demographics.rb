@@ -11,4 +11,9 @@ FactoryBot.define do
     is_physically_disabled  { false }
     no_ssn                  { true }
   end
+
+  trait :alternate_demographics do
+    gender { 'Female' }
+    dob { Date.current - 20.years }
+  end
 end

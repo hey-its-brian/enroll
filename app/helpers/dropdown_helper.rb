@@ -20,6 +20,7 @@ module DropdownHelper
 
   def qhp_application_dropdowns(application, copyable_application_ids)
     option_args = [
+      ([l10n('insured.sbm.applications.actions.update'), insured_individual_market_application_applicants_path(application), :default] if application.is_initial?),
       ([l10n('insured.sbm.applications.actions.copy'), copy_insured_individual_market_application_path(application), :default] unless do_not_allow_copy?(application, current_user, copyable_application_ids)),
       ([l10n('insured.sbm.applications.actions.view_eligibility'), eligibility_results_insured_individual_market_application_path(application), :default] if application.is_determined?),
       ([l10n('insured.sbm.applications.actions.eligibility_criteria'), eligibility_criteria_insured_individual_market_application_path(application), :default] if application.is_determined? && current_user.has_hbx_staff_role?),
@@ -33,6 +34,7 @@ module DropdownHelper
     if application.is_a?(::FinancialAssistance::Application)
       application_dropdowns(application, copyable_application_ids)
     else
+      puts "application.is_initial? #{application.is_initial?}"
       qhp_application_dropdowns(application, copyable_application_ids)
     end
   end
@@ -126,8 +128,6 @@ module DropdownHelper
 
   def add_hbx_only_dropdowns(application, options)
     return options unless current_user.has_hbx_staff_role?
-
-    options << ([l10n('insured.sbm.applications.actions.eligibility_criteria'), "#", :default] if qhp_application_feature_enabled? && current_user.has_hbx_staff_role? && application.is_reviewable?)
     if application.is_a?(::FinancialAssistance::Application)
       options << ([l10n('insured.sbm.applications.actions.transfer_history'), financial_assistance.transfer_history_application_path(application), :default] if FinancialAssistanceRegistry.feature_enabled?(:transfer_history_page))
       options << ([l10n('insured.sbm.applications.actions.full_application'), financial_assistance.raw_application_application_path(application), :default] if current_user.has_hbx_staff_role? && application.is_reviewable?)
