@@ -93,8 +93,8 @@ module Forms
           ssn: ssn,
           encrypted_ssn: encrypted_ssn,
           no_ssn: no_ssn,
-          ethnicity: Array(ethnicity).reject(&:blank?),
-          race: race,
+          ethnicity: ethnicity&.compact_blank,
+          race: race&.compact_blank,
           is_incarcerated: is_incarcerated,
           is_physically_disabled: is_physically_disabled,
           indian_tribe_member: @indian_tribe_member,
@@ -102,7 +102,7 @@ module Forms
           tribal_name: tribal_name,
           tribal_state: tribal_state,
           language_code: language_code,
-          tribe_codes: Array(tribe_codes).reject(&:blank?),
+          tribe_codes: tribe_codes&.compact_blank,
           citizen_status: citizen_status
         }.compact
       end

@@ -308,7 +308,7 @@
             </template>
           </div>
 
-          
+
             <div class="mb-4 <%= "no_coverage_tribe_details" if FinancialAssistanceRegistry.feature_enabled?(:no_coverage_tribe_details) %>
               <%= "featured_tribes_selection" if FinancialAssistanceRegistry.feature_enabled?(:featured_tribes_selection) %>" id='indian_tribe_area'
               data-target="family-information.IndianTribeMember">
@@ -326,7 +326,7 @@
                     <%= demographics.radio_button :indian_tribe_member, true,
                         class: "required",
                         id: 'indian_tribe_member_yes',
-                        data: { 
+                        data: {
                           action: "change->family-information#toggleTribalFields",
                           "person-validation": "true"
                         } %>
@@ -428,10 +428,54 @@
             <%= render partial: 'shared/modal_support_text_household', locals: {key: "is_incarcerated"} %>
           </div>
 
-          <div>
-            <%= render "shared/race_and_ethnicity_options", f: demographics %>
-          </div>
-        </div>
+          <fieldset class="mb-4 d-block" >
+            <legend>
+              <span>
+                <%= l10n("insured.shared.race_ethicity_label") %>
+                <small class="text-muted pl-1"><%= l10n("insured.shared.check_all_paranthetical") %></small>
+              </span>
+            </legend>
+            <div class="row col-sm ethnicity-container">
+            <% ethnicity_collection.each do |ethnicity_set| %>
+              <div class="mr-auto col-sm-12 col-md-6 col-lg-3 p-0">
+              <%= demographics.collection_check_boxes(:race, ethnicity_set, :name, :name)  do |ethnicity| %>
+                <%= ethnicity.label(:"data-value" => ethnicity.value, class: "d-inline-block weight-n") do  %>
+                  <div class="d-flex pr-3 align-items-center mb-2 option">
+                    <span class="mr-2"><%= ethnicity.check_box %></span>
+                    <%= ethnicity.text %>
+                  </div>
+                <% end %>
+              <% end %>
+              </div>
+            <% end %>
+            </div>
+          </fieldset>
+          <fieldset class="mb-4 check_box_collection">
+            <div>
+              <legend>
+                <span>
+                  <%= l10n("insured.shared.hispanic_label") %>
+                  <small class="text-muted pl-1"><%= l10n("insured.shared.check_all_paranthetical") %></small>
+                </span>
+              </legend>
+              <div class="row col-sm ethnicity-container">
+              <% latino_collection.each do |ethnicity_set| %>
+              <div class="mr-auto col-sm-12 col-md-6 col-lg-3 p-0">
+                <%= demographics.collection_check_boxes(:ethnicity, ethnicity_set, :name, :name, {})  do |ethnicity| %>
+                  <%= ethnicity.label(:"data-value" => ethnicity.value, class: "d-inline-block weight-n", for:"latino_#{ethnicity.object.name}") do  %>
+                    <div class="d-flex pr-3 align-items-center mb-2 option">
+                      <span class="mr-2"><%= ethnicity.check_box id: "latino_#{ethnicity.object.name}" %></span>
+                      <%= ethnicity.text %>
+                    </div>
+                  <% end %>
+                <% end %>
+                </div>
+              <% end %>
+              <div class="col-sm-12 col-md-6 col-lg-3 p-0 sm-hide"></div>
+              </div>
+            </div>
+          </fieldset>
+      </div>
       </div>
 
       <div id="ssn-coverage-msg" class="hide" data-target="family-information.SsnMessage">

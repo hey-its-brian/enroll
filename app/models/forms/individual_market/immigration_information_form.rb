@@ -23,6 +23,14 @@ module Forms
                     :immigration_doc_statuses,
                     :id
 
+      validate :allowed_subject
+
+      def initialize(attributes = {})
+        super
+        self.immigration_doc_statuses = immigration_doc_statuses&.compact_blank
+        self.subject = sanitize_subject
+      end
+
       def to_h
         {
           subject: subject,
@@ -39,8 +47,22 @@ module Forms
           expiration_date: expiration_date,
           issuing_country: issuing_country,
           description: description,
-          immigration_doc_statuses: immigration_doc_statuses&.compact_blank
+          immigration_doc_statuses: immigration_doc_statuses
         }.compact
+      end
+
+      private
+
+      def sanitize_subject
+        return nil if subject.blank?
+        return nil if subject.to_s.downcase == "select document type"
+        subject&.strip
+      end
+
+      def allowed_subject
+        return unless subject.present?
+        allowed_subjects = VlpDocument::NATURALIZATION_DOCUMENT_TYPES + VlpDocument::VLP_DOCUMENT_KINDS
+        errors.add(:subject, "must be one of #{allowed_subjects.join(', ')}") unless allowed_subjects.include?(subject)
       end
     end
   end

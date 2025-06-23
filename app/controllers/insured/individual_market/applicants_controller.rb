@@ -243,6 +243,7 @@ module Insured
             :is_incarcerated,
             :is_applying_coverage,
             { ethnicity: [] },
+            { race: [] },
             { tribe_codes: [] }
           ],
           immigration_information_attributes: [

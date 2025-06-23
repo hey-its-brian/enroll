@@ -80,7 +80,7 @@ module Operations
           dob: person.dob,
           gender: person.gender,
           ethnicity: person.ethnicity,
-          race: person.race,
+          race: [person.race]&.compact_blank,
           is_incarcerated: person.is_incarcerated,
           is_physically_disabled: person.is_disabled,
           indian_tribe_member: person.indian_tribe_member,

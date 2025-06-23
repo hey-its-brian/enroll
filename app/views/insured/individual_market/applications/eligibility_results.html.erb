@@ -74,10 +74,9 @@
     <%= h(link_to l10n("faa.results.view_my_applications"), family_account_path, class: "button secondary outline mr-2") %>
     <%= h(link_to l10n("faa.results.return_to_account_home"), family_account_path, class: "button") %>
   </div>
-  <dl class="parent my-3">
-    <dt><%= l10n("qhp_application.results.application_reference_id") %>:</dt>
-    <dd><%= @application.hbx_id %></dd>
-  </dl>
+  <p class="my-3">
+    <span class="secondary-semibold"><%= l10n("qhp_application.results.application_reference_id") %>:</span> <%= @application.hbx_id %>
+  </p>
   <div id="other-accordion" data-cuke='other_actions'>
     <div class="card">
       <div id="otherActionsHeading">

@@ -117,12 +117,10 @@
       <%= submit_tag l10n("continue_next"), class: "btn", data: {target: "contact-methods.submitButton", action: "click->contact-methods#alertForInvalidContactMethods"} %>
     <% end %>
 
-    <div class="mt-md-5">
-      <%= render partial: "shared/progress_navigation_buttons",
-          locals: {
-            next_link: review_insured_individual_market_application_path(@application),
-            show_back_to_household_button: true
-          } %>
-    </div>
-  <% end %>
-</div>
+  <div class="mt-md-5">
+    <%= render partial: "shared/progress_navigation_buttons",
+        locals: {
+          next_link: review_insured_individual_market_application_path(@application)
+        } %>
+  </div>
+<% end %>

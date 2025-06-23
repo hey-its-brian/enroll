@@ -35,7 +35,7 @@ module Entities
         attribute :gender, Types::String
         attribute :ssn, Types::String.optional.meta(omittable: true)
         attribute :ethnicity, Types::Array.of(Types::String).optional.meta(omittable: true)
-        attribute :race, Types::String.optional.meta(omittable: true)
+        attribute :race, Types::Array.of(Types::String).optional.meta(omittable: true)
         attribute :is_incarcerated, Types::Bool.optional.meta(omittable: true)
         attribute :is_physically_disabled, Types::Bool.optional.meta(omittable: true)
         attribute :indian_tribe_member, Types::Bool.optional.meta(omittable: true)

@@ -1,6 +1,6 @@
 <%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(5)} %>
 <h1><%= l10n("qhp_application.attestation.title") %></h1>
-<p><%= l10n("qhp_application.attestation.attestation_info") %></p>
+<p><%= l10n("qhp_application.attestation.attestation_info") %><b><%= l10n("qhp_application.attestation.attestation_info_2") %></b>’.</p>
 <div data-controller="attestation">
 <%= form_for @application, {url: submit_insured_individual_market_application_path(@application), method: :post} do |f| %>
   <section>

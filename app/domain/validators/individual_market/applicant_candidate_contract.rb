@@ -35,7 +35,7 @@ module Validators
           required(:dob).filled(:date)
           required(:gender).filled(:string)
           optional(:ethnicity).array(:string)
-          optional(:race).maybe(:string)
+          optional(:race).array(:string)
           optional(:is_incarcerated).maybe(:bool)
           optional(:is_physically_disabled).maybe(:bool)
           optional(:indian_tribe_member).maybe(:bool)
