@@ -181,7 +181,9 @@
     <div class="my-4">
       <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
         previous_link: applications_path,
-        next_link: @person.consumer_role.present? && is_under_open_enrollment? ? group_selection_url : find_sep_url
+        previous_button_text: qhp_enabled ? l10n('faa.results.view_my_applications').titleize : nil,
+        next_link: @person.consumer_role.present? && is_under_open_enrollment? ? group_selection_url : find_sep_url,
+        next_button_text: qhp_enabled ? l10n('faa.results.shop_for_plans') : nil
       } %>
     </div>
 

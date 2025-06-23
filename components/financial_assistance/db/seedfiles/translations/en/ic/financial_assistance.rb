@@ -379,6 +379,7 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   "en.faa.results.continue_text" => "Select “CONTINUE” to see if you are eligible to select a new plan or make changes to your current plan.",
   "en.faa.results.your_application_reference_2" => "Application Reference ID: %{application_hbx_id}",
   "en.faa.results.view_my_applications" => "View my Applications",
+  'en.faa.results.shop_for_plans' => 'Continue to Shop for Plans',
   "en.faa.go_to_my_account" => "Go to my account",
   "en.faa.results.medicaid_eligible_next_steps" => "Medicaid coverage is free. If you would like to enroll and pay full price for private health insurance instead, select CONTINUE to:",
   "en.faa.results.medicaid_eligible_step1" => "pick a plan, or",

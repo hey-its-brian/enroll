@@ -6,13 +6,14 @@
 <% previous_style = local_assigns[:previous_style] ? previous_style : "outline" %>
 <% previous_class = "#{previous_style} #{'back' unless local_assigns[:previous_link].present?}" %>
 <% previous_link = local_assigns[:previous_link] ? previous_link : '#' %>
+<% prev_button_text = local_assigns[:previous_button_text].present? ? previous_button_text : l10n("previous_step") %>
 
 <%# continue button params %>
 <% dont_show_next_button = local_assigns[:dont_show_next_button] ? dont_show_next_button : false %>
 <% next_link = local_assigns[:next_link] ? next_link : "" %>
 <% disable_link = local_assigns[:disable_link] ? disable_link : false %>
 <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
-
+<% continue_button_text = local_assigns[:next_button_text].present? ? next_button_text : l10n("continue_next") %>
 
 <div class="d-flex align-items-center">
   <% if @application && show_back_to_household_button %>
@@ -25,7 +26,7 @@
   <% end %>
 
   <% unless dont_show_prev_button || @no_previous_button %>
-    <a class="button <%= previous_class %> mr-2" href=<%= previous_link %> data-turbolinks="false"><%= l10n("previous_step") %></a>
+    <a class="button <%= previous_class %> mr-2" href=<%= previous_link %> data-turbolinks="false"><%= prev_button_text %></a>
   <% end %>
 
   <% unless dont_show_next_button %>
@@ -33,7 +34,7 @@
       <%= yield :submit_button %>
     <% else %>
       <% unless (action_name == "eligibility_results" || action_name == "review") && (params.keys.exclude?"cur") %>
-        <%= h(link_to_with_noopener_noreferrer(l10n("continue_next"), next_link, class: 'button btn-continue', :'data-turbolinks' => "#{genesys_feature_enabled ? false : true}",  id: 'btn-continue', disabled: disable_link)) %>
+        <%= h(link_to_with_noopener_noreferrer(continue_button_text, next_link, class: 'button btn-continue', :'data-turbolinks' => "#{genesys_feature_enabled ? false : true}",  id: 'btn-continue', disabled: disable_link)) %>
       <% end %>
     <% end %>
   <% end %>
