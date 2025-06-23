@@ -42,7 +42,7 @@ module Operations
               new_non_esi_evidence = applicant.aptc_csr_eligibility.non_esi_mec_evidence
 
               [[old_income_evidence, new_income_evidence], [old_esi_evidence, new_esi_evidence], [old_local_mec_evidence, new_local_mec_evidence], [old_non_esi_evidence, new_non_esi_evidence]].each do |old_evidence, new_evidence|
-                status = [application.hbx_id, "migrated", "", applicant.person_hbx_id]
+                status = [application.hbx_id, application.aasm_state, "migrated", "", applicant.person_hbx_id]
                 next unless old_evidence && new_evidence
                 if evidences_matched?(old_evidence, new_evidence)
                   status.push(new_evidence.key.to_s, true)

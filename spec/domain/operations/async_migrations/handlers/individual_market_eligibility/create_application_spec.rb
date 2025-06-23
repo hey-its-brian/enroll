@@ -356,9 +356,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
         expect(@citizenship_evidence.documents.count).to eq(2)
         expect(@citizenship_evidence.documents.map(&:created_at)).to be_present
         expect(@citizenship_evidence.documents.map(&:updated_at)).to be_present
-        expect(@citizenship_evidence.documents.first).to have_attributes(
-          @citizenship_verification_type.vlp_documents.first.attributes.slice(:title, :creator, :subject, :publisher, :type, :identifier, :source, :language)
-        )
+        expect_attributes_to_match(@citizenship_evidence.documents.first, @citizenship_verification_type.vlp_documents.first, [:title, :creator, :subject, :publisher, :type, :identifier, :source, :language])
       end
     end
 
@@ -493,9 +491,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
         expect(@immigration_evidence.documents.count).to eq(2)
         expect(@immigration_evidence.documents.map(&:created_at)).to be_present
         expect(@immigration_evidence.documents.map(&:updated_at)).to be_present
-        expect(@immigration_evidence.documents.first).to have_attributes(
-          @immigration_verification_type.vlp_documents.first.attributes.slice(:title, :creator, :subject, :publisher, :type, :identifier, :source, :language)
-        )
+        expect_attributes_to_match(@immigration_evidence.documents.first, @immigration_verification_type.vlp_documents.first, [:title, :creator, :subject, :publisher, :type, :identifier, :source, :language])
       end
     end
   end

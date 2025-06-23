@@ -52,14 +52,14 @@ module Operations
             counter += 1
             puts "Processing record (#{counter}/#{messages_count})"
             payload = JSON.parse(payload, symbolize_names: true)
-            array_collection << payload[:rows]
+            array_collection << payload[:csv_row]
 
             @queue.channel.ack(delivery_info.delivery_tag)
             delivery_info, _props, payload = @queue.pop(manual_ack: true)
           end
 
-          generate_csv_file(array_collection, headers, file_name)
-          puts "Finished processing #{counter} records. CSV file created at: #{file_name}"
+          file_names = generate_csv_file(array_collection, headers, file_name)
+          puts "Finished processing #{counter} records. CSV files created at: #{file_names.join(', ')}"
         rescue StandardError => e
           puts "Failed to generate evidence report: #{e.message}"
           raise
@@ -74,14 +74,20 @@ module Operations
         # @return [void]
         # @raise [StandardError] If there's an error writing the file
         def generate_csv_file(array_collection, headers, file_name)
-          FileUtils.touch(file_name) unless File.exist?(file_name)
+          file_names = []
 
-          csv_content = CSV.generate(force_quotes: true) do |csv|
-            csv << headers
-            array_collection.each { |row| csv << row }
+          array_collection.each_slice(500_000).with_index do |limited_array, index|
+            FileUtils.touch("#{file_name}_collection_#{index}.csv") unless File.exist?("#{file_name}_collection_#{index}.csv")
+
+            csv_content = CSV.generate(force_quotes: true) do |csv|
+              csv << headers
+              limited_array.each { |row| csv << row }
+            end
+
+            File.write("#{file_name}_collection_#{index}.csv", csv_content)
+            file_names << "#{file_name}_collection_#{index}.csv"
           end
-
-          File.write(file_name, csv_content)
+          file_names
         end
       end
     end

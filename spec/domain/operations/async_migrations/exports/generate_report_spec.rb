@@ -10,13 +10,13 @@ RSpec.describe Operations::AsyncMigrations::Exports::GenerateReport do
   let(:delivery_info) { instance_double(Bunny::DeliveryInfo) }
   let(:properties) { instance_double(Bunny::MessageProperties) }
   let(:connection_proxy) { instance_double('EventSource::ConnectionProxy', connection_uri: 'amqp://localhost') }
-  let(:file_name) { 'test_export.csv' }
+  let(:file_name) { 'test_export' }
   let(:headers) { ['Header1', 'Header2'] }
-  let(:rows) { [['Value1', 'Value2']] }
+  let(:rows) { ['Value1', 'Value2'] }
   let(:payload) do
     {
       headers: headers,
-      rows: rows,
+      csv_row: rows,
       csv_file_name: file_name
     }.to_json
   end
@@ -49,7 +49,7 @@ RSpec.describe Operations::AsyncMigrations::Exports::GenerateReport do
         allow(delivery_info).to receive(:delivery_tag).and_return('tag1')
         message_payload = {
           csv_headers: headers,
-          rows: rows,
+          csv_row: rows,
           csv_file_name: file_name
         }.to_json
 
@@ -66,7 +66,7 @@ RSpec.describe Operations::AsyncMigrations::Exports::GenerateReport do
 
       it 'processes messages and generates CSV' do
         expect { instance.build }.not_to raise_error
-        expect(File).to have_received(:write).with(file_name, anything)
+        expect(File).to have_received(:write).with("test_export_collection_0.csv", anything)
       end
     end
   end

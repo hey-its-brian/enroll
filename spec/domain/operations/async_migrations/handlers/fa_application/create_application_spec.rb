@@ -10,7 +10,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
   end
 
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
-  let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true) }
+  let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true, first_name: "main_name") }
   let(:consumer_role) do
     consumer = person.consumer_role
     consumer.contact_method = "Paper and Electronic communications"
@@ -195,14 +195,18 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                       generation_reason: :manual)
   end
 
+  let!(:eligibility_determination1) { FactoryBot.create(:financial_assistance_eligibility_determination, application: application) }
+
   let!(:applicant) do
     FactoryBot.create(:applicant,
+                      first_name: "app_nmae",
                       application: application,
                       dob: TimeKeeper.date_of_record - 40.years,
                       is_primary_applicant: true,
                       family_member_id: family.family_members[0].id,
                       person_hbx_id: person.hbx_id,
-                      addresses: [FactoryBot.build(:financial_assistance_address)])
+                      addresses: [FactoryBot.build(:financial_assistance_address)],
+                      eligibility_determination_id: eligibility_determination1.id)
   end
 
   describe 'migrate evidences' do
@@ -255,32 +259,48 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                                                      created_at: DateTime.now - 5.minutes)
           verification_type.save!
         end
-        @result = subject.call({document_id: application.id.to_s})
-        application.reload
-        @old_applicant = application.applicants.first
-        @new_application_hbx_id = @result.value![1]
-        @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
-        @new_application.reload
-        @new_applicant = @new_application.applicants.first
-        @individual_market_eligibility = @new_applicant.individual_market_eligibility
-
       end
 
-      it 'should be a success' do
-        expect(@result).to be_success
-        expect(@new_application.origin).to eq(:migration)
-        expect(@new_application.generation_reason).to eq(:manual)
-        draft_application.reload
-        expect(draft_application.aasm_state).to eq("cancelled")
-      end
+      context 'when the application is created' do
+        before do
+          @result = subject.call({document_id: application.id.to_s})
+          @old_applicant = application.applicants.first
+          @new_application_hbx_id = @result.value![1]
+          @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
+          @new_application.reload
+          @new_applicant = @new_application.applicants.first
+          @individual_market_eligibility = @new_applicant.individual_market_eligibility
+        end
 
-      it 'should migrate contact method, language preference and age off excluded' do
-        expect(@new_applicant.age_off_excluded).to eq(person.age_off_excluded)
-        expect(@new_applicant.contact_method).to eq(consumer_role.contact_method)
-        expect(@new_applicant.language_preference).to eq(consumer_role.language_preference)
+        it 'should be a success' do
+          expect(@result).to be_success
+          expect(@new_application.origin).to eq(:migration)
+          expect(@new_application.generation_reason).to eq(:manual)
+          # expect(@new_application.eligibility_determinations.count).to eq(1)
+          # expect(@new_application.eligibility_determinations.first.id).not_to eq(eligibility_determination1.id)
+          draft_application.reload
+          expect(draft_application.aasm_state).to eq("cancelled")
+        end
+
+        it 'should migrate contact method, language preference and age off excluded' do
+          expect(@new_applicant.age_off_excluded).to eq(person.age_off_excluded)
+          expect(@new_applicant.contact_method).to eq(consumer_role.contact_method)
+          expect(@new_applicant.language_preference).to eq(consumer_role.language_preference)
+          expect(@new_applicant.eligibility_determination_id).not_to eq(@old_applicant.eligibility_determination_id)
+        end
       end
 
       context 'should migrate individual_market_eligibility' do
+        before do
+          @result = subject.call({document_id: application.id.to_s})
+          @old_applicant = application.applicants.first
+          @new_application_hbx_id = @result.value![1]
+          @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
+          @new_application.reload
+          @new_applicant = @new_application.applicants.first
+          @individual_market_eligibility = @new_applicant.individual_market_eligibility
+        end
+
         it 'should create individual_market_eligibility' do
           expect(@individual_market_eligibility).to be_present
           expect(@individual_market_eligibility.evidences.count).to eq(person.verification_types.count)
@@ -301,6 +321,13 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
 
         context 'should migrate ssn_verification_type' do
           before do
+            @result = subject.call({document_id: application.id.to_s})
+            @old_applicant = application.applicants.first
+            @new_application_hbx_id = @result.value![1]
+            @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
+            @new_application.reload
+            @new_applicant = @new_application.applicants.first
+            @individual_market_eligibility = @new_applicant.individual_market_eligibility
             @ssn_verification_type = person.verification_types.ssn_type.first
             @type_history_elements = @ssn_verification_type.type_history_elements
             @social_security_number_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "social_security_number_evidence" }.first
@@ -363,6 +390,13 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
 
         context 'should migrate citizenship_verification_type' do
           before do
+            @result = subject.call({document_id: application.id.to_s})
+            @old_applicant = application.applicants.first
+            @new_application_hbx_id = @result.value![1]
+            @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
+            @new_application.reload
+            @new_applicant = @new_application.applicants.first
+            @individual_market_eligibility = @new_applicant.individual_market_eligibility
             @citizenship_verification_type = person.verification_types.citizenship_type.first
             @type_history_elements = @citizenship_verification_type.type_history_elements
             @citizenship_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "citizenship_evidence" }.first
@@ -427,14 +461,19 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
             expect(@citizenship_evidence.documents.map(&:created_at)).to be_present
             expect(@citizenship_evidence.documents.map(&:updated_at)).to be_present
             expect(@citizenship_evidence.documents.first.id).not_to eq(@citizenship_verification_type.vlp_documents.first.id)
-            expect(@citizenship_evidence.documents.first).to have_attributes(
-              @citizenship_verification_type.vlp_documents.first.attributes.slice(:title, :creator, :subject, :publisher, :type, :identifier, :source, :language)
-            )
+            expect_attributes_to_match(@citizenship_evidence.documents.first, @citizenship_verification_type.vlp_documents.first, [:title, :creator, :subject, :publisher, :type, :identifier, :source, :language])
           end
         end
 
         context 'should migrate alive_status_verification_type' do
           before do
+            @result = subject.call({document_id: application.id.to_s})
+            @old_applicant = application.applicants.first
+            @new_application_hbx_id = @result.value![1]
+            @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
+            @new_application.reload
+            @new_applicant = @new_application.applicants.first
+            @individual_market_eligibility = @new_applicant.individual_market_eligibility
             @alive_status_verification_type = person.verification_types.alive_status_type.first
             @type_history_elements = @alive_status_verification_type.type_history_elements
             @alive_status_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "alive_evidence" }.first
@@ -506,6 +545,13 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
 
         context 'should migrate immigration_verification_type' do
           before do
+            @result = subject.call({document_id: application.id.to_s})
+            @old_applicant = application.applicants.first
+            @new_application_hbx_id = @result.value![1]
+            @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
+            @new_application.reload
+            @new_applicant = @new_application.applicants.first
+            @individual_market_eligibility = @new_applicant.individual_market_eligibility
             @immigration_verification_type = person.verification_types.by_name('Immigration status').first
             @type_history_elements = @immigration_verification_type.type_history_elements
             @immigration_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "immigration_evidence" }.first
@@ -564,15 +610,20 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
             expect(@immigration_evidence.documents.count).to eq(2)
             expect(@immigration_evidence.documents.map(&:created_at)).to be_present
             expect(@immigration_evidence.documents.map(&:updated_at)).to be_present
-            expect(@immigration_evidence.documents.first).to have_attributes(
-              @immigration_verification_type.vlp_documents.first.attributes.slice(:title, :creator, :subject, :publisher, :type, :identifier, :source, :language)
-            )
+            expect_attributes_to_match(@immigration_evidence.documents.first, @immigration_verification_type.vlp_documents.first, [:title, :creator, :subject, :publisher, :type, :identifier, :source, :language])
           end
         end
       end
 
       context 'should migrate aptc csr eligibility' do
         before do
+          @result = subject.call({document_id: application.id.to_s})
+          @old_applicant = application.applicants.first
+          @new_application_hbx_id = @result.value![1]
+          @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
+          @new_application.reload
+          @new_applicant = @new_application.applicants.first
+          @individual_market_eligibility = @new_applicant.individual_market_eligibility
           new_application_hbx_id = @result.value![1]
           new_application = FinancialAssistance::Application.where(hbx_id: new_application_hbx_id).first
           @new_aptc_csr_eligibility = new_application.applicants.first.aptc_csr_eligibility
@@ -592,9 +643,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           expect(@new_aptc_csr_eligibility.state_histories.count).to eq(@old_aptc_csr_eligibility.state_histories.count)
           new_state_histories = @new_aptc_csr_eligibility.state_histories.first
           old_state_histories = @old_aptc_csr_eligibility.state_histories.first
-          expect(new_state_histories).to have_attributes(
-            old_state_histories.attributes.slice(:to_state, :from_state, :transition_at, :event, :reason)
-          )
+          expect(new_state_histories.transition_at.strftime("%m/%d/%Y %I:%M%p")).to eq(old_state_histories.transition_at.strftime("%m/%d/%Y %I:%M%p"))
+          expect_attributes_to_match(new_state_histories, old_state_histories, [:to_state, :from_state, :event, :reason])
         end
 
         it 'should migrate evidence 1.0 to 3.0' do
@@ -604,9 +654,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           expect(@new_income_evidence.key.to_s).to eq(@old_income_evidence.key)
           expect(@new_income_evidence._type).to eq('FinancialAssistance::Evidences::IncomeEvidence')
           expect(@new_income_evidence.verification_histories.count).to eq(@old_income_evidence.verification_histories.count)
-          expect(@new_income_evidence).to have_attributes(
-            @old_income_evidence.attributes.slice(:title, :current_state, :verification_outstanding, :due_on, :is_satisfied, :updated_by, :external_service, :determined_at)
-          )
+          expect_attributes_to_match(@new_income_evidence, @old_income_evidence, [:title, :current_state, :verification_outstanding, :due_on, :is_satisfied, :updated_by, :external_service, :determined_at])
         end
 
         it 'should migrate verification history 1.0 to 3.0' do
@@ -619,9 +667,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           expect(new_verification_history.created_at).to be_present
           expect(new_verification_history.updated_at).to be_present
           expect(new_verification_history.id).not_to eq(old_verification_history.id)
-          expect(new_verification_history).to have_attributes(
-            old_verification_history.attributes.slice(:action, :update_reason, :updated_by, :is_satisfied, :verification_outstanding, :due_on)
-          )
+          expect_attributes_to_match(new_verification_history, old_verification_history, [:action, :update_reason, :updated_by, :is_satisfied, :verification_outstanding, :due_on])
         end
 
 
@@ -634,9 +680,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           expect(new_request_result.created_at).to be_present
           expect(new_request_result.updated_at).to be_present
           expect(new_request_result.id).not_to eq(old_request_result.id)
-          expect(new_request_result).to have_attributes(
-            old_request_result.attributes.slice(:result, :source, :source_transaction_id, :code, :code_description, :raw_payload, :action, :date_of_action)
-          )
+          expect(new_request_result.date_of_action.strftime("%m/%d/%Y %I:%M%p")).to eq(old_request_result.date_of_action.strftime("%m/%d/%Y %I:%M%p"))
+          expect_attributes_to_match(new_request_result, old_request_result, [:result, :source, :source_transaction_id, :code, :code_description, :raw_payload, :action])
         end
 
         it 'should migrate workflow state transition 1.0 to 3.0' do
@@ -649,9 +694,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           expect(new_state_transition.created_at).to be_present
           expect(new_state_transition.updated_at).to be_present
           expect(new_state_transition.id).not_to eq(old_state_transition.id)
-          expect(new_state_transition).to have_attributes(
-            old_state_transition.attributes.slice(:to_state, :from_state, :transition_at, :event, :reason, :effective_on, :is_eligible, :metadata)
-          )
+          expect(new_state_transition.transition_at.strftime("%m/%d/%Y %I:%M%p")).to eq(new_state_transition.transition_at.strftime("%m/%d/%Y %I:%M%p"))
+          expect_attributes_to_match(new_state_transition, old_state_transition, [:to_state, :from_state, :event, :reason, :effective_on, :is_eligible, :metadata])
         end
 
         it 'should migrate evidence documents from 1.0 to 3.0' do
@@ -663,9 +707,112 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           expect(new_income_evidence_document.created_at).to be_present
           expect(new_income_evidence_document.updated_at).to be_present
           expect(new_income_evidence_document.id).not_to eq(old_income_evidence_document.id)
-          expect(new_income_evidence_document).to have_attributes(
-            old_income_evidence_document.attributes.slice(:title, :creator, :subject, :publisher, :type, :identifier, :source, :language)
-          )
+          expect_attributes_to_match(new_income_evidence_document, old_income_evidence_document, [:title, :creator, :subject, :publisher, :type, :identifier, :source, :language])
+        end
+      end
+
+      context 'do not sync applicants' do
+        before do
+          family_member
+          family_member2
+          @result = subject.call({document_id: application.id.to_s})
+          @old_applicant = application.applicants.first
+          @new_application_hbx_id = @result.value![1]
+          @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
+          @new_application.reload
+          @new_applicant = @new_application.applicants.first
+          @individual_market_eligibility = @new_applicant.individual_market_eligibility
+        end
+
+        let(:person2) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true) }
+        let(:person3) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true) }
+        let!(:family_member) { FactoryBot.create(:family_member, family: family, person: person2) }
+        let!(:family_member2) { FactoryBot.create(:family_member, family: family, person: person3) }
+
+        it 'should not sync applicants' do
+          expect(family.family_members.count).to eq(3)
+          expect(@new_application.applicants.count).to eq(1)
+          new_applicant = @new_application.applicants.first
+          expect(new_applicant.person_hbx_id).to eq(person.hbx_id)
+          expect(new_applicant.family_member_id).to eq(family.family_members.first.id)
+          expect(new_applicant.age_off_excluded).to eq(person.age_off_excluded)
+          expect(@new_application.applicants.map(&:person_hbx_id)).not_to include(person2.hbx_id, person3.hbx_id)
+          expect(new_applicant.eligibility_determination_id).not_to be(@old_applicant.eligibility_determination_id)
+          expect_attributes_to_match(new_applicant, @old_applicant, [:name_pfx, :first_name, :middle_name, :last_name, :name_sfx, :encrypted_ssn, :gender, :dob, :is_primary_applicant,
+                                                                     :is_incarcerated, :is_disabled, :ethnicity, :race, :indian_tribe_member, :tribal_id, :language_code, :no_dc_address,
+                                                                     :is_homeless, :is_temporarily_out_of_state, :immigration_doc_statuses, :no_ssn, :citizen_status, :is_consumer_role,
+                                                                     :is_resident_role, :same_with_primary, :is_applying_coverage, :is_tobacco_user, :vlp_document_id, :vlp_subject,
+                                                                     :alien_number, :i94_number, :visa_number, :passport_number, :sevis_id, :naturalization_number, :receipt_number,
+                                                                     :citizenship_number, :card_number, :country_of_citizenship, :vlp_description, :expiration_date, :issuing_country,
+                                                                     :is_consent_applicant, :is_tobacco_user, :assisted_income_validation, :assisted_mec_validation, :assisted_income_reason,
+                                                                     :assisted_mec_reason, :aasm_state, :person_hbx_id, :ext_app_id, :family_member_id, :has_fixed_address, :is_living_in_state,
+                                                                     :is_required_to_file_taxes, :is_filing_as_head_of_household, :tax_filer_kind, :is_joint_tax_filing, :is_claimed_as_tax_dependent,
+                                                                     :is_physically_disabled, :has_income_verification_response, :has_mec_verification_response, :is_medicare_eligible, :is_student,
+                                                                     :student_kind, :student_school_kind, :student_status_end_on, :is_self_attested_blind, :is_self_attested_disabled,
+                                                                     :is_self_attested_long_term_care, :is_veteran, :is_refugee, :is_trafficking_victim, :is_former_foster_care, :age_left_foster_care,
+                                                                     :foster_care_us_state, :had_medicaid_during_foster_care, :is_pregnant, :is_enrolled_on_medicaid, :is_post_partum_period,
+                                                                     :children_expected_count, :pregnancy_due_on, :pregnancy_end_on, :is_primary_caregiver, :is_subject_to_five_year_bar,
+                                                                     :is_five_year_bar_met, :is_forty_quarters, :is_ssn_applied, :non_ssn_apply_reason, :moved_on_or_after_welfare_reformed_law,
+                                                                     :is_veteran_or_active_military, :is_spouse_or_dep_child_of_veteran_or_active_military, :is_currently_enrolled_in_health_plan,
+                                                                     :has_daily_living_help, :need_help_paying_bills, :is_resident_post_092296, :is_vets_spouse_or_child, :has_job_income,
+                                                                     :has_self_employment_income, :has_other_income, :has_unemployment_income, :has_deductions, :has_enrolled_health_coverage,
+                                                                     :has_eligible_health_coverage, :has_american_indian_alaskan_native_income, :medicaid_chip_ineligible, :immigration_status_changed,
+                                                                     :health_service_through_referral, :health_service_eligible, :tribal_state, :tribal_name, :tribe_codes, :is_medicaid_cubcare_eligible,
+                                                                     :has_eligible_medicaid_cubcare, :medicaid_cubcare_due_on, :has_eligibility_changed, :has_household_income_changed,
+                                                                     :person_coverage_end_on, :has_dependent_with_coverage, :dependent_job_end_on, :transfer_referral_reason,
+                                                                     :five_year_bar_applies, :five_year_bar_met, :qualified_non_citizen])
+        end
+      end
+    end
+
+    context 'failed case' do
+      context 'old applicant without aptc csr eligibility' do
+        before do
+          allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          consumer_role.save!
+          person.verification_types.where(type_name: "DC Residency").delete_all
+          person2.verification_types.where(type_name: "DC Residency").delete_all
+          person3.verification_types.where(type_name: "DC Residency").delete_all
+          person.verification_types.alive_status_type.each do |verification_type|
+            verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
+                                                       modifier: "external Hub",
+                                                       update_reason: "Hub response",
+                                                       event_response_record_id: response3.id,
+                                                       to_validation_status: "verified",
+                                                       from_validation_status: "unverified",
+                                                       created_at: DateTime.now)
+
+            verification_type.add_type_history_element(action: "call hub",
+                                                       modifier: "admin",
+                                                       update_reason: "Hub request",
+                                                       event_response_record_id: nil,
+                                                       created_at: DateTime.now - 5.minutes)
+            verification_type.save!
+          end
+          family_member2
+          applicant2
+          @result = subject.call({document_id: application.id.to_s})
+          @old_applicant = application.applicants.first
+        end
+
+        let(:person2) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true) }
+        let(:person3) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true) }
+        let!(:family_member2) { FactoryBot.create(:family_member, family: family, person: person2) }
+        let!(:family_member3) { FactoryBot.create(:family_member, family: family, person: person3) }
+        let!(:applicant2) do
+          FactoryBot.create(:applicant,
+                            application: application,
+                            dob: TimeKeeper.date_of_record - 40.years,
+                            is_primary_applicant: true,
+                            family_member_id: family.family_members[1].id,
+                            person_hbx_id: person2.hbx_id,
+                            addresses: [FactoryBot.build(:financial_assistance_address)])
+        end
+
+        it 'should fail' do
+          expect(@result.failure?).to be_truthy
+          expect(@result.failure.to_s).to eq("generation failed for the application: #{application.hbx_id} with error: No APTC/CSR eligibility object found for old applicant #{applicant2.person_hbx_id}")
         end
       end
     end

@@ -35,7 +35,6 @@ module Operations
             yield cancel_previous_applications(draft_application)
             comparison_result = yield compare_migrated_values(determined_application, application)
             yield publish(comparison_result)
-
             Success(["New application created for family: #{determined_application.family_id} with new_application_hbx_id:", determined_application.hbx_id])
           end
 
@@ -64,7 +63,6 @@ module Operations
           end
 
           def generate_new_draft_application(application)
-            disable_callback
             copy_result = ::Operations::AsyncMigrations::Handlers::FAApplication::CopyWithoutPersisting.new.call(
               {
                 application_id: application.id,
@@ -102,6 +100,7 @@ module Operations
 
               # Migrate existing aptc csr eligibility evidences
               old_aptc_csr_eligibility = old_applicant.aptc_csr_eligibility
+              raise "No APTC/CSR eligibility object found for old applicant #{old_applicant.person_hbx_id}" unless old_aptc_csr_eligibility
               new_aptc_csr_eligibility = new_applicant.build_aptc_csr_eligibility
               migrator.perform(old_aptc_csr_eligibility, new_aptc_csr_eligibility)
               old_aptc_csr_eligibility.evidences.each do |old_evidence|
@@ -134,10 +133,8 @@ module Operations
             )
 
             draft_application.save!
-            enable_callback
             Success(draft_application)
           rescue StandardError => e
-            enable_callback
             Failure("Failed to move to determined: #{e.message}")
           end
 
@@ -157,20 +154,9 @@ module Operations
             end
           end
 
-          def disable_callback
-            ::FinancialAssistance::Applicant.skip_callback(:update, :after, :propagate_applicant, raise: false)
-            ::FinancialAssistance::Relationship.skip_callback(:save, :after, :propagate_applicant)
-          end
-
-          def enable_callback
-            ::FinancialAssistance::Applicant.set_callback(:update, :after, :propagate_applicant, raise: false)
-            ::FinancialAssistance::Relationship.set_callback(:save, :after, :propagate_applicant)
-          end
-
           def compare_migrated_values(application, old_application)
             application_result = []
             application.applicants.each do |applicant|
-              status = [application.hbx_id, "migrated", "", applicant.person_hbx_id]
               old_aptc_csr_eligibility = old_application.applicants.where(person_hbx_id: applicant.person_hbx_id).first.aptc_csr_eligibility
               old_income_evidence = old_aptc_csr_eligibility.income_evidence
               old_esi_evidence = old_aptc_csr_eligibility.esi_mec_evidence
@@ -184,24 +170,26 @@ module Operations
               new_non_esi_evidence = aptc_csr_eligibility.non_esi_mec_evidence
 
               [[old_income_evidence, new_income_evidence], [old_esi_evidence, new_esi_evidence], [old_local_mec_evidence, new_local_mec_evidence], [old_non_esi_evidence, new_non_esi_evidence]].each do |old_evidence, new_evidence|
+                next unless old_evidence.present?
+                status = [application.hbx_id, "migrated", "", applicant.person_hbx_id]
                 compare_aptc_csr_eligibility_evidences(old_evidence, new_evidence, status)
+                application_result << status
               end
-
-              application_result << status
             end
 
             individual_market_evidences_result = Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::CompareMigratedEvidenceValues.new.call(application: application)
 
             if individual_market_evidences_result.success?
-              Success(application_result.push(individual_market_evidences_result.value!))
+              individual_market_evidences_result.value!.each do |result|
+                application_result.push(result)
+              end
+              Success(application_result)
             else
               Failure("Failed to compare migrated values")
             end
           end
 
           def compare_aptc_csr_eligibility_evidences(old_evidence, new_evidence, status)
-            return unless old_evidence.present?
-
             if new_evidence.present?
               evidence_attributes = ["key", "current_state", "verification_outstanding", "due_on", "updated_by", "external_service", "title", "description", "is_satisfied", "determined_at", "is_active"]
               if attributes_match?(old_evidence, new_evidence, evidence_attributes)
@@ -252,14 +240,17 @@ module Operations
                            "evidence_document_type",
                            "evidence_document_matched?"]
 
-            event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "new_fa_application_report.csv", csv_headers: csv_headers, rows: rows})
+            result = rows.collect do |row|
+              event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "new_fa_application_report", csv_headers: csv_headers, csv_row: row})
 
-            if event.success?
-              event.success.publish
-              Success("Evidence migration event published successfully")
-            else
-              Failure(event.failure)
+              if event.success?
+                event.success.publish
+              else
+                false
+              end
             end
+
+            result.all?(true) ? Success("All evidence migration events published successfully") : Failure("Some evidence migration events failed to publish")
           end
         end
       end

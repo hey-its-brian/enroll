@@ -45,7 +45,6 @@ module Operations
             result = yield migrate_evidence(application)
             comparison_result = yield compare_migrated_values(application, result)
             yield publish(comparison_result)
-
             Success(comparison_result)
           end
 
@@ -99,7 +98,6 @@ module Operations
             #   - Saving the `application` also saves its embedded documents (e.g., `aptc_csr_eligibility`) and triggers callbacks in the `Applicant` model.
             #   - However, saving `aptc_csr_eligibility` does not save the parent document (`application`) and does not trigger any callbacks.
             #   - To optimize performance and avoid redundant saves, callbacks on the `Applicant` and `Relationship` models are temporarily skipped during the migration process.
-            disable_callback
 
             migration_result = if migration_status.any?(true) && application.valid?
                                  application.save!
@@ -110,10 +108,8 @@ module Operations
                                  [app_hbx_id, application.aasm_state,"not migrated", application.errors.full_messages.join(", ")]
                                end
 
-            enable_callback
             Success(migration_result)
           rescue StandardError => e
-            enable_callback
             Failure("Evidence migration failed for application hbx_id: #{application.hbx_id}, errors: #{e.message}")
           end
 
@@ -183,21 +179,11 @@ module Operations
             )
           end
 
-          def disable_callback
-            ::FinancialAssistance::Applicant.skip_callback(:update, :after, :propagate_applicant, raise: false)
-            ::FinancialAssistance::Relationship.skip_callback(:save, :after, :propagate_applicant)
-          end
-
-          def enable_callback
-            ::FinancialAssistance::Applicant.set_callback(:update, :after, :propagate_applicant, raise: false)
-            ::FinancialAssistance::Relationship.set_callback(:save, :after, :propagate_applicant)
-          end
-
           def compare_migrated_values(application, result)
             if result[2] == "migrated"
               Operations::AsyncMigrations::Handlers::FAApplication::CompareMigratedEvidenceValues.new.call(application: application)
             else
-              Success(result)
+              Success([result])
             end
           end
 
@@ -214,16 +200,22 @@ module Operations
                            "evidence_request_result",
                            "evidence_request_results_matched?",
                            "evidence_state_transition",
-                           "evidence_state_transitions_matched?"]
+                           "evidence_state_transitions_matched?",
+                           "evidence_document",
+                           "evidence_documents_matched?"]
 
-            event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "migrated_evidences_1.0_to_3.0_report.csv", csv_headers: csv_headers, rows: rows})
+            result = rows.collect do |row|
+              event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "migrated_evidences_1.0_to_3.0_report", csv_headers: csv_headers, csv_row: row})
 
-            if event.success?
-              event.success.publish
-              Success("Evidence migration event published successfully")
-            else
-              Failure(event.failure)
+              if event.success?
+                event.success.publish
+                true
+              else
+                false
+              end
             end
+
+            result.all?(true) ? Success("Evidence migration event published successfully") : Failure("Evidence migration event publishing failed")
           end
         end
       end

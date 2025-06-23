@@ -295,7 +295,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvid
       it 'should be a success' do
         expect(@result).to be_success
         expect(@result.value!).to be_a(Array)
-        expect(@result.value!).to eq([application.hbx_id, application.aasm_state, "not migrated", "Applicants is invalid"])
+        expect(@result.value!).to eq([[application.hbx_id, application.aasm_state, "not migrated", "Applicants is invalid"]])
         expect(application.applicants.first.aptc_csr_eligibility.present?).to be_falsey
       end
     end
@@ -312,7 +312,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvid
     it 'should be a success' do
       expect(@result).to be_success
       expect(@result.value!).to be_a(Array)
-      expect(@result.value!).to eq([application.hbx_id, application.aasm_state, "no evidences found", ""])
+      expect(@result.value!).to eq([[application.hbx_id, application.aasm_state, "no evidences found", ""]])
       expect(application.applicants.first.aptc_csr_eligibility.present?).to be_falsey
     end
   end
@@ -328,7 +328,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvid
     it 'should be a success' do
       expect(@result).to be_success
       expect(@result.value!).to be_a(Array)
-      expect(@result.value!).to eq([application.hbx_id, application.aasm_state, "no evidences found", ""])
+      expect(@result.value!).to eq([[application.hbx_id, application.aasm_state, "no evidences found", ""]])
       expect(application.applicants.first.aptc_csr_eligibility.present?).to be_falsey
     end
   end

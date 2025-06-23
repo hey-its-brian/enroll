@@ -159,14 +159,17 @@ module Operations
                            "evidence_document_type",
                            "evidence_document_matched?"]
 
-            event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "new_qhp_application_report.csv", csv_headers: csv_headers, rows: rows})
+            result = rows.collect do |row|
+              event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "new_qhp_application_report", csv_headers: csv_headers, csv_row: row})
 
-            if event.success?
-              event.success.publish
-              Success("Evidence migration event published successfully")
-            else
-              Failure(event.failure)
+              if event.success?
+                event.success.publish
+              else
+                false
+              end
             end
+
+            result.all?(true) ? Success("All evidence migration events published successfully") : Failure("Some evidence migration events failed to publish")
           end
         end
       end
