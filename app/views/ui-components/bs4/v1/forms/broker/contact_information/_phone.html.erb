@@ -5,14 +5,13 @@
     <%= f.label :full_number_without_extension, l10n("phone_number"), class: "required" %>
     <%= f.text_field :full_number_without_extension,
       placeholder: "(000) 000-0000",
-      required: true,
+      inputmode: 'numeric',
+      type: 'text',
       class: 'form-control phone_number',
-      minlength: '14',
       maxlength: '14',
       value: determine_phone_number(f.object),
-      data: { :"error-message" => phone_error, phone_number: true }
-    %>
-    <div class="invalid-feedback">
+      data: { :"error-message" => phone_error } %>
+    <div class="invalid-feedback d-none">
       <%= phone_error %>
     </div>
   </div>
@@ -25,34 +24,43 @@
 </div>
 
 <script>
-  $(document).ready(function() {
-    $.inputMasks();
+  document.addEventListener('DOMContentLoaded', function() {
+    $.inputMasks(); // Optional – remove if interfering
 
-    $(document).on('input', '.phone_number', function() {
-      var phoneValue = $(this).val().replace(/\D/g, '');
-      var $input = $(this);
+    function validatePhoneNumber($input) {
+      const raw = $input.val().replace(/\D/g, '');
+      const errorMessage = "Phone numbers cannot begin with a 0. Please check the number you entered, remove any leading zeros, and resubmit.";
 
-      if (phoneValue.length > 0 && phoneValue.charAt(0) === '0') {
-        $input.val($input.val().replace(/^0+/, ''));
+      $input.removeClass('is-invalid');
+      $input.nextAll('.invalid-feedback').addClass('d-none').text('');
+
+      if (raw.length > 0 && raw.charAt(0) === '0') {
         $input.addClass('is-invalid');
-        if (!$input.next('.invalid-feedback').length) {
-          $input.after('<div class="invalid-feedback">Phone numbers cannot begin with a 0. Please check the number you entered, remove any leading zeros, and resubmit.</div>');
-        }
+        $input[0].setCustomValidity(errorMessage);
+        $input.nextAll('.invalid-feedback').text(errorMessage).removeClass('d-none');
       } else {
-        $input.removeClass('is-invalid');
-        $input.next('.invalid-feedback').remove();
+        $input[0].setCustomValidity('');
       }
+    }
+
+    $(document).on('input blur', '.phone_number', function() {
+      validatePhoneNumber($(this));
     });
 
-    $(document).on('blur', '.phone_number', function() {
-      var phoneValue = $(this).val().replace(/\D/g, '');
-      var $input = $(this);
+    // Prevent browser tooltip popup
+    document.querySelectorAll('input.phone_number').forEach(input => {
+      input.addEventListener('invalid', function(e) {
+        e.preventDefault();
+      });
+    });
 
-      if (phoneValue.length > 0 && phoneValue.charAt(0) === '0') {
-        $input.addClass('is-invalid');
-        if (!$input.next('.invalid-feedback').length) {
-          $input.after('<div class="invalid-feedback">Phone numbers cannot begin with a 0. Please check the number you entered, remove any leading zeros, and resubmit.</div>');
-        }
+    // Prevent form submission if phone number is invalid
+    $('form').on('submit', function(e) {
+      const $phoneInput = $(this).find('.phone_number');
+      validatePhoneNumber($phoneInput);
+      if (!$phoneInput[0].checkValidity()) {
+        e.preventDefault();
+        $phoneInput[0].reportValidity();
       }
     });
   });
