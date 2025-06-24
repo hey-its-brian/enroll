@@ -211,7 +211,7 @@ module FinancialAssistance
               @application = application
               @applicant = applicant
               @hash = section_hash(title: capitalize_full_name(applicant.full_name), subsections: applicant_subsections,
-                                   edit_section_link: edit_application_applicant_path(application, applicant))
+                                   edit_section_link: application_applicants_path(application, applicant: applicant.id))
             end
 
             private

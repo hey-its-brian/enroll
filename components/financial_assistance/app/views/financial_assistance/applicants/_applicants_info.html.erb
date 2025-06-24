@@ -15,7 +15,7 @@
   </div>
 </div>
 
-<div id="primary-person" class="py-3">
+<div data-controller="qhp-application" id="primary-person" class="py-3">
   <% primary_person = @application.primary_applicant %>
   <div class="d-flex flex-row align-items-center">
     <h2 class="mb-0"><%= l10n('member') %> 1</h2>
@@ -41,13 +41,15 @@
   </div>
 
   <div class="mt-3 member-<%= primary_person.id %>-buttons">
-    <%= h(link_to l10n("edit_member"), edit_application_applicant_path(@application, @application.primary_applicant), remote: true, id: 'edit-primary-applicant', class: 'btn secondary outline close-2') %>
+    <%= h(link_to l10n("edit_member"), edit_application_applicant_path(@application, @application.primary_applicant), remote: true, id: 'edit-primary-applicant',
+                  class: 'btn secondary outline close-2', data: {target: "qhp-application.EditApplicantButton",
+                                                                 member_id: "#{primary_person.id}"}) %>
   </div>
 
   <div class="append_consumer_info"></div>
 </div>
 
-<div id="dependent_ul">
+<div data-controller="qhp-application" id="dependent_ul">
   <% @application.non_primary_applicants.each_with_index do |dependent, index| %>
     <%= render "financial_assistance/applicants/dependent_applicant_info", dependent: dependent, person: @person, member_number: index+2 %>
   <% end %>
