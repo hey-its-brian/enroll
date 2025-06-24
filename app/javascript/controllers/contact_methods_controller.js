@@ -104,15 +104,10 @@ export default class extends Controller {
     let emailPreference = this.emailPreferenceTarget.checked
     let textPreference = this.textPreferenceTarget.checked
 
-
-    let textMessageOnly = (textPreference && !mailPreference && !emailPreference)
-    let alertMsg = 'Warning: You must select at least one contact method.';
-
     if (!mailPreference && !emailPreference && !textPreference) {
-      alert(alertMsg)
-    } else if (textMessageOnly) {
-      alertMsg += ' An additional method must be checked if selecting Text.';
-      alert(alertMsg)
+      alert('A contact method is required to proceed. If selecting Text, you must also choose Email or Mail.');
+    } else if (textPreference && !mailPreference && !emailPreference) {
+      alert('Text cannot be your only contact method. If you select Text, you must also choose Email or Mail.');
     } else {
       this.preferencesFormTarget.submit()
     }

@@ -776,7 +776,7 @@ var PersonValidations = (function (window, undefined) {
         }
       });
       if (isChecked == false) {
-        var alertMsg = 'Warning: You must select at least one contact method.';
+        var alertMsg = 'Warning: A contact method is required to proceed. If selecting Text, you must also choose Email or Mail.';
         if ($('.contact-method').hasClass('flag-enabled')) {
           alertMsg +=
             ' An additional method must be checked if selecting Text.';
@@ -797,7 +797,7 @@ var PersonValidations = (function (window, undefined) {
       if ($('#contact_type_text').prop('checked')) {
         if (!$('#contact_type_email').prop('checked') && !$('#contact_type_mail').prop('checked')) {
           const contactTextCheckbox = $('input[name="person[consumer_role_attributes][contact_method][]"]');
-          customContactMethodValidation(contactTextCheckbox, "You must select at least one contact method other than 'Text'");
+          customContactMethodValidation(contactTextCheckbox, "Text cannot be your only contact method. If you select Text, you must also choose Email or Mail.");
           PersonValidations.restoreRequiredAttributes(e);
           contactTextCheckbox.each(function() {
             this.reportValidity();
