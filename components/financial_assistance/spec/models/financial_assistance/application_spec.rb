@@ -692,17 +692,6 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
       allow(application).to receive(:aasm_state).and_return('draft')
       expect(application.is_reviewable?).to eq false
     end
-
-    context 'when qhp application feature is enabled' do
-      before do
-        allow(application).to receive(:qhp_application_feature_enabled?).and_return(true)
-      end
-
-      it 'should return true if the application is in draft state' do
-        allow(application).to receive(:aasm_state).and_return('draft')
-        expect(application.is_reviewable?).to eq true
-      end
-    end
   end
 
   describe 'check the validity of an application' do

@@ -2,7 +2,13 @@
 
 # Helper for constructing dropdown options for use in the `datatables/shared/_dropdown` partial
 module DropdownHelper
-  # the dropdowns used for the Applications index - these live outside of datatable
+  # The dropdown options for financial assistance applications.
+  # This method is used to generate the dropdown options for the financial assistance applications index.
+  #
+  # @param application [FinancialAssistance::Application] the financial assistance application to which the dropdowns will be added
+  # @param copyable_application_ids [Array] the IDs of applications that can be copied
+  #
+  # @return [Array] the updated dropdown options including any financial assistance specific links
   def application_dropdowns(application, copyable_application_ids)
     option_args = [
       (if application.is_draft? || (application.imported? && current_user.has_hbx_staff_role?)
@@ -11,22 +17,104 @@ module DropdownHelper
           :default]
        end),
       ([l10n('insured.sbm.applications.actions.copy'), financial_assistance.copy_application_path(application), :default] unless do_not_allow_copy?(application, current_user, copyable_application_ids)),
-      ([l10n('insured.sbm.applications.actions.view_eligibility'), financial_assistance.eligibility_results_application_path(application), :default] if application.is_determined? || application.is_terminated?),
-      ([l10n('insured.sbm.applications.actions.review'), financial_assistance.review_application_path(application), :default] if application.is_reviewable?)
+      ([l10n('insured.sbm.applications.actions.view_eligibility'), financial_assistance.eligibility_results_application_path(application), :default] if application.is_determined? || application.is_terminated?)
     ]
-    option_args = add_hbx_only_dropdowns(application, option_args)
+
+    if application.is_reviewable? || (qhp_application_feature_enabled? && application.is_draft? && current_user.has_hbx_staff_role?)
+      option_args << (
+        [
+          l10n('insured.sbm.applications.actions.review'),
+          financial_assistance.review_application_path(application),
+          :default
+        ]
+      )
+    end
+
+    if current_user.has_hbx_staff_role?
+      if FinancialAssistanceRegistry.feature_enabled?(:transfer_history_page)
+        option_args << (
+          [
+            l10n('insured.sbm.applications.actions.transfer_history'),
+            financial_assistance.transfer_history_application_path(application),
+            :default
+          ]
+        )
+      end
+
+      if application.is_reviewable?
+        option_args << (
+          [
+            l10n('insured.sbm.applications.actions.full_application'),
+            financial_assistance.raw_application_application_path(application),
+            :default
+          ]
+        )
+      end
+    end
+
     construct_options(option_args)
   end
 
+  # The dropdown options for QHP applications.
+  # This method is only applicable for QHP applications and is used to generate the dropdown options for the QHP applications index.
+  #
+  # @param application [IndividualMarket::Application] the QHP application to which the dropdowns will be added
+  # @param copyable_application_ids [Array] the IDs of applications that can be copied
+  #
+  # @return [Array] the updated dropdown options including any QHP specific links
   def qhp_application_dropdowns(application, copyable_application_ids)
-    option_args = [
-      ([l10n('insured.sbm.applications.actions.update'), insured_individual_market_application_applicants_path(application), :default] if application.is_initial?),
-      ([l10n('insured.sbm.applications.actions.copy'), copy_insured_individual_market_application_path(application), :default] unless do_not_allow_copy?(application, current_user, copyable_application_ids)),
-      ([l10n('insured.sbm.applications.actions.view_eligibility'), eligibility_results_insured_individual_market_application_path(application), :default] if application.is_determined?),
-      ([l10n('insured.sbm.applications.actions.eligibility_criteria'), eligibility_criteria_insured_individual_market_application_path(application), :default] if application.is_determined? && current_user.has_hbx_staff_role?),
-      ([l10n('insured.sbm.applications.actions.review'), insured_individual_market_application_path(application), :default] if application.is_reviewable?)
-    ]
-    option_args = add_hbx_only_dropdowns(application, option_args)
+    option_args = []
+
+    if application.initial?
+      option_args << (
+        [
+          l10n('insured.sbm.applications.actions.update'),
+          insured_individual_market_application_applicants_path(application),
+          :default
+        ]
+      )
+    end
+
+    unless do_not_allow_copy?(application, current_user, copyable_application_ids)
+      option_args << (
+        [
+          l10n('insured.sbm.applications.actions.copy'),
+          copy_insured_individual_market_application_path(application),
+          :default
+        ]
+      )
+    end
+
+    if application.determined?
+      option_args << (
+        [
+          l10n('insured.sbm.applications.actions.view_eligibility'),
+          eligibility_results_insured_individual_market_application_path(application),
+          :default
+        ]
+      )
+    end
+
+    if application.determined? && current_user.has_hbx_staff_role?
+      option_args << (
+        [
+          l10n('insured.sbm.applications.actions.eligibility_criteria'),
+          eligibility_criteria_insured_individual_market_application_path(application),
+          :default
+        ]
+      )
+    end
+
+    if application.is_reviewable? || (application.initial? && current_user.has_hbx_staff_role?)
+      option_args << (
+        [
+          l10n('insured.sbm.applications.actions.review'),
+          insured_individual_market_application_path(application),
+          :default
+        ]
+      )
+    end
+
     construct_options(option_args)
   end
 
@@ -124,15 +212,6 @@ module DropdownHelper
     when :remote_edit_aptc_csr
       ::DropdownHelper::REMOTE_EDIT_APTC_CSR.dup
     end
-  end
-
-  def add_hbx_only_dropdowns(application, options)
-    return options unless current_user.has_hbx_staff_role?
-    if application.is_a?(::FinancialAssistance::Application)
-      options << ([l10n('insured.sbm.applications.actions.transfer_history'), financial_assistance.transfer_history_application_path(application), :default] if FinancialAssistanceRegistry.feature_enabled?(:transfer_history_page))
-      options << ([l10n('insured.sbm.applications.actions.full_application'), financial_assistance.raw_application_application_path(application), :default] if current_user.has_hbx_staff_role? && application.is_reviewable?)
-    end
-    options
   end
 
   # map legacy dropdown types to BS4 dropdown types

@@ -34,7 +34,11 @@ module FinancialAssistance
     MOTIVATION_KINDS  = %w[insurance_affordability].freeze
 
     SUBMITTED_STATUS = %w[submitted verifying_income].freeze
+
+    # @!attribute REVIEWABLE_STATUSES
+    # @return [Array<String>] Collection of Application statuses that are reviewable
     REVIEWABLE_STATUSES = %w[submitted determination_response_error determined terminated].freeze
+
     CLOSED_STATUSES = %w[cancelled terminated].freeze
 
     STATES_FOR_VERIFICATIONS = %w[submitted determination_response_error determined].freeze
@@ -1193,8 +1197,7 @@ module FinancialAssistance
     end
 
     def is_reviewable?
-      reviewable_statuses = qhp_application_feature_enabled? ? REVIEWABLE_STATUSES.dup.push("draft") : REVIEWABLE_STATUSES
-      reviewable_statuses.include?(aasm_state)
+      REVIEWABLE_STATUSES.include?(aasm_state)
     end
 
     def is_closed?

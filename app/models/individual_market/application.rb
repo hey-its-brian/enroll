@@ -65,7 +65,9 @@ module IndividualMarket
     # @return [Array<Symbol>] Collection of all possible generation reasons
     GENERATION_REASONS = %i[manual renewal rop_expiration].freeze
 
-    REVIEWABLE_STATUSES = %w[initial submission_failed submitted determination_failed].freeze
+    # @!attribute REVIEWABLE_STATUSES
+    # @return [Array<String>] Collection of Application statuses that are reviewable
+    REVIEWABLE_STATUSES = %w[submission_failed submitted determination_failed determined].freeze
 
     # Validates the origin field to ensure it is a valid kind
     validates :origin, inclusion: { in: ORIGIN_KINDS }
