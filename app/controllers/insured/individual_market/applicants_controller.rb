@@ -108,9 +108,9 @@ module Insured
 
         @applicant = @application.applicants.where(id: params[:applicant_id]).first
 
-        transform_contact_method
+        contact_method = transform_contact_method
 
-        @applicant.update_attributes(preferences_params)
+        @applicant.update_attributes(preferences_params.except(:contact_method).merge(contact_method: contact_method))
 
         if @applicant.save
           redirect_to review_insured_individual_market_application_path(@application)
@@ -171,10 +171,10 @@ module Insured
       end
 
       def transform_contact_method
-        contact_method = params.dig("applicant", "contact_method")
+        contact_method = params.dig("individual_market_applicant", "contact_method")
         return unless contact_method.is_a?(Array)
         return if contact_method.empty?
-        params["applicant"]["contact_method"] = IndividualMarket::Applicant::CONTACT_METHOD_MAPPING[contact_method]
+        ::IndividualMarket::Applicant::CONTACT_METHOD_MAPPING[contact_method]
       end
 
       def base_attributes
@@ -195,8 +195,8 @@ module Insured
 
       def preferences_params
         params.require(:individual_market_applicant).permit(
-          :contact_method,
           :language_preference,
+          { contact_method: [] },
           phones_attributes: [:id, :kind, :number, :country_code, :area_code, :extension, :full_phone_number, :_destroy],
           emails_attributes: [:id, :kind, :address, :_destroy]
         )

@@ -10,7 +10,7 @@
         <div class="phone d-flex mb-md-2 row col-sm">
           <% home_phone = @applicant.home_phone.present? ? @applicant.home_phone : @applicant.phones.build(kind: "home") %>
           <% mobile_phone = @applicant.mobile_phone.present? ? @applicant.mobile_phone : @applicant.phones.build(kind: "mobile") %>
-          <%= f.fields_for :phones, [home_phone, mobile_phone], child_index: 0, errors: {}, fieldset: true do |phone|  %>
+          <%= f.fields_for :phones, [home_phone, mobile_phone], errors: {}, fieldset: true do |phone|  %>
             <% kind = phone.object.kind.upcase %>
             <% required = kind == 'HOME' ? "required" : "" %>
             <%= phone.hidden_field :kind %>
@@ -30,7 +30,7 @@
         <div class="email d-flex mb-md-4 row col-sm">
           <% email = @applicant.home_email.present? ? @applicant.home_email : @applicant.emails.build(kind: "home") %>
           <% work_email = @applicant.work_email.present? ? @applicant.work_email : @applicant.emails.build(kind: "work") %>
-          <%= f.fields_for :emails, [email, work_email], child_index: 0, errors: {}, fieldset: true do |f| %>
+          <%= f.fields_for :emails, [email, work_email], errors: {}, fieldset: true do |f| %>
             <% kind = f.object.kind %>
             <div class="col-sm col-md-6 p-0">
               <div class="col-md-12 <%= f.index.even? ? 'pl-0' : 'pr-0'%>">

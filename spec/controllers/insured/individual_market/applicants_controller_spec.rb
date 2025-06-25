@@ -428,7 +428,8 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
               individual_market_applicant: { contact_method: ["Email"] }
             }
             application.reload
-            expect(applicant.contact_method).to include("Paper")
+            applicant.reload
+            expect(applicant.contact_method).to include("Only Electronic communications")
           end
 
           it "does not transform the preferences if it is not an array" do
@@ -438,6 +439,7 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
               individual_market_applicant: { contact_method: "Email" }
             }
             application.reload
+            applicant.reload
             expect(applicant.contact_method).not_to eq("Email")
           end
 
@@ -451,7 +453,8 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
               }
             }
             application.reload
-            expect(applicant.contact_method).to include("Paper")
+            applicant.reload
+            expect(applicant.contact_method).to include("Paper, Electronic and Text Message communications")
             expect(applicant.is_homeless).to be_falsey
           end
 
@@ -459,7 +462,7 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
             post :update_preferences, params: {
               application_id: application.id,
               applicant_id: applicant.id,
-              individual_market_applicant: { contact_method: "Email" }
+              individual_market_applicant: { contact_method: ["Email"] }
             }
             expect(response).to redirect_to(review_insured_individual_market_application_path(application))
           end
