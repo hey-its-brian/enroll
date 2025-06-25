@@ -1,4 +1,4 @@
-# example call: `bundle exec rake "reinstate_policies:reinstate[<HBX_ID_1> <HBX_ID_2]> ... <HBX_ID_N>]"`
+# example call: `bundle exec rake "reinstate_policies:reinstate[<HBX_ID_1> <HBX_ID_2> ... <HBX_ID_N>]"`
 namespace :reinstate_policies do
   desc "Silently reinstate terminated policies with given HBX ids"
   task :reinstate, [:ids] => :environment do |t, args|
@@ -84,6 +84,20 @@ namespace :reinstate_policies do
             )
             enrollments.update_all(terminate_reason: nil) if enrollments.any?
             puts "Enrollment Reinstated HBXID: #{reinstate_enrollment.hbx_id} Reinstated Start Date: #{reinstate_enrollment.effective_on} Family ID: #{base_enrollment.try(:subscriber).try(:hbx_id)}"
+
+            base_enrollment_term_or_cancel_date = base_enrollment.workflow_state_transitions
+              .where(:to_state.in => ['coverage_terminated', 'coverage_canceled'])
+              .max_by(&:transition_at)&.transition_at
+            next if base_enrollment_term_or_cancel_date.blank?
+            coverage_year = base_enrollment.coverage_year
+            intervening_applications = FinancialAssistance::Application.determined.where(
+              family_id: base_enrollment.family.id,
+              assistance_year: coverage_year, 
+              :submitted_at.gte => base_enrollment_term_or_cancel_date
+            )
+            intervening_application_summaries = intervening_applications.pluck(:hbx_id, :submitted_at).map { |hbx_id, submitted_at| "#{hbx_id} (#{submitted_at.strftime('%m/%d/%y')})" }
+            puts "WARNING: #{coverage_year} year IAP Applications for Family (HBXID: #{base_enrollment.family.primary_applicant.person.hbx_id}) submitted after " \
+            "the reinstated Enrollment (HBXID #{reinstate_enrollment.hbx_id}) was terminated or canceled on #{base_enrollment_term_or_cancel_date}:\n - #{intervening_application_summaries.join("\n - ")}" if intervening_applications.any?
           else
             puts "Enrollment not Eligible to Reinstate Enrollment HbxID: #{base_enrollment.hbx_id} Family ID: #{base_enrollment.try(:subscriber).try(:hbx_id)}"
           end
@@ -103,5 +117,28 @@ namespace :reinstate_policies do
       enrollment = HbxEnrollment.where(hbx_id: id).first
       enrollment&.update_attributes(terminate_reason: nil)
     end
+  end
+
+  private
+
+  # Helper method to generate warning message for intervening applications
+  def self.generate_intervening_applications_warning(base_enrollment, reinstate_enrollment, base_enrollment_term_or_cancel_date)
+    return nil if base_enrollment_term_or_cancel_date.blank?
+    
+    coverage_year = base_enrollment.coverage_year
+    intervening_applications = FinancialAssistance::Application.determined.where(
+      family_id: base_enrollment.family.id,
+      assistance_year: coverage_year, 
+      :submitted_at.gte => base_enrollment_term_or_cancel_date
+    )
+    
+    return nil unless intervening_applications.any?
+    
+    intervening_application_summaries = intervening_applications.pluck(:hbx_id, :submitted_at).map do |hbx_id, submitted_at| 
+      "#{hbx_id} (#{submitted_at.strftime('%m/%d/%y')})" 
+    end
+    
+    "WARNING: #{coverage_year} year IAP Applications for Family (HBXID: #{base_enrollment.family.primary_applicant.person.hbx_id}) submitted after " \
+    "the reinstated Enrollment (HBXID #{reinstate_enrollment.hbx_id}) was terminated or canceled on #{base_enrollment_term_or_cancel_date}:\n - #{intervening_application_summaries.join("\n - ")}"
   end
 end
