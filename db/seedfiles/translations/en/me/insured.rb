@@ -1048,6 +1048,11 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.qhp_application.eligibility_criteria.bases.not_incarcerated' => 'Not Incarcerated',
   :'en.qhp_application.eligibility_criteria.bases.is_alive' => 'Is Alive',
   :'en.qhp_application.eligibility_criteria.bases.lawfully_present_in_us' => 'Citizen or Lawfully Present in the US:',
+  :'en.insured.leaving_modal.warning' => 'Warning: Your Application Has Not Been Submitted',
+  :'en.insured.leaving_modal.warning_description' => 'Any changes you’ve made won’t take effect until you submit the application. If you leave
+now, your application will be saved as a draft and you can finish it later.',
+  :'en.insured.leaving_modal.leave_without_submitting' => 'Leave without Submitting',
+  :'en.insured.leaving_modal.return_to_application' => 'Return to Application',
   :'en.qhp_application.preferences.voter_registration_link_text' => 'Maine.gov/vote',
   :'en.qhp_application.preferences.i_agree' => 'I agree',
   :'en.qhp_application.preferences.i_disagree' => 'I disagree',

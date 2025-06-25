@@ -17,3 +17,6 @@
     </div>
   </div>
 <% end %>
+<% if qhp_application_feature_enabled? %>
+  <%= render partial: 'shared/leaving_modal' %>
+<% end %>

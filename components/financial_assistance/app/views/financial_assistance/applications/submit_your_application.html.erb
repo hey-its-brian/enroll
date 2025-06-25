@@ -141,7 +141,9 @@
       previous_link: previous_link, show_back_to_household_button: !qhp_application_feature_enabled? } %>
     </div>
   <% end %>
-
+  <% if qhp_application_feature_enabled? %>
+    <%= render partial: 'shared/leaving_modal' %>
+  <% end %>
 <% else %>
   <%= form_for @application, url: {action: "submit_your_application_save"}, method: :put do |f| %>
     <div class="col-lg-10 col-md-10 col-sm-10 col-xs-12 row">

@@ -55,6 +55,9 @@
 
     <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_link, disable_link: @application.incomplete_applicants? } %>
   </div>
+  <% if qhp_application_feature_enabled? %>
+    <%= render partial: 'shared/leaving_modal' %>
+  <% end %>
 <% else %>
   <div class="col-lg-10 col-md-10 col-sm-10 col-xs-12 row">
     <div class="col-md-9">

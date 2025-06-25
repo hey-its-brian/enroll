@@ -268,6 +268,9 @@
       <%= render partial: 'shared/progress_navigation_buttons', locals: {button_type: "submit"} %>
     </div>
   <% end %>
+  <% if qhp_application_feature_enabled? %>
+    <%= render partial: 'shared/leaving_modal' %>
+  <% end %>
 <% else %>
   <%= form_for @applicant, url: {action: "save_questions"}, :html => {method: :get} do |f| %>
     <div class="col-lg-10 col-md-10 col-sm-10 col-xs-12 row other_questions">

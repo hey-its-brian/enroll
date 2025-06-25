@@ -309,6 +309,10 @@
     </div>
   </div>
 
+  <% if qhp_application_feature_enabled? %>
+    <%= render partial: 'shared/leaving_modal' %>
+  <% end %>
+
 <% else %>
   <div class="col-lg-10 col-md-10 col-sm-10 col-xs-12 row">
     <div id="health-coverage-page" class="col-lg-9 col-md-9 col-sm-9 col-xs-12 bottom-pd">

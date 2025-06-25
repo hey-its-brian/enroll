@@ -116,7 +116,6 @@
     <%= content_for :submit_button do %>
       <%= submit_tag l10n("continue_next"), class: "btn", data: {target: "contact-methods.submitButton", action: "click->contact-methods#alertForInvalidContactMethods"} %>
     <% end %>
-
   <div class="mt-md-5">
     <%= render partial: "shared/progress_navigation_buttons",
         locals: {
@@ -124,3 +123,4 @@
         } %>
   </div>
 <% end %>
+<%= render partial: 'shared/leaving_modal' %>
