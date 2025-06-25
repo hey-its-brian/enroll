@@ -9,6 +9,7 @@
 
 personal_info:
   title: <%= l10n('personal_information') %>
+  edit_link: <%= application_applicants_path(@application, applicant: @applicant.id) %>
   rows:
     dob:
       key: <%= l10n('date_of_birth') %>
@@ -111,10 +112,10 @@ demographics:
   rows:
     race:
       key: <%= l10n('insured.shared.race_ethicity_label') %>
-      value: <%= @applicant.race.present? ? @applicant.race : 'Not answered' %>
+      value: <%= @applicant.race_selections&.compact_blank&.any? ? @applicant.race_selections.compact_blank.join(', ') : 'Not answered' %>
     ethnicity:
       key: <%= l10n('insured.shared.hispanic_label') %>
-      value: <%= @applicant.ethnicity&.compact_blank&.any? ? @applicant.ethnicity.compact_blank.join(', ') : 'Not answered' %>
+      value: <%= @applicant.ethnicity_selections&.compact_blank&.any? ? @applicant.ethnicity_selections.compact_blank.join(', ') : 'Not answered' %>
 
 addresses:
   title: <%= l10n('qhp_application.review.address_info') %>

@@ -4,12 +4,13 @@ module FinancialAssistance
   # Applicant controller for Financial Assistance
   class ApplicantsController < FinancialAssistance::ApplicationController
 
-    before_action :set_current_person, :set_family, only: [:index]
+    before_action :set_current_person, :set_family, only: [:index, :show]
     before_action :find, :except => [:index, :age_of_applicant]
     before_action :find_application, :except => [:age_of_applicant]
     before_action :find_applicant, only: [:age_of_applicant]
     before_action :set_cache_headers, only: [:other_questions, :tax_info]
-    before_action :enable_bs4_layout, only: [:index, :edit, :other_questions, :tax_info]
+    before_action :enable_bs4_layout, only: [:index, :show, :edit, :other_questions, :tax_info]
+    before_action :set_summary_helpers, only: [:show]
 
     include ::ApplicationHelper
 
@@ -20,10 +21,18 @@ module FinancialAssistance
     # @private
     before_action :check_for_uneditable_application
 
-    layout :resolve_layout, only: [:index]
+    layout :resolve_layout, only: [:index, :show]
 
     def index
       authorize @application, :index?
+
+      respond_to do |format|
+        format.html
+      end
+    end
+
+    def show
+      authorize @applicant, :show?
 
       respond_to do |format|
         format.html
@@ -370,6 +379,14 @@ module FinancialAssistance
 
     def enable_bs4_layout
       @bs4 = true if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+    end
+
+    def set_summary_helpers
+      @cfl_service = ::FinancialAssistance::Services::ConditionalFieldsLookupService.new
+      @applicants = [@applicant]
+      return unless @bs4
+
+      @summary_helper = ::FinancialAssistance::Services::SummaryService.instance_for_action(action_name, @cfl_service, @application, @applicants)
     end
   end
 end

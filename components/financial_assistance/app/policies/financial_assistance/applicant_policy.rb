@@ -63,6 +63,14 @@ module FinancialAssistance
       edit?
     end
 
+    # Determines if the current user has permission to view an applicant.
+    # The user can view an applicant if they have permission to edit it.
+    #
+    # @return [Boolean] Returns true if the user has permission to update an applicant, false otherwise.
+    def show?
+      edit?
+    end
+
     # Determines if the current user has permission to answer other questions.
     # The user can answer other questions if they have permission to edit the applicant.
     #

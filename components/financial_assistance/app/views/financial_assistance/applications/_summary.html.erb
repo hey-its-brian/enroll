@@ -69,22 +69,7 @@
 <% @summary_helper.sections.each do |section| %>
   <section>
     <% if section[:section_title].present? %>
-      <% if qhp_application_feature_enabled? %>
-        <div class="d-flex justify-content-between">
-          <h2 class="mb-4"><%= section[:section_title] %></h2>
-          <% edit_section_link = section[:edit_section_link] %>
-          <% if edit_section_link.present? && params[:action] == "review_and_submit" %>
-            <div class="mb-2">
-              <%= link_to(section[:edit_section_link], class: "btn outline secondary") do %>
-                <i class="fas fa-pencil-alt ml-0 mr-2"></i>
-                <span><%= l10n("qhp_application.review.edit_member") %></span>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
-      <% else %>
-        <h2 class="mb-4"><%= section[:section_title] %></h2>
-      <% end %>
+      <h2 class="mb-4"><%= section[:section_title] %></h2>
     <% end %>
     <% subsections = section[:subsections] || [section] %> <%# handle standalone subsections like My Preferences and My Household %>
     <%= render partial: 'financial_assistance/applications/summary_subsection', collection: subsections, as: :subsection %>

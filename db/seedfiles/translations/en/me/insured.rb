@@ -1023,7 +1023,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.insured.preferences.select_language' => 'Select communications language',
   :'en.qhp_application.show.applications' => 'Applications',
   :'en.qhp_application.show.application_details' => 'Application Details',
-  :'en.qhp_application.show.application_details_description' => "Select 'Edit Member Details' to make updates to your information. Your changes won't be final until you submit your updated application.",
+  :'en.qhp_application.show.application_details_description' => "Select 'Edit Section' to make updates to your information. Your changes won't be final until you submit your updated application.",
   :'en.qhp_application.show.member_details' => 'Member Details',
   :'en.qhp_application.show.applied_for_fa' => "Applied for Financial Assistance",
   :'en.qhp_application.show.apply_for_fa' => "Apply for Financial Assistance",

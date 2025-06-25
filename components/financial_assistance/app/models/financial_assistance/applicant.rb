@@ -12,6 +12,7 @@ module FinancialAssistance
     include Eligibilities::Visitors::Visitable
     include GlobalID::Identification
     include ::ResourceRegistryHelper
+    include ::RaceAndEthnicityHelper
 
     embedded_in :application, class_name: "::FinancialAssistance::Application", inverse_of: :applicants
 
@@ -1717,6 +1718,38 @@ module FinancialAssistance
     # @return [Address, nil] the first work address if one exists, otherwise nil
     def work_address
       addresses.work.first
+    end
+
+    # Returns a flattened array of all available race options
+    #
+    # @return [Array<String>] All available race option names from the ethnicity collection
+    def race_values
+      # Flattens all ethnicity sets into a single array of race options
+      ethnicity_collection.flatten.map(&:name)
+    end
+
+    # Returns a flattened array of all available ethnicity options
+    #
+    # @return [Array<String>] All available ethnicity option names from the latino collection
+    def ethnicity_values
+      # Flattens all latino sets into a single array of ethnicity options
+      latino_collection.flatten.map(&:name)
+    end
+
+    # Filters the applicant's selected ethnicity values to only include race options
+    #
+    # @return [Array<String>] The subset of the applicant's ethnicity selections that match race options
+    def race_selections
+      # Returns only the race options selected by the applicant
+      ethnicity.select { |eth| race_values.include?(eth) }
+    end
+
+    # Filters the applicant's selected ethnicity values to only include latino/ethnicity options
+    #
+    # @return [Array<String>] The subset of the applicant's ethnicity selections that match ethnicity options
+    def ethnicity_selections
+      # Returns only the Latino/ethnicity options selected by the applicant
+      ethnicity.select { |eth| ethnicity_values.include?(eth) }
     end
 
     private

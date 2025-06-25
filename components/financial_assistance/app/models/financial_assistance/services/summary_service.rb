@@ -21,7 +21,7 @@ module FinancialAssistance
       # @param [Array] applicants The applicants to create the SummaryService for.
       # return [SummaryService] The new SummaryService instance.
       def self.instance_for_action(action_name, cfl_service, application, applicants)
-        new(is_concise: concise_action?(action_name), can_edit: editable_action?(action_name), cfl_service: cfl_service, application: application, applicants: applicants)
+        new(is_concise: concise_action?(action_name), can_edit: editable_action?(action_name, application), cfl_service: cfl_service, application: application, applicants: applicants)
       end
 
       def initialize(is_concise:, can_edit:, cfl_service:, application:, applicants:)
@@ -54,8 +54,10 @@ module FinancialAssistance
       # @param [String] action_name The name of the action to check.
       #
       # @return [Boolean] True if the action is editable, false otherwise.
-      private_class_method def self.editable_action?(action_name)
-        action_name == "review_and_submit"
+      private_class_method def self.editable_action?(action_name, application)
+        return false unless application.draft?
+
+        %w[review_and_submit show].include?(action_name)
       end
 
       private
@@ -70,8 +72,8 @@ module FinancialAssistance
       class Summary
         include FinancialAssistance::Engine.routes.url_helpers
 
-        def section_hash(title:, subsections:, edit_section_link:)
-          {section_title: title, subsections: subsections, edit_section_link: edit_section_link}
+        def section_hash(title:, subsections:)
+          {section_title: title, subsections: subsections}
         end
 
         def subsection_hash(title:, rows:, edit_link: nil)
@@ -210,8 +212,7 @@ module FinancialAssistance
               super()
               @application = application
               @applicant = applicant
-              @hash = section_hash(title: capitalize_full_name(applicant.full_name), subsections: applicant_subsections,
-                                   edit_section_link: application_applicants_path(application, applicant: applicant.id))
+              @hash = section_hash(title: capitalize_full_name(applicant.full_name), subsections: applicant_subsections)
             end
 
             private
@@ -444,8 +445,7 @@ module FinancialAssistance
                   rows: fr_hash.compact,
                   edit_link: @can_edit ? application_relationships_path(@application) : nil
                 )
-              ],
-              edit_section_link: nil
+              ]
             )
           end
 

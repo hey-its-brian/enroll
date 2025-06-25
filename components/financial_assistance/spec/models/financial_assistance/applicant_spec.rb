@@ -2640,6 +2640,69 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
     end
   end
 
+  describe "race and ethnicity methods" do
+    before do
+      allow(applicant).to receive(:ethnicity_collection).and_return([
+                                                                      [double(name: "White"), double(name: "Black or African American"),
+                                                                       double(name: "Asian"), double(name: "American Indian or Alaska Native"),
+                                                                       double(name: "Native Hawaiian or Other Pacific Islander")]
+                                                                    ])
+
+      allow(applicant).to receive(:latino_collection).and_return([
+                                                                   [double(name: "Hispanic or Latino"), double(name: "Not Hispanic or Latino")]
+                                                                 ])
+
+      applicant.ethnicity = ["White", "Black or African American", "Hispanic or Latino"]
+    end
+
+    describe '#race_values' do
+      it "returns all available race options from the ethnicity collection" do
+        expect(applicant.race_values).to match_array(["White", "Black or African American", "Asian",
+                                                      "American Indian or Alaska Native",
+                                                      "Native Hawaiian or Other Pacific Islander"])
+      end
+    end
+
+    describe '#ethnicity_values' do
+      it "returns all available ethnicity options from the latino collection" do
+        expect(applicant.ethnicity_values).to match_array(["Hispanic or Latino", "Not Hispanic or Latino"])
+      end
+    end
+
+    describe '#race_selections' do
+      it "returns only the race values that the applicant has selected" do
+        expect(applicant.race_selections).to match_array(["White", "Black or African American"])
+      end
+
+      it "returns an empty array when no race values are selected" do
+        applicant.ethnicity = ["Hispanic or Latino"]
+        expect(applicant.race_selections).to be_empty
+      end
+    end
+
+    describe '#ethnicity_selections' do
+      it "returns only the ethnicity values that the applicant has selected" do
+        expect(applicant.ethnicity_selections).to match_array(["Hispanic or Latino"])
+      end
+
+      it "returns an empty array when no ethnicity values are selected" do
+        applicant.ethnicity = ["White", "Black or African American"]
+        expect(applicant.ethnicity_selections).to be_empty
+      end
+    end
+
+    describe 'ethnicity attribute' do
+      it "returns an empty array when ethnicity is nil" do
+        applicant.ethnicity = nil
+        expect(applicant.ethnicity).to eq([])
+      end
+
+      it "returns the stored ethnicity values when present" do
+        expect(applicant.ethnicity).to match_array(["White", "Black or African American", "Hispanic or Latino"])
+      end
+    end
+  end
+
   describe '#attributes_for_export' do
     let(:test_applicant) do
       applicant.five_year_bar_applies = five_year_bar
@@ -2761,4 +2824,5 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
       end
     end
   end
+
 end
