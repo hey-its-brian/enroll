@@ -41,39 +41,22 @@ module Subscribers
       end
     end
 
-    def determine_verifications(params, subscriber_logger)
-      person = GlobalID::Locator.locate(params[:gid])
-      consumer_role = person.consumer_role
+    def determine_verifications(payload, subscriber_logger)
+      result = ::Operations::People::OnUpdate.new.call(
+        { payload: payload, subscriber_logger: subscriber_logger }
+      )
 
-      if consumer_role.present? && attributes_changed?(params[:payload])
-        result = ::Operations::Individual::DetermineVerifications.new.call({id: consumer_role.id})
-        result_str = result.success? ? "Success: #{result.success}" : "Failure: #{result.failure}"
-        subscriber_logger.info "PeopleSubscriber::Update, determine_verifications result: #{result_str}"
+      if result.success?
+        success = result.success
+        subscriber_logger.info "PeopleSubscriber::Update, determine_verifications result: Success: #{success}" if success.present?
+      else
+        subscriber_logger.info "PeopleSubscriber::Update, determine_verifications result: Failure: #{result.failure}"
       end
     rescue StandardError => e
       subscriber_logger.error "Error: PeopleSubscriber::Update, error message: #{e.message}, backtrace: #{e.backtrace}"
     end
 
     private
-
-    def attributes_changed?(changes)
-      attested_no_ssn = changes[:no_ssn][0] == '0' # if old value is '0' then it means no_ssn is now attested
-
-      # only check for tribe status attribute changes if the changes hash contains a non-empty value
-      # @note it is possible for the  tribe status attributes to update from an empty string to nil, so we need to discard that case
-      # @see Person#indian_tribe_member=, Person#indian_tribe_member, and Person#check_indian
-      tribe_status_attributes = EnrollRegistry[:consumer_role_hub_call].setting(:indian_tribe_attributes).item.map(&:to_sym)
-      tribe_status_attributes_changes = tribe_status_attributes.map { |attr| changes[attr] }.compact
-      tribe_status_attribute_changed = tribe_status_attributes_changes.any? do |tribe_status_attribute_change|
-        tribe_status_attribute_change[0].present? || tribe_status_attribute_change[1].present?
-      end
-
-      # for the identifying information attributes, we just simply check if any have changed
-      identifying_information_attributes = EnrollRegistry[:consumer_role_hub_call].setting(:identifying_information_attributes).item.map(&:to_sym)
-      identifying_information_attributes_changed = (identifying_information_attributes & changes.keys).present?
-
-      attested_no_ssn || tribe_status_attribute_changed || identifying_information_attributes_changed.present?
-    end
 
     def pre_process_message(subscriber_logger, payload)
       subscriber_logger.info "PeopleSubscriber, response: #{payload}"
