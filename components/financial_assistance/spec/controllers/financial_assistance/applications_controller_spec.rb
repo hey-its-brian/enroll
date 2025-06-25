@@ -355,6 +355,47 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
         expect(flash[:error]).to eq('Access not allowed for family_policy.index?, (Pundit policy)')
       end
     end
+
+    context 'when:
+      - primary person is RIDP verified
+      - qhp_application feature is enabled
+      ' do
+
+      before :each do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        get :index
+      end
+
+      it 'redirects to sbm applications path' do
+        expect(response).to redirect_to(main_app.insured_sbm_applications_path)
+      end
+    end
+  end
+
+  describe 'GET index_with_filter' do
+    context 'when:
+      - primary person is RIDP verified
+      - qhp_application feature is enabled
+      ' do
+
+      before :each do
+        allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:filtered_application_list).and_return(true)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        # Force route reloading so that the filtered_application_list routes are available
+        Rails.application.reload_routes!
+        get :index_with_filter
+      end
+
+      after :each do
+        # Reset the feature flag to its original state
+        allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:filtered_application_list).and_call_original
+        Rails.application.reload_routes!
+      end
+
+      it 'redirects to sbm applications path' do
+        expect(response).to redirect_to(main_app.insured_sbm_applications_path)
+      end
+    end
   end
 
   describe "GET edit" do

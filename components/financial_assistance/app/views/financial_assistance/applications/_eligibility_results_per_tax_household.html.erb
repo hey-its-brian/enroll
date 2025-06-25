@@ -231,7 +231,11 @@
               <p><%= l10n("faa.do_not_agree",
                 appeal_link: EnrollRegistry[:enroll_app].setting(:appeal_link).item,
                 find_expert_link: EnrollRegistry[:enroll_app].setting(:find_expert_link).item) %></p>
-              <%= h(link_to l10n("faa.results.view_my_applications"), applications_path, class: "button secondary") %>
+              <% if qhp_enabled %>
+                <%= h(link_to l10n("faa.results.view_my_applications"), main_app.insured_sbm_applications_path, class: "button secondary") %>
+              <% else %>
+                <%= h(link_to l10n("faa.results.view_my_applications"), applications_path, class: "button secondary") %>
+              <% end %>
             </div>
           </div>
         </div>

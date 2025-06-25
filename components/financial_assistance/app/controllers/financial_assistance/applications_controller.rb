@@ -25,6 +25,7 @@ module FinancialAssistance
     before_action :check_eligibility, only: [:copy]
     before_action :set_summary_helpers, only: [:review_and_submit, :review, :raw_application]
     before_action :set_cache_headers, only: [:index, :relationships, :review_and_submit, :index_with_filter]
+    before_action :endpoint_access_control, only: [:index, :index_with_filter]
 
     # This is a before_action that checks if the application is a renewal draft and if it is, it sets a flash message and redirects to the applications_path
     # This before_action needs to be called after finding the application
@@ -385,6 +386,13 @@ module FinancialAssistance
     end
 
     private
+
+    # This is a before_action that redirects to the main_app's insured_sbm_applications_path if the qhp_application feature is enabled
+    def endpoint_access_control
+      return unless qhp_application_feature_enabled?
+
+      redirect_to main_app.insured_sbm_applications_path
+    end
 
     # Prepares parameters for copying an existing financial assistance application
     #

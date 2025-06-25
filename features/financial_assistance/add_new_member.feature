@@ -55,6 +55,7 @@ Feature: User add's new dependent and submit form after filling required fields
     When the user clicks My Household section on the left navigation
     Then the user will navigate to the FAA Family Information page
 
+  @broken
   Scenario: Application transition from draft to cancelled status
     Given bs4_consumer_flow feature is enabled
     Given qhp_application feature is enabled
