@@ -55,10 +55,10 @@
         <% if EnrollRegistry.feature_enabled?(:display_county) %>
           <div id="county-select-<%= f.index %>" class="col-sm col-md-6 pr-0">
             <% @counties = fetch_counties_by_zip(address.object) %>
-            <% @empty_message = address.object.try(:zip).nil? ? 'Please provide a zip code' : "Zip code outside supported area" %>
+            <% @empty_message = address.object.try(:zip).nil? ? l10n("qhp_application.zip.empty") : l10n("qhp_application.zip.outside") %>
             <% @counties = [@empty_message] if @counties.empty? %>
             <%= address.label :county %>
-            <%= address.select(:county, options_for_select(@counties, selected: (address.object.try(:county) || @counties.first)),{},class:'w-100 required county-input', data: { target: 'zip-check.countySelect', options: BenefitMarkets::Locations::CountyZip.county_names })%>
+            <%= address.select(:county, options_for_select(@counties, selected: (address.object.try(:county) || @counties.first)),{},class:'w-100 required county-input', data: { message: l10n("qhp_application.zip.outside"), target: 'zip-check.countySelect', options: BenefitMarkets::Locations::CountyZip.county_names })%>
           </div>
         <% else %>
           <div class="col-sm col-md-6 pl-0 sm-hide"></div>

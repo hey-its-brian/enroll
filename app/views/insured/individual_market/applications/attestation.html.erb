@@ -37,8 +37,9 @@
   <% end %>
 
   <div class="mt-md-5">
-    <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: submit_insured_individual_market_application_path(@application), show_back_to_household_button: true } %>
+    <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: submit_insured_individual_market_application_path(@application) } %>
   </div>
 <% end %>
+</div>
 </div>
 <%= render partial: 'shared/leaving_modal' %>

@@ -1,227 +1,207 @@
 <% is_editing = @applicant.id.present? %>
 <% form_url = is_editing ? insured_individual_market_application_applicant_path(@application, @applicant) : insured_individual_market_application_applicants_path(@application) %>
-<%= form_for @applicant, {url: form_url, as: :applicant, method: is_editing ? :put : :post} do |f| %>
-  <% is_dependent = !@applicant.is_primary_applicant %>
-  <%= f.hidden_field :is_dependent, value: is_dependent %>
-  <%= f.hidden_field :is_primary_applicant, value: !is_dependent %>
-  <%= f.hidden_field :family_member_id, value: @applicant.family_member_id %>
+<div data-controller="family-information">
+  <%= form_for @applicant, {url: form_url, as: :applicant, method: is_editing ? :put : :post} do |f| %>
+    <% is_dependent = !@applicant.is_primary_applicant %>
+    <%= f.hidden_field :is_dependent, value: is_dependent %>
+    <%= f.hidden_field :is_primary_applicant, value: !is_dependent %>
+    <%= f.hidden_field :family_member_id, value: @applicant.family_member_id %>
 
-  <% unless is_editing %>
-    <h2><%= l10n("qhp_application.new_member") %></h2>
-  <% end %>
-
-  <% if current_user.has_hbx_staff_role? %>
-    <aside class="mb-3" id="admin-designation-descriptor">
-      <span class="admin-designation"></span>
-      <%= l10n('admin.admin_designation_descriptor') %>
-    </aside>
-  <% end %>
-
-  <div id="personal_info" data-controller="family-information">
-    <h3><%= l10n("personal_information") %></h3>
-
-    <%# Person Name Form %>
-    <%= f.fields_for :person_name, @person_name_form do |name| %>
-      <div class="d-flex mb-md-4">
-        <div class="col-md-6 col-lg-3 p-0">
-          <%= name.label :given_name, l10n("first_name"), class: "required" %>
-          <%= name.text_field :given_name, class: "required", required: true, placeholder: l10n("first_name"), autocomplete: :off %>
-        </div>
-        <div class="col-md-6 col-lg-3 p-0">
-          <%= name.label :middle_name, l10n("middle_name") %>
-          <%= name.text_field :middle_name, placeholder: l10n("middle_name"), autocomplete: :off %>
-        </div>
-        <div class="col-md-6 col-lg-3 p-0">
-          <%= name.label :family_name, l10n("last_name"), class: "required" %>
-          <%= name.text_field :family_name, class: "required", required: true, placeholder: l10n("last_name"), autocomplete: :off %>
-        </div>
-        <div class="col-md-6 col-lg-3 p-0">
-          <%= name.label :name_sfx, l10n("suffix") %>
-          <%= name.select :name_sfx, ::PersonName::SUFFIX_OPTIONS, include_blank: l10n("none"), autocomplete: :off %>
-        </div>
-      </div>
+    <% unless is_editing %>
+      <h2><%= l10n("qhp_application.new_member") %></h2>
     <% end %>
 
-    <%# Demographics Form %>
-    <%= f.fields_for :demographics, @demographics_form do |demographics| %>
-      <div class="d-flex mb-md-4">
-        <div class="col-md-6 col-lg-3 p-0">
-          <%= demographics.label :dob, l10n("date_of_birth"), class: "required" %>
-          <%= demographics.date_field :dob, placeholder: "MM/DD/YYYY", min: 110.years.ago, max: "9999-12-31", required: true, readonly: (is_editing && !is_dependent) %>
-        </div>
-        <div class="col-md-6 col-lg-3 p-0">
-          <%= demographics.label :gender, l10n("gender"), class: 'required' %>
-          <%= demographics.select :gender, [[l10n("Male"), 'male'], [l10n("Female"), 'female']], { prompt: l10n("select_option") }, required: true %>
-          <a href="#sex_gender" data-toggle="modal" data-target="#sex_gender" class="d-block"><%= l10n("not_sure") %></a>
-          <%= render partial: 'shared/modal_support_text_household', locals: { key: "sex_gender" } %>
-        </div>
-      </div>
+    <% if current_user.has_hbx_staff_role? %>
+      <aside class="mb-3" id="admin-designation-descriptor">
+        <span class="admin-designation"></span>
+        <%= l10n('admin.admin_designation_descriptor') %>
+      </aside>
+    <% end %>
+    <div id="personal_info">
+      <h3><%= l10n("personal_information") %></h3>
 
-      <div class="d-flex mb-md-4 <%= 'new_dependent' unless is_editing %>">
-        <% ssn_enabled = EnrollRegistry.feature_enabled?(:people_tab) ? is_editing && @applicant.demographics.ssn.present? : false %>
-        <% ssn_object = is_editing ? demographics : @demographics_form %>
-        <div class="col-md-6 col-lg-3 p-0">
-          <%= demographics.label :ssn, l10n("social_security") %>
-          <% if is_editing && EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields)  %>
-            <%= render 'ssn_fields', f: demographics, presenter: organize_ssn_params(demographics.object) %>
-          <% else %>
-            <% if EnrollRegistry.feature_enabled?(:ssn_ui_validation) %>
-              <%= demographics.text_field :ssn, placeholder: "000-00-0000", class: "required keep-label mask-ssn dependent-ssn-input",
-                pattern: "(?!666|000|9\\d{2})\\d{3}[\\- ]{0,1}(?!00)\\d{2}[\\- ]{0,1}(?!0{4})\\d{4}",
-                disabled: ssn_enabled,
-                data: {'error_message': l10n('insured.consumer_roles.invalid_ssn_error')} %>
-            <% else %>
-              <%= demographics.text_field :ssn, placeholder: "000-00-0000", class: "required", disabled: ssn_enabled  %>
-            <% end %>
-          <% end %>
-        </div>
-        <div class="col-md-6 col-lg-3 p-0 pt-md-4 no-ssn-container mr-auto">
-          <%= demographics.label :no_ssn, class: "mt-1 d-inline-block" do %>
-            <%= demographics.check_box :no_ssn, data: { target: "family-information.NoSsnCheckbox" } %>
-            <span class='no_ssn'><%= l10n("do_not_have_ssn") %></span>
-            <a href="#no_ssn_info" data-toggle="modal" data-target="#no_ssn_info" class="d-block"><%= l10n("not_sure") %></a>
-            <%= render partial: 'shared/modal_support_text_household', locals: { key: "no_ssn_info" } %>
-          <% end %>
-        </div>
-      </div>
-
-      <% if is_dependent %>
-        <div class="d-flex mb-md-4" data-target="family-information.RelationshipFields">
-          <div>
-            <%= f.label :relationship, l10n("relationship_to_primary_member").titleize, class: "required" %>
-            <%= f.select :relationship,
-                options_for_select(IndividualMarket::Relationship::RELATIONSHIP_KINDS.map { |r| [display_relationship(r.to_s), r.to_s] },
-                selected: @applicant.relationship),
-                { prompt: l10n("choose_relationship") },
-                { required: true } %>
-            <a href="#relationship" data-toggle="modal" data-target="#relationship" class="d-block"><%= l10n("not_sure") %></a>
-            <%= render partial: 'shared/modal_support_text_household', locals: { key: "relationship" } %>
+      <%# Person Name Form %>
+      <%= f.fields_for :person_name, @person_name_form do |name| %>
+        <div class="d-flex mb-md-4">
+          <div class="col-md-6 col-lg-3 p-0">
+            <%= name.label :given_name, l10n("first_name"), class: "required" %>
+            <%= name.text_field :given_name, class: "required", required: true, placeholder: l10n("first_name"), autocomplete: :off %>
+          </div>
+          <div class="col-md-6 col-lg-3 p-0">
+            <%= name.label :middle_name, l10n("middle_name") %>
+            <%= name.text_field :middle_name, placeholder: l10n("middle_name"), autocomplete: :off %>
+          </div>
+          <div class="col-md-6 col-lg-3 p-0">
+            <%= name.label :family_name, l10n("last_name"), class: "required" %>
+            <%= name.text_field :family_name, class: "required", required: true, placeholder: l10n("last_name"), autocomplete: :off %>
+          </div>
+          <div class="col-md-6 col-lg-3 p-0">
+            <%= name.label :name_sfx, l10n("suffix") %>
+            <%= name.select :name_sfx, ::PersonName::SUFFIX_OPTIONS, include_blank: l10n("none"), autocomplete: :off %>
           </div>
         </div>
       <% end %>
 
-      <%# Consumer fields %>
-      <div id="consumer_fields_sets">
-        <div class="consumer_fields_for_applying_coverage">
-          <fieldset class="d-flex mb-md-4">
-            <legend class="required weight-n">
-              <%= l10n("does_person_need_coverage", person: @applicant.person_name.given_name.presence || "this person") %>
-            </legend>
-            <div class="d-flex align-items-center mt-0">
-              <label for="applicant_is_applying_coverage_true" class="radio">
-                <%= f.radio_button :is_applying_coverage, true,
-                    id: 'applicant_is_applying_coverage_true',
-                    data: { action: "change->family-information#toggleApplyingCoverage" } %>
-                <span class="yes_no_pair"><%= l10n('yes') %></span>
-              </label>
-              <label for="applicant_is_applying_coverage_false" class="radio">
-                <%= f.radio_button :is_applying_coverage, false,
-                    id: 'applicant_is_applying_coverage_false',
-                    data: { action: "change->family-information#toggleApplyingCoverage" } %>
-                <span class="yes_no_pair"><%= l10n('no') %></span>
-              </label>
-            </div>
-          </fieldset>
+      <%# Demographics Form %>
+      <%= f.fields_for :demographics, @demographics_form do |demographics| %>
+        <div class="d-flex mb-md-4">
+          <div class="col-md-6 col-lg-3 p-0">
+            <%= demographics.label :dob, l10n("date_of_birth"), class: "required" %>
+            <%= demographics.date_field :dob, placeholder: "MM/DD/YYYY", min: 110.years.ago, max: "9999-12-31", required: true, readonly: (is_editing && !is_dependent) %>
+          </div>
+          <div class="col-md-6 col-lg-3 p-0">
+            <%= demographics.label :gender, l10n("gender"), class: 'required' %>
+            <%= demographics.select :gender, [[l10n("Male"), 'male'], [l10n("Female"), 'female']], { prompt: l10n("select_option") }, required: true %>
+            <a href="#sex_gender" data-toggle="modal" data-target="#sex_gender" class="d-block"><%= l10n("not_sure") %></a>
+            <%= render partial: 'shared/modal_support_text_household', locals: { key: "sex_gender" } %>
+          </div>
+        </div>
 
-          <% if current_user.does_not_have_any_staff_role? && !current_user.has_insured_role? %>
-            <div class="d-flex flex-row align-items-center my-md-4">
-              <%= f.check_box :age_off_excluded, {id: 'age_off_excluded'}, "true", "false"%>
-              <label for="age_off_excluded" class="my-0 admin-designation">
-                <span for="age_off_excluded"><%= l10n('ageoff_exclusion')%> </span>
-              </label>
-            </div>
-          <% end %>
-
-          <h3><%= l10n("qhp_application.demographic_info") %></h3>
-
-          <div data-controller="immigration-documents">
-            <div data-target="family-information.ConsumerFields">
-              <% if FinancialAssistanceRegistry.feature_enabled?(:optional_document_fields) %>
-                <%= render :partial => 'shared/optional_field_warning' %>
+        <div class="d-flex mb-md-4 <%= 'new_dependent' unless is_editing %>">
+          <% ssn_enabled = EnrollRegistry.feature_enabled?(:people_tab) ? is_editing && @applicant.demographics.ssn.present? : false %>
+          <% ssn_object = is_editing ? demographics : @demographics_form %>
+          <div class="col-md-6 col-lg-3 p-0">
+            <%= demographics.label :ssn, l10n("social_security") %>
+            <% if is_editing && EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields)  %>
+              <%= render 'ssn_fields', f: demographics, presenter: organize_ssn_params(demographics.object) %>
+            <% else %>
+              <% if EnrollRegistry.feature_enabled?(:ssn_ui_validation) %>
+                <%= demographics.text_field :ssn, placeholder: "000-00-0000", class: "required keep-label mask-ssn dependent-ssn-input",
+                  pattern: "(?!666|000|9\\d{2})\\d{3}[\\- ]{0,1}(?!00)\\d{2}[\\- ]{0,1}(?!0{4})\\d{4}",
+                  disabled: ssn_enabled,
+                  data: {'error_message': l10n('insured.consumer_roles.invalid_ssn_error')} %>
+              <% else %>
+                <%= demographics.text_field :ssn, placeholder: "000-00-0000", class: "required", disabled: ssn_enabled  %>
               <% end %>
+            <% end %>
+          </div>
+          <div class="col-md-6 col-lg-3 p-0 pt-md-4 no-ssn-container mr-auto">
+            <%= demographics.label :no_ssn, class: "mt-1 d-inline-block" do %>
+              <%= demographics.check_box :no_ssn, data: { target: "family-information.NoSsnCheckbox" } %>
+              <span class='no_ssn'><%= l10n("do_not_have_ssn") %></span>
+              <a href="#no_ssn_info" data-toggle="modal" data-target="#no_ssn_info" class="d-block"><%= l10n("not_sure") %></a>
+              <%= render partial: 'shared/modal_support_text_household', locals: { key: "no_ssn_info" } %>
+            <% end %>
+          </div>
+        </div>
 
-              <div class="mb-4" data-target="family-information.UsCitizenshipFields">
-                <fieldset>
-                  <legend id="us_citizen_value" class="weight-n required"><%= l10n("insured.us_citizen") %></legend>
-                  <div class="focus d-flex align-items-center">
-                    <label for="us_citizen_true" class="radio">
-                      <%= demographics.radio_button :us_citizen, true,
-                          class: "required",
-                          id: 'us_citizen_true',
-                          data: {
-                            action: %(
-                              change->immigration-documents#toggleUsCitizen
-                              change->family-information#toggleCitizenshipFields
-                            )
-                          }
-                      %>
-                      <span class="yes_no_pair">Yes</span>
-                    </label>
-                    <label for="us_citizen_false" class="radio">
-                      <%= demographics.radio_button :us_citizen, false,
-                          class: "required",
-                          id: 'us_citizen_false',
-                          data: { action: "change->family-information#toggleCitizenshipFields change->immigration-documents#toggleUsCitizen" } %>
-                      <span class="yes_no_pair">No</span>
-                    </label>
-                  </div>
-                </fieldset>
-                <a href="#us_citizen" data-toggle="modal" data-target="#us_citizen">Not sure?</a>
-                <%= render partial: 'shared/modal_support_text_household', locals: {key: "us_citizen"} %>
+        <% if is_dependent %>
+          <div class="d-flex mb-md-4" data-target="family-information.RelationshipFields">
+            <div>
+              <%= f.label :relationship, l10n("relationship_to_primary_member").titleize, class: "required" %>
+              <%= f.select :relationship,
+                  options_for_select(IndividualMarket::Relationship::RELATIONSHIP_KINDS.map { |r| [display_relationship(r.to_s), r.to_s] },
+                  selected: @applicant.relationship),
+                  { prompt: l10n("choose_relationship") },
+                  { required: true } %>
+              <a href="#relationship" data-toggle="modal" data-target="#relationship" class="d-block"><%= l10n("not_sure") %></a>
+              <%= render partial: 'shared/modal_support_text_household', locals: { key: "relationship" } %>
+            </div>
+          </div>
+        <% end %>
+
+        <%# Consumer fields %>
+        <div id="consumer_fields_sets">
+          <div class="consumer_fields_for_applying_coverage">
+            <fieldset class="d-flex mb-md-4">
+              <legend class="required weight-n">
+                <%= l10n("does_person_need_coverage", person: @applicant.person_name.given_name.presence || "this person") %>
+              </legend>
+              <div class="d-flex align-items-center mt-0">
+                <label for="applicant_is_applying_coverage_true" class="radio">
+                  <%= f.radio_button :is_applying_coverage, true,
+                      id: 'applicant_is_applying_coverage_true',
+                      data: { action: "change->family-information#toggleApplyingCoverage" } %>
+                  <span class="yes_no_pair"><%= l10n('yes') %></span>
+                </label>
+                <label for="applicant_is_applying_coverage_false" class="radio">
+                  <%= f.radio_button :is_applying_coverage, false,
+                      id: 'applicant_is_applying_coverage_false',
+                      data: { action: "change->family-information#toggleApplyingCoverage" } %>
+                  <span class="yes_no_pair"><%= l10n('no') %></span>
+                </label>
               </div>
+            </fieldset>
 
-              <div class="<%= 'hidden' unless show_naturalized_citizen_container(f.object) %> mb-4"
-                  id="naturalized_citizen_container"
-                  data-target="family-information.NaturalizedCitizenContainer">
-                <fieldset>
-                  <legend id="naturalized_citizen_value" class="weight-n required">
-                    <%= l10n("insured.consumer_roles.naturalized_question") %>
-                  </legend>
-                  <div class="focus d-flex align-items-center">
-                    <label for="naturalized_citizen_true" class="radio">
-                      <%= demographics.radio_button :naturalized_citizen, true,
-                          class: "required",
-                          id: 'naturalized_citizen_true',
-                          data: { action: "change->immigration-documents#toggleNaturalizedCitizenDocumentSelect" } %>
-                      <span class="yes_no_pair">Yes</span>
-                    </label>
-                    <label for="naturalized_citizen_false" class="radio">
-                      <%= demographics.radio_button :naturalized_citizen, false,
-                          class: "required",
-                          id: 'naturalized_citizen_false',
-                          data: { action: "change->immigration-documents#toggleNaturalizedCitizenDocumentSelect" } %>
-                      <span class="yes_no_pair">No</span>
-                    </label>
-                  </div>
-                </fieldset>
-                <a href="#naturalized_citizen" data-toggle="modal" data-target="#naturalized_citizen">Not sure?</a>
-                <%= render partial: 'shared/modal_support_text_household', locals: {key: "naturalized_citizen"} %>
+            <% if current_user.does_not_have_any_staff_role? && !current_user.has_insured_role? %>
+              <div class="d-flex flex-row align-items-center my-md-4">
+                <%= f.check_box :age_off_excluded, {id: 'age_off_excluded'}, "true", "false"%>
+                <label for="age_off_excluded" class="my-0 admin-designation">
+                  <span for="age_off_excluded"><%= l10n('ageoff_exclusion')%> </span>
+                </label>
               </div>
+            <% end %>
 
-              <div class="<%= 'hidden' unless show_immigration_status_container(f.object) %> mb-4"
-                  data-target="family-information.EligibleImmigrationStatusContainer">
-                <% if EnrollRegistry[:immigration_status_checkbox].enabled? %>
-                  <label for="applicant_eligible_immigration_status" class="weight-n">
-                    <%= l10n('faa.question.eligible_immigration_status') %>
-                    <div class="alert alert-info d-flex" role="info">
-                      <div>
-                        <div class="info-icon icon" alt="info" aria-hidden="true">&nbsp;</div>
-                      </div>
-                      <div class="mt-1 mb-1">
-                        <%= l10n('faa.question.immigration_continue_note_1') %>
-                        <%= l10n('faa.question.immigration_continue_note_2') %>
-                      </div>
-                    </div>
-                  </label>
-                  <div id="immigration-checkbox">
-                    <%= demographics.check_box :eligible_immigration_status,
-                        { data: { action: "change->immigration-documents#toggleDocumentSelect" } },
-                        "true",
-                        "" %> <span class="ml-1"><%= l10n('yes') %></span>
-                  </div>
-                <% else %>
+            <h3><%= l10n("qhp_application.demographic_info") %></h3>
+
+            <div data-controller="immigration-documents">
+              <div data-target="family-information.ConsumerFields">
+                <% if FinancialAssistanceRegistry.feature_enabled?(:optional_document_fields) %>
+                  <%= render :partial => 'shared/optional_field_warning' %>
+                <% end %>
+
+                <div class="mb-4" data-target="family-information.UsCitizenshipFields">
                   <fieldset>
-                    <legend id="eligible_immigration_status_value" class="weight-n">
+                    <legend id="us_citizen_value" class="weight-n required"><%= l10n("insured.us_citizen") %></legend>
+                    <div class="focus d-flex align-items-center">
+                      <label for="us_citizen_true" class="radio">
+                        <%= demographics.radio_button :us_citizen, true,
+                            class: "required",
+                            id: 'us_citizen_true',
+                            data: {
+                              action: %(
+                                change->immigration-documents#toggleUsCitizen
+                                change->family-information#toggleCitizenshipFields
+                              )
+                            }
+                        %>
+                        <span class="yes_no_pair">Yes</span>
+                      </label>
+                      <label for="us_citizen_false" class="radio">
+                        <%= demographics.radio_button :us_citizen, false,
+                            class: "required",
+                            id: 'us_citizen_false',
+                            data: { action: "change->family-information#toggleCitizenshipFields change->immigration-documents#toggleUsCitizen" } %>
+                        <span class="yes_no_pair">No</span>
+                      </label>
+                    </div>
+                  </fieldset>
+                  <a href="#us_citizen" data-toggle="modal" data-target="#us_citizen">Not sure?</a>
+                  <%= render partial: 'shared/modal_support_text_household', locals: {key: "us_citizen"} %>
+                </div>
+
+                <div class="<%= 'hidden' unless show_naturalized_citizen_container(f.object) %> mb-4"
+                    id="naturalized_citizen_container"
+                    data-target="family-information.NaturalizedCitizenContainer">
+                  <fieldset>
+                    <legend id="naturalized_citizen_value" class="weight-n required">
+                      <%= l10n("insured.consumer_roles.naturalized_question") %>
+                    </legend>
+                    <div class="focus d-flex align-items-center">
+                      <label for="naturalized_citizen_true" class="radio">
+                        <%= demographics.radio_button :naturalized_citizen, true,
+                            class: "required",
+                            id: 'naturalized_citizen_true',
+                            data: { action: "change->immigration-documents#toggleNaturalizedCitizenDocumentSelect" } %>
+                        <span class="yes_no_pair">Yes</span>
+                      </label>
+                      <label for="naturalized_citizen_false" class="radio">
+                        <%= demographics.radio_button :naturalized_citizen, false,
+                            class: "required",
+                            id: 'naturalized_citizen_false',
+                            data: { action: "change->immigration-documents#toggleNaturalizedCitizenDocumentSelect" } %>
+                        <span class="yes_no_pair">No</span>
+                      </label>
+                    </div>
+                  </fieldset>
+                  <a href="#naturalized_citizen" data-toggle="modal" data-target="#naturalized_citizen">Not sure?</a>
+                  <%= render partial: 'shared/modal_support_text_household', locals: {key: "naturalized_citizen"} %>
+                </div>
+
+                <div class="<%= 'hidden' unless show_immigration_status_container(f.object) %> mb-4"
+                    data-target="family-information.EligibleImmigrationStatusContainer">
+                  <% if EnrollRegistry[:immigration_status_checkbox].enabled? %>
+                    <label for="applicant_eligible_immigration_status" class="weight-n">
                       <%= l10n('faa.question.eligible_immigration_status') %>
                       <div class="alert alert-info d-flex" role="info">
                         <div>
@@ -232,180 +212,201 @@
                           <%= l10n('faa.question.immigration_continue_note_2') %>
                         </div>
                       </div>
-                    </legend>
-                    <div class="focus d-flex align-items-center">
-                      <label for="eligible_immigration_status_true" class="radio">
-                        <%= demographics.radio_button :eligible_immigration_status, true,
-                            class: "required",
-                            id: 'eligible_immigration_status_true',
-                            data: { action: "change->immigration-documents#toggleDocumentSelect" } %>
-                        <span class="yes_no_pair">Yes</span>
-                      </label>
-                      <label for="eligible_immigration_status_false" class="radio">
-                        <%= demographics.radio_button :eligible_immigration_status, false,
-                            class: "required",
-                            id: 'eligible_immigration_status_false',
-                            data: { action: "change->immigration-documents#toggleDocumentSelect" } %>
-                        <span class="yes_no_pair">No</span>
-                      </label>
+                    </label>
+                    <div id="immigration-checkbox">
+                      <%= demographics.check_box :eligible_immigration_status,
+                          { data: { action: "change->immigration-documents#toggleDocumentSelect" } },
+                          "true",
+                          "" %> <span class="ml-1"><%= l10n('yes') %></span>
                     </div>
-                  </fieldset>
-                <% end %>
-                <a href="#eligible_immigration_status" data-toggle="modal" data-target="#eligible_immigration_status">Not sure?</a>
-                <%= render partial: 'shared/modal_support_text_household', locals: {key: "eligible_immigration_status"} %>
-              </div>
-            </div>
-
-            <%= f.fields_for :immigration_information, @immigration_information_form do |immigration| %>
-              <div data-target="immigration-documents.ImmigrationDocumentsContainer" class="<%= 'hidden' unless immigration.object.subject.present? %>">
-                <% subject_options = f.object.demographics.us_citizen ? VlpDocument::NATURALIZATION_DOCUMENT_TYPES : VlpDocument::VLP_DOCUMENT_KINDS %>
-                <div class="document-select-container mb-3">
-                  <%= immigration.select :subject,
-                      options_for_select(subject_options, selected: immigration.object.subject),
-                      { prompt: "Select document type" },
-                      { data: { action: "change->immigration-documents#handleDocumentChange", target: "immigration-documents.documentSelect" } } %>
-                </div>
-                <div data-target="immigration-documents.documentFields" class="hidden"></div>
-              </div>
-            <% end %>
-
-            <% has_immigration_information = f.object.immigration_information.present? %>
-            <% immigration_form = has_immigration_information ? f.object.immigration_information : ::Forms::IndividualMarket::ImmigrationInformationForm.new %>
-            <%= f.fields_for :immigration_information, immigration_form do |immigration| %>
-              <%= render 'immigration_document_templates', f: immigration %>
-            <% end %>
-
-            <div data-target="immigration-documents.ImmigrationDocumentsContainer"></div>
-
-            <template data-target="immigration-documents.NewImmigrationStatusTemplate">
-              <div class="generated_fields">
-                <%= f.fields_for :immigration_information, immigration_form do |immigration| %>
-                  <div class="document-select-container mb-3">
-                    <%= immigration.label :subject, l10n("insured.consumer_roles.select_doc_type"), class: "weight-n" %>
-                    <%= immigration.select :subject,
-                        options_for_select(VlpDocument::VLP_DOCUMENT_KINDS),
-                        { prompt: "Select document type" },
-                        { data: { action: "change->immigration-documents#handleDocumentChange" } } %>
-                  </div>
-                  <div data-target="immigration-documents.documentFields" class="hidden"></div>
-                <% end %>
-              </div>
-            </template>
-
-            <template data-target="immigration-documents.NewNaturalizedCitizenStatusTemplate">
-              <div class="generated_fields">
-                <%= f.fields_for :immigration_information, immigration_form do |immigration| %>
-                  <div class="document-select-container mb-3">
-                    <%= immigration.label :subject, l10n("insured.consumer_roles.select_doc_type"), class: "weight-n" %>
-                    <%= immigration.select :subject,
-                        options_for_select(VlpDocument::NATURALIZATION_DOCUMENT_TYPES),
-                        { prompt: "Select document type" },
-                        { data: { action: "change->immigration-documents#handleDocumentChange" } } %>
-                  </div>
-                  <div data-target="immigration-documents.documentFields" class="hidden"></div>
-                <% end %>
-              </div>
-            </template>
-          </div>
-
-
-            <div class="mb-4 <%= "no_coverage_tribe_details" if FinancialAssistanceRegistry.feature_enabled?(:no_coverage_tribe_details) %>
-              <%= "featured_tribes_selection" if FinancialAssistanceRegistry.feature_enabled?(:featured_tribes_selection) %>" id='indian_tribe_area'
-              data-target="family-information.IndianTribeMember">
-              <input type="hidden" id="is_indian_alaskan_tribe_details_enabled" value="<%= EnrollRegistry[:indian_alaskan_tribe_details].enabled? %>">
-              <fieldset id="tribal_container">
-                <legend id="indian_tribe_member_value" class="weight-n required">
-                  <%= l10n("insured.tribe_member_pt1") %>
-                  <%= render partial:"shared/glossary", locals: {key: "american_indian", term: "American Indian" } %>
-                  <%= l10n("or").downcase %>
-                  <%= render partial:"shared/glossary", locals: {key: "alaska_native", term: "Alaska Native" } %>
-                  <%= l10n("insured.tribe_member_pt2") %>
-                </legend>
-                <div class="focus d-flex align-items-center">
-                  <label for="indian_tribe_member_yes" class="radio">
-                    <%= demographics.radio_button :indian_tribe_member, true,
-                        class: "required",
-                        id: 'indian_tribe_member_yes',
-                        data: {
-                          action: "change->family-information#toggleTribalFields",
-                          "person-validation": "true"
-                        } %>
-                    <span class="yes_no_pair"><%= l10n("yes") %></span>
-                  </label>
-                  <label for="indian_tribe_member_no" class="radio">
-                    <%= demographics.radio_button :indian_tribe_member, false, class: "required", id: 'indian_tribe_member_no', data: { action: "change->family-information#toggleTribalFields" } %>
-                    <span class="yes_no_pair"><%= l10n("no") %></span>
-                  </label>
-                </div>
-              </fieldset>
-              <a href="#indian_tribe_member" data-toggle="modal" data-target="#indian_tribe_member">Not sure?</a>
-              <%= render partial: 'shared/modal_support_text_household', locals: {key: "indian_tribe_member"} %>
-            </div>
-            <div class="tribal-container hide" data-target="family-information.TribalContainer">
-              <% if EnrollRegistry[:indian_alaskan_tribe_details].enabled? %>
-                <input type="hidden" id="is_featured_tribes_selection_enabled" value="<%= FinancialAssistanceRegistry[:featured_tribes_selection].enabled? %>">
-                <input type="hidden" id="enroll_state_abbr" value="<%= EnrollRegistry[:enroll_app].setting(:state_abbreviation).item %>">
-
-                <div class="mb-4" id="tribal-state-container">
-                  <label for="tribal-state" class="weight-n required"><%= l10n("insured.tribal_state") %></label>
-                  <div id="tribal-state-alert" class="hide">
-                    <div class="alert alert-warning d-flex" role="alert">
-                      <div>
-                        <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
+                  <% else %>
+                    <fieldset>
+                      <legend id="eligible_immigration_status_value" class="weight-n">
+                        <%= l10n('faa.question.eligible_immigration_status') %>
+                        <div class="alert alert-info d-flex" role="info">
+                          <div>
+                            <div class="info-icon icon" alt="info" aria-hidden="true">&nbsp;</div>
+                          </div>
+                          <div class="mt-1 mb-1">
+                            <%= l10n('faa.question.immigration_continue_note_1') %>
+                            <%= l10n('faa.question.immigration_continue_note_2') %>
+                          </div>
+                        </div>
+                      </legend>
+                      <div class="focus d-flex align-items-center">
+                        <label for="eligible_immigration_status_true" class="radio">
+                          <%= demographics.radio_button :eligible_immigration_status, true,
+                              class: "required",
+                              id: 'eligible_immigration_status_true',
+                              data: { action: "change->immigration-documents#toggleDocumentSelect" } %>
+                          <span class="yes_no_pair">Yes</span>
+                        </label>
+                        <label for="eligible_immigration_status_false" class="radio">
+                          <%= demographics.radio_button :eligible_immigration_status, false,
+                              class: "required",
+                              id: 'eligible_immigration_status_false',
+                              data: { action: "change->immigration-documents#toggleDocumentSelect" } %>
+                          <span class="yes_no_pair">No</span>
+                        </label>
                       </div>
-                      <div class="mt-2 mb-1">
-                        <%= l10n("insured.tribal_state_alert") %>
-                      </div>
-                    </div>
-                  </div>
-                  <%= demographics.select(:tribal_state, options_for_select(State::STATE_IDS, selected: demographics.object.tribal_state), {include_blank: l10n("insured.consumer_roles.select_state")}, id: "tribal-state", data: { target: "family-information.TribalState", action: "change->family-information#handleTribalStateChange" })  %>
-                </div>
-
-                <fieldset class="mb-4 d-block featured-tribe-container hide" data-target="family-information.FeaturedTribeContainer">
-                  <legend class="weight-n" for="tribe_codes"><%= l10n("insured.tribal_name") %> *</legend>
-                  <%= demographics.collection_check_boxes(:tribe_codes, featured_tribes_collection, :value, :name, {}, :class => 'tribe_codes')  do |tribe| %>
-                    <div>
-                      <%= tribe.label(:"data-value" => tribe.value) do %>
-                        <span class="mr-2 weight-n"><%= tribe.check_box(data: { action: "family-information#toggleOtherTribeName" }) %></span>
-                        <%= tribe.text %>
-                      <% end %>
-                    </div>
+                    </fieldset>
                   <% end %>
-                </fieldset>
+                  <a href="#eligible_immigration_status" data-toggle="modal" data-target="#eligible_immigration_status">Not sure?</a>
+                  <%= render partial: 'shared/modal_support_text_household', locals: {key: "eligible_immigration_status"} %>
+                </div>
 
-                <div class="mb-4 tribal-name-container hide" data-target="family-information.TribalNameContainer">
-                  <%= demographics.label :tribal_name, l10n("insured.tribal_name"), class: "required weight-n" %>
-                  <div id="tribal-name-alert" class="hide">
-                    <div class="alert alert-warning d-flex" role="alert">
-                      <div>
-                        <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
-                      </div>
-                      <div class="mt-2 mb-1">
-                        <%= l10n("insured.tribal_name_alert") %>
-                      </div>
+
+                <%= f.fields_for :immigration_information, @immigration_information_form do |immigration| %>
+                  <div data-target="immigration-documents.ImmigrationDocumentsContainer" class="<%= 'hidden' unless immigration.object.subject.present? %>">
+                    <% subject_options = f.object.demographics.us_citizen ? VlpDocument::NATURALIZATION_DOCUMENT_TYPES : VlpDocument::VLP_DOCUMENT_KINDS %>
+                    <div class="document-select-container mb-3">
+                      <%= immigration.select :subject,
+                          options_for_select(subject_options, selected: immigration.object.subject),
+                          { prompt: "Select document type" },
+                          { data: { action: "change->immigration-documents#handleDocumentChange", target: "immigration-documents.documentSelect" } } %>
                     </div>
+                    <div data-target="immigration-documents.documentFields" class="hidden"></div>
                   </div>
-                  <%= demographics.text_field :tribal_name, class: "required", id: "tribal-name", data: { target: "family-information.TribalName" }, placeholder: l10n("insured.consumer_roles.tribe_name") %>
-                </div>
-              <% else %>
-                <div class="mb-4">
-                  <%= demographics.label :tribal_id, l10n("insured.tribal_name"), class: "required weight-n" %>
-                  <div id="tribal-id-alert" class="hide">
-                    <div class="alert alert-warning d-flex" role="alert">
-                      <div>
-                        <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
+                <% end %>
+
+                <% has_immigration_information = f.object.immigration_information.present? %>
+                <% immigration_form = has_immigration_information ? f.object.immigration_information : ::Forms::IndividualMarket::ImmigrationInformationForm.new %>
+                <%= f.fields_for :immigration_information, immigration_form do |immigration| %>
+                  <%= render 'immigration_document_templates', f: immigration %>
+                <% end %>
+                <div data-target="immigration-documents.ImmigrationDocumentsContainer"></div>
+                <template data-target="immigration-documents.NewImmigrationStatusTemplate">
+                  <div class="generated_fields">
+                    <%= f.fields_for :immigration_information, immigration_form do |immigration| %>
+                      <div class="document-select-container mb-3">
+                        <%= immigration.label :subject, l10n("insured.consumer_roles.select_doc_type"), class: "weight-n" %>
+                        <%= immigration.select :subject,
+                            options_for_select(VlpDocument::VLP_DOCUMENT_KINDS),
+                            { prompt: "Select document type" },
+                            { data: { action: "change->immigration-documents#handleDocumentChange" } } %>
                       </div>
-                      <div class="mt-2 mb-1">
-                        <%= l10n("insured.tribal_id_alert") %>
-                      </div>
-                    </div>
+                      <div data-target="immigration-documents.documentFields" class="hidden"></div>
+                    <% end %>
                   </div>
-                  <%= demographics.text_field :tribal_id, class: "required", id: "tribal-id", placeholder: l10n("insured.consumer_roles.tribal_id") %>
-                </div>
-              <% end %>
+                </template>
+
+                <template data-target="immigration-documents.NewNaturalizedCitizenStatusTemplate">
+                  <div class="generated_fields">
+                    <%= f.fields_for :immigration_information, immigration_form do |immigration| %>
+                      <div class="document-select-container mb-3">
+                        <%= immigration.label :subject, l10n("insured.consumer_roles.select_doc_type"), class: "weight-n" %>
+                        <%= immigration.select :subject,
+                            options_for_select(VlpDocument::NATURALIZATION_DOCUMENT_TYPES),
+                            { prompt: "Select document type" },
+                            { data: { action: "change->immigration-documents#handleDocumentChange" } } %>
+                      </div>
+                      <div data-target="immigration-documents.documentFields" class="hidden"></div>
+                    <% end %>
+                  </div>
+                </template>
+              </div>
             </div>
-          <div data-target="family-information.ConsumerFields">
-          <%# Add target to incarcerated section %>
+          </div>
+        </div>
+
+        <div id="tribal_fields">
+          <input type="hidden" id="is_indian_alaskan_tribe_details_enabled" value="<%= EnrollRegistry[:indian_alaskan_tribe_details].enabled? %>">
+          <div class="mb-4 <%= "no_coverage_tribe_details" if FinancialAssistanceRegistry.feature_enabled?(:no_coverage_tribe_details) %>
+            <%= "featured_tribes_selection" if FinancialAssistanceRegistry.feature_enabled?(:featured_tribes_selection) %>" id='indian_tribe_area'
+            data-target="family-information.IndianTribeMember">
+            <fieldset id="tribal_container">
+              <legend id="indian_tribe_member_value" class="weight-n required">
+                <%= l10n("insured.tribe_member_pt1") %>
+                <%= render partial:"shared/glossary", locals: {key: "american_indian", term: "American Indian" } %>
+                <%= l10n("or").downcase %>
+                <%= render partial:"shared/glossary", locals: {key: "alaska_native", term: "Alaska Native" } %>
+                <%= l10n("insured.tribe_member_pt2") %>
+              </legend>
+              <div class="focus d-flex align-items-center">
+                <label for="indian_tribe_member_yes" class="radio">
+                  <%= demographics.radio_button :indian_tribe_member, true,
+                      class: "required",
+                      id: 'indian_tribe_member_yes',
+                      data: {
+                        action: "change->family-information#toggleTribalFields",
+                        "person-validation": "true"
+                      } %>
+                  <span class="yes_no_pair"><%= l10n("yes") %></span>
+                </label>
+                <label for="indian_tribe_member_no" class="radio">
+                  <%= demographics.radio_button :indian_tribe_member, false, class: "required", id: 'indian_tribe_member_no', data: { action: "change->family-information#toggleTribalFields" } %>
+                  <span class="yes_no_pair"><%= l10n("no") %></span>
+                </label>
+              </div>
+            </fieldset>
+            <a href="#indian_tribe_member" data-toggle="modal" data-target="#indian_tribe_member">Not sure?</a>
+            <%= render partial: 'shared/modal_support_text_household', locals: {key: "indian_tribe_member"} %>
+          </div>
+          <div class="tribal-container hide" data-target="family-information.TribalContainer">
+            <% if EnrollRegistry[:indian_alaskan_tribe_details].enabled? %>
+              <input type="hidden" id="is_featured_tribes_selection_enabled" value="<%= FinancialAssistanceRegistry[:featured_tribes_selection].enabled? %>">
+              <input type="hidden" id="enroll_state_abbr" value="<%= EnrollRegistry[:enroll_app].setting(:state_abbreviation).item %>">
+
+              <div class="mb-4" id="tribal-state-container">
+                <label for="tribal-state" class="weight-n required"><%= l10n("insured.tribal_state") %></label>
+                <div id="tribal-state-alert" class="hide">
+                  <div class="alert alert-warning d-flex" role="alert">
+                    <div>
+                      <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
+                    </div>
+                    <div class="mt-2 mb-1">
+                      <%= l10n("insured.tribal_state_alert") %>
+                    </div>
+                  </div>
+                </div>
+                <%= demographics.select(:tribal_state, options_for_select(State::STATE_IDS, selected: demographics.object.tribal_state), {include_blank: l10n("insured.consumer_roles.select_state")}, id: "tribal-state", data: { target: "family-information.TribalState", action: "change->family-information#handleTribalStateChange" })  %>
+              </div>
+
+              <fieldset class="mb-4 d-block featured-tribe-container hide" data-target="family-information.FeaturedTribeContainer">
+                <legend class="weight-n" for="tribe_codes"><%= l10n("insured.tribal_name") %> *</legend>
+                <%= demographics.collection_check_boxes(:tribe_codes, featured_tribes_collection, :value, :name, {}, :class => 'tribe_codes')  do |tribe| %>
+                  <div>
+                    <%= tribe.label(:"data-value" => tribe.value) do %>
+                      <span class="mr-2 weight-n"><%= tribe.check_box(data: { action: "family-information#toggleOtherTribeName" }) %></span>
+                      <%= tribe.text %>
+                    <% end %>
+                  </div>
+                <% end %>
+              </fieldset>
+
+              <div class="mb-4 tribal-name-container hide" data-target="family-information.TribalNameContainer">
+                <%= demographics.label :tribal_name, l10n("insured.tribal_name"), class: "required weight-n" %>
+                <div id="tribal-name-alert" class="hide">
+                  <div class="alert alert-warning d-flex" role="alert">
+                    <div>
+                      <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
+                    </div>
+                    <div class="mt-2 mb-1">
+                      <%= l10n("insured.tribal_name_alert") %>
+                    </div>
+                  </div>
+                </div>
+                <%= demographics.text_field :tribal_name, class: "required", id: "tribal-name", data: { target: "family-information.TribalName" }, placeholder: l10n("insured.consumer_roles.tribe_name") %>
+              </div>
+            <% else %>
+              <div class="mb-4">
+                <%= demographics.label :tribal_id, l10n("insured.tribal_name"), class: "required weight-n" %>
+                <div id="tribal-id-alert" class="hide">
+                  <div class="alert alert-warning d-flex" role="alert">
+                    <div>
+                      <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
+                    </div>
+                    <div class="mt-2 mb-1">
+                      <%= l10n("insured.tribal_id_alert") %>
+                    </div>
+                  </div>
+                </div>
+                <%= demographics.text_field :tribal_id, class: "required", id: "tribal-id", placeholder: l10n("insured.consumer_roles.tribal_id") %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+        <div data-target="family-information.ConsumerFields">
           <div class="mb-4" data-target="family-information.IncarceratedFields">
             <fieldset>
               <legend id="is_incarcerated_value" class="weight-n required"><%= l10n("insured.incarcerated") %></legend>
@@ -427,7 +428,6 @@
             <a href="#is_incarcerated" data-toggle="modal" data-target="#is_incarcerated"><%= l10n('not_sure') %></a>
             <%= render partial: 'shared/modal_support_text_household', locals: {key: "is_incarcerated"} %>
           </div>
-
           <fieldset class="mb-4 d-block" >
             <legend>
               <span>
@@ -475,106 +475,108 @@
               </div>
             </div>
           </fieldset>
-      </div>
-      </div>
-
-      <div id="ssn-coverage-msg" class="hide" data-target="family-information.SsnMessage">
-        <%= render 'shared/ssn_coverage_msg' %>
-      </div>
-    <% end %>
-  </div>
-
-  <% if is_dependent %>
-    <div id="dependent-address" class="my-3" data-target="family-information.DependentAddress">
-      <div class="row row-form-wrapper no-buffer">
-        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 form-group form-group-lg">
-          <div class="d-flex flex-row align-items-center my-3">
-            <%= f.check_box :address_same_as_primary,
-                { 'data-cuke': "lives_with_primary_checkbox",
-                  data: { action: "change->family-information#toggleDependentAddress" } },
-                "true",
-                "false" %>
-            <label for="applicant_address_same_as_primary" class="no-weight my-0">
-              <%= l10n("dependent_lives_with_primary_subscriber") %>
-            </label>
+          <div id="ssn-coverage-msg" class="hide" data-target="family-information.SsnMessage">
+            <%= render 'shared/ssn_coverage_msg' %>
           </div>
         </div>
+      <% end %>
+
+      <% if is_dependent %>
+        <div id="dependent-address" class="mt-3" data-target="family-information.DependentAddress">
+          <div class="row row-form-wrapper no-buffer">
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 mb-0 pb-0">
+              <div class="d-flex flex-row align-items-center mt-3 mb-2">
+                <%= f.check_box :address_same_as_primary,
+                    { 'data-cuke': "lives_with_primary_checkbox",
+                      data: { action: "change->family-information#toggleDependentAddress" } },
+                    "true",
+                    "false" %>
+                <label for="applicant_address_same_as_primary" class="no-weight my-0">
+                  <%= l10n("dependent_lives_with_primary_subscriber") %>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+      <% show_address_fields = !is_dependent || f.object.address_same_as_primary == false %>
+      <div id="address_info" data-target="family-information.addressFields">
+        <% if show_address_fields %>
+          <% addresses = f.object.addresses.any? ? f.object.addresses : [Forms::Locations::AddressForm.new(kind: "home")] %>
+          <%= f.fields_for :addresses, addresses do |address| %>
+            <%= render partial: 'address_fields',
+                locals: {
+                  f: f,
+                  address: address,
+                  type: address.object.kind,
+                  dependent: is_dependent
+                } %>
+          <% end %>
+        <% end %>
+      </div>
+
+      <div id="new_address_fields" data-target="family-information.newAddressFields"></div>
+      <%# Templates should be outside the fields_for block %>
+      <template data-target="family-information.NewMailingAddressFieldsTemplate">
+        <div class="generated_address_fields">
+          <%= f.fields_for :addresses, ::Forms::Locations::AddressForm.new(kind: "mailing"), child_index: "1" do |address| %>
+            <%= render partial: 'address_fields',
+                locals: {
+                  f: f,
+                  address: address,
+                  type: "mailing",
+                  dependent: true
+                } %>
+          <% end %>
+        </div>
+      </template>
+
+      <template data-target="family-information.NewHomeAddressFieldsTemplate">
+        <div class="generated_address_fields">
+          <%= f.fields_for :addresses, ::Forms::Locations::AddressForm.new(kind: "home"), child_index: "2" do |address| %>
+            <%= render partial: 'address_fields',
+                locals: {
+                  f: f,
+                  address: address,
+                  type: "home",
+                  dependent: true
+                } %>
+          <% end %>
+        </div>
+      </template>
+
+      <% has_mailing = f.object.addresses.any? { |form| form.kind == 'mailing' } %>
+      <div class="<%= 'hide' unless show_address_fields %>" data-target="family-information.AddressButtons">
+        <button class="<%= 'd-none' unless has_mailing %> form-action btn-error <%= pundit_class Family, :updateable?%> mb-3"
+                id="remove_mail_address"
+                type="button"
+              data-cuke="remove_mailing_address"
+              data-action="click->family-information#removeMailingAddress">
+          <%= l10n("qhp_application.remove_mailing") %>
+        </button>
+        <button id="add_mail_address"
+                class="<%= 'd-none' if has_mailing && !show_address_fields %> form-action btn-secondary <%= pundit_class Family, :updateable? %> mb-3"
+                type="button"
+                data-action="click->family-information#addMailingAddress">
+          <%= l10n("qhp_application.add_mailing") %>
+        </button>
+      </div>
+
+      <div id="add_info_buttons_<%= @applicant.id %>" class="pt-2 mt-3">
+        <button type="button"
+                class="btn button outline"
+                data-action="qhp-application#cancelApplicantForm"
+                data-member-id="<%= @applicant.id %>">
+          <%= l10n("cancel") %>
+        </button>
+        <% if is_dependent && is_editing %>
+          <div id="remove_confirm" class="hidden"></div>
+          <%= h(link_to l10n('remove_member'), form_url, class: 'btn button-error outline close-2', :method => :delete, :remote => true) %>
+        <% end %>
+        <%= f.button(class: "btn btn-primary") do %>
+          <%= l10n("confirm_member") %>
+        <% end %>
       </div>
     </div>
   <% end %>
-
-  <div id="address_info" data-target="family-information.AddressFields">
-    <%= f.fields_for :addresses do |address| %>
-      <%= render partial: 'address_fields',
-          locals: {
-            f: f,
-            address: address,
-            type: address.object.kind,
-            dependent: is_dependent
-          } %>
-    <% end %>
-  </div>
-
-  <div id="new_address_fields" data-target="family-information.NewAddressFields"></div>
-  <%# Templates should be outside the fields_for block %>
-  <template data-target="family-information.NewMailingAddressFieldsTemplate">
-    <div class="generated_address_fields">
-      <%= f.fields_for :addresses, ::Forms::Locations::AddressForm.new(kind: "mailing"), child_index: "0" do |address| %>
-        <%= render partial: 'address_fields',
-            locals: {
-              f: f,
-              address: address,
-              type: "mailing",
-              dependent: true
-            } %>
-      <% end %>
-    </div>
-  </template>
-
-  <template data-target="family-information.NewHomeAddressFieldsTemplate">
-    <div class="generated_address_fields">
-      <%= f.fields_for :addresses, ::Forms::Locations::AddressForm.new(kind: "home"), child_index: "1" do |address| %>
-        <%= render partial: 'address_fields',
-            locals: {
-              f: f,
-              address: address,
-              type: "home",
-              dependent: true
-            } %>
-      <% end %>
-    </div>
-  </template>
-
-  <% has_mailing = f.object.addresses.any? { |form| form.kind == 'mailing' } %>
-  <div class="<%= 'hide' if is_dependent %>" data-target="family-information.AddressButtons">
-    <button class="<%= 'd-none' unless has_mailing %> form-action btn-error <%= pundit_class Family, :updateable?%> mb-3"
-            id="remove_mail_address"
-            type="button"
-          data-cuke="remove_mailing_address"
-          data-action="click->family-information#removeMailingAddress">
-      <%= l10n("qhp_application.remove_mailing") %>
-    </button>
-    <button id="add_mail_address"
-            class="<%= 'd-none' if has_mailing %> form-action btn-secondary <%= pundit_class Family, :updateable? %> mb-3"
-            type="button"
-            data-action="click->family-information#addMailingAddress">
-      <%= l10n("qhp_application.add_mailing") %>
-    </button>
-  </div>
-
-  <div id="add_info_buttons_<%= @applicant.id %>" class="pt-2">
-    <button type="button"
-            class="btn button outline"
-            data-action="qhp-application#cancelApplicantForm"
-            data-member-id="<%= @applicant.id %>">
-      <%= l10n("cancel") %>
-    </button>
-    <% if is_dependent && is_editing %>
-      <div id="remove_confirm" class="hidden"></div>
-      <%= h(link_to l10n('remove_member'), form_url, class: 'btn button-error outline close-2', :method => :delete, :remote => true) %>
-    <% end %>
-    <%= f.button(class: "btn btn-primary") do %>
-      <%= l10n("confirm_member") %>
-    <% end %>
-  </div>
-<% end %>
+</div>

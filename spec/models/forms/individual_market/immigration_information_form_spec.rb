@@ -53,6 +53,18 @@ RSpec.describe ::Forms::IndividualMarket::ImmigrationInformationForm, type: :mod
     expect(form.subject).to be_nil
   end
 
+  it 'should sanitize the country of citizenship' do
+    params[:country_of_citizenship] = "   United States   "
+    form = described_class.new(params)
+    expect(form.country_of_citizenship).to eq("United States")
+  end
+
+  it 'should remove the prompt from the country of citizenship' do
+    params[:country_of_citizenship] = "Country of Citizenship"
+    form = described_class.new(params)
+    expect(form.country_of_citizenship).to be_nil
+  end
+
   it 'should remove blank items from the immigration_doc_statuses array' do
     params[:immigration_doc_statuses] = ["", "Member of a Federally Recognized Indian Tribe", "Cuban/Haitian Entrant"]
     form = described_class.new(params)

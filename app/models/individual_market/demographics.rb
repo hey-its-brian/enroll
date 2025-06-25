@@ -198,6 +198,12 @@ module IndividualMarket
       )
     end
 
+    def tribe_name_display
+      return tribal_name if tribal_name.present?
+      return tribal_names.compact_blank.join(", ") if tribal_names.present?
+      nil
+    end
+
     private
 
     # Validates that either no_ssn or encrypted_ssn is present

@@ -28,7 +28,8 @@ module Forms
       def initialize(attributes = {})
         super
         self.immigration_doc_statuses = immigration_doc_statuses&.compact_blank
-        self.subject = sanitize_subject
+        self.subject = sanitize_attribute(subject, "select document type")
+        self.country_of_citizenship = sanitize_attribute(country_of_citizenship, "country of citizenship")
       end
 
       def to_h
@@ -53,10 +54,10 @@ module Forms
 
       private
 
-      def sanitize_subject
-        return nil if subject.blank?
-        return nil if subject.to_s.downcase == "select document type"
-        subject&.strip
+      def sanitize_attribute(attribute, default_value)
+        return nil if attribute.blank?
+        return nil if attribute.to_s.downcase == default_value.downcase
+        attribute&.strip
       end
 
       def allowed_subject

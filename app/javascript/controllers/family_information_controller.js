@@ -17,7 +17,7 @@ export default class extends Controller {
     "NaturalizedCitizenContainer",
     "ImmigrationStatusContainer",
     "AddressContainer",
-    "AddressFields",
+    "addressFields",
     "NewAddressFields",
     "NewMailingAddressFieldsTemplate",
     "NewHomeAddressFieldsTemplate",
@@ -31,7 +31,6 @@ export default class extends Controller {
   connect() {
     this.initializeTribalFields()
     this.initializeApplyingCoverage()
-    this.initializeDependentAddress()
     this.initializeCitizenshipFields()
     this.maskSSN()
     this.initializeRequiredFields()
@@ -40,10 +39,15 @@ export default class extends Controller {
   }
 
   initializeTribalFields() {
-    const indianTribeMemberYes = this.element.querySelector('#indian_tribe_member_yes')
+    const indianTribeMemberYes = document.querySelector('#indian_tribe_member_yes')
     if (indianTribeMemberYes?.checked) {
       this.showTribalFields()
       this.setTribalFieldsRequired(true)
+    } else {
+      if (this.hasTribalNameTarget) {
+        this.setTribalNameRequired(false)
+      }
+      this.setTribalFieldsRequired(false)
     }
   }
 
@@ -107,8 +111,9 @@ export default class extends Controller {
   }
 
   setTribalFieldsRequired(required) {
-    const isTribalDetailsEnabled = this.element.querySelector('#is_indian_alaskan_tribe_details_enabled').value === 'true'
-
+    const input = this.element.querySelector('#is_indian_alaskan_tribe_details_enabled')
+    if (!input) return
+    const isTribalDetailsEnabled = input.value === 'true'
     if (isTribalDetailsEnabled) {
       // Set tribal state as required
       if (this.hasTribalStateTarget) {
@@ -282,30 +287,16 @@ export default class extends Controller {
     }
   }
 
-  initializeDependentAddress() {
-    const addressSamePrimary = this.element.querySelector('input[name="applicant[address_same_as_primary]"]')
-    if (addressSamePrimary) {
-      // Check initial state and hide/show fields accordingly
-      if (addressSamePrimary.checked) {
-        this.AddressButtonsTarget.classList.add('hide')
-      } else {
-        this.AddressButtonsTarget.classList.remove('hide')
-      }
-    }
-  }
-
   toggleDependentAddress(event) {
     if (this.hasAddressFieldsTarget) {
       if (event.target.checked) {
-        this.AddressFieldsTarget.innerHTML = ''
+        this.addressFieldsTarget.innerHTML = ''
         this.AddressButtonsTarget.classList.add('hide')
       } else {
-        this.AddressFieldsTarget.innerHTML = ''
-        this.AddressFieldsTarget.insertAdjacentHTML('beforeend', this.sanitize(this.NewHomeAddressFieldsTemplateTarget.innerHTML))
+        this.addressFieldsTarget.innerHTML = ''
+        this.addressFieldsTarget.insertAdjacentHTML('beforeend', this.sanitize(this.NewHomeAddressFieldsTemplateTarget.innerHTML))
         this.AddressButtonsTarget.classList.remove('hide')
       }
-    } else {
-      console.log('No AddressFields target found')
     }
   }
 
@@ -415,6 +406,8 @@ export default class extends Controller {
     const applyingCoverageRadio = this.element.querySelector('#applicant_is_applying_coverage_true')
     const isApplyingCoverage = applyingCoverageRadio?.checked
     const isUsCitizen = this.element.querySelector('#us_citizen_true')?.checked
+
+
 
     if (isApplyingCoverage) {
       this.setUsCitizenshipRequired(true)

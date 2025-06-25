@@ -42,8 +42,9 @@ export default class extends Controller {
         this.countySelectTarget.setAttribute('disabled', true);
         this.countySelectTarget.options.length = 0;
         let newOption = document.createElement("option")
-        newOption.text = null;
-        newOption.value = null;
+        let emptyMessage = this.countySelectTarget.dataset.message;
+        newOption.text = emptyMessage ? emptyMessage : null;
+        newOption.value = emptyMessage ? emptyMessage : null;
         this.countySelectTarget.add(newOption)
         event.target.parentElement.classList.add('was-validated')
         event.target.setCustomValidity("")
