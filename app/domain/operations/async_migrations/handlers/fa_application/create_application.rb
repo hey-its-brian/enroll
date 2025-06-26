@@ -123,12 +123,12 @@ module Operations
           end
 
           def move_to_determined(draft_application, application)
-            draft_application.assign_attributes(assistance_year: application.assistance_year, aasm_state: "determined", origin: :migration, generation_reason: :manual)
+            draft_application.assign_attributes(assistance_year: application.assistance_year, aasm_state: "determined", origin: :migration, generation_reason: :manual, submitted_at: Time.current)
             draft_application.workflow_state_transitions.build(
               event: 'determine',
               from_state: 'draft',
               to_state: 'determined',
-              transition_at: Time.now,
+              transition_at: Time.current,
               reason: "migrating from the latest determined application #{application.hbx_id} to create individual_market eligibilities"
             )
 

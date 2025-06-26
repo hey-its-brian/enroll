@@ -33,8 +33,11 @@ module Operations
               additional_params: { assistance_year: assistance_year }
             )
 
-            Failure("Failed to fetch families with latest determined FA application: #{result.failure}") if result.failure?
-            Success(result)
+            if result.count > 0
+              Success(result)
+            else
+              Failure("Failed to fetch families with latest determined FA application, applications count #{result.count}")
+            end
           end
 
           def fetch_families_without_determined_fa_applications(applications)

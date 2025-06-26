@@ -276,8 +276,9 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           expect(@result).to be_success
           expect(@new_application.origin).to eq(:migration)
           expect(@new_application.generation_reason).to eq(:manual)
-          # expect(@new_application.eligibility_determinations.count).to eq(1)
-          # expect(@new_application.eligibility_determinations.first.id).not_to eq(eligibility_determination1.id)
+          expect(@new_application.submitted_at).to be_present
+          expect(@new_application.eligibility_determinations.count).to eq(1)
+          expect(@new_application.eligibility_determinations.first.id).not_to eq(eligibility_determination1.id)
           draft_application.reload
           expect(draft_application.aasm_state).to eq("cancelled")
         end

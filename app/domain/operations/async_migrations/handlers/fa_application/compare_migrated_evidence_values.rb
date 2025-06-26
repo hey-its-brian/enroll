@@ -31,17 +31,9 @@ module Operations
           def fetch_and_validate_migrated_data(application)
             application_result = []
             application.applicants.each do |applicant|
-              old_income_evidence = applicant.income_evidence
-              old_esi_evidence = applicant.esi_evidence
-              old_local_mec_evidence = applicant.local_mec_evidence
-              old_non_esi_evidence = applicant.non_esi_evidence
+              evidences_array = fetch_evidences(applicant)
 
-              new_income_evidence = applicant.aptc_csr_eligibility.income_evidence
-              new_esi_evidence = applicant.aptc_csr_eligibility.esi_mec_evidence
-              new_local_mec_evidence = applicant.aptc_csr_eligibility.local_mec_evidence
-              new_non_esi_evidence = applicant.aptc_csr_eligibility.non_esi_mec_evidence
-
-              [[old_income_evidence, new_income_evidence], [old_esi_evidence, new_esi_evidence], [old_local_mec_evidence, new_local_mec_evidence], [old_non_esi_evidence, new_non_esi_evidence]].each do |old_evidence, new_evidence|
+              evidences_array.each do |old_evidence, new_evidence|
                 status = [application.hbx_id, application.aasm_state, "migrated", "", applicant.person_hbx_id]
                 next unless old_evidence && new_evidence
                 if evidences_matched?(old_evidence, new_evidence)
@@ -79,6 +71,20 @@ module Operations
             Success(application_result)
           end
 
+          def fetch_evidences(applicant)
+            old_income_evidence = applicant.income_evidence
+            old_esi_evidence = applicant.esi_evidence
+            old_local_mec_evidence = applicant.local_mec_evidence
+            old_non_esi_evidence = applicant.non_esi_evidence
+
+            new_income_evidence = applicant.aptc_csr_eligibility.income_evidence
+            new_esi_evidence = applicant.aptc_csr_eligibility.esi_mec_evidence
+            new_local_mec_evidence = applicant.aptc_csr_eligibility.local_mec_evidence
+            new_non_esi_evidence = applicant.aptc_csr_eligibility.non_esi_mec_evidence
+
+            [[old_income_evidence, new_income_evidence], [old_esi_evidence, new_esi_evidence], [old_local_mec_evidence, new_local_mec_evidence], [old_non_esi_evidence, new_non_esi_evidence]]
+          end
+
           def evidences_matched?(old_evidence, new_evidence)
             evidence_key_matched?(old_evidence, new_evidence) &&
               evidence_other_fields_matched?(old_evidence, new_evidence) &&
@@ -86,7 +92,7 @@ module Operations
           end
 
           def evidence_other_fields_matched?(old_evidence, new_evidence)
-            Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvidence::EVIDENCE_TITLE_MAPPING[old_evidence.title].to_s == new_evidence.title &&
+            Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvidence::EVIDENCE_TITLE_MAPPING[old_evidence.key].to_s == new_evidence.title &&
               old_evidence.due_on == new_evidence.due_on &&
               old_evidence.external_service == new_evidence.external_service &&
               old_evidence.description == new_evidence.description &&
@@ -132,7 +138,7 @@ module Operations
               latest_old_request_result.source == latest_new_request_result.source &&
               latest_old_request_result.source_transaction_id == latest_new_request_result.source_transaction_id &&
               latest_old_request_result.code == latest_new_request_result.code &&
-              latest_old_request_result.code_description == latest_new_request_result.code_description &&
+              latest_old_request_result.code_description.to_s == latest_new_request_result.code_description &&
               latest_old_request_result.action == latest_new_request_result.action &&
               (latest_old_request_result.raw_payload.present? == latest_new_request_result.raw_payload.present?)
           end
@@ -143,13 +149,22 @@ module Operations
 
             return true if latest_old_transition.nil? && latest_new_transition.nil?
 
-            latest_old_transition.to_state == latest_new_transition.to_state &&
-              latest_old_transition.from_state == latest_new_transition.from_state &&
+            latest_old_transition.to_state.to_s == latest_new_transition.to_state.to_s &&
+              latest_old_transition.from_state.to_s == latest_new_transition.from_state.to_s &&
               latest_old_transition.transition_at == latest_new_transition.transition_at &&
               latest_old_transition.event == latest_new_transition.event &&
               latest_old_transition.comment == latest_new_transition.comment &&
               latest_old_transition.reason == latest_new_transition.reason &&
-              (latest_new_transition.is_eligible.nil? || !latest_new_transition.effective_on.present?)
+              latest_new_transition.is_eligible == eligible_status_check(latest_new_transition) &&
+              latest_old_transition.transition_at.strftime("%Y-%m-%d") == latest_new_transition.effective_on.strftime("%Y-%m-%d")
+          end
+
+          def eligible_status_check(latest_new_transition)
+            if [:outstanding, :rejected].include?(latest_new_transition.to_state)
+              false
+            else
+              true
+            end
           end
 
           def documents_matched?(old_evidence, new_evidence)
