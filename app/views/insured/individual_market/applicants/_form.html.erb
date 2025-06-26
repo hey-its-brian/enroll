@@ -47,7 +47,7 @@
         <div class="d-flex mb-md-4">
           <div class="col-md-6 col-lg-3 p-0">
             <%= demographics.label :dob, l10n("date_of_birth"), class: "required" %>
-            <%= demographics.date_field :dob, placeholder: "MM/DD/YYYY", min: 110.years.ago, max: "9999-12-31", required: true, readonly: (is_editing && !is_dependent) %>
+            <%= demographics.date_field :dob, placeholder: "MM/DD/YYYY", min: 110.years.ago, max: "9999-12-31", required: true, readonly: disable_dob_ssn_field?(demographics.object.dob, is_editing, !is_dependent) %>
           </div>
           <div class="col-md-6 col-lg-3 p-0">
             <%= demographics.label :gender, l10n("gender"), class: 'required' %>
@@ -58,8 +58,8 @@
         </div>
 
         <div class="d-flex mb-md-4 <%= 'new_dependent' unless is_editing %>">
-          <% ssn_enabled = EnrollRegistry.feature_enabled?(:people_tab) ? is_editing && @applicant.demographics.ssn.present? : false %>
           <% ssn_object = is_editing ? demographics : @demographics_form %>
+          <% ssn_enabled = disable_dob_ssn_field?(ssn_object&.ssn, is_editing, !is_dependent) %>
           <div class="col-md-6 col-lg-3 p-0">
             <%= demographics.label :ssn, l10n("social_security") %>
             <% if is_editing && EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields)  %>
@@ -77,7 +77,7 @@
           </div>
           <div class="col-md-6 col-lg-3 p-0 pt-md-4 no-ssn-container mr-auto">
             <%= demographics.label :no_ssn, class: "mt-1 d-inline-block" do %>
-              <%= demographics.check_box :no_ssn, data: { target: "family-information.NoSsnCheckbox" } %>
+              <%= demographics.check_box :no_ssn, data: { target: "family-information.NoSsnCheckbox" }, disabled: ssn_enabled %>
               <span class='no_ssn'><%= l10n("do_not_have_ssn") %></span>
               <a href="#no_ssn_info" data-toggle="modal" data-target="#no_ssn_info" class="d-block"><%= l10n("not_sure") %></a>
               <%= render partial: 'shared/modal_support_text_household', locals: { key: "no_ssn_info" } %>

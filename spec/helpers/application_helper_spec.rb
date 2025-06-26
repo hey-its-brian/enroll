@@ -1194,4 +1194,77 @@ describe "Enabled/Disabled IVL market" do
       end
     end
   end
+
+  describe '#disable_dob_ssn_field?' do
+    let(:person) { FactoryBot.create(:person, :with_hbx_staff_role, :with_ssn) }
+    let(:hbx_staff_role) { FactoryBot.create(:hbx_staff_role, person: person)}
+    let(:permission) { FactoryBot.create(:permission, :hbx_update_ssn)}
+    let(:user) { FactoryBot.create(:user, person: person) }
+
+    before do
+      allow(helper).to receive(:current_user).and_return(user)
+      allow(hbx_staff_role).to receive(:permission).and_return permission
+      allow(person).to receive(:hbx_staff_role).and_return hbx_staff_role
+      allow(user).to receive(:person).and_return person
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:people_tab).and_return(false)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+    end
+
+    context 'when the field is not being edited' do
+      it 'returns false when the field is present' do
+        expect(helper.disable_dob_ssn_field?(person.ssn, false, true)).to eq(false)
+      end
+    end
+
+    context 'when qhp application is enabled and the user is an hbx staff user' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        allow(hbx_staff_role).to receive(:permission).and_return permission
+      end
+
+      it 'returns false when the field is present, being edited and is a primary' do
+        expect(helper.disable_dob_ssn_field?(person.dob, true, true)).to eq(false)
+      end
+    end
+
+    context 'when qhp application is enabled and the user is not an hbx staff user' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      end
+
+      it 'returns true for primaries where the field is present' do
+        expect(helper.disable_dob_ssn_field?(person.dob, true, true)).to eq(false)
+      end
+    end
+
+    context 'when the field is not present' do
+      it 'returns false when the field is being edited for a primary' do
+        expect(helper.disable_dob_ssn_field?(nil, true, true)).to eq(false)
+      end
+    end
+
+    context 'when the field is present and is being edited' do
+      it 'returns true when the field is being edited for a primary' do
+        expect(helper.disable_dob_ssn_field?(person.ssn, true, true)).to eq(true)
+      end
+
+      context 'when dependent' do
+        context 'when people_tab feature is enabled' do
+          before do
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:people_tab).and_return(true)
+          end
+
+          it 'returns true' do
+            expect(helper.disable_dob_ssn_field?(person.ssn, true, false)).to eq(true)
+          end
+        end
+
+        context 'when people_tab feature is disabled' do
+          it 'returns false' do
+            expect(helper.disable_dob_ssn_field?(person.ssn, true, false)).to eq(false)
+          end
+        end
+      end
+    end
+  end
 end

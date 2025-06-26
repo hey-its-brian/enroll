@@ -300,6 +300,22 @@ module ApplicationHelper
     presenter.sanitize_ssn_params
   end
 
+  # This method checks if the current user has a hbx_staff_role and if they do, it checks if they have the permission to update ssn for the family member
+  def can_update_ssn?
+    hbx_staff_role = current_user&.person&.hbx_staff_role
+    return false unless hbx_staff_role.present?
+
+    hbx_staff_role.permission&.can_update_ssn
+  end
+
+  def disable_dob_ssn_field?(value, is_editing, is_primary)
+    return false unless is_editing
+    return false if can_update_ssn? && EnrollRegistry.feature_enabled?(:qhp_application)
+    return false unless value.present?
+    return true if is_primary
+    EnrollRegistry.feature_enabled?(:people_tab)
+  end
+
   # Formats a number into a nine-digit US Federal Entity Identification Number string (nn-nnnnnnn)
   def number_to_fein(number)
     return unless number
