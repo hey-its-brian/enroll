@@ -58,7 +58,6 @@ namespace :reinstate_policies do
             effective_on: reinstate_date,
             elected_aptc_pct: base_enrollment.elected_aptc_pct,
             applied_aptc_amount: base_enrollment.applied_aptc_amount,
-            special_enrollment_period_id: base_enrollment.special_enrollment_period_id,
           }
           reinstate_enrollment = HbxEnrollment.new
           reinstate_enrollment.assign_attributes(params)

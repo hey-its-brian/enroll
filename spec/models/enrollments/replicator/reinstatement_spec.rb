@@ -90,8 +90,8 @@ RSpec.describe Enrollments::Replicator::Reinstatement, :type => :model, dbclean:
         expect(reinstated_enrollment.hbx_enrollment_members.size).to eq enrollment.hbx_enrollment_members.size
       end
 
-      it 'reinstated enrollment should have special_enrollment_period_id' do
-        expect(reinstated_enrollment.special_enrollment_period_id).to eq special_enrollment_period_id
+      it 'reinstated enrollment should not have a special_enrollment_period_id' do
+        expect(reinstated_enrollment.special_enrollment_period_id).to be_nil
       end
     end
 
@@ -244,8 +244,8 @@ RSpec.describe Enrollments::Replicator::Reinstatement, :type => :model, dbclean:
           expect(enrollment.sponsored_benefit_package.benefit_application).to eq benefit_sponsorship.renewal_benefit_application
         end
 
-        it 'reinstated enrollment should have special_enrollment_period_id' do
-          expect(reinstated_enrollment.special_enrollment_period_id).to eq special_enrollment_period_id
+        it 'reinstated enrollment should not have special_enrollment_period_id' do
+          expect(reinstated_enrollment.special_enrollment_period_id).to be_nil
         end
       end
 
