@@ -38,6 +38,7 @@ RSpec.describe Operations::HbxEnrollments::Clone, :type => :model, dbclean: :aro
   let(:special_enrollment_period_id) { nil }
   let(:covered_individuals) { family.family_members }
   let(:person) { family.primary_applicant.person }
+  let(:sep) { FactoryBot.create(:special_enrollment_period, family: family, start_on: Date.today.beginning_of_year, end_on: Date.today + 2.days) }
   let!(:enrollment) do
     FactoryBot.create(:hbx_enrollment, :with_enrollment_members,
                       enrollment_members: covered_individuals,
@@ -53,7 +54,8 @@ RSpec.describe Operations::HbxEnrollments::Clone, :type => :model, dbclean: :aro
                       employee_role_id: employee_role.id,
                       product: sponsored_benefit.reference_product,
                       rating_area_id: BSON::ObjectId.new,
-                      benefit_group_assignment_id: census_employee.active_benefit_group_assignment.id)
+                      benefit_group_assignment_id: census_employee.active_benefit_group_assignment.id,
+                      special_enrollment_period_id: sep.id)
   end
 
   before do
@@ -72,6 +74,7 @@ RSpec.describe Operations::HbxEnrollments::Clone, :type => :model, dbclean: :aro
       expect(@cloned_enrollment.kind).to eq enrollment.kind
       expect(@cloned_enrollment.coverage_kind).to eq enrollment.coverage_kind
       expect(@cloned_enrollment.product_id).to eq enrollment.product_id
+      expect(@cloned_enrollment.special_enrollment_period_id).to eq nil
     end
 
     it 'should build a continuous coverage' do

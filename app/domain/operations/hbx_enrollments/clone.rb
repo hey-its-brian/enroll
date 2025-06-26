@@ -50,7 +50,7 @@ module Operations
       end
 
       def build_hbx_enrollment(enr_params)
-        Build.new.call(enr_params)
+        Build.new.call(enr_params.except(:special_enrollment_period_id))
       end
 
       def clone_hbx_enrollment(enr_entity)
