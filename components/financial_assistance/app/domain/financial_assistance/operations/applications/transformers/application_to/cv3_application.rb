@@ -169,6 +169,19 @@ module FinancialAssistance
                 prior_insurance_benefit = prior_insurance(applicant)
                 enrolled_benefits = enrolled_health_coverage?(applicant)
                 eligible_benefits = eligible_health_coverage?(applicant)
+                if qhp_application_feature_enabled?
+                  aptc_csr_eligibility = applicant.aptc_csr_eligibility
+                  income_evidence = aptc_csr_eligibility&.income_evidence
+                  esi_evidence = aptc_csr_eligibility&.esi_mec_evidence
+                  non_esi_evidence = aptc_csr_eligibility&.non_esi_mec_evidence
+                  local_mec_evidence = aptc_csr_eligibility&.local_mec_evidence
+                else
+                  income_evidence = applicant.income_evidence
+                  esi_evidence = applicant.esi_evidence
+                  non_esi_evidence = applicant.non_esi_evidence
+                  local_mec_evidence = applicant.local_mec_evidence
+                end
+
                 applicant_hash = {
                   name: name(applicant),
                   identifying_information: identifying_information(applicant),
@@ -248,10 +261,10 @@ module FinancialAssistance
                   benchmark_premium: applicant.benchmark_premiums,
                   is_homeless: applicant.is_homeless.present?,
                   mitc_income: mitc_income(applicant, mitc_eligible_incomes),
-                  income_evidence: evidence_info(applicant.income_evidence),
-                  esi_evidence: evidence_info(applicant.esi_evidence),
-                  non_esi_evidence: evidence_info(applicant.non_esi_evidence),
-                  local_mec_evidence: evidence_info(applicant.local_mec_evidence),
+                  income_evidence: evidence_info(income_evidence),
+                  esi_evidence: evidence_info(esi_evidence),
+                  non_esi_evidence: evidence_info(non_esi_evidence),
+                  local_mec_evidence: evidence_info(local_mec_evidence),
                   mitc_relationships: mitc_relationships(applicant),
                   mitc_is_required_to_file_taxes: applicant_is_required_to_file_taxes(applicant, mitc_eligible_incomes, assistance_year),
                   mitc_state_resident: mitc_state_resident(applicant, application.us_state)
@@ -268,7 +281,9 @@ module FinancialAssistance
             # rubocop:enable Metrics/MethodLength
 
             def eligibilities(applicant)
-              applicant.eligibilities.inject([]) do |result, eligibility|
+              individual_market_eligibility = applicant.individual_market_eligibility
+
+              [individual_market_eligibility].inject([]) do |result, eligibility|
                 eligibility_hash = {
                   key: eligibility.key,
                   title: eligibility.title,
@@ -318,24 +333,27 @@ module FinancialAssistance
               application.previously_renewal_draft? ? ["Renewal"] : []
             end
 
-            def evidence_info(applicant_evidence)
-              return if qhp_application_feature_enabled?
-              return if applicant_evidence.nil?
+            def evidence_info(evidence)
+              return if evidence.nil?
 
               {
-                key: applicant_evidence.key,
-                title: applicant_evidence.title,
-                aasm_state: applicant_evidence.aasm_state,
-                description: applicant_evidence.description,
-                received_at: applicant_evidence.received_at,
-                is_satisfied: applicant_evidence.is_satisfied,
-                verification_outstanding: applicant_evidence.verification_outstanding,
-                update_reason: applicant_evidence.update_reason,
-                due_on: EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) ? applicant_evidence.due_on : applicant_evidence.verif_due_date,
-                external_service: applicant_evidence.external_service,
-                updated_by: applicant_evidence.updated_by,
-                verification_histories: applicant_evidence.verification_histories.collect { |v_his| v_his.serializable_hash.symbolize_keys },
-                request_results: evidence_request_results(applicant_evidence.request_results)
+                key: evidence.key,
+                title: evidence.title,
+                aasm_state: qhp_application_feature_enabled? ? evidence.current_state.to_s : evidence.aasm_state,
+                description: evidence.description,
+                received_at: qhp_application_feature_enabled? ? nil : evidence.received_at,
+                is_satisfied: evidence.is_satisfied,
+                verification_outstanding: evidence.verification_outstanding,
+                update_reason: qhp_application_feature_enabled? ? nil : evidence.update_reason,
+                due_on: if qhp_application_feature_enabled?
+                          evidence.due_on
+                        else
+                          (EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) ? evidence.due_on : evidence.verif_due_date)
+                        end,
+                external_service: evidence.external_service,
+                updated_by: evidence.updated_by,
+                verification_histories: evidence.verification_histories.collect { |v_his| v_his.serializable_hash.symbolize_keys },
+                request_results: evidence_request_results(evidence.request_results)
               }
             end
 
@@ -348,7 +366,7 @@ module FinancialAssistance
                   source: req_res.source,
                   source_transaction_id: req_res.source_transaction_id,
                   code: req_res.code,
-                  code_description: req_res.code_description&.strftime('%F'),
+                  code_description: qhp_application_feature_enabled? ? req_res.code_description : req_res.code_description&.strftime('%F'),
                   raw_payload: req_res.raw_payload
                 }
               end

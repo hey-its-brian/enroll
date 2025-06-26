@@ -2492,11 +2492,53 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Transformers::Ap
   end
 
   describe 'applicant with aptc_csr_eligibility/individual_market_eligibility and evidences' do
-    let(:operation_result) do
+    let!(:build_eligibilities) do
       update_benchmark_premiums
       application.build_ivl_eligibility_with_evidences
-      application.build_aptc_eligibilities_evidences
       application.save!
+    end
+
+    let!(:aptc_csr_eligibility)  do
+      eligibility = FactoryBot.create(:aptc_csr_eligibility, eligible: application.applicants.first)
+      old_state = FactoryBot.build(:v3_state_history, created_at: 2.days.ago)
+      new_state = FactoryBot.build(:v3_state_history, created_at: 1.day.ago)
+      eligibility.state_histories << old_state
+      eligibility.state_histories << new_state
+      eligibility.save!
+      eligibility
+    end
+
+    let!(:income_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::IncomeEvidence',key: :income_evidence, title: 'Income Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'Income Evidence Description')
+    end
+
+    let!(:esi_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::EsiMecEvidence',key: :esi_mec_evidence, title: 'Esi MEC Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'EsiMecEvidence')
+    end
+
+    let!(:non_esi_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::NonEsiMecEvidence',key: :non_esi_mec_evidence, title: 'Non Esi MEC Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'NonEsiMecEvidence')
+    end
+
+    let!(:local_mec_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::LocalMecEvidence',key: :local_mec_evidence, title: 'Local MEC Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'LocalMecEvidence')
+    end
+
+    let!(:create_embed_docs) do
+      [income_evidence, esi_evidence, non_esi_evidence].each do |evidence|
+        FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 2.days.ago)
+        FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 1.day.ago)
+        FactoryBot.create(:v3_verification_history, evidence: evidence)
+        FactoryBot.create(:v3_request_result, evidence: evidence)
+        evidence.documents.create(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
+      end
+    end
+
+    let(:operation_result) do
       subject.call(application.reload)
     end
 
@@ -2515,11 +2557,11 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Transformers::Ap
       it 'returns success' do
         expect(operation_result).to be_success
         individual_market_eligibility = applicant_entity.eligibilities.detect{ |elig| elig.key == :individual_market_eligibility }
-        aptc_csr_eligibility = applicant_entity.eligibilities.detect{ |elig| elig.key == :aptc_csr_eligibility }
-
         expect(individual_market_eligibility.evidences.count).to eq 1
-        expect(aptc_csr_eligibility.evidences).to be_present
-        expect(aptc_csr_eligibility.evidences.map(&:key)).to include("income_evidence")
+        expect(applicant_entity.income_evidence).to be_present
+        expect(applicant_entity.esi_evidence).to be_present
+        expect(applicant_entity.non_esi_evidence).to be_present
+        expect(applicant_entity.local_mec_evidence).to be_present
       end
     end
   end
