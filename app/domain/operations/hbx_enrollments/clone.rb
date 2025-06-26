@@ -35,7 +35,8 @@ module Operations
 
       def construct_params(values)
         @current_enrollment = values[:hbx_enrollment]
-        enr_params = @current_enrollment.serializable_hash.deep_symbolize_keys.except(:_id, :created_at, :updated_at, :hbx_id, :terminated_on, :terminate_reason, :termination_submitted_on, :hbx_enrollment_members, :workflow_state_transitions)
+        enr_params = @current_enrollment.serializable_hash.deep_symbolize_keys.except(:_id, :created_at, :updated_at, :hbx_id, :terminated_on, :terminate_reason, :termination_submitted_on, :hbx_enrollment_members, :workflow_state_transitions,
+                                                                                      :special_enrollment_period_id)
         enr_params.merge!({aasm_state: 'shopping', effective_on: values[:effective_on]})
         enr_params.merge!(values[:options])
         enr_params[:hbx_enrollment_members] = hbx_enrollment_members_params
@@ -50,7 +51,7 @@ module Operations
       end
 
       def build_hbx_enrollment(enr_params)
-        Build.new.call(enr_params.except(:special_enrollment_period_id))
+        Build.new.call(enr_params)
       end
 
       def clone_hbx_enrollment(enr_entity)

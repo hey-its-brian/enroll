@@ -12,12 +12,17 @@ RSpec.describe Validators::HbxEnrollments::HbxEnrollmentContract, type: :model, 
     expect(subject.respond_to?(:call)).to be_truthy
   end
 
+  let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+  let(:special_enrollment_period) { FactoryBot.create(:special_enrollment_period, family: family, start_on: Date.today.beginning_of_year, end_on: Date.today + 2.days) }
+
   let(:enrollment_params) do
     { kind: 'individual',
       consumer_role_id: BSON::ObjectId.new,
-      enrollment_kind: 'open_enrollment',
       coverage_kind: 'health',
       effective_on: TimeKeeper.date_of_record,
+      special_enrollment_period_id: special_enrollment_period.id,
+      enrollment_kind: 'special_enrollment',
       hbx_enrollment_members: [{applicant_id: BSON::ObjectId.new,
                                 is_subscriber: true,
                                 eligibility_date: TimeKeeper.date_of_record,

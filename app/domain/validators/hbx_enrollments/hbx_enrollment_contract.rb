@@ -127,17 +127,6 @@ module Validators
       #     end
       #   end
       # end
-
-      rule(:enrollment_kind) do
-        # Write rules based on enrollment_kind
-        if key? && value
-          case value
-          when 'special_enrollment'
-            key.failure(text: 'special_enrollment_period_id field should be populated') if values[:special_enrollment_period_id].nil? || !values[:special_enrollment_period_id].is_a?(BSON::ObjectId)
-          # when 'open_enrollment'
-          end
-        end
-      end
     end
   end
 end

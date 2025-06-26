@@ -46,7 +46,7 @@ RSpec.describe Operations::HbxEnrollments::Clone, :type => :model, dbclean: :aro
                       coverage_kind: 'health',
                       family: family,
                       effective_on: effective_on,
-                      enrollment_kind: enrollment_kind,
+                      enrollment_kind: 'special_enrollment',
                       kind: 'employer_sponsored',
                       benefit_sponsorship_id: benefit_sponsorship.id,
                       sponsored_benefit_package_id: current_benefit_package.id,
