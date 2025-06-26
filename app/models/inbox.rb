@@ -10,6 +10,8 @@ class Inbox
 
   before_create :generate_acccess_key
 
+  after_save :maybe_notify_received_message
+
   def read_messages
     messages.where(message_read: true, folder: Message::FOLDER_TYPES[:inbox])
   end
@@ -29,6 +31,18 @@ class Inbox
     message = self.messages.detect { |m| m.id == message.id }
     message.delete unless message.nil?
     self
+  end
+
+  def maybe_notify_received_message
+    return unless @message_received && recipient.is_a?(Person)
+
+    notification_event = event(
+      "enroll.people.person_inbox_message_received",
+      attributes: {
+        person_id: recipient.id
+      }
+    )
+    notification_event.success.publish
   end
 
 private

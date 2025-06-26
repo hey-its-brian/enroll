@@ -1,0 +1,11 @@
+---
+registry:
+  - namespace:
+      - :enroll_app
+      - :sms_notifications
+    features:
+      - key: :enroll_sms_notifications
+        is_enabled: <%= ENV['ENROLL_APP_SMS_NOTIFICATIONS_IS_ENABLED'] || false %>
+        settings:
+          - key: :sms_inbox_notification_text
+            item: '[CoverME.gov] You have a new message that may require action. Log in to your account to read it. Reply STOP to opt-out.'

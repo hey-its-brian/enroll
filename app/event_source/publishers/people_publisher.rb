@@ -7,5 +7,7 @@ module Publishers
 
     register_event 'person_saved'
     register_event 'person_updated'
+
+    register_event 'person_inbox_message_received'
   end
 end

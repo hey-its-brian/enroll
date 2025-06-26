@@ -123,6 +123,8 @@ gem 'devise-security'
 gem 'file_validators'
 gem 'matrix'
 
+gem 'phonelib'
+
 group :development do
   gem "certified",              '~> 1'
   gem 'overcommit',             '~> 0.47'

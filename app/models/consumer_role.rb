@@ -414,6 +414,10 @@ class ConsumerRole
     parent.phones.detect { |phone| phone.kind == "home" }
   end
 
+  def mobile_phone
+    parent.phones.detect { |phone| phone.kind == "mobile" }
+  end
+
   def email
     parent.emails.detect { |email| email.kind == "home" }
   end
@@ -563,6 +567,14 @@ class ConsumerRole
     else
       CONTACT_METHOD_MAPPING.values.select { |value| value.include?('Electronic') }.include?(contact_method)
     end
+  end
+
+  def can_receive_text_communication?
+    return false if EnrollRegistry.feature_enabled?(:contact_method_via_dropdown)
+    return false unless EnrollRegistry.feature_enabled?(:enroll_sms_notifications)
+    return false if mobile_phone.blank?
+
+    CONTACT_METHOD_MAPPING.values.select { |value| value.include?('Text') }.include?(contact_method)
   end
 
   ## TODO: Move RIDP to user model

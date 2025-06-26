@@ -33,6 +33,16 @@ module Subscribers
       ack(delivery_info.delivery_tag)
     end
 
+    subscribe(:on_person_inbox_message_received) do |delivery_info, _metadata, response|
+      payload = JSON.parse(response, symbolize_names: true)
+      Operations::People::HandleInboxMessageReceived.new.call(payload)
+      ack(delivery_info.delivery_tag)
+    rescue StandardError, SystemStackError => e
+      subscriber_logger.error "PeopleSubscriber::PersonInboxMessageReceived, payload: #{payload}, error message: #{e.message}, backtrace: #{e.backtrace}"
+      subscriber_logger.error "PeopleSubscriber::PersonInboxMessageReceived, ack: #{payload}"
+      ack(delivery_info.delivery_tag)
+    end
+
     def redetermine_family_eligibility(payload)
       person = GlobalID::Locator.locate(payload[:gid])
 

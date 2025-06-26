@@ -7,7 +7,7 @@ GIT
 
 GIT
   remote: https://github.com/ideacrew/aca_entities.git
-  revision: e3c3da247b42e70c0af4af69bf61ecc35af89b24
+  revision: f50d2ecf4dc052d864b7e2b9e8ddf3f9fc2ab277
   branch: trunk
   specs:
     aca_entities (0.10.0)
@@ -42,10 +42,10 @@ GIT
 
 GIT
   remote: https://github.com/ideacrew/event_source.git
-  revision: 302d1b22876c1824215dcd71accd06f2ff2459da
+  revision: 8b8b2b4ff32beb1af64ff9a529528c7ebfea3348
   branch: trunk
   specs:
-    event_source (0.5.8)
+    event_source (0.6.0)
       addressable (>= 2.8.0)
       bunny (>= 2.14)
       deep_merge (~> 1.2.0)
@@ -2063,7 +2063,7 @@ GEM
       mail (~> 2.7)
     equalizer (0.0.11)
     erubi (1.13.0)
-    ethon (0.15.0)
+    ethon (0.16.0)
       ffi (>= 1.15.0)
     execjs (2.9.1)
     factory_bot (4.11.1)
@@ -2082,11 +2082,11 @@ GEM
       multipart-post (>= 1.2, < 3)
       ruby2_keywords (>= 0.0.4)
     faraday-em_http (1.0.0)
-    faraday-em_synchrony (1.0.0)
+    faraday-em_synchrony (1.0.1)
     faraday-excon (1.1.0)
-    faraday-net_http (1.0.1)
+    faraday-net_http (1.0.2)
     faraday-net_http_persistent (1.2.0)
-    faraday_middleware (1.2.0)
+    faraday_middleware (1.2.1)
       faraday (~> 1.0)
     fast_jsonapi (1.5)
       activesupport (>= 4.2)
@@ -2148,8 +2148,9 @@ GEM
     jquery-ui-rails (7.0.0)
       railties (>= 3.2.16)
     json (2.5.1)
-    json-schema (5.0.0)
+    json-schema (5.1.1)
       addressable (~> 2.8)
+      bigdecimal (~> 3.1)
     jsonapi-renderer (0.2.2)
     jwt (2.2.3)
     kaminari (1.2.1)
@@ -2242,7 +2243,7 @@ GEM
     multi_json (1.15.0)
     multi_test (1.1.0)
     multi_xml (0.6.0)
-    multipart-post (2.3.0)
+    multipart-post (2.4.1)
     mustermann (2.0.2)
       ruby2_keywords (~> 0.0.1)
     net-imap (0.5.8)
@@ -2266,8 +2267,11 @@ GEM
       nokogiri (~> 1.5)
     non-stupid-digest-assets (1.0.9)
       sprockets (>= 2.0)
-    oj (3.14.2)
+    oj (3.16.11)
+      bigdecimal (>= 3.0)
+      ostruct (>= 0.2)
     orm_adapter (0.5.0)
+    ostruct (0.6.2)
     overcommit (0.52.1)
       childprocess (>= 0.6.3, < 4)
       iniparse (~> 1.4)
@@ -2284,6 +2288,7 @@ GEM
       hashery (~> 2.0)
       ruby-rc4
       ttfunk
+    phonelib (0.10.9)
     public_suffix (4.0.3)
     puma (5.6.9)
       nio4r (~> 2.0)
@@ -2340,8 +2345,8 @@ GEM
     rb-fsevent (0.11.2)
     rb-inotify (0.10.1)
       ffi (~> 1.0)
-    rbnacl (7.1.1)
-      ffi
+    rbnacl (7.1.2)
+      ffi (~> 1)
     rbtree (0.4.6)
     rdoc (6.3.4.1)
     recaptcha (4.14.0)
@@ -2676,6 +2681,7 @@ DEPENDENCIES
   openhbx_cv2!
   overcommit (~> 0.47)
   parallel_tests (~> 2.26.2)
+  phonelib
   prawn!
   puma (~> 5.6.9)
   pundit (~> 2.0)
