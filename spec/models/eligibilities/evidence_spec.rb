@@ -1049,6 +1049,64 @@ RSpec.describe ::Eligibilities::Evidence, type: :model, dbclean: :after_each do
     end
   end
 
+  describe '.has_been_extended?' do
+    let(:action) { 'extend_due_date' }
+    let(:income_evidence) do
+      applicant.create_income_evidence(
+        key: :income,
+        title: 'Income',
+        aasm_state: 'pending',
+        due_on: nil,
+        verification_outstanding: false,
+        is_satisfied: true
+      )
+    end
+
+    context 'when evidence has never been extended' do
+      it "returns false" do
+        expect(income_evidence.has_been_extended?(action)).to be_falsey
+      end
+    end
+
+    context 'when evidence has been extended' do
+      before { income_evidence.verification_histories.create(action: action, updated_by: 'system') }
+
+      context 'without further actions' do
+        it "returns true" do
+          expect(income_evidence.has_been_extended?(action)).to be_truthy
+        end
+      end
+
+      context 'when evidence is later verified' do
+        before do
+          income_evidence.workflow_state_transitions.create(
+            to_state: 'verified',
+            from_state: 'pending',
+            created_at: TimeKeeper.date_of_record + 5.days
+          )
+        end
+
+        it "returns true" do
+          expect(income_evidence.has_been_extended?(action)).to be_falsey
+        end
+      end
+
+      context 'when evidence is later attested' do
+        before do
+          income_evidence.workflow_state_transitions.create(
+            to_state: 'attested',
+            from_state: 'pending',
+            created_at: TimeKeeper.date_of_record + 5.days
+          )
+        end
+
+        it "returns true" do
+          expect(income_evidence.has_been_extended?(action)).to be_falsey
+        end
+      end
+    end
+  end
+
   describe '#move_evidence_to_outstanding' do
     let(:income_evidence) do
       applicant.create_income_evidence(

@@ -267,4 +267,24 @@ RSpec.describe ::Operations::Eligibilities::FamilyEvidencesDataExport,
       end
     end
   end
+
+  context 'with an income_evidence which was already auto-extended' do
+    let(:evidence) do
+      application.applicants.first.build_income_evidence(key: :income,
+                                                         title: 'Income',
+                                                         aasm_state: 'pending',
+                                                         due_on: TimeKeeper.date_of_record,
+                                                         verification_outstanding: true,
+                                                         is_satisfied: false)
+    end
+    before do
+      evidence.auto_extend_due_on
+      evidence.save!
+    end
+
+    it 'should indicate the auto extension' do
+      result = subject.call(required_params)
+      expect(result.success.first[41]).to eq true
+    end
+  end
 end
