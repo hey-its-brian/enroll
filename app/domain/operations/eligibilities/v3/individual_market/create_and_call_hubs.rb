@@ -14,7 +14,7 @@ module Operations
           def call(application:)
             application = yield validate(application)
             application = yield build_ivl_eligibility_with_evidences(application)
-            # application = yield call_respective_hubs(application)
+            _result = yield call_respective_hubs(application)
 
             Success(application)
           end
@@ -49,8 +49,9 @@ module Operations
 
           # # For each applicant we will call the operation to call hubs for each evidence.
           # # Each of these operations can be used as an admin's tool to call the respective hub.
-          # def call_respective_hubs(application)
-          # end
+          def call_respective_hubs(application)
+            Operations::Eligibilities::V3::IndividualMarket::VerificationRequests.new.call(application: application)
+          end
         end
       end
     end

@@ -114,7 +114,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Pvc::CreatePvcRe
       allow(EnrollRegistry).to receive(:feature_enabled?).and_return(false)
       allow(EnrollRegistry).to receive(:feature_enabled?).with(:validate_and_record_publish_application_errors).and_return(true)
 
-      application.update(aasm_state: :draft)
+      application.update(aasm_state: :closed)
     end
 
     it 'will return a failure' do

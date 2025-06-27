@@ -23,7 +23,7 @@ module Operations
         applicant_results = yield determine_applicants(application)
         _applicants = yield generate_evidences(applicant_results)
         determined_application = yield determine_application(application)
-        # _calls = yield call_hubs(application)
+        _calls = yield call_hubs(application)
         # _old_thhg = yield deactivate_tax_household_groups(application)
         _family = yield update_family(application)
         # _new_thhg = yield build_tax_household_group(application, family, family_members_result)
@@ -110,6 +110,10 @@ module Operations
       rescue StandardError => e
         Rails.logger.error("QHP Application - Failed to determine application due to #{e.message}, #{e.backtrace.join("\n")}")
         Failure("An error occurred while determining the application: #{application.errors.full_messages.join(', ')}")
+      end
+
+      def call_hubs(application)
+        Operations::Eligibilities::V3::IndividualMarket::VerificationRequests.new.call(application: application)
       end
 
       # Deactivates all existing tax household groups for the application's assistance year

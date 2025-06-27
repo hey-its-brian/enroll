@@ -116,7 +116,7 @@ module IndividualMarket
 
     # List of races the applicant identifies with
     # @return [Array]
-    field :race, type: Array
+    field :race, type: Array, default: []
 
     # @!attribute citizen_status
     # @return [String] The citizen status of the applicant

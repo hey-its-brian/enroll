@@ -57,9 +57,9 @@ module Operations
           def construct_payload(application)
             payload = {
               family_reference: {hbx_id: application.family.hbx_assigned_id.to_s},
-              assistance_year: application.assistance_year,
+              assistance_year: application.assistance_year || TimeKeeper.date_of_record.year,
               hbx_id: application.hbx_id,
-              effective_on: application.effective_on,
+              effective_on: application.effective_on || TimeKeeper.date_of_record,
               submitted_at: application.submitted_at,
               is_renewal: application.is_renewal,
               predecessor_id: predecessor_reference(application.predecessor_id),

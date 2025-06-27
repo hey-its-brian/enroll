@@ -87,7 +87,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Transformers::Ap
     end
 
     it 'should not pass' do
-      expect(result.failure?).to be_truthy
+      expect(result.success?).to be_truthy
     end
   end
 

@@ -55,6 +55,7 @@ module Eligibilities
         field :due_on, type: Date
         field :external_service, type: String
         field :updated_by, type: String
+        field :due_on_type, type: String # admin, notice
 
         # @!attribute [rw] is_active
         #   @return [Boolean] Indicates whether the evidence is currently active.
@@ -92,6 +93,30 @@ module Eligibilities
           return @latest_verification_history if defined?(@latest_verification_history)
 
           @latest_verification_history = verification_histories.newest.first
+        end
+
+        def set_verified
+          self.move_to_verified if can_move_to_verified?
+        end
+
+        # Needs to be updated once we have the requirements for the rejected state
+        def set_failed
+          if self.reload.current_state == :rejected
+            move_to_rejected
+          else
+            person = eligibility&.eligible&.find_person
+            return negative_response_received unless person
+
+            is_enrolled = person.families&.any? { |family| family.person_has_an_active_enrollment?(person) }
+            (is_enrolled ? move_to_outstanding : negative_response_received)
+          end
+          return unless EnrollRegistry.feature_enabled?(:set_due_date_upon_response_from_hub)
+
+          evidence_document_due = EnrollRegistry[:verification_document_due_in_days].item
+          self.due_on = TimeKeeper.date_of_record + evidence_document_due.days
+          self.due_on_type = 'response_from_hub'
+
+          true
         end
       end
     end

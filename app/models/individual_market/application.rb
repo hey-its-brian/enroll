@@ -10,6 +10,7 @@ module IndividualMarket
   class Application < Sbm::Application
     include Eligibilities::Visitors::Visitable
     include Eligibilities::V3::StateMachine
+    include Transmittable::Subject
 
     # @!attribute COPYABLE_STATES
     # @return [Array<Symbol>] Collection of application states that can be copied

@@ -126,6 +126,18 @@ module IndividualMarket
       eligibilities.where(_type: 'Eligibilities::V3::IndividualMarketEligibility').first
     end
 
+    def find_person
+      match_criteria, records = ::Operations::People::Match.new.call({:dob => demographics.dob,
+                                                                      :last_name => person_name.family_name,
+                                                                      :first_name => person_name.given_name,
+                                                                      :ssn => demographics.encrypted_ssn})
+      return unless records.present?
+      return unless [:ssn_present, :dob_present].include?(match_criteria)
+      return if match_criteria == :dob_present && demographics.encrypted_ssn.present? && records.first.ssn != demographics.encrypted_ssn
+
+      records.first
+    end
+
     # @!attribute age_on
     # @return [Integer] The age of the applicant on a given date
     def age_on(date)

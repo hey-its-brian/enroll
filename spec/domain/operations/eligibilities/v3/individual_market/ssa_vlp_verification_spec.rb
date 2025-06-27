@@ -1,0 +1,73 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+require Rails.root.join('spec/shared_contexts/valid_cv3_application_setup.rb')
+
+RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerification, type: :model, dbclean: :after_each do
+  include_context "valid cv3 application setup"
+
+  before :all do
+    DatabaseCleaner.clean
+  end
+  let(:subject) { described_class.new }
+
+  describe '#call' do
+    context 'with valid application' do
+      it 'returns success with message' do
+        result = subject.call({application: application})
+        expect(result).to be_success
+        expect(::Transmittable::Job.first.process_status.latest_state).to eq(:transmitted)
+        expect(::Transmittable::Transmission.first.process_status.latest_state).to eq(:transmitted)
+        expect(::Transmittable::Transaction.first.process_status.latest_state).to eq(:transmitted)
+      end
+    end
+
+    context 'with app_entity provided' do
+      let(:entity_response) { Operations::Fdsh::BuildAndValidateApplicationPayload.new.call(application) }
+
+      it 'returns success with app_entity' do
+        result = subject.call({application: application, application_entity: entity_response})
+        expect(result).to be_success
+        expect(::Transmittable::Job.first.process_status.latest_state).to eq(:transmitted)
+        expect(::Transmittable::Transmission.first.process_status.latest_state).to eq(:transmitted)
+        expect(::Transmittable::Transaction.first.process_status.latest_state).to eq(:transmitted)
+      end
+    end
+
+    context 'with invalid application type' do
+      let(:invalid_app) { double('InvalidApp', class: 'SomeClass') }
+
+      it 'returns failure with error message' do
+        result = subject.call(application: invalid_app)
+        expect(result).to be_failure
+        expect(result.failure).to include("Invalid application type")
+      end
+    end
+
+    context 'when build_app_entity fails' do
+      before do
+        allow(subject).to receive(:build_app_entity).and_return(Dry::Monads::Result::Failure.new("Failed to build entity"))
+      end
+
+      it 'returns the failure' do
+        result = subject.call(application: application)
+        expect(result).to be_failure
+        expect(result.failure).to eq("Failed to build entity")
+      end
+    end
+
+    context 'when publish fails' do
+      let(:app_entity) { {test: "test"} }
+      before do
+        allow(subject).to receive(:build_app_entity).and_return(Dry::Monads::Result::Success.new(app_entity))
+        allow(subject).to receive(:event).and_raise(StandardError.new("Publish error"))
+      end
+
+      it 'returns failure with error message' do
+        result = subject.call({application: application})
+        expect(result).to be_failure
+        expect(result.failure).to include("Failed to publish")
+      end
+    end
+  end
+end

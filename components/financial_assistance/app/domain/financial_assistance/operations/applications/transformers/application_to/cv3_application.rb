@@ -75,7 +75,7 @@ module FinancialAssistance
             private
 
             def validate(application)
-              return Success(application) if application.submitted? || application.is_determined?
+              return Success(application) if application.draft? || application.submitted? || application.is_determined?
               Failure("Application is in #{application.aasm_state} state. Please submit application.")
             end
 
@@ -95,15 +95,15 @@ module FinancialAssistance
             end
 
             def fetch_oe_start_on(application)
-              return Failure('Application does not have effective date') unless application.effective_date.present?
-              ::Operations::Individual::OpenEnrollmentStartOn.new.call({date: application.effective_date.to_date})
+              effective_date = application.effective_date || TimeKeeper.date_of_record
+              ::Operations::Individual::OpenEnrollmentStartOn.new.call({date: effective_date.to_date})
             end
 
             def construct_payload(application, notice_options, oe_start_on)
               payload = {
                 family_reference: {hbx_id: family(application.family_id)&.hbx_assigned_id.to_s},
-                assistance_year: application.assistance_year,
-                aptc_effective_date: application.effective_date,
+                assistance_year: application.assistance_year || TimeKeeper.date_of_record.year,
+                aptc_effective_date: application.effective_date || TimeKeeper.date_of_record,
                 years_to_renew: application.renewal_base_year,
                 renewal_consent_through_year: application.years_to_renew,
                 is_ridp_verified: application.is_ridp_verified.present?,
@@ -114,7 +114,7 @@ module FinancialAssistance
                 us_state: application.us_state,
                 hbx_id: application.hbx_id,
                 oe_start_on: oe_start_on,
-                submitted_at: application.submitted_at,
+                submitted_at: application.submitted_at || DateTime.now,
                 notice_options: notice_options,
                 mitc_households: mitc_households(application),
                 mitc_tax_returns: mitc_tax_returns(application)
@@ -258,7 +258,6 @@ module FinancialAssistance
                   hours_worked_per_week: applicant.total_hours_worked_per_week,
                   is_temporarily_out_of_state: applicant.is_temporarily_out_of_state.present?,
                   is_claimed_as_dependent_by_non_applicant: false, # as per sb notes
-                  benchmark_premium: applicant.benchmark_premiums,
                   is_homeless: applicant.is_homeless.present?,
                   mitc_income: mitc_income(applicant, mitc_eligible_incomes),
                   income_evidence: evidence_info(income_evidence),
@@ -269,7 +268,9 @@ module FinancialAssistance
                   mitc_is_required_to_file_taxes: applicant_is_required_to_file_taxes(applicant, mitc_eligible_incomes, assistance_year),
                   mitc_state_resident: mitc_state_resident(applicant, application.us_state)
                 }
+
                 primary_reason_code = select_primary_reason_code(applicant, application)
+                applicant_hash[:benchmark_premium] = applicant.benchmark_premiums unless applicant.benchmark_premiums.blank?
                 applicant_hash[:eligibilities] = eligibilities(applicant) if qhp_application_feature_enabled?
                 applicant_hash[:reason_code] = primary_reason_code if primary_reason_code
                 applicant_hash[:additional_reason_codes] = select_additional_reason_codes(application) if EnrollRegistry.feature_enabled?(:multiple_determination_submission_reasons)
