@@ -159,11 +159,17 @@ module IndividualMarket
       @eligible_immigration_status ||= (::ConsumerRole::ALIEN_LAWFULLY_PRESENT_STATUS == citizen_status)
     end
 
+    # Returns the names of the tribes associated with the tribe codes
+    #
+    # @return [String] A comma-separated string of tribal names.
+    #                  If no tribe codes are present, returns nil.
+    #                  If there are no matching tribes, returns an empty string.
+    #                  If there are empty tribe codes, they are ignored.
     def tribal_names
       return @tribal_names unless @tribal_names.nil?
       return nil if tribe_codes.blank?
       tribes = FinancialAssistanceRegistry[:featured_tribes_selection].setting(:featured_tribes).item&.to_h&.invert
-      @tribal_names ||= tribe_codes.map{|code| tribes[code]}.join(", ")
+      @tribal_names ||= tribe_codes.compact_blank.map{ |code| tribes[code] }.join(', ')
     end
 
     # Validation for the presence of either no_ssn or encrypted_ssn

@@ -127,4 +127,32 @@ RSpec.describe IndividualMarket::Demographics, type: :model do
       end
     end
   end
+
+  describe '#tribal_names' do
+    let(:demographics) do
+      FactoryBot.build(:individual_market_demographics, tribe_codes: tribe_codes, applicant: applicant)
+    end
+
+    before :each do
+      allow(FinancialAssistanceRegistry[:featured_tribes_selection].setting(:featured_tribes).item).to receive(:to_h).and_return(
+        { 'Maliseet' => 'HM', 'Passamaquoddy' => 'PD', 'Penobscot' => 'PE', 'Micmac' => 'AM', 'Other' => 'OT' }
+      )
+    end
+
+    context 'when tribe_codes has nil or empty values' do
+      let(:tribe_codes) { [nil, '', 'PD'] }
+
+      it 'returns the names without raising errors' do
+        expect(demographics.tribal_names).to eq('Passamaquoddy')
+      end
+    end
+
+    context 'when tribe_codes has valid codes' do
+      let(:tribe_codes) { ['AM', 'HM'] }
+
+      it 'returns the names of the tribes' do
+        expect(demographics.tribal_names).to eq('Micmac, Maliseet')
+      end
+    end
+  end
 end
