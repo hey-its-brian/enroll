@@ -58,7 +58,7 @@
         </div>
 
         <div class="d-flex mb-md-4 <%= 'new_dependent' unless is_editing %>">
-          <% ssn_object = is_editing ? demographics : @demographics_form %>
+          <% ssn_object = is_editing ? demographics.object : @demographics_form %>
           <% ssn_enabled = disable_dob_ssn_field?(ssn_object&.ssn, is_editing, !is_dependent) %>
           <div class="col-md-6 col-lg-3 p-0">
             <%= demographics.label :ssn, l10n("social_security") %>
