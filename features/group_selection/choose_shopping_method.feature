@@ -30,5 +30,6 @@ Feature: Choose Shopping Method
 Scenario: New insured user gets to the plan shopping page after qle when shopping for dental plan
     When ivl clicked continue on household info page
     And Individual switched to dental benefits
+    And the benefit package has dental benefits
     And consumer clicked on shop for new plan
     Then consumer should see coverage for primary person

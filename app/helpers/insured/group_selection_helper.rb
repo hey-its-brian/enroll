@@ -258,7 +258,15 @@ module Insured
       (plan_year.start_on.beginning_of_day..plan_year.end_on.end_of_day).cover? effective_on
     end
 
-    def is_member_checked?(benefit_type, is_health_coverage, is_dental_coverage, is_ivl_coverage)
+    def benefit_type(change_plan, enrollment)
+      enrollment.coverage_kind if change_plan == "change_plan" && enrollment.present?
+    end
+
+    def is_member_checked?(family_member, change_plan, enrollment, is_ivl_coverage)
+      benefit_type = benefit_type(change_plan, enrollment)
+      current_employee_role = enrollment.employee_role if benefit_type.present? && enrollment.is_shop?
+      is_health_coverage, is_dental_coverage = @adapter.shop_health_and_dental_attributes(family_member, (current_employee_role || @employee_role), (@effective_on_date || @new_effective_on), @qle) if @adapter.can_shop_shop?(@person)
+
       if benefit_type.present? && benefit_type != "health"
         is_dental_coverage.nil? ? is_ivl_coverage : is_dental_coverage
       else

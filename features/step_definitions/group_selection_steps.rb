@@ -299,6 +299,10 @@ And(/(.*) should see the (.*) family member (.*) and (.*)/) do |_employee, type,
   end
 end
 
+And(/the benefit package has dental benefits/) do
+  allow_any_instance_of(BenefitPackage).to receive(:benefit_categories).and_return(["health", "dental"])
+end
+
 And(/Employer not offers dental benefits for spouse in renewal plan year/) do
   benefits = @renewal_benefit_group.dental_relationship_benefits
   benefits.each(&:delete) until benefits.blank?
@@ -615,6 +619,9 @@ When(/Resident has QLE and goes to home page/) do
   # we have only shop & ivl as market kinds for qle
   FactoryBot.create(:qualifying_life_event_kind, market_kind: "individual")
   FactoryBot.create(:hbx_profile, :no_open_enrollment_coverage_period)
+  HbxProfile.current_hbx.benefit_sponsorship.benefit_coverage_periods.each do |bcp|
+    bcp.benefit_packages << FactoryBot.build(:benefit_package, coverage_year: bcp.start_on.year, benefit_categories: ["dental"])
+  end
   BenefitMarkets::Products::ProductRateCache.initialize_rate_cache!
   visit "/families/home"
 end

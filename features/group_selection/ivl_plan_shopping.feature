@@ -65,6 +65,7 @@ Feature: IVL plan purchase
     Then the primary person checkbox should be in unchecked status
     And consumer should also see the reason for ineligibility
     When consumer checks the primary person
+    And the benefit package has dental benefits
     And consumer clicked on shop for new plan
     Then consumer should see coverage for primary person
 
@@ -80,6 +81,7 @@ Feature: IVL plan purchase
     When ivl clicked continue on household info page
     Then consumer should see all the family members names
     And individual selects dental for coverage kind
+    And the benefit package has dental benefits
     And consumer clicked on shop for new plan
     Then consumer should see both dependent and primary
     And individual selects high for metal level plan and metal level box appears selected
@@ -173,6 +175,7 @@ Feature: IVL plan purchase
     When ivl clicked continue on household info page
     Then consumer should see all the family members names
     And individual selects dental for coverage kind
+    And the benefit package has dental benefits
     And consumer clicked on shop for new plan
     Then employee should see dental title content
 

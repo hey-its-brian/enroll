@@ -96,7 +96,7 @@ class Insured::GroupSelectionController < ApplicationController
     # are set to is_active = false
     @active_family_members = @family.family_members.active
     @active_family_members.each do |family_member|
-      family_member_eligibility_check(family_member)
+      family_member_eligibility_check(family_member, @benefit)
     end
     if @fm_hash.present? && @fm_hash.values.flatten.detect{|err| err.to_s.match(/incarcerated_not_answered/)}
       redirect_to manage_family_insured_families_path(tab: 'family')
@@ -120,12 +120,16 @@ class Insured::GroupSelectionController < ApplicationController
 
     unless @adapter.is_waiving?(permitted_group_selection_params)
       raise "You must select at least one Eligible applicant to enroll in the healthcare plan" if params[:family_member_ids].blank?
-      family_member_ids = params[:family_member_ids].values.collect do |family_member_id|
+      family_member_ids = params[:family_member_ids]&.values&.collect do |family_member_id|
         BSON::ObjectId.from_string(family_member_id)
       end
     end
 
     hbx_enrollment = build_hbx_enrollment(family_member_ids)
+    if @market_kind == 'individual' && !all_family_members_eligible?(family_member_ids)
+      suppress_error = true # no need for flash in this case
+      raise "Redirecting from potential DOM manipulation attempt"
+    end
     update_tobacco_field(hbx_enrollment.hbx_enrollment_members) if show_tobacco_field
 
     if @market_kind == 'shop' || @market_kind == 'fehb'
@@ -201,7 +205,7 @@ class Insured::GroupSelectionController < ApplicationController
       raise "You must select the primary applicant to enroll in the healthcare plan"
     end
   rescue StandardError => e
-    flash[:error] = e.message
+    flash[:error] = e.message unless (defined? suppress_error) && suppress_error
     logger.error "#{e.message}\n#{e.backtrace.join("\n")}"
     employee_role_id = @employee_role.id if @employee_role
     consumer_role_id = @consumer_role.id if @consumer_role
@@ -376,7 +380,7 @@ class Insured::GroupSelectionController < ApplicationController
                   class #{e.class} with message #{e.message}\n#{e.backtrace&.join("\n")}"
   end
 
-  def family_member_eligibility_check(family_member)
+  def family_member_rule(family_member, benefit)
     return unless @adapter.can_shop_individual?(@person) || @adapter.can_shop_resident?(@person)
 
     role = if family_member.person.is_consumer_role_active?
@@ -388,7 +392,13 @@ class Insured::GroupSelectionController < ApplicationController
     eligibility_determination = @family.eligibility_determination
     options = {family: @family, coverage_kind: @coverage_kind, new_effective_on: @new_effective_on, market_kind: get_ivl_market_kind(@person), shopping_family_members_ids: family_member_ids}
     options.merge!(eligibility_determination: eligibility_determination, family_member_id: family_member.id.to_s) if qhp_application_feature_enabled?
-    rule = InsuredEligibleForBenefitRule.new(role, @benefit, options)
+
+    InsuredEligibleForBenefitRule.new(role, benefit, options)
+  end
+
+  def family_member_eligibility_check(family_member, benefit)
+    rule = family_member_rule(family_member, benefit)
+    return unless rule
 
     is_ivl_coverage, errors = rule.satisfied?
     person = family_member.person
@@ -420,6 +430,22 @@ class Insured::GroupSelectionController < ApplicationController
   def select_enrollment_members(hbx_enrollment, family_member_ids)
     hbx_enrollment.hbx_enrollment_members = hbx_enrollment.hbx_enrollment_members.select do |member|
       family_member_ids.include? member.applicant_id
+    end
+  end
+
+  def all_family_members_eligible?(family_member_ids)
+    family_member_ids&.all? do |family_member_id|
+      family_member = @family.family_members.find(family_member_id)
+      is_ivl_coverage, = family_member_rule(family_member, @adapter.ivl_benefit)&.satisfied? if @adapter.can_shop_individual?(@person) || @adapter.can_shop_resident?(@person)
+      is_eligible = is_member_checked?(family_member, @change_plan, @hbx_enrollment, is_ivl_coverage)
+      unless is_eligible
+        logger.warn(
+          "DOM manipulation attempt: Ineligible family member #{family_member.person.hbx_id} " \
+          "attempted to enroll in individual coverage. " \
+          "SESSION: #{session.id}, USER: #{current_user.oim_id}"
+        )
+      end
+      is_eligible
     end
   end
 

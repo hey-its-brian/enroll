@@ -1739,6 +1739,16 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
   end
 
   context "POST CREATE for IVL" do
+    before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:fehb_market).and_return(false)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:aca_shop_market).and_return(false)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:tobacco_cost).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:prevent_concurrent_sessions).and_return(false)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:preferred_user_access).and_return(false)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:choose_shopping_method).and_return(false)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:sensor_tobacco_carrier_usage).and_return(false)
+    end
+
     context "for nil rating area" do
       before do
         allow(EnrollRegistry[:enroll_app].setting(:geographic_rating_area_model)).to receive(:item).and_return('county')
@@ -1774,13 +1784,6 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
       end
 
       before do
-        allow(EnrollRegistry).to receive(:feature_enabled?).with(:fehb_market).and_return(false)
-        allow(EnrollRegistry).to receive(:feature_enabled?).with(:aca_shop_market).and_return(false)
-        allow(EnrollRegistry).to receive(:feature_enabled?).with(:tobacco_cost).and_return(true)
-        allow(EnrollRegistry).to receive(:feature_enabled?).with(:prevent_concurrent_sessions).and_return(false)
-        allow(EnrollRegistry).to receive(:feature_enabled?).with(:preferred_user_access).and_return(false)
-        allow(EnrollRegistry).to receive(:feature_enabled?).with(:choose_shopping_method).and_return(false)
-        allow(EnrollRegistry).to receive(:feature_enabled?).with(:sensor_tobacco_carrier_usage).and_return(false)
         sign_in user
       end
 
@@ -1801,6 +1804,28 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
         ivl_enrollments = HbxEnrollment.where(kind: 'individual')
         expect(ivl_enrollments.size).to eq 1
         expect(ivl_enrollments.first.hbx_enrollment_members.first.tobacco_use).to eq 'Y'
+      end
+    end
+
+    context "with only ineligible family_member_ids" do
+      before do
+        allow_any_instance_of(InsuredEligibleForBenefitRule).to receive(:satisfied?).and_return([false, ""])
+        sign_in user
+      end
+
+      let(:primary) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: primary) }
+      let!(:dependent) { FactoryBot.create(:family_member, family: family, person: FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role)) }
+      let!(:response) { post :create, params: { person_id: primary.id, family_member_ids: family.family_members.each_with_index.to_h { |element, index| [index.to_s, element] } } }
+
+      it "should redirect to group selection page" do
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:error]).to eq nil
+        expect(response).to redirect_to(new_insured_group_selection_path(person_id: primary.id, consumer_role_id: primary.consumer_role.id, market_kind: 'individual', change_plan: '', enrollment_kind: ''))
+      end
+
+      it "should not persist the enrollment" do
+        expect HbxEnrollment.where(family_id: family.id).nil?
       end
     end
   end

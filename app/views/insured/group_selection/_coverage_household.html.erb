@@ -1,15 +1,6 @@
 <% @coverage_household.valid_coverage_household_members.map(&:family_member).each_with_index do |family_member, index| %>
 
   <% @show_residency_alert = false %>
-  <% benefit_type = (@change_plan == "change_plan" && @hbx_enrollment.present?) ? @hbx_enrollment.coverage_kind : nil %>
-
-  <% if benefit_type.present? && @hbx_enrollment.is_shop? %>
-    <% current_employee_role = @hbx_enrollment.employee_role %>
-  <% end %>
-
-  <% if @adapter.can_shop_shop?(@person) %>
-    <% is_health_coverage, is_dental_coverage = @adapter.shop_health_and_dental_attributes(family_member, (current_employee_role || @employee_role), (@effective_on_date || @new_effective_on), @qle) %>
-  <% end %>
 
   <% if (@adapter.can_shop_individual?(@person)) || (@adapter.can_shop_resident?(@person)) %>
     <% is_ivl_coverage, rule, errors = @fm_hash[family_member.id]
@@ -17,7 +8,7 @@
       errors = [incarceration_cannot_purchase(family_member)] if index == 0 && errors && errors.flatten.detect { |err| err.match(/incarceration/) } %>
   <% end %>
 
-  <% is_checked = is_member_checked?(benefit_type, is_health_coverage, is_dental_coverage, is_ivl_coverage) %>
+  <% is_checked = is_member_checked?(family_member, @change_plan, @hbx_enrollment, is_ivl_coverage) %>
 
   <% if @bs4 %>
     <div class="mb-4 <%= @adapter.class_for_ineligible_row(family_member, is_ivl_coverage, (@effective_on_date || @new_effective_on), @qle) %>">
