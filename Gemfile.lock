@@ -42,7 +42,7 @@ GIT
 
 GIT
   remote: https://github.com/ideacrew/event_source.git
-  revision: 8b8b2b4ff32beb1af64ff9a529528c7ebfea3348
+  revision: b6ef7c714f55b00b097d4b0e25993e67b37779e4
   branch: trunk
   specs:
     event_source (0.6.0)
@@ -53,11 +53,12 @@ GIT
       dry-events (~> 0.3)
       dry-inflector (~> 0.2)
       dry-initializer (~> 3.0)
+      dry-logic (< 1.3)
       dry-monads (~> 1.3)
-      dry-schema (~> 1.6)
+      dry-schema (~> 1.6, < 1.10)
       dry-struct (~> 1.4)
-      dry-types (~> 1.5)
-      dry-validation (~> 1.6)
+      dry-types (~> 1.5, < 1.6)
+      dry-validation (~> 1.6, < 1.8)
       faraday (~> 1.4.1)
       faraday_middleware (~> 1.0)
       logging (~> 2.3.0)

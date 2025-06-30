@@ -1,5 +1,6 @@
 class Inbox
   include Mongoid::Document
+  include EventSource::Command
 
   field :access_key, type: String
 
@@ -23,6 +24,7 @@ class Inbox
 
   def post_message(new_message)
     self.messages.push new_message
+    @message_received = true
     self
   end
 
@@ -37,7 +39,7 @@ class Inbox
     return unless @message_received && recipient.is_a?(Person)
 
     notification_event = event(
-      "enroll.people.person_inbox_message_received",
+      "events.person_inbox_message_received",
       attributes: {
         person_id: recipient.id
       }
