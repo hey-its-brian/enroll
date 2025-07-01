@@ -482,6 +482,7 @@ module Forms
       def update_existing_applicant(applicant, values)
         handle_address_changes(applicant)
         applicant.update(values.except(:eligibilities))
+        build_addresses(applicant, values[:addresses])
         handle_address_changes(applicant)
         applicant
       end
@@ -492,7 +493,15 @@ module Forms
       def create_new_applicant(values)
         applicant = application.applicants.build
         applicant.assign_attributes(values.except(:eligibilities))
+        build_addresses(applicant, values[:addresses])
         applicant
+      end
+
+      def build_addresses(applicant, addresses)
+        addresses.each do |address|
+          applicant.addresses.new(address)
+        end
+        applicant.save
       end
 
       # Handles address changes for an applicant

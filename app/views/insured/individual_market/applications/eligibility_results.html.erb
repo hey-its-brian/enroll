@@ -67,40 +67,39 @@
   </ul>
 <% end %>
 
-<% if @in_application_flow %>
-  <h2 data-cuke='next_steps' class="mt-4"><%= l10n("faa.results.next_steps") %></h2>
-  <p data-cuke='next_steps_text'><%= l10n("faa.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
-  <div data-cuke='return_to_account_home' class="my-4">
-    <!-- TODO: Add link to view my applications when new page is built -->
-    <%= h(link_to l10n("qhp_application.results.view_my_applications"), family_account_path, class: "button secondary outline mr-2") %>
-    <!-- TODO: Add link to continue to shop flow is ready -->
-    <%= h(link_to l10n("qhp_application.results.continue_to_shop"), family_account_path, class: "button") %>
-  </div>
-  <p class="my-3">
-    <span class="secondary-semibold"><%= l10n("qhp_application.results.application_reference_id") %>:</span> <%= @application.hbx_id %>
-  </p>
-  <div id="other-accordion" data-cuke='other_actions'>
-    <div class="card">
-      <div id="otherActionsHeading">
-        <button class="accordion-action" data-toggle="collapse" data-target="#otherActions" aria-controls="otherActions" aria-expanded="false">
-          <%= l10n("other_actions") %>
-        </button>
-      </div>
 
-      <div id="otherActions" class="collapse" aria-labelledby="otherActionsHeading" data-parent="#other-accordion">
-        <div class="card-body">
-          <div class="w-100 pb-2">
-            <p><%= l10n("faa.do_not_agree",
-              appeal_link: EnrollRegistry[:enroll_app].setting(:appeal_link).item,
-              find_expert_link: EnrollRegistry[:enroll_app].setting(:find_expert_link).item) %></p>
-            <%= h(link_to l10n("qhp_application.results.view_my_applications"), family_account_path, class: "button secondary") %>
-          </div>
+<h2 data-cuke='next_steps' class="mt-4"><%= l10n("faa.results.next_steps") %></h2>
+<p data-cuke='next_steps_text'><%= l10n("faa.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+<div data-cuke='return_to_account_home' class="my-4">
+  <!-- TODO: Add link to view my applications when new page is built -->
+  <%= h(link_to l10n("qhp_application.results.view_my_applications"), family_account_path, class: "button secondary outline mr-2") %>
+  <!-- TODO: Add link to continue to shop flow is ready -->
+  <% if @in_application_flow %>
+    <%= h(link_to l10n("qhp_application.results.continue_to_shop"), family_account_path, class: "button") %>
+  <% else %>
+    <%= link_to l10n("qhp_application.results.return_to_account"), family_account_path, class: "button" %>
+  <% end %>
+</div>
+<p class="my-3">
+  <span class="secondary-semibold"><%= l10n("qhp_application.results.application_reference_id") %>:</span> <%= @application.hbx_id %>
+</p>
+<div id="other-accordion" data-cuke='other_actions'>
+  <div class="card">
+    <div id="otherActionsHeading">
+      <button class="accordion-action" data-toggle="collapse" data-target="#otherActions" aria-controls="otherActions" aria-expanded="false">
+        <%= l10n("other_actions") %>
+      </button>
+    </div>
+
+    <div id="otherActions" class="collapse" aria-labelledby="otherActionsHeading" data-parent="#other-accordion">
+      <div class="card-body">
+        <div class="w-100 pb-2">
+          <p><%= l10n("faa.do_not_agree",
+            appeal_link: EnrollRegistry[:enroll_app].setting(:appeal_link).item,
+            find_expert_link: EnrollRegistry[:enroll_app].setting(:find_expert_link).item) %></p>
+          <%= h(link_to l10n("qhp_application.results.view_my_applications"), family_account_path, class: "button secondary") %>
         </div>
       </div>
     </div>
   </div>
-<% else %>
-  <div class="mt-5">
-    <%= link_to l10n("qhp_application.results.return"), insured_individual_market_application_path(@application), class: "button" %>
-  </div>
-<% end %>
+</div>

@@ -105,7 +105,7 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
       @applicant_form = described_class.new(params)
       @applicant_form.save
       application.reload
-      expect(application.applicants.last.addresses.count).to eq(0)
+      expect(application.applicants.last.addresses.count).to eq(1)
     end
   end
 

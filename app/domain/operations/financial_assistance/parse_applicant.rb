@@ -43,13 +43,14 @@ module Operations
         person = family_member.person
         attrs = [:first_name, :last_name, :middle_name, :name_pfx, :name_sfx,
                  :gender, :ethnicity, :tribal_id, :tribal_state, :tribal_name, :tribe_codes, :no_ssn, :is_tobacco_user,
-                 :is_homeless, :is_temporarily_out_of_state, :age_off_excluded].inject({}) do |att_hash, attribute|
+                 :is_temporarily_out_of_state, :age_off_excluded].inject({}) do |att_hash, attribute|
           att_hash[attribute] = person.send(attribute)
           att_hash
         end
         consumer_role = person.consumer_role
         attrs.merge!(person_hbx_id: person.hbx_id,
                      ssn: person.ssn,
+                     is_homeless: person.is_homeless || false,
                      dob: person.dob.present? ? person.dob.strftime("%d/%m/%Y") : nil,
                      contact_method: consumer_role.contact_method,
                      language_preference: consumer_role.language_preference,

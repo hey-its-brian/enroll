@@ -115,6 +115,14 @@ RSpec.describe Operations::FinancialAssistance::ParseApplicant, type: :model, db
       end
     end
 
+    context "when is_homeless attribute is nil" do
+      it 'should return is_homeless as false' do
+        dependent.person.update_attributes(is_homeless: nil)
+        result = subject.call({family_member: dependent})
+        expect(result.success[:is_homeless]).to be_falsey
+      end
+    end
+
     context "when there is same home address as primary" do
       it 'should return same_with_primary as true' do
         dependent.person.addresses << Address.new(family_member.person.home_address.attributes.slice("kind", "city", "county", "state", "zip", "address_1", "address_2"))
