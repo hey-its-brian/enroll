@@ -13,8 +13,9 @@ module Presenters
                 :family_id,
                 :application_id
 
-    def initialize(form_object, family_id = nil, application_id = nil)
+    def initialize(form_object, admin, family_id = nil, application_id = nil)
       @form_object = form_object
+      @admin = admin
 
       @object_type = @form_object.class.to_s
       @obscured_ssn = nil
@@ -91,11 +92,13 @@ module Presenters
         obscure_ssn(person)
       end
 
-      @disabled = if EnrollRegistry.feature_enabled?(:people_tab)
-                    @form_object.ssn.present? ? true : false
-                  else
-                    @form_object.is_primary_applicant?
-                  end
+      @disabled = ssn_disabled?(@form_object.ssn, @form_object.is_primary_applicant?)
+    end
+
+    def ssn_disabled?(ssn, is_primary_applicant)
+      return false if @admin && EnrollRegistry.feature_enabled?(:qhp_application)
+      return ssn.present? if EnrollRegistry.feature_enabled?(:people_tab)
+      is_primary_applicant.present? && is_primary_applicant
     end
 
     def sanitize_demographics
@@ -103,6 +106,8 @@ module Presenters
       @application_id = application&.id&.to_s
       @applicant_id = @form_object.applicant&.id&.to_s
       obscure_ssn(@form_object)
+
+      @disabled = !@admin
     end
 
     def obscure_ssn(subject = @form_object)

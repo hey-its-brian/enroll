@@ -295,8 +295,7 @@ module ApplicationHelper
 
   def organize_ssn_params(form_object, family_member_id = nil)
     return unless form_object.ssn
-
-    presenter = ::Presenters::SsnFormPresenter.new(form_object, family_member_id)
+    presenter = ::Presenters::SsnFormPresenter.new(form_object, can_update_ssn?, family_member_id)
     presenter.sanitize_ssn_params
   end
 
