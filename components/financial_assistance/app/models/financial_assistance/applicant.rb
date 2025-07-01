@@ -1697,6 +1697,18 @@ module FinancialAssistance
       )
     end
 
+    def enrolled_in_any_aptc_csr_enrollments?(enrollments)
+      enrollments.any? do |enrollment|
+        applicant_enrolled?(enrollment) &&
+          enrollment.is_health_enrollment? &&
+          (enrollment.applied_aptc_amount > 0 || ['02', '04', '05', '06'].include?(enrollment.product.csr_variant_id))
+      end
+    end
+
+    def applicant_enrolled?(enrollment)
+      enrollment.hbx_enrollment_members.any? { |member| member.applicant_id.to_s == family_member_id.to_s }
+    end
+
     def home_phone
       phones.detect { |phone| phone.kind == "home" }
     end

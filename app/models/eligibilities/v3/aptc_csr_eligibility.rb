@@ -82,6 +82,18 @@ module Eligibilities
         evidences.where(_type: 'FinancialAssistance::Evidences::NonEsiMecEvidence').first
       end
 
+      def determine_eligibility_state(reason)
+        return unless evidences.present?
+
+        if evidences.all? { |evidence| %i[verified attested].include?(evidence.current_state.to_sym) }
+          assign_attributes(is_satisfied: true, determined_at: TimeKeeper.date_of_record)
+          satisfy(reason: reason) if can_satisfy?
+        elsif can_pend?
+          assign_attributes(is_satisfied: false, determined_at: TimeKeeper.date_of_record)
+          pend(reason: reason)
+        end
+      end
+
       private
 
       # Adds to errors collection if duplicate evidence types are found

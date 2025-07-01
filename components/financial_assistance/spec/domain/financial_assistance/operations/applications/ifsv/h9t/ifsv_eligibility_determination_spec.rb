@@ -255,4 +255,220 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
       end
     end
   end
+
+  context 'when qhp feature is enabled' do
+    let!(:build_eligibilities) do
+      update_benchmark_premiums
+      application.save!
+    end
+
+    let!(:aptc_csr_eligibility)  do
+      eligibility = FactoryBot.create(:aptc_csr_eligibility, eligible: application.applicants.first)
+      old_state = FactoryBot.build(:v3_state_history, created_at: 2.days.ago)
+      new_state = FactoryBot.build(:v3_state_history, created_at: 1.day.ago)
+      eligibility.state_histories << old_state
+      eligibility.state_histories << new_state
+      eligibility.save!
+      eligibility
+    end
+
+    let!(:income_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::IncomeEvidence',key: :income_evidence, title: 'Income Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'Income Evidence Description', current_state: "pending")
+    end
+
+    let!(:esi_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::EsiMecEvidence',key: :esi_mec_evidence, title: 'Esi MEC Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'EsiMecEvidence', current_state: "pending")
+    end
+
+    let!(:non_esi_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::NonEsiMecEvidence',key: :non_esi_mec_evidence, title: 'Non Esi MEC Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'NonEsiMecEvidence', current_state: "pending")
+    end
+
+    let!(:local_mec_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::LocalMecEvidence',key: :local_mec_evidence, title: 'Local MEC Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'LocalMecEvidence', current_state: "pending")
+    end
+
+    let!(:create_embed_docs) do
+      [income_evidence, esi_evidence, non_esi_evidence].each do |evidence|
+        FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 2.days.ago)
+        FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 1.day.ago)
+        FactoryBot.create(:v3_verification_history, evidence: evidence)
+        evidence.documents.create(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
+      end
+    end
+
+    before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+    end
+
+    context 'FTI Ifsv eligible response' do
+      let(:payload) { response_payload }
+      before do
+        enrollment
+        @applicant = application.applicants.first
+        @result = subject.call(payload: payload)
+
+        @application = ::FinancialAssistance::Application.by_hbx_id(payload[:hbx_id]).first.reload
+        @app_entity = ::AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(payload).success
+      end
+
+      it 'should return success' do
+        expect(@result).to be_success
+      end
+
+      it 'should update applicant verification' do
+        @applicant.reload
+        income_evidence = @applicant.aptc_csr_eligibility.income_evidence
+        expect(income_evidence.verified?).to be_truthy
+        expect(income_evidence.verification_outstanding).to be_falsey
+        expect(income_evidence.due_on).to be_blank
+        expect(income_evidence.is_satisfied).to eq true
+        expect(income_evidence.request_results.present?).to eq true
+        expect(@result.success).to eq('Successfully updated Applicant with evidence')
+      end
+
+      context 'when is_ifsv_eligible is true' do
+        let(:payload) do
+          response_payload[:tax_households].each { |th| th[:is_ifsv_eligible] = true }
+          response_payload
+        end
+
+        it 'should return success' do
+          expect(@result).to be_success
+        end
+
+        it 'should return verified status' do
+          @applicant.reload
+          income_evidence = @applicant.aptc_csr_eligibility.income_evidence
+          expect(income_evidence.verified?).to be_truthy
+          expect(income_evidence.verification_outstanding).to be_falsey
+        end
+      end
+
+      context 'when is_ifsv_eligible is false' do
+        let(:payload) do
+          response_payload[:tax_households].each { |th| th[:is_ifsv_eligible] = false }
+          response_payload
+        end
+
+        context 'when not enrolled' do
+
+          it 'should return success' do
+            expect(@result).to be_success
+          end
+
+          it 'should return negative_response_received' do
+            @applicant.reload
+            income_evidence = @applicant.aptc_csr_eligibility.income_evidence
+            expect(income_evidence.negative_response_received?).to be_truthy
+            expect(income_evidence.verification_outstanding).to be_falsey
+          end
+        end
+
+        context 'when enrolled' do
+          let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+
+          it 'should return success' do
+            expect(@result).to be_success
+          end
+
+          context 'with aptc used' do
+
+            let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_aptc_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+
+            it 'returns outstanding' do
+              subject.call(payload: response_payload)
+
+              @applicant.reload
+              income_evidence = @applicant.aptc_csr_eligibility.income_evidence
+              expect(income_evidence.outstanding?).to be_truthy
+              expect(income_evidence.verification_outstanding).to be_truthy
+            end
+
+            it 'returns review when current status is review' do
+              @applicant.aptc_csr_eligibility.income_evidence.update_attributes(current_state: 'review')
+              subject.call(payload: response_payload)
+
+              @applicant.reload
+              income_evidence = @applicant.aptc_csr_eligibility.income_evidence
+              expect(income_evidence.outstanding?).to be_falsey
+              expect(income_evidence.current_state).to eq :review
+            end
+
+            it 'returns rejected when current status is rejected' do
+              @applicant.aptc_csr_eligibility.income_evidence.update_attributes(current_state: 'rejected')
+              subject.call(payload: response_payload)
+
+              @applicant.reload
+              income_evidence = @applicant.aptc_csr_eligibility.income_evidence
+              expect(income_evidence.outstanding?).to be_falsey
+              expect(income_evidence.current_state).to eq :rejected
+            end
+          end
+
+          context 'without aptc used' do
+            let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+
+            it 'returns negative_response_received' do
+              enrollment.product.update(csr_variant_id: '01')
+              enrollment.reload
+              subject.call(payload: response_payload)
+
+              @applicant.reload
+              income_evidence = @applicant.aptc_csr_eligibility.income_evidence
+              expect(income_evidence.negative_response_received?).to be_truthy
+              expect(income_evidence.verification_outstanding).to be_falsey
+            end
+          end
+
+          context 'with csr used' do
+            let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+
+            let!(:applicant) do
+              FactoryBot.create(:financial_assistance_applicant,
+                                :with_income_evidence,
+                                csr_eligibility_kind: 'csr_87',
+                                eligibility_determination_id: ed.id,
+                                person_hbx_id: '1629165429385938',
+                                is_primary_applicant: true,
+                                first_name: 'Income',
+                                last_name: 'evidence',
+                                ssn: "111111111",
+                                dob: Date.new(1988, 11, 11),
+                                family_member_id: family.primary_family_member.id,
+                                application: application)
+            end
+
+            it 'returns outstanding' do
+              subject.call(payload: response_payload)
+
+              @applicant.reload
+              income_evidence = @applicant.aptc_csr_eligibility.income_evidence
+              expect(income_evidence.outstanding?).to be_truthy
+              expect(income_evidence.verification_outstanding).to be_truthy
+              expect(income_evidence.due_on).to be_present
+            end
+          end
+        end
+      end
+    end
+
+  end
+end
+
+def update_benchmark_premiums
+  ::FinancialAssistance::Application.each do |app|
+    applicant_hbx_ids = app.applicants.pluck(:person_hbx_id)
+    member_premiums = applicant_hbx_ids.collect do |applicant_hbx_id|
+      { member_identifier: applicant_hbx_id, monthly_premium: 90.0 }
+    end.compact
+    premiums_info = { health_only_lcsp_premiums: member_premiums, health_only_slcsp_premiums: member_premiums }
+    app.applicants.each { |applicant| applicant.benchmark_premiums = premiums_info }
+    app.save!
+    app.reload
+  end
 end

@@ -9,10 +9,11 @@ class DummyEvidence
   include Eligibilities::V3::EvidenceUtils
 
   field :current_state, type: Symbol
+  field :is_satisfied, type: Boolean, default: false
 end
 
 RSpec.describe Eligibilities::V3::EvidenceUtils do
-  let(:dummy_evidence) { DummyEvidence.new }
+  let(:dummy_evidence) { DummyEvidence.new current_state: :pending }
   let(:today) { Date.today }
   let(:now) { Time.now }
 
@@ -111,7 +112,7 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
 
     it_behaves_like 'check permission and transition', :move_to_attested, :attested
     it_behaves_like 'check permission and transition', :move_to_rejected, :rejected
-    it_behaves_like 'check permission and transition', :negative_response_received, :negative_response_received
+    it_behaves_like 'check permission and transition', :move_to_negative_response_received, :negative_response_received
     it_behaves_like 'check permission and transition', :move_to_unverified, :unverified
     it_behaves_like 'check permission and transition', :move_to_outstanding, :outstanding
     it_behaves_like 'check permission and transition', :move_to_verified, :verified
@@ -137,6 +138,74 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
       dummy_evidence.latest_state_history
       dummy_evidence.latest_state_history
       expect(dummy_evidence.state_histories).to have_received(:newest).once
+    end
+  end
+
+  describe "#mark_as_outstanding" do
+    it "marks the evidence as outstanding and sets due_on" do
+      dummy_evidence.mark_as_outstanding
+      expect(dummy_evidence.verification_outstanding).to be true
+      expect(dummy_evidence.is_satisfied).to be false
+      expect(dummy_evidence.due_on).to eq(today + EnrollRegistry[:verification_document_due_in_days].item.days)
+    end
+
+    it "does not mark as outstanding if cannot move to outstanding" do
+      allow(dummy_evidence).to receive(:can_move_to_outstanding?).and_return(false)
+      expect { dummy_evidence.mark_as_outstanding }.not_to change(dummy_evidence, :verification_outstanding)
+    end
+  end
+
+  describe "#mark_as_negative_response_received" do
+    it "marks the evidence as negative_response_received" do
+      dummy_evidence.mark_as_negative_response_received
+      expect(dummy_evidence.negative_response_received?).to be true
+      expect(dummy_evidence.is_satisfied).to be true
+      expect(dummy_evidence.verification_outstanding).to be false
+    end
+
+    it "does not mark as negative_response_received if cannot move to negative_response_received" do
+      allow(dummy_evidence).to receive(:can_move_to_negative_response_received?).and_return(false)
+      expect { dummy_evidence.mark_as_negative_response_received }.not_to change(dummy_evidence, :negative_response_received?)
+    end
+  end
+
+  describe "#mark_as_verified" do
+    it "marks the evidence as verified" do
+      dummy_evidence.mark_as_verified
+      expect(dummy_evidence.verified?).to be true
+      expect(dummy_evidence.is_satisfied).to be true
+      expect(dummy_evidence.verification_outstanding).to be false
+    end
+
+    it "does not mark as verified if cannot move to verified" do
+      allow(dummy_evidence).to receive(:can_move_to_verified?).and_return(false)
+      expect { dummy_evidence.mark_as_verified }.not_to change(dummy_evidence, :verified?)
+    end
+  end
+
+  describe "#mark_as_rejected" do
+    it "marks the evidence as rejected" do
+      dummy_evidence.mark_as_rejected
+      expect(dummy_evidence.rejected?).to be true
+      expect(dummy_evidence.is_satisfied).to be false
+      expect(dummy_evidence.verification_outstanding).to be true
+    end
+
+    it "does not mark as rejected if cannot move to rejected" do
+      allow(dummy_evidence).to receive(:can_move_to_rejected?).and_return(false)
+      expect { dummy_evidence.mark_as_rejected }.not_to change(dummy_evidence, :rejected?)
+    end
+  end
+
+  describe "#mark_as_review" do
+    it "marks the evidence as review" do
+      dummy_evidence.mark_as_review
+      expect(dummy_evidence.review?).to be true
+    end
+
+    it "does not mark as review if cannot move to review" do
+      allow(dummy_evidence).to receive(:can_move_to_review?).and_return(false)
+      expect { dummy_evidence.mark_as_review }.not_to change(dummy_evidence, :review?)
     end
   end
 end

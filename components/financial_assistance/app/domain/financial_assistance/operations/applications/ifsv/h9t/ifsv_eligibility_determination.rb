@@ -13,6 +13,7 @@ module FinancialAssistance
           # Operation receives the Application with ifsv determination values
           class IfsvEligibilityDetermination
             include Dry::Monads[:do, :result]
+            include ::ResourceRegistryHelper
 
             # @param [Hash] opts The options to add ifsv determination to applicants
             # @option opts [Hash] :application_response_payload ::AcaEntities::MagiMedicaid::Application params
@@ -44,15 +45,23 @@ module FinancialAssistance
 
               response_app_entity.applicants.each do |response_applicant_entity|
                 applicant = find_matching_applicant(application, response_applicant_entity)
-                if applicant.income_evidence.blank?
-                  Rails.logger.error("Income Evidence Not Found for applicant with person_hbx_id: #{applicant.person_hbx_id} in application with hbx_id: #{application.hbx_id}")
-                  next
+
+                if qhp_application_feature_enabled?
+                  update_aptc_csr_eligibility_evidence(applicant, status, response_applicant_entity, enrollments)
+
+                  return Failed("Failed to save application with hbx_id: #{application.hbx_id} after updating aptc_csr_eligibility evidence") unless application.save!
+                else
+                  if applicant.income_evidence.blank?
+                    Rails.logger.error("Income Evidence Not Found for applicant with person_hbx_id: #{applicant.person_hbx_id} in application with hbx_id: #{application.hbx_id}")
+                    next
+                  end
+                  if applicant.income_evidence.verification_histories&.last&.action == "retry" && status == "outstanding"
+                    set_negative_retry_result(applicant, response_applicant_entity)
+                    next
+                  end
+                  update_applicant_evidence(applicant, status, response_applicant_entity, enrollments)
                 end
-                if applicant.income_evidence.verification_histories&.last&.action == "retry" && status == "outstanding"
-                  set_negative_retry_result(applicant, response_applicant_entity)
-                  next
-                end
-                update_applicant_evidence(applicant, status, response_applicant_entity, enrollments)
+
               end
               Success('Successfully updated Applicant with evidence')
             end
@@ -60,6 +69,44 @@ module FinancialAssistance
             def find_matching_applicant(application, res_applicant_entity)
               application.applicants.detect do |applicant|
                 applicant.person_hbx_id == res_applicant_entity.person_hbx_id
+              end
+            end
+
+            def update_aptc_csr_eligibility_evidence(applicant, status, response_applicant_entity, enrollments)
+              response_income_evidence = response_applicant_entity.income_evidence
+              aptc_csr_eligibility = applicant.aptc_csr_eligibility
+              return unless aptc_csr_eligibility
+              income_evidence = aptc_csr_eligibility.income_evidence
+
+              update_income_evidence(applicant, income_evidence, status, enrollments)
+
+              response_income_evidence.request_results&.each do |request_result|
+                income_evidence.request_results.build(request_result.to_h)
+              end
+
+              reason = "Hub response received for income evidence with state: #{income_evidence.current_state}, updated eligibility based on four evidences"
+              aptc_csr_eligibility.determine_eligibility_state(reason)
+              aptc_csr_eligibility.is_satisfied = aptc_csr_eligibility.evidences.all?(&:is_satisfied)
+            end
+
+            def update_income_evidence(applicant, income_evidence, status, enrollments)
+              case status
+              when "verified"
+                income_evidence.mark_as_verified
+              when "outstanding"
+                if applicant.enrolled_in_any_aptc_csr_enrollments?(enrollments)
+                  current_state = income_evidence.current_state
+                  case current_state
+                  when :review
+                    income_evidence.mark_as_review
+                  when :rejected
+                    income_evidence.mark_as_rejected
+                  else
+                    income_evidence.mark_as_outstanding
+                  end
+                else
+                  income_evidence.mark_as_negative_response_received
+                end
               end
             end
 
@@ -101,7 +148,6 @@ module FinancialAssistance
               end
               applicant.save!
             end
-
           end
         end
       end

@@ -36,7 +36,7 @@ module Eligibilities
       state_transitions do
         action :move_to_attested, from: [:initial, :negative_response_received, :outstanding, :pending, :rejected, :review, :unverified, :verified], to: :attested
         action :move_to_rejected, from: [:attested, :negative_response_received, :outstanding, :pending, :review, :unverified, :verified], to: :rejected
-        action :negative_response_received, from: [:attested, :outstanding, :pending, :rejected, :review, :unverified, :verified], to: :negative_response_received
+        action :move_to_negative_response_received, from: [:attested, :outstanding, :pending, :rejected, :review, :unverified, :verified], to: :negative_response_received
         action :move_to_unverified, from: [:attested, :negative_response_received, :outstanding, :pending, :rejected, :review, :verified], to: :unverified
         action :move_to_outstanding, from: [:attested, :negative_response_received, :pending, :rejected, :review, :unverified, :verified], to: :outstanding
         action :move_to_verified, from: [:attested, :negative_response_received, :outstanding, :pending, :rejected, :review, :unverified], to: :verified
@@ -101,6 +101,47 @@ module Eligibilities
           @latest_verification_history = verification_histories.newest.first
         end
 
+        def schedule_verification_due_on
+          verification_document_due = EnrollRegistry[:verification_document_due_in_days].item
+          TimeKeeper.date_of_record + verification_document_due.days
+        end
+
+        def mark_as_outstanding
+          return unless self.can_move_to_outstanding?
+
+          self.move_to_outstanding
+          assign_attributes(verification_outstanding: true, is_satisfied: false)
+          self.due_on = schedule_verification_due_on if self.due_on.blank?
+        end
+
+        def mark_as_negative_response_received
+          return unless self.can_move_to_negative_response_received?
+
+          assign_attributes(verification_outstanding: false, is_satisfied: true, due_on: nil)
+          self.move_to_negative_response_received
+        end
+
+        def mark_as_verified
+          return unless self.can_move_to_verified?
+
+          assign_attributes(verification_outstanding: false, is_satisfied: true, due_on: nil)
+          self.move_to_verified
+        end
+
+        def mark_as_rejected
+          return unless self.can_move_to_rejected?
+
+          assign_attributes(verification_outstanding: true, is_satisfied: false)
+          self.due_on = schedule_verification_due_on unless self.current_state == 'review'
+          self.move_to_rejected
+        end
+
+        def mark_as_review
+          return unless self.can_move_to_review?
+
+          self.move_to_review
+        end
+
         def set_verified
           self.move_to_verified if can_move_to_verified?
         end
@@ -111,10 +152,10 @@ module Eligibilities
             move_to_rejected
           else
             person = eligibility&.eligible&.find_person
-            return negative_response_received unless person
+            return move_to_negative_response_received unless person
 
             is_enrolled = person.families&.any? { |family| family.person_has_an_active_enrollment?(person) }
-            (is_enrolled ? move_to_outstanding : negative_response_received)
+            (is_enrolled ? move_to_outstanding : move_to_negative_response_received)
           end
           return unless EnrollRegistry.feature_enabled?(:set_due_date_upon_response_from_hub)
 

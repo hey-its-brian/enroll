@@ -93,4 +93,120 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
       expect(eligibility.evidences.map(&:key)).to contain_exactly('citizenship', 'income')
     end
   end
+
+  describe '#determine_eligibility_state' do
+    let(:determined_family) { FactoryBot.create(:family, :with_primary_family_member)}
+
+    let(:determined_application) do
+      FactoryBot.create(:financial_assistance_application, hbx_id: '200000126', aasm_state: "determined", family_id: determined_family.id)
+    end
+
+    let(:ed) do
+      eli_d = FactoryBot.create(:financial_assistance_eligibility_determination, application: determined_application)
+      eli_d.update_attributes!(hbx_assigned_id: '12345')
+      eli_d
+    end
+
+    let(:determined_applicant) do
+      FactoryBot.create(:financial_assistance_applicant,
+                        :with_income_evidence,
+                        eligibility_determination_id: ed.id,
+                        person_hbx_id: '1629165429385938',
+                        is_primary_applicant: true,
+                        first_name: 'Income',
+                        last_name: 'evidence',
+                        ssn: "111111111",
+                        dob: Date.new(1988, 11, 11),
+                        family_member_id: determined_family.primary_family_member.id,
+                        application: determined_application)
+    end
+
+    let(:setup_data) do
+      create_embed_docs
+      ed
+      update_benchmark_premiums(determined_application)
+      determined_application.save!
+    end
+
+    let(:aptc_eligibility)  do
+      aptc_csr_eligibility = FactoryBot.create(:aptc_csr_eligibility, eligible: determined_applicant)
+      old_state = FactoryBot.build(:v3_state_history, created_at: 2.days.ago)
+      new_state = FactoryBot.build(:v3_state_history, created_at: 1.day.ago)
+      aptc_csr_eligibility.state_histories << old_state
+      aptc_csr_eligibility.state_histories << new_state
+      aptc_csr_eligibility.save!
+      aptc_csr_eligibility
+    end
+
+    let(:income_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_eligibility, _type: 'FinancialAssistance::Evidences::IncomeEvidence',key: :income_evidence, title: 'Income Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'Income Evidence Description', current_state: "pending")
+    end
+
+    let(:esi_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_eligibility, _type: 'FinancialAssistance::Evidences::EsiMecEvidence',key: :esi_mec_evidence, title: 'Esi MEC Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'EsiMecEvidence', current_state: "pending")
+    end
+
+    let(:non_esi_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_eligibility, _type: 'FinancialAssistance::Evidences::NonEsiMecEvidence',key: :non_esi_mec_evidence, title: 'Non Esi MEC Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'NonEsiMecEvidence', current_state: "pending")
+    end
+
+    let(:local_mec_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_eligibility, _type: 'FinancialAssistance::Evidences::LocalMecEvidence',key: :local_mec_evidence, title: 'Local MEC Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'LocalMecEvidence', current_state: "pending")
+    end
+
+    let(:create_embed_docs) do
+      [income_evidence, esi_evidence, non_esi_evidence].each do |evidence|
+        FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 2.days.ago)
+        FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 1.day.ago)
+        FactoryBot.create(:v3_verification_history, evidence: evidence)
+        evidence.documents.create(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
+      end
+    end
+
+    context 'when all evidences are verified' do
+      before do
+        income_evidence.mark_as_verified
+        esi_evidence.mark_as_verified
+        non_esi_evidence.mark_as_verified
+        local_mec_evidence.mark_as_verified
+      end
+
+      it 'sets eligibility to satisfied' do
+        aptc_eligibility.determine_eligibility_state('All evidences verified')
+        expect(aptc_eligibility.is_satisfied).to be true
+        expect(aptc_eligibility.current_state).to eq(:satisfied)
+      end
+    end
+
+    context 'when some evidences are pending' do
+      before do
+        income_evidence.mark_as_verified
+        esi_evidence.mark_as_verified
+        non_esi_evidence.mark_as_verified
+        local_mec_evidence
+      end
+
+      it 'sets eligibility to pending' do
+        aptc_eligibility.determine_eligibility_state('Some evidences pending')
+        expect(aptc_eligibility.is_satisfied).to be false
+        expect(aptc_eligibility.current_state).to eq(:verification_in_progress)
+      end
+    end
+  end
+end
+
+
+def update_benchmark_premiums(determined_application)
+  applicant_hbx_ids = determined_application.applicants.pluck(:person_hbx_id)
+  member_premiums = applicant_hbx_ids.collect do |applicant_hbx_id|
+    { member_identifier: applicant_hbx_id, monthly_premium: 90.0 }
+  end.compact
+  premiums_info = { health_only_lcsp_premiums: member_premiums, health_only_slcsp_premiums: member_premiums }
+  determined_application.applicants.each { |applicant| applicant.benchmark_premiums = premiums_info }
+  determined_application.save!
+  determined_application.reload
 end
