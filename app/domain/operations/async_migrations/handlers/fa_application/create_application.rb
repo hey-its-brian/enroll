@@ -32,6 +32,7 @@ module Operations
             draft_application = yield generate_new_draft_application(application)
             yield generate_eligibilities(draft_application, application)
             determined_application = yield move_to_determined(draft_application, application)
+            yield regenerate_family_determination(determined_application)
             yield cancel_previous_applications(draft_application)
             comparison_result = yield compare_migrated_values(determined_application, application)
             yield publish(comparison_result)
@@ -106,12 +107,18 @@ module Operations
               old_aptc_csr_eligibility.evidences.each do |old_evidence|
                 new_evidence = build_new_evidence(new_aptc_csr_eligibility, old_evidence)
                 migrator.perform(old_evidence, new_evidence)
+                new_evidence.due_date_extended_at = fetch_date_from_verification_histories(new_evidence.verification_histories) if new_evidence.key.to_s == "income_evidence"
               end
             end
 
             Success(draft_application)
           rescue StandardError => e
             Failure("generation failed for the application: #{application.hbx_id} with error: #{e.message}")
+          end
+
+          def fetch_date_from_verification_histories(verification_histories)
+            return nil if verification_histories.blank?
+            verification_histories.where(:action.in => ["auto_extend_due_date", "manually_extend_due_date"]).order_by(:date_of_action.desc).first&.date_of_action
           end
 
           def build_new_evidence(aptc_csr_eligibility, old_evidence)
@@ -136,6 +143,12 @@ module Operations
             Success(draft_application)
           rescue StandardError => e
             Failure("Failed to move to determined: #{e.message}")
+          end
+
+          def regenerate_family_determination(determined_application)
+            family = determined_application.family
+            family.assign_latest_application_gid
+            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
           end
 
           # Cancels previous draft applications when a new one is created

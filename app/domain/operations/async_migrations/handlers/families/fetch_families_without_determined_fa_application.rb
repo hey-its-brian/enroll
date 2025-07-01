@@ -13,9 +13,7 @@ module Operations
             applications = yield fetch_families_with_latest_determined_fa_application(assistance_year)
             families_without_determined_fa_applications = yield fetch_families_without_determined_fa_applications(applications)
             filtered_family_ids = yield fetch_families_with_enrollment_in_current_year(families_without_determined_fa_applications, assistance_year)
-            families_with_current_year_enrollments = yield fetch_families(filtered_family_ids)
-
-            Success(families_with_current_year_enrollments)
+            yield fetch_families(filtered_family_ids)
           end
 
           private

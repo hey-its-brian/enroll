@@ -57,6 +57,12 @@ module Eligibilities
         field :updated_by, type: String
         field :due_on_type, type: String # admin, notice
 
+        # @!attribute [rw] due_date_extended_at
+        #   @return [DateTime] The date and time when the auto due date was extended
+        #
+        # @note An ROP can span across multiple applications, so, this timestamp can be older than the evidence/application created_at timestamp.
+        field :due_date_extended_at, type: DateTime
+
         # @!attribute [rw] is_active
         #   @return [Boolean] Indicates whether the evidence is currently active.
         #   @note This field is primarily used to track the active status of verification types.

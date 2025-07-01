@@ -226,7 +226,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
 
     let(:evidence) do
       FactoryBot.create(:income_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::IncomeEvidence',key: :income_evidence, title: 'Income Evidence', determined_at: TimeKeeper.date_of_record,
-                                          description: 'Income Evidence Description')
+                                          description: 'Income Evidence Description', current_state: :pending)
     end
     let!(:old_state_history) { FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 2.days.ago) }
     let!(:new_state_history) { FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 1.day.ago) }
@@ -716,6 +716,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
         before do
           family_member
           family_member2
+          family.primary_person.ensure_relationship_with(person2, 'spouse')
+          family.primary_person.ensure_relationship_with(person3, 'child')
           @result = subject.call({document_id: application.id.to_s})
           @old_applicant = application.applicants.first
           @new_application_hbx_id = @result.value![1]
@@ -762,6 +764,53 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                                                                      :has_eligible_medicaid_cubcare, :medicaid_cubcare_due_on, :has_eligibility_changed, :has_household_income_changed,
                                                                      :person_coverage_end_on, :has_dependent_with_coverage, :dependent_job_end_on, :transfer_referral_reason,
                                                                      :five_year_bar_applies, :five_year_bar_met, :qualified_non_citizen])
+        end
+      end
+
+      context 'income evidence' do
+        let!(:v3_verification_history_auto_extended1)  { FactoryBot.create(:v3_verification_history, evidence: evidence, action: 'auto_extend_due_date', date_of_action: Time.current + 1.day) }
+        let!(:v3_verification_history_auto_extended2)  { FactoryBot.create(:v3_verification_history, evidence: evidence, action: 'auto_extend_due_date', date_of_action: Time.current) }
+
+        it 'should create family_determination and populate due_date_extended_at' do
+          expect(family.eligibility_determination).not_to be_present
+          result = subject.call({document_id: application.id.to_s})
+          new_application_hbx_id = result.value![1]
+          new_application = FinancialAssistance::Application.where(hbx_id: new_application_hbx_id).first
+          new_applicant = new_application.applicants.first
+          new_aptc_csr_eligibility = new_applicant.aptc_csr_eligibility
+          new_income_evidence = new_aptc_csr_eligibility.income_evidence
+          expect(new_income_evidence.due_date_extended_at).to be_present
+          expect(new_income_evidence.due_date_extended_at.strftime("%m/%d/%Y %I:%M%p")).to eq(v3_verification_history_auto_extended1.date_of_action.strftime("%m/%d/%Y %I:%M%p"))
+          family.reload
+          expect(family.eligibility_determination).to be_present
+          expect(family.eligibility_determination.subjects.count).to eq(1)
+        end
+      end
+
+      context "esi evidence" do
+        let!(:esi_evidence) do
+          FactoryBot.create(:esi_mec_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::EsiMecEvidence',key: :esi_mec_evidence, title: 'Esi MEC Evidence', determined_at: TimeKeeper.date_of_record,
+                                               description: 'EsiMecEvidence', current_state: "pending")
+        end
+        let!(:old_state_history) { FactoryBot.create(:v3_state_history, status_trackable: esi_evidence, created_at: 2.days.ago) }
+        let!(:new_state_history) { FactoryBot.create(:v3_state_history, status_trackable: esi_evidence, created_at: 1.day.ago) }
+        let!(:v3_verification_history)  { FactoryBot.create(:v3_verification_history, evidence: esi_evidence) }
+        let!(:v3_request_result)  { FactoryBot.create(:v3_request_result, evidence: esi_evidence) }
+        let!(:v3_verification_history_auto_extended1)  { FactoryBot.create(:v3_verification_history, evidence: esi_evidence, action: 'auto_extend_due_date', date_of_action: Time.current + 1.day) }
+        let!(:v3_verification_history_auto_extended2)  { FactoryBot.create(:v3_verification_history, evidence: esi_evidence, action: 'auto_extend_due_date', date_of_action: Time.current) }
+
+        it 'should create family_determination but not populate due_date_extended_at' do
+          expect(family.eligibility_determination).not_to be_present
+          result = subject.call({document_id: application.id.to_s})
+          new_application_hbx_id = result.value![1]
+          new_application = FinancialAssistance::Application.where(hbx_id: new_application_hbx_id).first
+          new_applicant = new_application.applicants.first
+          new_aptc_csr_eligibility = new_applicant.aptc_csr_eligibility
+          new_esi_evidence = new_aptc_csr_eligibility.esi_mec_evidence
+          expect(new_esi_evidence.due_date_extended_at).not_to be_present
+          family.reload
+          expect(family.eligibility_determination).to be_present
+          expect(family.eligibility_determination.subjects.count).to eq(1)
         end
       end
     end

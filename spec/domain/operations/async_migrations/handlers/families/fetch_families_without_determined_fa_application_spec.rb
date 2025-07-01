@@ -80,12 +80,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::Families::FetchFamiliesWit
                             ])
         end
 
-        it 'returns success' do
-          expect(@result).to be_a(Dry::Monads::Result::Success)
-        end
-
         it 'should return families without determined fa applications' do
-          expect(@result.value!.first.id.to_s).to include(family2.id.to_s)
+          expect(@result.first.id.to_s).to include(family2.id.to_s)
         end
       end
     end
