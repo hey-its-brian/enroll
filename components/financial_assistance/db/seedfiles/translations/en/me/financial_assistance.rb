@@ -486,6 +486,10 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   "en.faa.getting_eligibility" => "Getting your eligibility results...",
   'en.faa.add_mailing_address' => 'Add Mailing Address',
   'en.faa.remove_mailing_address' => 'Remove Mailing Address',
-  'en.faa.flash_alerts.uneditable_application' => 'This application is not editable.'
+  'en.faa.flash_alerts.uneditable_application' => 'This application is not editable.',
+  'en.faa.address_change_confirmation_header' => 'Important',
+  'en.faa.address_change_confirmation_description1' => 'The changes you\'re making here only apply to this person.',
+  'en.faa.address_change_confirmation_description2' => 'If this change applies to other household members, go to \'Edit Member\' for those people to make the change. ',
+  'en.faa.address_change_confirmation_ok_button' => 'OK, I got it'
 }.freeze
 # rubocop:enable Layout/LineLength
