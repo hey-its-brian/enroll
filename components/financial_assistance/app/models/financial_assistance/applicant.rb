@@ -346,7 +346,12 @@ module FinancialAssistance
 
     # @!attribute [rw] contact_method
     #   @return [String] the preferred method of contact for the applicant
-    field :contact_method, type: String, default: EnrollRegistry.feature_enabled?(:contact_method_via_dropdown) ? 'Paper and Electronic communications' : 'Paper, Electronic and Text Message communications'
+    field :contact_method, type: String,
+                           default: if EnrollRegistry.feature_enabled?(:contact_method_via_dropdown) || EnrollRegistry.feature_enabled?(:enroll_sms_notifications)
+                                      "Paper and Electronic communications"
+                                    else
+                                      "Paper, Electronic and Text Message communications"
+                                    end
 
     # @!attribute [rw] language_preference
     #   @return [String] the preferred language for communication with the applicant

@@ -71,6 +71,8 @@ registry:
             item: "Maine's Official Health Insurance Marketplace"
           - key: :long_name
             item: 'CoverME.gov'
+          - key: :operating_entity
+            item: 'Maine Department of Health and Human Services'
           - key: :header_message
             item: "Maine's Official Health Insurance Marketplace"
           - key: :byline

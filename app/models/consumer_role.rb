@@ -127,7 +127,12 @@ class ConsumerRole
   # should land next after completing RIDP or Identify Verifications.
   field :admin_bookmark_url, type: String, default: nil
 
-  field :contact_method, type: String, default: EnrollRegistry.feature_enabled?(:contact_method_via_dropdown) ? "Paper and Electronic communications" : "Paper, Electronic and Text Message communications"
+  field :contact_method, type: String,
+                         default: if EnrollRegistry.feature_enabled?(:contact_method_via_dropdown) || EnrollRegistry.feature_enabled?(:enroll_sms_notifications)
+                                    "Paper and Electronic communications"
+                                  else
+                                    "Paper, Electronic and Text Message communications"
+                                  end
   field :language_preference, type: String, default: "English"
 
   field :ssn_validation, type: String, default: "pending" #move to verification type

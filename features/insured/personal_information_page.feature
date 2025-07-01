@@ -52,6 +52,19 @@ Feature: Insured Plan Shopping on Individual market
     And Individual unchecks contact text check box
     Then Individual should not see validity message for mobile phone input
 
+  Scenario Outline: New user creates an account and sees contact options section
+    Given EnrollRegistry contact_method_via_dropdown feature is disabled
+    Given EnrollRegistry enroll_sms_notifications feature is <enroll_sms_notifications_enabled>
+    And ConsumerRole class is reloaded
+    When Individual clicks on the Continue button of the Account Setup page
+    Then Individual should see the <default_contact_fields> contact option checkboxes
+    And Individual sees the <content_type> contact preferences disclosure
+
+    Examples:
+      | enroll_sms_notifications_enabled | default_contact_fields                      | content_type |
+      | disabled                         | checked mail, checked email, checked text   | short form   |
+      | enabled                          | checked mail, checked email, unchecked text | long form    |
+
   Scenario: Consumer clicks the personal match page continue button with number starting with zero
     Given EnrollRegistry contact_method_via_dropdown feature is disabled
     Given the Continue button is visible on Account Setup page

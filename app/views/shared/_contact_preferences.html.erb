@@ -1,6 +1,19 @@
 <% if @bs4 %>
   <h4 class="gamma mb-0">Notices</h4>
-  <p><%= l10n("insured.contact_preference") %></p>
+  <% if EnrollRegistry.feature_enabled?(:enroll_sms_notifications) %>
+    <p>
+      <%= l10n(
+          "insured.preferences.notices_disclosure",
+          site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item,
+          operating_entity: EnrollRegistry[:enroll_app].setting(:operating_entity).item
+        ) 
+      %>
+      <br>
+      <%= l10n("insured.preferences.sms_note") %>
+    </p>
+  <% else %>
+    <p><%= l10n("insured.contact_preference") %></p>
+  <% end %>
   <%= f.fields_for role, errors: {}, fieldset: true do |person_role| %>
       <%= person_role.hidden_field :id if role == :employee_roles %>
       <% next if role == :employee_roles && !person_role.object&.is_active? %>

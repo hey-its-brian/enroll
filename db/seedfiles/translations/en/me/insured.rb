@@ -1015,6 +1015,8 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.insured.preferences.notices' => 'Notices',
   :'en.insured.preferences.notices_description' => 'How would you like to receive notices and updates from %{site_short_name}? Check all that apply.',
   :'en.insured.preferences.data_rates_notice' => 'Note: Standard data rates apply for text messages.',
+  :'en.insured.preferences.notices_disclosure' => "%{site_short_name}, operated by the %{operating_entity}, will send you notices about important things like the start of open enrollment, documents you need to submit to keep your coverage, and tax forms. How would you like us to let you know when you have a new notice? Check all that apply.",
+  :'en.insured.preferences.sms_note' => "Note: Standard data rates apply for text messages and frequency varies. Reply STOP to unsubscribe from text messages.",
   :'en.insured.preferences.contact_methods' => 'Contact Method(s)',
   :'en.insured.preferences.paper_only' => 'Only paper communication',
   :'en.insured.preferences.electronic_only' => 'Only electronic communications',

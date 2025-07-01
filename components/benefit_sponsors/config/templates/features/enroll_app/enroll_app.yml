@@ -63,6 +63,8 @@ registry:
             item: "https://www.healthcare.gov"
           - key: :short_name
             item: "DC Health Link"
+          - key: :operating_entity
+            item: 'DC Health Benefit Exchange Authority'
           - key: :byline
             item: "Welcome to the District's Health Insurance Marketplace"
           - key: :long_name

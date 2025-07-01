@@ -1664,6 +1664,34 @@ Then(/^Individual should not see the immigration field warning$/) do
   expect(page).not_to have_content "It's important to enter as many fields from your immigration documents as possible"
 end
 
+Given(/^ConsumerRole class is reloaded/) do
+  load 'app/models/consumer_role.rb'
+end
+
+Then(/^Individual should see the (.*) contact option checkboxes$/) do |contact_options_with_status|
+  contact_options_with_status.split(',').each do |option_with_status|
+    next unless option_with_status.strip.match(/^(checked|unchecked)\s+(.+)$/)
+
+    should_be_checked = Regexp.last_match(1) == 'checked'
+    option = Regexp.last_match(2).strip
+    checkbox_selector = IvlPersonalInformation.send("#{option}_checkbox")
+
+    checkbox = find(checkbox_selector)
+    expect(checkbox).send(should_be_checked ? :to : :not_to, be_checked)
+  end
+end
+
+Then(/^Individual sees the (.*) contact preferences disclosure$/) do |content_type|
+  content = if content_type == 'short form'
+              'How would you like to receive required legal notices? (OPTIONAL)'
+            else
+              "DC Health Link, operated by the DC Health Benefit Exchange Authority, will send you notices about important things " \
+              "like the start of open enrollment, documents you need to submit to keep your coverage, and tax forms. How would you like us " \
+              "to let you know when you have a new notice? Check all that apply." \
+              "\nNote: Standard data rates apply for text messages and frequency varies. Reply STOP to unsubscribe from text messages."
+            end
+  expect(page).to have_content(content)
+end
 
 And(/^Individual unchecks contact text check box/i) do
   find(IvlPersonalInformation.text_checkbox).click

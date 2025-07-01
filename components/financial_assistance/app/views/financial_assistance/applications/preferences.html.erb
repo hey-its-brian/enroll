@@ -85,7 +85,20 @@
 
         <section>
           <h3><%= l10n("notices") %></h3>
-          <p><%= l10n("insured.preferences.notices_description", site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %><br><%= l10n("insured.preferences.data_rates_notice") %></p>
+          <% if EnrollRegistry.feature_enabled?(:enroll_sms_notifications) %>
+            <p>
+              <%= l10n(
+                  "insured.preferences.notices_disclosure",
+                  site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item,
+                  operating_entity: EnrollRegistry[:enroll_app].setting(:operating_entity).item
+                ) 
+              %>
+              <br>
+              <%= l10n("insured.preferences.sms_note") %>
+            </p>
+          <% else %>
+            <p><%= l10n("insured.preferences.notices_description", site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %><br><%= l10n("insured.preferences.data_rates_notice") %></p>
+          <% end %>
 
           <div class="<%= 'hidden' if @identifier %>">
             <fieldset class="d-block col-sm-12 p-0">

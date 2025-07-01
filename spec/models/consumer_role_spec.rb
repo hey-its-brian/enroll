@@ -2424,6 +2424,34 @@ RSpec.describe ConsumerRole, dbclean: :after_each, type: :model do
       expect(consumer_role.lawful_presence_determination.skip_lawful_presence_determination_callbacks).to eq nil
     end
   end
+
+  describe "#contact_method" do
+    let(:new_consumer_role) { FactoryBot.create(:consumer_role) }
+
+    shared_examples "contact method behavior" do |contact_method_via_dropdown, enroll_sms_notifications, expected_method|
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:contact_method_via_dropdown).and_return(contact_method_via_dropdown)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:enroll_sms_notifications).and_return(enroll_sms_notifications)
+        load 'app/models/consumer_role.rb'
+      end
+
+      it "defaults to '#{expected_method}'" do
+        expect(new_consumer_role.contact_method).to eq(expected_method)
+      end
+    end
+
+    context "when contact_method_via_dropdown feature is enabled" do
+      it_behaves_like "contact method behavior", true, false, "Paper and Electronic communications"
+    end
+
+    context "when enroll_sms_notifications feature is enabled" do
+      it_behaves_like "contact method behavior", false, true, "Paper and Electronic communications"
+    end
+
+    context "when both features are disabled" do
+      it_behaves_like "contact method behavior", false, false, "Paper, Electronic and Text Message communications"
+    end
+  end
 end
 
 class VlpDocument

@@ -818,6 +818,8 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.insured.preferences.voter_registration_link' => 'https://www.maine.gov/sos/cec/elec/voter-info/voterguide.html?ref=voteusa',
   :'en.insured.preferences.renewal_year_option' => 'years',
   :'en.insured.preferences.renewal_year_none' => "None. I understand that this means I won't get cost savings in future years unless I change my mind and tell %{site_short_name}",
+  :'en.insured.preferences.notices_disclosure' => "%{site_short_name}, operated by the %{operating_entity}, will send you notices about important things like the start of open enrollment, documents you need to submit to keep your coverage, and tax forms. How would you like us to let you know when you have a new notice? Check all that apply.",
+  :'en.insured.preferences.sms_note' => "Note: Standard data rates apply for text messages and frequency varies. Reply STOP to unsubscribe from text messages.",
   :'en.insured.individual_agreement.agreement.title' => 'Agreement',
   :'en.insured.individual_agreement.agreement.i_agree' => 'I Agree',
   :'en.insured.individual_agreement.agreement.report_changes' => "I understand that I must report any changes that might affect my eligibility or the eligibility of a household member for health insurance. I can report changes by going online and logging into “My Account”, by calling %{contact_center_name} toll-free at %{contact_center_phone_number}, or by submitting information via mail or in-person at one of the Department of Human Services' Service Centers.",

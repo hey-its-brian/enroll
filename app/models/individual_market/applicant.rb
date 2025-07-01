@@ -96,7 +96,12 @@ module IndividualMarket
     # @return [Boolean] Indicates if this applicant is should be kept on their parent's plan when they are 26+
     field :age_off_excluded, type: Boolean
 
-    field :contact_method, type: String, default: EnrollRegistry.feature_enabled?(:contact_method_via_dropdown) ? "Paper and Electronic communications" : "Paper, Electronic and Text Message communications"
+    field :contact_method, type: String,
+                           default: if EnrollRegistry.feature_enabled?(:contact_method_via_dropdown) || EnrollRegistry.feature_enabled?(:enroll_sms_notifications)
+                                      "Paper and Electronic communications"
+                                    else
+                                      "Paper, Electronic and Text Message communications"
+                                    end
 
     field :language_preference, type: String, default: "English"
 

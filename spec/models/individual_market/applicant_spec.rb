@@ -75,7 +75,39 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
     it { is_expected.to have_field(:is_homeless).of_type(Mongoid::Boolean) }
     it { is_expected.to have_field(:is_temporarily_out_of_state).of_type(Mongoid::Boolean) }
     it { is_expected.to have_field(:age_off_excluded).of_type(Mongoid::Boolean) }
-    it { is_expected.to have_field(:contact_method).of_type(String) }
+
+    describe "#contact_method" do
+      it { is_expected.to have_field(:contact_method).of_type(String) }
+
+      describe "default value" do
+        let(:new_applicant) { FactoryBot.build(:individual_market_applicant, application: application) }
+
+        shared_examples "contact method behavior" do |contact_method_via_dropdown, enroll_sms_notifications, expected_method|
+          before do
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:contact_method_via_dropdown).and_return(contact_method_via_dropdown)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:enroll_sms_notifications).and_return(enroll_sms_notifications)
+            load 'app/models/individual_market/applicant.rb'
+          end
+
+          it "defaults to '#{expected_method}'" do
+            expect(new_applicant.contact_method).to eq(expected_method)
+          end
+        end
+
+        context "when contact_method_via_dropdown feature is enabled" do
+          it_behaves_like "contact method behavior", true, false, "Paper and Electronic communications"
+        end
+
+        context "when enroll_sms_notifications feature is enabled" do
+          it_behaves_like "contact method behavior", false, true, "Paper and Electronic communications"
+        end
+
+        context "when both features are disabled" do
+          it_behaves_like "contact method behavior", false, false, "Paper, Electronic and Text Message communications"
+        end
+      end
+    end
+
     it { is_expected.to have_field(:language_preference).of_type(String) }
   end
 
