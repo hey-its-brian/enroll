@@ -32,7 +32,7 @@
     <div class="my-4" id="renewal_years">
       <p><%= l10n("insured.preferences.question2_description", site_short_name: site_short_name) %></p>
       <label class="weight-n required" for="application_years_to_renew"><%= l10n("insured.preferences.question2") %></label>
-      <%= f.select(:years_to_renew, options_for_select(renewal_year_select_options, selected: f.object.years_to_renew), {include_blank: l10n("insured.preferences.select")}, {prompt: true}) %>
+      <%= f.select(:years_to_renew, options_for_select(renewal_year_select_options, selected: f.object.years_to_renew), {include_blank: l10n("insured.preferences.select")}, {prompt: true,  data: qhp_enabled ? {target: "contact-methods.yearsToRenew"} : {}}) %>
     </div>
     <% if qhp_enabled %>
       <% primary_applicant = @application.primary_applicant %>

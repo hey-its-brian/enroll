@@ -1,7 +1,8 @@
 import { Controller } from "stimulus"
 
 export default class extends Controller {
-  static targets = ["preferencesForm", "homePhone", "mobilePhone", "homeEmail", "workEmail", "submitButton", "mailPreference", "emailPreference", "textPreference"]
+  static targets = ["preferencesForm", "homePhone", "mobilePhone", "homeEmail", "workEmail", "submitButton", "mailPreference", "emailPreference", "textPreference",
+  "yearsToRenew"]
 
   connect() {
     this.canSubmitCheck()
@@ -99,14 +100,21 @@ export default class extends Controller {
   }
 
   alertForInvalidContactMethods(event) {
-    event.preventDefault()
+    if (!this.yearsToRenewTarget.checkValidity()) {
+      event.preventDefault();
+      this.yearsToRenewTarget.reportValidity();
+      return;
+    }
+
     let mailPreference = this.mailPreferenceTarget.checked
     let emailPreference = this.emailPreferenceTarget.checked
     let textPreference = this.textPreferenceTarget.checked
 
     if (!mailPreference && !emailPreference && !textPreference) {
+      event.preventDefault();
       alert('A contact method is required to proceed. If selecting Text, you must also choose Email or Mail.');
     } else if (textPreference && !mailPreference && !emailPreference) {
+      event.preventDefault();
       alert('Text cannot be your only contact method. If you select Text, you must also choose Email or Mail.');
     } else {
       this.preferencesFormTarget.submit()

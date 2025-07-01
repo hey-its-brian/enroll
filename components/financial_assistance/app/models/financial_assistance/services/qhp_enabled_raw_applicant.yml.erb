@@ -19,7 +19,7 @@ personal_info:
       value: <%= @applicant.gender.humanize %>
     ssn_provided:
       key: <%= l10n('qhp_application.review.ssn_provided') %>
-      value: <%= human_boolean(@applicant.ssn.present?) %>
+      value: "<%= human_boolean(@applicant.ssn.present?) %>"
     relationship:
       key: <%= l10n('qhp_application.review.relationship_to_primary_member') %>
       value: <%= @applicant.is_primary_applicant? ? l10n('self') : @applicant.relationships.find_by(relative_id: @application.primary_applicant.id).kind.humanize %>
@@ -120,28 +120,32 @@ demographics:
 addresses:
   title: <%= l10n('qhp_application.review.address_info') %>
   rows:
-    <% @applicant.addresses.each do |address| %>
-    address_1:
-      key: <%= l10n("address_1") %>
-      value: <%= address.address_1 %>
-    address_2:
-      key: <%= l10n("address_2") %>
-      value: <%= address.address_2 %>
-    city:
-      key: <%= l10n('city') %>
-      value: <%= address.city %>
-    zip:
-      key: <%= l10n('zip_code') %>
-      value: "<%= address.zip %>"
-    state:
-      key: <%= l10n('state') %>
-      value: <%= address.state.upcase %>
-    <% if address.county.present? %>
-    county:
-      key: <%= l10n('county') %>
-      value: <%= address.county %>
-    <% end %>
-    <% end %>
+    <% addresses = @applicant.addresses %>
+            <% if addresses.present? %>
+    addresses:
+                <% addresses.each do |address| %>
+      - title: "<%= address.kind.titleize %> <%= l10n('address') %>"
+        rows:
+          line_1:
+            key: <%= l10n('address_line_1').titleize %>
+            value: "<%= address&.address_1 %>"
+          line_2:
+            key: <%= l10n('address_line_2').titleize %>
+            value: "<%= address&.address_2 %>"
+          city:
+            key: <%= l10n('city') %>
+            value: "<%= address&.city %>"
+          zip:
+            key: <%= l10n('zip') %>
+            value: "<%= address&.zip %>"
+          state:
+            key: <%= l10n('state') %>
+            value: "<%= address&.state %>"
+          county:
+            key: <%= l10n('county') %>
+            value: "<%= address&.county %>"
+                <% end %>
+            <% end %>
 
 contact_preferences:
   title: <%= l10n('qhp_application.review.contact_preferences') %>
