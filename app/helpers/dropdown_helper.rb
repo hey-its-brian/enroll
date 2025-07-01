@@ -21,10 +21,15 @@ module DropdownHelper
     ]
 
     if application.is_reviewable? || (qhp_application_feature_enabled? && application.is_draft? && current_user.has_hbx_staff_role?)
+      review_application_link = if qhp_application_feature_enabled?
+                                  financial_assistance.application_path(application)
+                                else
+                                  financial_assistance.review_application_path(application)
+                                end
       option_args << (
         [
           l10n('insured.sbm.applications.actions.review'),
-          financial_assistance.review_application_path(application),
+          review_application_link,
           :default
         ]
       )
@@ -42,10 +47,15 @@ module DropdownHelper
       end
 
       if application.is_reviewable?
+        full_application_link = if qhp_application_feature_enabled?
+                                  financial_assistance.application_path(application)
+                                else
+                                  financial_assistance.raw_application_application_path(application)
+                                end
         option_args << (
           [
             l10n('insured.sbm.applications.actions.full_application'),
-            financial_assistance.raw_application_application_path(application),
+            full_application_link,
             :default
           ]
         )

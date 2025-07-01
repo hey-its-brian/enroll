@@ -1,0 +1,38 @@
+<%= render partial: 'shared/family_side_nav' %>
+<ul class="breadcrumbs mb-3">
+  <!-- TODO: Add link to applications page -->
+  <li><%= l10n("qhp_application.show.applications") %></li>
+  <li><%= l10n("qhp_application.show.application_details") %></li>
+</ul>
+<h1><%= @application.assistance_year %> <%= l10n("qhp_application.show.application_details") %></h1>
+
+<% if current_user.has_hbx_staff_role? %>
+  <aside class="mb-3" id="admin-designation-descriptor">
+    <span class="admin-designation"></span>
+    <%= l10n('admin.admin_designation_descriptor') %>
+  </aside>
+  <dl class="parent">
+    <dt><%= l10n("application_id") %>:</dt>
+    <dd><%= @application.hbx_id %></dd>
+    <dt><%= l10n("qhp_application.show.applied_for_fa") %>:</dt>
+    <dd><%= l10n("no") %></dd>
+    <dt><%= l10n("qhp_application.origin") %>:</dt>
+    <dd class="admin-designation"><%= @application.origin&.to_s&.humanize&.titleize %></dd>
+    <dt><%= l10n("qhp_application.generation_reason") %>:</dt>
+    <dd class="admin-designation"><%= @application.generation_reason&.to_s&.humanize&.titleize %></dd>
+  </dl>
+<% end %>
+
+<% if @application.is_determined? %>
+  <div id="help_me_sign_up" tabindex="0" class="btn btn-error outline close2" data-target="#remove_application_modal" data-toggle="modal">
+    <%= l10n("faa.remove_financial_assistance_application") %>
+  </div>
+
+  <%= render "financial_assistance/shared/remove_financial_assistance_modal" %>
+  <%= link_to l10n("qhp_application.show.eligibility_results"), eligibility_results_application_path(@application), class: "btn secondary outline ml-2" %>
+<% end %>
+
+<div class="mt-4">
+  <%= render partial: "summary" %>
+</div>
+

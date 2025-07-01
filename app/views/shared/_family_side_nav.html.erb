@@ -8,7 +8,7 @@
       </li>
       <% if @person.has_consumer_role? && qhp_application_feature_enabled? %>
         <li>
-          <%= h(link_to l10n("insured.sbm.applications.eligibility"), main_app.insured_sbm_applications_path, class: "#{'active' if action_name == 'index'}", data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
+          <%= h(link_to l10n("qhp_application.show.applications"), main_app.insured_sbm_applications_path, class: "#{'active' if action_name == 'index'}", data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
         </li>
       <% end %>
       <% if EnrollRegistry.feature_enabled?(:enrollment_history_page) %>

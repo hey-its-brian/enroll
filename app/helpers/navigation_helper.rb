@@ -162,7 +162,7 @@ module NavigationHelper
 
   def eligibility_navigation
     steps = {
-      "show" => {title: l10n('insured.sbm.applications.eligibility'), link: "#"},
+      "show" => {title: l10n('qhp_application.show.applications'), link: "#"},
       "index" => {title: l10n('insured.sbm.applications.eligibility.history'), link: insured_sbm_applications_path}
     }
 

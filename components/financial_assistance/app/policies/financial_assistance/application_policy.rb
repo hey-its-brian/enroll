@@ -127,6 +127,14 @@ module FinancialAssistance
       edit?
     end
 
+    # Determines if the current user has permission to view the application.
+    # The user can view the application if they have permission to edit it.
+    #
+    # @return [Boolean] Returns true if the user has permission to view the application, false otherwise.
+    def show?
+      edit?
+    end
+
     # Determines if the current user has permission to wait for the eligibility response of the application.
     # The user can wait for the eligibility response if they have permission to edit the application.
     #

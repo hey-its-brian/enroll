@@ -1,0 +1,39 @@
+<div class="modal" id="remove_application_modal" tabindex="-1" role="dialog" role="document" data-controller="remove-application-modal">
+  <div class="modal-dialog application-modal-dialog modal-dialog-centered">
+    <div class="container py-3 px-3 modal-content px-0">
+      <div class="modal-header d-flex align-items-center border-0 p-0">
+        <div class="col-auto p-0">
+          <div class="warning-icon icon icon-sm" alt="warning" aria-hidden="true">&nbsp;</div>
+        </div>
+        <div class="col pt-3 pl-2 bold">
+          <%= l10n('faa.remove_financial_assistance_application_warning') %>
+        </div>
+        <div class="col-auto p-0">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <div class="close-icon icon-min align-self-start m-0" aria-hidden="true">&nbsp;</div>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body border-0 px-0">
+        <p>
+          <%= l10n('faa.remove_financial_assistance_application.body_1',
+                   medicaid_short_name: FinancialAssistanceRegistry[medicaid_or_chip_program_short_name_key].setting(:name).item&.gsub(" or Cub Care", ""),) %>
+        </p>
+        <p>
+          <%= l10n('faa.remove_financial_assistance_application.body_2') %>'<b><%= l10n('faa.remove_financial_assistance_application') %></b>'. <%= l10n('faa.remove_financial_assistance_application.body_3') %>
+        </p>
+        <p>
+          <%= l10n('faa.remove_financial_assistance_application.cancel') %> '<b><%= l10n('cancel') %></b>'.
+        </p>
+      </div>
+      <div class="d-flex align-items-center mt-1 justify-content-end">
+        <a href="#" class="btn outline mr-2" data-dismiss="modal"><%= l10n('cancel') %></a>
+        <%= link_to l10n('faa.remove_financial_assistance_application'),
+                    main_app.help_paying_coverage_response_insured_consumer_role_index_path(is_applying_for_assistance: false),
+                    class: "btn btn-error mr-2",
+                    data: { action: "remove-application-modal#redirectAndClose", turbolinks: false }
+        %>
+      </div>
+    </div>
+  </div>
+</div>

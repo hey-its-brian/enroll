@@ -11,7 +11,7 @@ module FinancialAssistance
     before_action :enable_bs4_layout, only: [:application_year_selection, :application_checklist, :edit, :eligibility_results, :review_and_submit,
                                              :review, :submit_your_application, :wait_for_eligibility_response, :preferences,
                                              :application_publish_error, :eligibility_response_error, :index, :index_with_filter]
-    before_action :enable_admin_bs4_layout, only: [:transfer_history, :raw_application] if EnrollRegistry.feature_enabled?(:bs4_admin_flow)
+    before_action :enable_admin_bs4_layout, only: [:transfer_history, :raw_application, :show] if EnrollRegistry.feature_enabled?(:bs4_admin_flow)
 
     around_action :cache_current_hbx, :only => [:index_with_filter]
 
@@ -23,7 +23,7 @@ module FinancialAssistance
     require 'securerandom'
 
     before_action :check_eligibility, only: [:copy]
-    before_action :set_summary_helpers, only: [:review_and_submit, :review, :raw_application]
+    before_action :set_summary_helpers, only: [:review_and_submit, :review, :raw_application, :show]
     before_action :set_cache_headers, only: [:index, :relationships, :review_and_submit, :index_with_filter]
     before_action :endpoint_access_control, only: [:index, :index_with_filter]
 
@@ -41,6 +41,7 @@ module FinancialAssistance
       :review_and_submit,
       :review,
       :raw_application,
+      :show,
       :wait_for_eligibility_response,
       :eligibility_results,
       :application_publish_error,
@@ -245,6 +246,18 @@ module FinancialAssistance
 
       authorize @application, :review?
       build_applicants_name_by_hbx_id_hash
+
+      respond_to :html
+    end
+
+    def show
+      unless current_user.has_hbx_staff_role?
+        flash[:error] = 'You are not authorized to access'
+        redirect_to applications_path
+        return
+      end
+
+      authorize @application, :show?
 
       respond_to :html
     end
@@ -467,7 +480,7 @@ module FinancialAssistance
         params.keys.include?('cur') ? "financial_assistance_nav" : "financial_assistance"
       when "wait_for_eligibility_response"
         EnrollRegistry.feature_enabled?(:bs4_consumer_flow) ? "bs4_financial_assistance" : "financial_assistance"
-      when "transfer_history", "raw_application"
+      when "transfer_history", "raw_application", "show"
         EnrollRegistry.feature_enabled?(:bs4_admin_flow) ? "financial_assistance_progress" : "financial_assistance"
       else
         "financial_assistance"

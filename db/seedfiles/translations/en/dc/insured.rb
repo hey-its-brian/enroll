@@ -461,6 +461,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.insured.sbm.applications.eligibility' => "Eligibility",
   :"en.insured.sbm.applications.eligibility.history" => "History",
   :'en.insured.sbm.applications.eligibility_history' => "Eligibility History",
+  :'en.insured.sbm.applications.application_history' => "Application History",
   :'en.insured.sbm.applications.eligibility_history.header' => "You must submit a profile for both %{previous_year} and %{current_year} if you have updates that should apply to your coverage for %{previous_year} and %{current_year}.",
   :'en.insured.sbm.applications.table.year' => "Year",
   :'en.insured.sbm.applications.table.program_eligibility' => "Program Eligibility",
