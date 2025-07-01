@@ -11,13 +11,14 @@ module Subscribers
         logger.info "SsaVlpverificationsSubscriber: invoked on_ssa_vlp_verification_determined with delivery_info: #{delivery_info.inspect}, response: #{response.inspect}"
         job_id = metadata[:headers]["job_id"]
         correlation_id = metadata[:correlation_id]
+        application_type = metadata[:headers]["application_type"]
         status = metadata[:headers]["status"]
 
         if status == "failure"
           handle_failure_response(job_id)
           logger.info "Ssa::SsaVlpverificationsSubscriber: on_determined acked and processed failure from fdsh_gateway"
         else
-          verification_payload = { application_hbx_id: correlation_id, job_id: job_id, response: response }
+          verification_payload = { application_hbx_id: correlation_id, job_id: job_id, response: response, app_type: application_type }
           result = Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermined.new.call(verification_payload)
           if result.success?
             logger.info "Ssa::SsaVlpverificationsSubscriber: on_determined acked with success: #{result.success}"

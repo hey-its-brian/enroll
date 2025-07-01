@@ -61,7 +61,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
 
     context 'with valid application' do
       before do
-        @result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id], response: @application_hash.to_json})
+        @result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id], response: @application_hash.to_json, app_type: 'faa'})
       end
       it 'returns success with message' do
         expect(@result).to be_success
@@ -103,14 +103,14 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
 
     context 'with invalid job_id' do
       it 'returns failure when job not found' do
-        result = subject.call({job_id: 'invalid_job_id', application_hbx_id: @application_hash[:hbx_id], response: @application_hash.to_json})
+        result = subject.call({job_id: 'invalid_job_id', application_hbx_id: @application_hash[:hbx_id], response: @application_hash.to_json, app_type: 'faa'})
         expect(result).to be_failure
       end
     end
 
     context 'with invalid application_hbx_id' do
       it 'returns failure when application not found' do
-        result = subject.call({job_id: job.job_id, application_hbx_id: 'invalid_hbx_id', response: @application_hash.to_json})
+        result = subject.call({job_id: job.job_id, application_hbx_id: 'invalid_hbx_id', response: @application_hash.to_json, app_type: 'faa'})
         expect(result).to be_failure
         expect(result.failure).to include("Application not found")
       end
@@ -118,7 +118,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
 
     context 'with invalid response payload' do
       before do
-        @result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id], response: "invalid json"})
+        @result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id], response: "invalid json", app_type: 'faa'})
 
       end
       it 'returns failure with malformed JSON' do
@@ -165,6 +165,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
         result = subject.send(:validate_params, {
                                 job_id: job.job_id,
                                 application_hbx_id: 'app-123',
+                                app_type: 'faa',
                                 response: '{}'
                               })
         expect(result).to be_success

@@ -41,9 +41,9 @@ module Operations
             transmittable_params = yield build_transmittable_params(params[:application_hbx_id])
             @job = yield find_job(validated_params[:job_id])
             @response_transmission = yield build_and_create_response_transmission(transmittable_params)
-            @application = yield find_subject(validated_params[:application_hbx_id])
+            @application = yield find_subject(validated_params[:application_hbx_id], validated_params[:app_type])
             @response_transaction = yield build_and_create_request_transaction(transmittable_params)
-            @application_entity = yield validate_response(params[:response])
+            @application_entity = yield validate_response(params[:response], validated_params[:app_type])
             @application = update_evidences
 
             Success(@application)
@@ -60,6 +60,7 @@ module Operations
             return Failure("Missing job_id") unless params[:job_id]
             return Failure("Missing application_hbx_id") unless params[:application_hbx_id]
             return Failure("Response cannot be empty") if params[:response].empty?
+            return Failure("App type is required") unless params[:app_type]
 
             Success(params)
           end
@@ -101,8 +102,12 @@ module Operations
           # @param application_hbx_id [String] The HBX ID of the application to find
           # @return [Dry::Monads::Result::Success] If application is found
           # @return [Dry::Monads::Result::Failure] If application is not found
-          def find_subject(application_hbx_id)
-            @application = ::FinancialAssistance::Application.where(hbx_id: application_hbx_id).first
+          def find_subject(application_hbx_id, app_type)
+            @application = if app_type == 'faa'
+                             ::FinancialAssistance::Application.where(hbx_id: application_hbx_id).first
+                           else
+                             ::IndividualMarket::Application.where(hbx_id: application_hbx_id).first
+                           end
             return Success(@application) if @application
 
             Failure("Application not found with hbx_id: #{application_hbx_id}")
@@ -125,9 +130,13 @@ module Operations
           # @param response [String] JSON string containing the verification response data
           # @return [Dry::Monads::Result::Success] With the parsed application entity
           # @return [Dry::Monads::Result::Failure] If validation or parsing fails
-          def validate_response(response)
+          def validate_response(response, app_type)
             payload = JSON.parse(response, symbolize_names: true)
-            result = AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(payload)
+            result = if app_type == 'faa'
+                       AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(payload)
+                     else
+                       AcaEntities::IndividualMarket::Operations::Applications::Create.new.call(payload)
+                     end
 
             if result.success?
               @response_transaction.json_payload = result.value!.to_h
@@ -191,10 +200,19 @@ module Operations
             eligibility_entity.evidences.each do |evidence_entity|
               evidence = eligibility.evidences.detect { |e| e.key.to_sym == evidence_entity.key.to_sym }
               next unless evidence
-              update_evidence(evidence, evidence_entity)
-              evidence.request_results.new(evidence_entity.request_results.first.to_h)
+              record_request_result(evidence, evidence_entity) if evidence_entity.request_results.present?
+              record_verification_result(evidence, evidence_entity) if evidence_entity.verification_histories.present?
             end
             eligibility.save
+          end
+
+          def record_request_result(evidence, evidence_entity)
+            update_evidence(evidence, evidence_entity)
+            evidence.request_results.new(evidence_entity.request_results.first.to_h)
+          end
+
+          def record_verification_result(evidence, evidence_entity)
+            evidence.verification_histories.new(evidence_entity.verification_histories.first.to_h)
           end
 
           # Updates a specific evidence based on the verification result
@@ -239,13 +257,17 @@ module Operations
           def uqhp_applicant(res_applicant_entity)
             @application.applicants.detect do |applicant|
               if applicant.demographics&.encrypted_ssn.present?
-                applicant.demographics.encrypted_ssn == res_applicant_entity.encrypted_ssn
+                encrypt_ssn(applicant.demographics.ssn) == res_applicant_entity.demographics.encrypted_ssn
               else
                 applicant.person_name.family_name == res_applicant_entity.person_name&.family_name &&
                   applicant.person_name.given_name == res_applicant_entity.person_name&.given_name &&
                   applicant.demographics.dob == res_applicant_entity.demographics&.dob
               end
             end
+          end
+
+          def encrypt_ssn(ssn)
+            AcaEntities::Operations::Encryption::Encrypt.new.call({ value: ssn }).value!
           end
         end
       end

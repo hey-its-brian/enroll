@@ -101,13 +101,13 @@ module Operations
 
           def predecessor_reference(predecessor_id)
             return nil unless predecessor_id.present?
-            predecossor = IndividualMarket::Application.find(application.predecessor_id)
+            predecessor = ::IndividualMarket::Application.find(predecessor_id)
 
             {
-              application_hbx_id: predecossor.hbx_id,
-              assistance_year: predecossor.assistance_year,
-              current_state: predecossor.current_state,
-              effective_on: predecossor.effective_on
+              application_hbx_id: predecessor.hbx_id,
+              assistance_year: predecessor.assistance_year,
+              current_state: predecessor.current_state,
+              effective_on: predecessor.effective_on
             }
           end
 
@@ -124,9 +124,11 @@ module Operations
           # @param [IndividualMarket::Applicant] applicant The applicant whose demographics to transform
           # @return [Hash] The transformed demographics hash
           def demographics(applicant)
-            applicant_hash = applicant.demographics.attributes.deep_symbolize_keys.slice(:encrypted_ssn, :no_ssn, :gender, :is_incarcerated, :is_physically_disabled,
-                                                                                         :indian_tribe_member, :tribal_id, :tribal_name, :tribal_state, :language_code, :ethnicity, :race)
-            applicant_hash[:dob] = applicant.demographics.dob.to_date if applicant.demographics.dob.present?
+            demographics = applicant.demographics
+            applicant_hash = demographics.attributes.deep_symbolize_keys.slice(:no_ssn, :gender, :is_incarcerated, :is_physically_disabled,
+                                                                               :indian_tribe_member, :tribal_id, :tribal_name, :tribal_state, :language_code, :ethnicity, :race)
+            applicant_hash[:encrypted_ssn] = encrypt(demographics.ssn) if demographics.encrypted_ssn.present?
+            applicant_hash[:dob] = demographics.dob.to_date if demographics.dob.present?
 
             applicant_hash
           end
@@ -165,7 +167,7 @@ module Operations
               last_name: person_name.family_name,
               person_hbx_id: person_hbx_id,
               is_primary_family_member: applicant.is_primary_applicant,
-              encrypted_ssn: demographics.encrypted_ssn,
+              encrypted_ssn: encrypt(demographics.ssn),
               dob: demographics.dob
             }
           end
@@ -253,6 +255,11 @@ module Operations
               result << address_hash
               result
             end
+          end
+
+          def encrypt(value)
+            return nil unless value
+            AcaEntities::Operations::Encryption::Encrypt.new.call({value: value}).value!
           end
         end
       end

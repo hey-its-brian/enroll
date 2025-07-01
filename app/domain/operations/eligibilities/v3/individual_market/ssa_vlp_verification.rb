@@ -151,7 +151,7 @@ module Operations
           def publish
             headers = {
               job_id: @job&.job_id,
-              application_type: 'faa',
+              application_type: @application.is_a?(::FinancialAssistance::Application) ? 'faa' : 'uqhp',
               key: :ssa_vlp_verification_request,
               correlation_id: @application.hbx_id
             }
