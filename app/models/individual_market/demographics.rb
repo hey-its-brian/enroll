@@ -169,7 +169,15 @@ module IndividualMarket
       return @tribal_names unless @tribal_names.nil?
       return nil if tribe_codes.blank?
       tribes = FinancialAssistanceRegistry[:featured_tribes_selection].setting(:featured_tribes).item&.to_h&.invert
+
       @tribal_names ||= tribe_codes.compact_blank.map{ |code| tribes[code] }.join(', ')
+    end
+
+    # Returns the display name for the tribe
+    #
+    # @return [String] The tribal name if present, otherwise the tribal names from tribe_codes.
+    def tribe_name_display
+      tribal_name.present? ? tribal_name : tribal_names
     end
 
     # Validation for the presence of either no_ssn or encrypted_ssn
@@ -202,12 +210,6 @@ module IndividualMarket
         race: race,
         citizen_status: citizen_status
       )
-    end
-
-    def tribe_name_display
-      return tribal_name if tribal_name.present?
-      return tribal_names.compact_blank.join(", ") if tribal_names.present?
-      nil
     end
 
     private

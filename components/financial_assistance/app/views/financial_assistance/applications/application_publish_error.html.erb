@@ -8,7 +8,11 @@
     <%= render_flash use_bs4: @bs4 %>
   </div>
   <p class="mb-4"><%= l10n('faa.publish_error.second_error_message_with_help', phone: "#{EnrollRegistry[:enroll_app].settings(:contact_center_short_number).item} / TTY: #{EnrollRegistry[:enroll_app].setting(:contact_center_tty_number).item}") %></p>
-  <%= h(link_to(l10n("faa.publish_error.back"), financial_assistance.applications_path(tab: 'cost_savings'))) %>
+  <% if qhp_enabled %>
+    <%= h(link_to(l10n("faa.publish_error.back"), main_app.insured_sbm_applications_path)) %>
+  <% else %>
+    <%= h(link_to(l10n("faa.publish_error.back"), financial_assistance.applications_path(tab: 'cost_savings'))) %>
+  <% end %>
 <% else %>
   <div class="col-md-7">
     <div class="">
