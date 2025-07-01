@@ -1778,9 +1778,9 @@ class Family
   #
   # This method checks the class of the latest application and returns a string
   # representing its type: 'faa' for Financial Assistance applications, 'qhp' for
-  # Individual Market applications, or 'unknown' if the type is not recognized.
+  # Individual Market applications, or nil if the type is not recognized.
   #
-  # @return [String, nil] The type of the latest application ('faa', 'qhp', or 'unknown')
+  # @return [String, nil] The type of the latest application ('faa', 'qhp', or nil)
   def latest_application_type
     return nil unless latest_application_gid
 

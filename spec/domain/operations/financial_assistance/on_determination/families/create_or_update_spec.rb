@@ -76,6 +76,11 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
   let(:family) {  FactoryBot.create(:family, :with_primary_family_member, person: primary_person) }
   let(:primary_family_member_id) { family.primary_applicant.id }
   let(:returned_family) { @result.success[1] }
+  let(:returned_thhg) { returned_family.tax_household_groups.first }
+
+  before :each do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+  end
 
   describe '#call' do
     # Deactivation of a family member who is not present on the application
@@ -97,7 +102,10 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
 
       before :each do
         secondary_family_member
-        @result = subject.call(application: primary_applicant.application)
+        primary_applicant.application.build_aptc_eligibilities_evidences
+        application.build_ivl_eligibility_with_evidences
+        application.save!
+        @result = subject.call(application: application)
         primary_person.reload
         secondary_person.reload
         family.reload
@@ -153,7 +161,10 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
       let(:secondary_family_member_id) { secondary_family_member.id }
 
       before :each do
-        @result = subject.call(application: relationship.application)
+        relationship.application.build_aptc_eligibilities_evidences
+        application.build_ivl_eligibility_with_evidences
+        application.save!
+        @result = subject.call(application: application)
         primary_person.reload
         secondary_person.reload
         family.reload
@@ -174,6 +185,19 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
 
       it 'updates the relationship kind' do
         expect(primary_person.person_relationships.where(relative_id: secondary_person.id).first.kind).to eq('spouse')
+      end
+
+      it 'creates tax household group for the family' do
+        expect(returned_family.tax_household_groups.size).to eq(1)
+        expect(returned_family.tax_household_groups.first).to be_a(TaxHouseholdGroup)
+
+        expect(returned_thhg).to have_attributes(
+          source: 'Faa',
+          application_gid: application.to_global_id.to_s,
+          start_on: application.effective_date,
+          end_on: nil,
+          assistance_year: application.assistance_year
+        )
       end
 
       it 'updates primary person with new address and removes old addresses' do
@@ -260,7 +284,10 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
       let(:secondary_family_member_id) { nil }
 
       before :each do
-        @result = subject.call(application: relationship.application)
+        relationship.application.build_aptc_eligibilities_evidences
+        application.build_ivl_eligibility_with_evidences
+        application.save!
+        @result = subject.call(application: application)
         primary_person.reload
         family.reload
         application.reload

@@ -199,7 +199,7 @@ module Operations
           def build_tax_household_group(application, family, family_members_result)
             thhg = family.tax_household_groups.build(
               source: 'Faa',
-              application_hbx_id: application.hbx_id,
+              application_gid: application.to_global_id.to_s,
               start_on: application.effective_date,
               end_on: nil,
               assistance_year: application.assistance_year

@@ -19,7 +19,8 @@ module Operations
           _relationships_result = yield create_or_update_primary_relationships(people_result, application)
           family_members_result = yield build_or_update_family_members(application, family, people_result)
           _ch_members_result    = yield build_coverage_household_members(family)
-          #_thhg_result          = yield build_tax_household_group(application, family, family_members_result)
+          _result               = yield deactivate_tax_household_groups(application, family)
+          _result               = yield build_tax_household_group(application, family, family_members_result)
           family                = yield assign_latest_application_gid(family)
           family                = yield persist_family(family)
           #_family_determination = yield recreate_family_eligibility_determination(family)
@@ -171,6 +172,54 @@ module Operations
             end
           end
           Success('Successfully built coverage household members.')
+        end
+
+        # Deactivates all existing tax household groups for the application's assistance year
+        #
+        # @param application [IndividualMarket::Application] the individual market application
+        # @param family [Family] the family associated with the application
+        # @return [Dry::Monads::Result] Success with message
+        def deactivate_tax_household_groups(application, family)
+          family.tax_household_groups.by_year(application.assistance_year).each do |thhg|
+            thhg.end_on = application.effective_on > thhg.start_on ? (application.effective_on - 1.day) : thhg.start_on
+
+            thhg.tax_households.each do |thh|
+              thh.effective_ending_on = application.effective_on > thh.effective_starting_on ? (application.effective_on - 1.day) : thh.effective_starting_on
+            end
+          end
+
+          Success('Deactivated old Tax Household Groups')
+        end
+
+        # Builds a new tax household group and tax household for the application
+        #
+        # @param application [IndividualMarket::Application] the individual market application
+        # @param family [Family] the family associated with the application
+        # @param family_members_result [Hash] hash of applicant_id => family_member
+        #
+        # @return [Dry::Monads::Result] Success with tax household group or Failure with error message
+        def build_tax_household_group(application, family, family_members_result)
+          thhg = family.tax_household_groups.build(
+            source: 'qhp',
+            application_gid: application.to_global_id.to_s,
+            start_on: application.effective_on,
+            end_on: nil,
+            assistance_year: application.assistance_year
+          )
+
+          thh = thhg.tax_households.build(effective_starting_on: application.effective_on)
+
+          application.applicants.each do |applicant|
+            thh.tax_household_members.build(
+              applicant_id: family_members_result[applicant.id].id,
+              is_without_assistance: applicant.is_qhp_eligible,
+              is_totally_ineligible: !applicant.is_qhp_eligible,
+              is_csr_eligible: applicant.is_csr_eligible,
+              csr_percent_as_integer: applicant.csr_percent
+            )
+          end
+
+          Success('Successfully built tax household group and tax household.')
         end
 
         # Assigns the latest application GID to the family

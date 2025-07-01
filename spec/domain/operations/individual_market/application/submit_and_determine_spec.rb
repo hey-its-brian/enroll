@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Operations::IndividualMarket::SubmitAndDetermineApplication, dbclean: :after_each do
+RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, dbclean: :after_each do
   subject { described_class.new }
 
   let(:application) { FactoryBot.create(:individual_market_application, :with_primary) }

@@ -44,7 +44,7 @@ module Insured
         authorize @application, :submit?
 
         if @application.build_attestation(params[:terms_check] == "true", params[:first_name], params[:last_name], current_user)
-          operation = Operations::IndividualMarket::SubmitAndDetermineApplication.new
+          operation = Operations::IndividualMarket::Application::SubmitAndDetermine.new
           result = operation.call(application: @application)
 
           if result.success?

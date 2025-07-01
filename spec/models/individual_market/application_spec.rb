@@ -678,4 +678,20 @@ RSpec.describe IndividualMarket::Application, type: :model do
       end
     end
   end
+
+  describe '#set_submit' do
+    let(:application) { FactoryBot.create(:individual_market_application, :with_primary, effective_on: nil) }
+
+    before do
+      application.set_submit
+    end
+
+    it 'assigns the submitted_at timestamp' do
+      expect(application.submitted_at).to be_present
+    end
+
+    it 'assigns effective_on based on the assistance year' do
+      expect(application.effective_on).to be_present
+    end
+  end
 end

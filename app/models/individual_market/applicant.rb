@@ -378,6 +378,42 @@ module IndividualMarket
       evidence
     end
 
+    # Finds if the applicant is eligible for QHP based on the individual market eligibility and qhp determination.
+    #
+    # @return [Boolean] true if the applicant is eligible for QHP, false otherwise
+    def is_qhp_eligible
+      individual_market_eligibility.qhp_determination&.is_eligible
+    end
+
+    # Finds if the applicant is eligible for CSR based on the individual market eligibility and csr determination.
+    #
+    # @return [Boolean] true if the applicant is eligible for CSR, false otherwise
+    def is_csr_eligible
+      individual_market_eligibility.csr_determination&.is_eligible
+    end
+
+    # Returns the CSR type for the applicant based on the individual market eligibility.
+    #
+    # @return [String] The CSR type, defaults to 'csr_0' if not determined
+    # @see Eligibilities::V3::Determinations::CsrDetermination#CSR_TYPE_KINDS for valid values
+    def csr_type
+      individual_market_eligibility.csr_determination&.csr_type || 'csr_0'
+    end
+
+    # Returns the CSR percentage for the applicant based on the CSR type.
+    #
+    # @return [Integer] The CSR percentage, returns 0 for 'csr_0', -1 for 'csr_limited', and the corresponding percentage for other types
+    def csr_percent
+      {
+        'csr_100' => 100,
+        'csr_94' => 94,
+        'csr_87' => 87,
+        'csr_73' => 73,
+        'csr_limited' => -1,
+        'csr_0' => 0
+      }[csr_type]
+    end
+
     private
 
     # Adds to errors collection if duplicate eligibilities are found

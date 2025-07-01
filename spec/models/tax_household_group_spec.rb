@@ -14,6 +14,15 @@ RSpec.describe TaxHouseholdGroup, type: :model do
   let(:current_tax_household_group) { FactoryBot.create(:tax_household_group, :active_current_year, family: family) }
   let(:prospective_tax_household_group) { FactoryBot.create(:tax_household_group, :active_next_year, family: family) }
 
+  let(:faa_application) { FactoryBot.create(:financial_assistance_application, family_id: family.id) }
+  let(:application) { faa_application }
+  let(:qhp_application) { FactoryBot.create(:individual_market_application, family_id: family.id) }
+
+  let(:enabled) { false }
+  before :each do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(enabled)
+  end
+
   describe '.current_and_prospective_by_year' do
     context 'with retro, current and prospective year thhgs' do
       before do
@@ -31,8 +40,6 @@ RSpec.describe TaxHouseholdGroup, type: :model do
   end
 
   describe '#application' do
-    let(:application) { FactoryBot.create(:financial_assistance_application, family_id: family.id) }
-
     context 'with valid application_hbx_id' do
       before do
         current_tax_household_group.set(application_hbx_id: application.hbx_id)
@@ -43,7 +50,7 @@ RSpec.describe TaxHouseholdGroup, type: :model do
       end
     end
 
-    context 'without an application for the applcation_hbx_id' do
+    context 'without an application for the application_hbx_id' do
       before do
         current_tax_household_group.set(application_hbx_id: '12345')
       end
@@ -53,9 +60,81 @@ RSpec.describe TaxHouseholdGroup, type: :model do
       end
     end
 
-    context 'without an applcation_hbx_id' do
+    context 'without an application_hbx_id' do
       it 'returns nil' do
         expect(current_tax_household_group.application).to be_nil
+      end
+    end
+
+    context 'when qhp_application_feature_enabled is true' do
+      let(:enabled) { true }
+
+      context 'with application_gid' do
+        context 'when application_gid belongs to a FinancialAssistance::Application' do
+          before do
+            current_tax_household_group.set(application_gid: faa_application.to_global_id.to_s)
+          end
+
+          it 'returns the FinancialAssistance::Application' do
+            expect(current_tax_household_group.application).to eq(faa_application)
+          end
+        end
+
+        context 'when application_gid belongs to an IndividualMarket::Application' do
+          before do
+            current_tax_household_group.set(application_gid: qhp_application.to_global_id.to_s)
+          end
+
+          it 'returns the IndividualMarket::Application' do
+            expect(current_tax_household_group.application).to eq(qhp_application)
+          end
+        end
+      end
+
+      context 'without application_gid' do
+        context 'when application_hbx_id is present' do
+          before do
+            current_tax_household_group.set(application_hbx_id: faa_application.hbx_id)
+          end
+
+          it 'returns nil' do
+            expect(current_tax_household_group.application).to be_nil
+          end
+        end
+
+        context 'when application_hbx_id is not present' do
+          it 'returns nil' do
+            expect(current_tax_household_group.application).to be_nil
+          end
+        end
+      end
+    end
+  end
+
+  describe '#application_type' do
+    let(:enabled) { true }
+
+    context 'when application_gid is populated with FinancialAssistance::Application' do
+      it 'returns "faa"' do
+        current_tax_household_group.set(application_gid: faa_application.to_global_id.to_s)
+
+        expect(current_tax_household_group.application_type).to eq('faa')
+      end
+    end
+
+    context 'when application_gid is populated with IndividualMarket::Application' do
+      it 'returns "qhp"' do
+        current_tax_household_group.set(application_gid: qhp_application.to_global_id.to_s)
+
+        expect(current_tax_household_group.application_type).to eq('qhp')
+      end
+    end
+
+    context 'when application_gid is not populated' do
+      it 'returns nil' do
+        current_tax_household_group.set(application_gid: nil)
+
+        expect(current_tax_household_group.application_type).to be_nil
       end
     end
   end

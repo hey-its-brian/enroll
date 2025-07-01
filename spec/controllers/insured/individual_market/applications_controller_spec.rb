@@ -37,7 +37,7 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
     }
   end
 
-  let(:operation) { instance_double(Operations::IndividualMarket::SubmitAndDetermineApplication) }
+  let(:operation) { instance_double(Operations::IndividualMarket::Application::SubmitAndDetermine) }
 
   let(:site) { FactoryBot.create(:benefit_sponsors_site, :with_benefit_market, :as_hbx_profile, :cca) }
   let(:broker_agency_profile) { FactoryBot.create(:benefit_sponsors_organizations_broker_agency_profile, market_kind: :individual) }
@@ -165,7 +165,7 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
 
     describe "POST submit" do
       before do
-        allow(Operations::IndividualMarket::SubmitAndDetermineApplication).to receive(:new).and_call_original
+        allow(Operations::IndividualMarket::Application::SubmitAndDetermine).to receive(:new).and_call_original
       end
 
       case authorization_type

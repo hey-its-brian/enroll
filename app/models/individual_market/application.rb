@@ -250,8 +250,12 @@ module IndividualMarket
       @non_applicants ||= applicants.select{|a| a.individual_market_eligibility.qhp_determination.bases.non_applicant.any?}
     end
 
+    # Prepares the application for submission by setting the submitted_at and effective_on fields
+    #
+    # @return [void]
     def set_submit
       assign_submitted_at
+      assign_effective_on
     end
 
     # Creates a copy of the current application with copied applicants and relationships
@@ -299,6 +303,15 @@ module IndividualMarket
 
     def assign_submitted_at
       self.submitted_at = Time.current
+    end
+
+    # Assigns the effective date for the application based on the earliest effective date for the assistance year
+    #
+    # @return [void]
+    def assign_effective_on
+      self.effective_on = FinancialAssistance::Operations::EnrollmentDates::EarliestEffectiveDate.new.call(
+        assistance_year: assistance_year
+      ).value!
     end
 
     # Validates that there is exactly one primary applicant in the application if there are any applicants

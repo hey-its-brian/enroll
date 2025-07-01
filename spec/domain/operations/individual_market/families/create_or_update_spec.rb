@@ -77,6 +77,7 @@ RSpec.describe Operations::IndividualMarket::Families::CreateOrUpdate, type: :mo
   let(:family) {  FactoryBot.create(:family, :with_primary_family_member, person: primary_person) }
   let(:primary_family_member_id) { family.primary_applicant.id }
   let(:returned_family) { @result.success[1] }
+  let(:returned_thhg) { returned_family.tax_household_groups.order_by(created_at: :desc).first }
 
   describe '#call' do
     # Deactivation of a family member who is not present on the application
@@ -166,8 +167,10 @@ RSpec.describe Operations::IndividualMarket::Families::CreateOrUpdate, type: :mo
       end
       let(:secondary_family_member) { FactoryBot.create(:family_member, family: family, person: secondary_person) }
       let(:secondary_family_member_id) { secondary_family_member.id }
+      let(:current_thhg) { FactoryBot.create(:tax_household_group, :active_current_year, family: family) }
 
       before :each do
+        current_thhg
         @result = subject.call(application: relationship.application)
         primary_person.reload
         secondary_person.reload
@@ -189,6 +192,33 @@ RSpec.describe Operations::IndividualMarket::Families::CreateOrUpdate, type: :mo
 
       it 'updates the relationship kind' do
         expect(primary_person.person_relationships.where(relative_id: secondary_person.id).first.kind).to eq('spouse')
+      end
+
+      it 'deactivates the current tax household group' do
+        expect(current_thhg.reload.end_on).to be_present
+      end
+
+      it 'creates tax household group for the family' do
+        expect(returned_family.tax_household_groups.active.size).to eq(1)
+        expect(returned_family.tax_household_groups.first).to be_a(TaxHouseholdGroup)
+
+        expect(returned_thhg).to have_attributes(
+          source: 'qhp',
+          application_gid: application.to_global_id.to_s,
+          start_on: application.effective_on,
+          end_on: nil,
+          assistance_year: application.assistance_year
+        )
+        expect(returned_thhg.tax_households.size).to eq(1)
+        expect(returned_thhg.tax_households.first).to be_a(TaxHousehold)
+        returned_thh = returned_thhg.tax_households.first
+        expect(returned_thh).to have_attributes(effective_starting_on: application.effective_on)
+        expect(returned_thh.tax_household_members.size).to eq(2)
+        expect(
+          returned_thh.tax_household_members.map(&:family_member_id)
+        ).to contain_exactly(
+          primary_applicant.family_member_id, secondary_applicant.family_member_id
+        )
       end
 
       it 'updates primary person with new address and removes old addresses' do
