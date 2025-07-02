@@ -115,12 +115,14 @@ FactoryBot.define do
           :eligibilities_determination
         )
         family.eligibility_determination.subjects = family.family_members.map do |family_member|
-          build(:eligibilities_subject, outstanding_verification_status: evaluator.outstanding_verification_status, first_name: family_member.person.first_name,
+          build(:eligibilities_subject, outstanding_verification_status: evaluator.outstanding_verification_status,
+                                        first_name: family_member.person.first_name,
                                         last_name: family_member.person.last_name,
                                         dob: family_member.person.dob,
                                         person_id: family_member.person.id,
                                         hbx_id: family_member.person.hbx_id,
-                                        is_primary: family_member.is_primary_applicant)
+                                        is_primary: family_member.is_primary_applicant,
+                                        gid: family_member.person.to_global_id)
         end
 
         # Add configurable parameters with defaults
