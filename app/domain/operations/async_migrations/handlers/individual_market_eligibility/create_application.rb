@@ -27,13 +27,13 @@ module Operations
           private
 
           def validate(params)
-            return Failure('family_id is expected in BSON format') unless params[:document_id].is_a?(BSON::ObjectId)
+            return Failure('family_id is expected in BSON format') unless BSON::ObjectId.legal?(params[:document_id])
 
             Success(params[:document_id])
           end
 
           def find_family(family_id)
-            family_find_result = ::Operations::Families::Find.new.call(id: family_id)
+            family_find_result = ::Operations::Families::Find.new.call(id: BSON::ObjectId(family_id))
             return family_find_result if family_find_result.failure?
 
             Success(family_find_result.success)
