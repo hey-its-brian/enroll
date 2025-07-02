@@ -3,6 +3,7 @@
 module Subscribers
   # Subscriber will receive request payload from EA to generate a renewal draft application
   class PeopleSubscriber
+    include EventSource::Logging
     include ::EventSource::Subscriber[amqp: 'enroll.people']
 
     subscribe(:on_person_saved) do |delivery_info, _metadata, response|
@@ -38,8 +39,8 @@ module Subscribers
       Operations::People::HandleInboxMessageReceived.new.call(payload)
       ack(delivery_info.delivery_tag)
     rescue StandardError, SystemStackError => e
-      subscriber_logger.error "PeopleSubscriber::PersonInboxMessageReceived, payload: #{payload}, error message: #{e.message}, backtrace: #{e.backtrace}"
-      subscriber_logger.error "PeopleSubscriber::PersonInboxMessageReceived, ack: #{payload}"
+      logger.error "PeopleSubscriber::PersonInboxMessageReceived, payload: #{payload}, error message: #{e.message}, backtrace: #{e.backtrace}"
+      logger.error "PeopleSubscriber::PersonInboxMessageReceived, ack: #{payload}"
       ack(delivery_info.delivery_tag)
     end
 

@@ -1,5 +1,6 @@
 class Message
   include Mongoid::Document
+  include EventSource::Command
 
   embedded_in :inbox
 
@@ -22,6 +23,20 @@ class Message
   scope :by_message_id, ->(id){where(:id => id)}
 
   alias_method :message_read?, :message_read
+
+  after_create :maybe_notify_received_message
+
+  def maybe_notify_received_message
+    return unless inbox&.recipient.is_a?(Person)
+
+    notification_event = event(
+      "events.person_inbox_message_received",
+      attributes: {
+        person_id: inbox.recipient.id
+      }
+    )
+    notification_event.success.publish
+  end
 
 private
   def set_timestamp

@@ -26,7 +26,7 @@ module Operations
       def notify_using_text(person)
         consumer_role = person.consumer_role
 
-        return Success(:ok) unless consumer_role&.can_receive_text_communication?
+        return Success(:consumer_cant_receive_texts) unless consumer_role&.can_receive_text_communication?
 
         ::Operations::ContactProfile::SendSmsNotification.new.call(
           {
