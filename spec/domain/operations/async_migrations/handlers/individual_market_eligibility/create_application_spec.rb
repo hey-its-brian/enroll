@@ -8,7 +8,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
   let!(:hbx_profile)   { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
   let!(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
   let!(:benefit_coverage_period) { hbx_profile.benefit_sponsorship.benefit_coverage_periods.first }
-  let!(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, no_ssn: false, age_off_excluded: true) }
+  let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, no_ssn: false, age_off_excluded: true) }
   let(:consumer_role) do
     consumer = person.consumer_role
     consumer.contact_method = "Paper and Electronic communications"
@@ -17,7 +17,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
     consumer
   end
   let!(:immigration_type) do
-    immigration_type = FactoryBot.build(:verification_type, type_name: 'Immigration status',
+    immigration = FactoryBot.build(:verification_type, type_name: 'Immigration status',
                                                             validation_status: 'rejected',
                                                             applied_roles: ['consumer_role'],
                                                             update_reason: 'initial',
@@ -27,7 +27,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
                                                             due_date_type: 'admin',
                                                             updated_by: 'admin',
                                                             inactive: true)
-    person.verification_types << immigration_type
+    person.verification_types << immigration
     person.save!
   end
 
@@ -164,7 +164,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
     end
   end
 
-  let!(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
 
   before do
     allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
@@ -187,8 +187,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
                                                  created_at: DateTime.now - 5.minutes)
       verification_type.save!
     end
-    FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period)
-    FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile)
+
     @result = subject.call({document_id: family.id})
     @new_application_hbx_id = @result.value![1]
     @new_application = IndividualMarket::Application.where(hbx_id: @new_application_hbx_id).first
@@ -202,6 +201,11 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
     expect(@new_application.origin).to eq(:migration)
     expect(@new_application.generation_reason).to eq(:manual)
     expect(@new_application.hbx_id).to be_present
+    expect(@new_application.submitted_at).to be_a(DateTime)
+    expect(@new_application.submitted_at.utc?).to be true
+    expect(@new_application.current_state).to eq(:determined)
+    family.reload
+    expect(family.latest_application_gid).to eq(@new_application.to_global_id.to_s)
   end
 
   it 'should migrate contact method, language preference and age off excluded' do

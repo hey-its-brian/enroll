@@ -38,6 +38,8 @@ module Validators
         required(:origin).filled(:symbol)
         required(:generation_reason).filled(:symbol)
         required(:applicants).array(:hash)
+        optional(:submitted_at).maybe(:date_time)
+        optional(:current_state).maybe(:symbol)
       end
 
       rule(:family_id) do

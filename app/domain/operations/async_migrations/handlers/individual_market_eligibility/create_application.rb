@@ -18,6 +18,7 @@ module Operations
             application = yield transform_family(family)
             draft_application = yield build_application(application)
             determined_application = yield persist(draft_application)
+            yield regenerate_family_determination(determined_application)
             comparison_result = yield compare_migrated_values(determined_application)
             yield publish(comparison_result)
 
@@ -49,7 +50,9 @@ module Operations
               family_id: family.id,
               assistance_year: family.application_applicable_year,
               origin: :migration,
-              generation_reason: :manual
+              generation_reason: :manual,
+              submitted_at: DateTime.current,
+              current_state: :determined
             }
 
             application_attrs.merge!({applicants: applicants_attributes(family)})
@@ -129,7 +132,7 @@ module Operations
                 to_state: :determined,
                 transition_at: Time.now,
                 effective_on: Time.now,
-                reason: "creating first QHP application for individual_market eligibility"
+                reason: "created first QHP application for individual_market eligibility"
               )
               draft_application.save!
 
@@ -137,6 +140,15 @@ module Operations
             else
               Failure(draft_application.errors)
             end
+          end
+
+          def regenerate_family_determination(determined_application)
+            family = determined_application.family
+            family.assign_latest_application_gid
+            family.save!
+
+            Success(true)
+            # place holder to build family determination
           end
 
           def compare_migrated_values(application)
