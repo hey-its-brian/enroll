@@ -207,7 +207,8 @@ module FinancialAssistance
      "Ripley",
      "Cambridge",
      "Moose River",
-     "Caratunk"],
+     "Caratunk",
+     "Rockwood"],
         "Kennebec" =>
     ["Hallowell",
      "Gardiner",

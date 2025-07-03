@@ -205,7 +205,8 @@ module MeCountyHelper
    "Ripley",
    "Cambridge",
    "Moose River",
-   "Caratunk"],
+   "Caratunk",
+   "Rockwood"],
       "Kennebec" =>
   ["Hallowell",
    "Gardiner",

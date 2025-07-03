@@ -117,27 +117,4 @@ namespace :reinstate_policies do
       enrollment&.update_attributes(terminate_reason: nil)
     end
   end
-
-  private
-
-  # Helper method to generate warning message for intervening applications
-  def self.generate_intervening_applications_warning(base_enrollment, reinstate_enrollment, base_enrollment_term_or_cancel_date)
-    return nil if base_enrollment_term_or_cancel_date.blank?
-    
-    coverage_year = base_enrollment.coverage_year
-    intervening_applications = FinancialAssistance::Application.determined.where(
-      family_id: base_enrollment.family.id,
-      assistance_year: coverage_year, 
-      :submitted_at.gte => base_enrollment_term_or_cancel_date
-    )
-    
-    return nil unless intervening_applications.any?
-    
-    intervening_application_summaries = intervening_applications.pluck(:hbx_id, :submitted_at).map do |hbx_id, submitted_at| 
-      "#{hbx_id} (#{submitted_at.strftime('%m/%d/%y')})" 
-    end
-    
-    "WARNING: #{coverage_year} year IAP Applications for Family (HBXID: #{base_enrollment.family.primary_applicant.person.hbx_id}) submitted after " \
-    "the reinstated Enrollment (HBXID #{reinstate_enrollment.hbx_id}) was terminated or canceled on #{base_enrollment_term_or_cancel_date}:\n - #{intervening_application_summaries.join("\n - ")}"
-  end
 end
