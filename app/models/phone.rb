@@ -34,6 +34,9 @@ class Phone
   before_save :set_crm_updates
   before_destroy :set_crm_updates
 
+  after_save :maybe_notify_person_of_change
+  after_destroy :maybe_notify_person_of_delete
+
   validates :area_code,
     numericality: true,
     length: { minimum: 3, maximum: 3, message: "%{value} is not a valid area code" },
@@ -106,6 +109,29 @@ class Phone
     return unless EnrollRegistry[:check_for_crm_updates].enabled?
     return unless person
     person.set(crm_notifiction_needed: true) if changes&.any?
+  end
+
+  def maybe_notify_person_of_change
+    return true unless person
+    ::Operations::People::HandlePhoneChanged.new.call(
+      {
+        phone: self,
+        changes: changes,
+        action: :update
+      }
+    )
+  end
+
+  def maybe_notify_person_of_delete
+    return true unless person
+
+    ::Operations::People::HandlePhoneChanged.new.call(
+      {
+        phone: self,
+        changes: nil,
+        action: :destroy
+      }
+    )
   end
 
 private
