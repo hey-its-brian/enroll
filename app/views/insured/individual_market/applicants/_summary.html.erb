@@ -1,10 +1,11 @@
 <% is_dependent = !applicant.is_primary_applicant %>
 <% member_details = member_details || false %>
+<% applying_coverage = applicant.is_applying_coverage? %>
 <% edit_link = @application.is_initial? ? insured_individual_market_application_applicants_path(@application, applicant: applicant.id) : copy_insured_individual_market_application_path(@application, applicant: applicant.id) %>
 <section class="<%= member_details ? "mb-5" : "my-4 mb-5" %>">
   <% if member_details %>
     <div class="d-flex justify-content-between align-items-center my-0">
-      <h1 class="mt-0"><%= applicant.person_name.full_name %>'s Details</h1>
+      <h1 class="mt-0"><%= l10n('qhp_application.member_details.header', name: applicant.person_name.full_name) %></h1>
       <div>
         <%= link_to(edit_link, class: "btn outline secondary") do %>
           <i class="fas fa-pencil-alt ml-0 mr-2"></i>
@@ -31,57 +32,68 @@
 
   <h3 class="mt-2 mb-0"><%= l10n("qhp_application.review.personal") %></h3>
   <hr class="my-1">
-  <div class="d-flex justify-content-between align-items-center">
+  <div class="d-flex justify-content-between align-items-start">
     <dt class="col-8 px-0"><%= l10n("date_of_birth") %></dt>
     <dd class="text-right"><%= applicant.demographics.dob %></dd>
   </div>
-  <div class="d-flex justify-content-between align-items-center">
+  <div class="d-flex justify-content-between align-items-start">
     <dt class="col-8 px-0"><%= l10n("gender") %></dt>
     <dd class="text-right"><%= applicant.demographics.gender&.titleize %></dd>
   </div>
-  <div class="d-flex justify-content-between align-items-center">
+  <div class="d-flex justify-content-between align-items-start">
     <dt class="col-8 px-0"><%= l10n("qhp_application.review.ssn_provided") %></dt>
-    <dd class="text-right"><%= applicant.demographics.ssn.present? ? "Yes" : "No" %></dd>
+    <dd class="text-right"><%= applicant.demographics.ssn.present? ? l10n("yes") : l10n("no") %></dd>
   </div>
-  <div class="d-flex justify-content-between align-items-center">
+  <div class="d-flex justify-content-between align-items-start">
     <% relationship = is_dependent ? applicant.relationship : "self" %>
     <dt class="col-8 px-0"><%= l10n("qhp_application.review.relationship_to_primary_member") %></dt>
     <dd class="text-right"><%= display_relationship(relationship) %></dd>
   </div>
-  <div class="d-flex justify-content-between align-items-center">
+  <div class="d-flex justify-content-between align-items-start">
     <dt class="col-8 px-0"><%= l10n("does_person_need_coverage", person: applicant.person_name.given_name.presence || "this person") %></dt>
-    <dd class="text-right"><%= applicant.is_applying_coverage? ? "Yes" : "No" %></dd>
+    <dd class="text-right"><%= applicant.is_applying_coverage? ? l10n("yes") : l10n("no") %></dd>
   </div>
-  <div class="d-flex justify-content-between align-items-center">
-    <dt class="col-8 px-0"><%= l10n("insured.us_citizen") %></dt>
-    <dd class="text-right"><%= applicant.demographics.citizen_status.in?(["us_citizen", "naturalized_citizen"]) ? "Yes" : "No" %></dd>
+  <% if applying_coverage %>
+    <div class="d-flex justify-content-between align-items-start">
+      <dt class="col-8 px-0"><%= l10n("insured.us_citizen") %></dt>
+      <dd class="text-right"><%= applicant.demographics.citizen_status.in?(["us_citizen", "naturalized_citizen"]) ? l10n("yes") : l10n("no") %></dd>
+    </div>
+    <% if applicant.demographics.citizen_status.in?(["us_citizen", "naturalized_citizen"]) %>
+      <div class="d-flex justify-content-between align-items-start">
+        <dt class="col-8 px-0"><%= l10n("insured.consumer_roles.naturalized_question") %></dt>
+        <dd class="text-right"><%= applicant.demographics.citizen_status.in?(["naturalized_citizen"]) ? l10n("yes") : l10n("no") %></dd>
+      </div>
+    <% else %>
+      <div class="d-flex justify-content-between align-items-start">
+        <dt class="col-8 px-0"><%= l10n('faa.question.eligible_immigration_status') %></dt>
+        <dd class="text-right"><%= applicant.demographics.eligible_immigration_status.present? ? l10n("yes") : l10n("no") %></dd>
+      </div>
+    <% end %>
+  <% end %>
+  <div class="d-flex justify-content-between align-items-start">
+    <dt class="col-8 px-0"><%= l10n("qhp_application.review.ai_na_member") %></dt>
+    <dd class="text-right"><%= applicant.demographics.indian_tribe_member? ? l10n("yes") : l10n("no") %></dd>
   </div>
-  <div class="d-flex justify-content-between align-items-center">
-    <dt class="col-8 px-0"><%= l10n("insured.consumer_roles.naturalized_question") %></dt>
-    <dd class="text-right"><%= applicant.demographics.citizen_status.in?(["naturalized_citizen"]) ? "Yes" : "No" %></dd>
-  </div>
-    <div class="d-flex justify-content-between align-items-center">
-      <dt class="col-8 px-0"><%= l10n("qhp_application.review.ai_na_member") %></dt>
-    <dd class="text-right"><%= applicant.demographics.indian_tribe_member? ? "Yes" : "No" %></dd>
-  </div>
-  <div class="d-flex justify-content-between align-items-center">
-    <dt class="col-8 px-0"><%= l10n("insured.incarcerated") %></dt>
-    <dd class="text-right"><%= applicant.demographics.is_incarcerated? ? "Yes" : "No" %></dd>
-  </div>
+  <% if applying_coverage %>
+    <div class="d-flex justify-content-between align-items-start">
+      <dt class="col-8 px-0"><%= l10n("insured.incarcerated") %></dt>
+      <dd class="text-right"><%= applicant.demographics.is_incarcerated? ? l10n("yes") : l10n("no") %></dd>
+    </div>
+  <% end %>
   <% if current_user.has_hbx_staff_role? %>
-  <div class="d-flex justify-content-between align-items-center">
+  <div class="d-flex justify-content-between align-items-start">
     <dt class="col-8 px-0 admin-designation"><%= l10n('ageoff_exclusion') %></dt>
-      <dd class="text-right"><%= applicant.age_off_excluded ? "Yes" : "No" %></dd>
+      <dd class="text-right"><%= applicant.age_off_excluded ? l10n("yes") : l10n("no") %></dd>
     </div>
   <% end %>
   <% if applicant.demographics.indian_tribe_member? %>
     <h3 class="mt-3 mb-0"><%= l10n("qhp_application.review.tribe_info") %></h3>
     <hr class="my-1">
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
         <dt class="col-8 px-0"><%= l10n("insured.tribal_state") %></dt>
         <dd class="text-right"><%= applicant.demographics.tribal_state %></dd>
     </div>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("insured.tribal_name") %></dt>
       <dd class="text-right"><%= applicant.demographics.tribe_name_display.present? ? applicant.demographics.tribe_name_display : l10n("qhp_application.not_answered") %></dd>
     </div>
@@ -89,7 +101,7 @@
   <% if applicant.immigration_information.present? %>
     <h3 class="mt-3 mb-0"><%= l10n("qhp_application.review.immigration_info") %></h3>
     <hr class="my-1">
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("qhp_application.review.immigration.type") %></dt>
       <dd class="text-right"><%= applicant.immigration_information&.subject %></dd>
     </div>
@@ -100,69 +112,71 @@
       </div>
     <% end %>
   <% end %>
-  <h3 class="mt-3 mb-0"><%= l10n("qhp_application.demographic_info") %></h3>
-  <hr class="my-1">
-  <div class="d-flex justify-content-between align-items-center">
-    <dt class="col-8 px-0"><%= l10n("insured.shared.race_ethicity_label") %></dt>
-    <dd class="text-right"><%= applicant.demographics.race&.compact_blank&.any? ? applicant.demographics.race.join(", ") : l10n("qhp_application.not_answered") %></dd>
-  </div>
-  <div class="d-flex justify-content-between align-items-center">
-    <dt class="col-8 px-0"><%= l10n("insured.shared.hispanic_label") %></dt>
-    <dd class="text-right"><%= applicant.demographics.ethnicity&.compact_blank&.any? ? applicant.demographics.ethnicity&.uniq&.join(", ") : l10n("qhp_application.not_answered") %></dd>
-  </div>
+  <% if applying_coverage %>
+    <h3 class="mt-3 mb-0"><%= l10n("qhp_application.demographic_info") %></h3>
+    <hr class="my-1">
+    <div class="d-flex justify-content-between align-items-start">
+      <dt class="col-8 px-0"><%= l10n("insured.shared.race_ethicity_label") %></dt>
+      <dd class="text-right"><%= applicant.demographics.race&.compact_blank&.any? ? applicant.demographics.race.join(", ") : l10n("qhp_application.not_answered") %></dd>
+    </div>
+    <div class="d-flex justify-content-between align-items-start">
+      <dt class="col-8 px-0"><%= l10n("insured.shared.hispanic_label") %></dt>
+      <dd class="text-right"><%= applicant.demographics.ethnicity&.compact_blank&.any? ? applicant.demographics.ethnicity&.uniq&.join(", ") : l10n("qhp_application.not_answered") %></dd>
+    </div>
+  <% end %>
   <h3 class="mt-3 mb-0"><%= l10n("qhp_application.review.contact_info") %></h3>
   <hr class="my-1">
   <% if is_dependent %>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("dependent_lives_with_primary_subscriber") %></dt>
-      <dd class="text-right"><%= applicant.address_same_as_primary? ? "Yes" : "No" %></dd>
+      <dd class="text-right"><%= applicant.address_same_as_primary? ? l10n("yes") : l10n("no") %></dd>
     </div>
   <% end %>
   <% if applicant.is_homeless.present? %>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("qhp_application.review.state_resident_experiencing_homelessness") %></dt>
-      <dd class="text-right"><%= applicant.is_homeless? ? "Yes" : "No" %></dd>
+      <dd class="text-right"><%= applicant.is_homeless? ? l10n("yes") : l10n("no") %></dd>
     </div>
   <% end %>
   <% if applicant.is_temporarily_out_of_state.present? %>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("is_temporarily_out_of_state") %></dt>
-      <dd class="text-right"><%= applicant.is_temporarily_out_of_state? ? "Yes" : "No" %></dd>
+      <dd class="text-right"><%= applicant.is_temporarily_out_of_state? ? l10n("yes") : l10n("no") %></dd>
     </div>
   <% end %>
   <% applicant.addresses.each do |address| %>
     <h4><%= address.kind.titleize %> <%= l10n("address") %></h4>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("address_1") %></dt>
       <dd class="text-right">
           <%= address.address_1 %>
       </dd>
     </div>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("address_2") %></dt>
       <dd class="text-right">
         <%= address.address_2 %>
       </dd>
     </div>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("city") %></dt>
       <dd class="text-right">
         <%= address.city %>
       </dd>
     </div>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("zip_code") %></dt>
       <dd class="text-right">
         <%= address.zip %>
       </dd>
     </div>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("state") %></dt>
       <dd class="text-right">
         <%= address.state.upcase %>
       </dd>
     </div>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("county") %></dt>
       <dd class="text-right">
         <%= address.county.present? ? address.county : l10n("qhp_application.zip.outside") %>
@@ -180,22 +194,22 @@
     </div>
     <hr class="my-1">
     <% applicant.phones.each do |phone| %>
-      <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex justify-content-between align-items-start">
         <dt class="col-8 px-0"><%= phone.kind.titleize %> <%= l10n("phone") %></dt>
         <dd class="text-right"><%= number_to_phone(phone.full_phone_number) %></dd>
       </div>
     <% end %>
     <% applicant.emails.each do |email| %>
-      <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex justify-content-between align-items-start">
         <dt class="col-8 px-0"><%= email.kind == "home" ? l10n("qhp_application.review.personal_email") : email.kind.titleize %> <%= l10n("email") %></dt>
         <dd class="text-right"><%= email.address %></dd>
       </div>
     <% end %>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("notices") %></dt>
       <dd class="text-right"><%= ConsumerRole::CONTACT_METHOD_MAPPING.select { |key, value| applicant.contact_method == value }.keys.join(", ") %></dd>
     </div>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("insured.language_preference") %></dt>
       <dd class="text-right"><%= applicant.language_preference %></dd>
     </div>

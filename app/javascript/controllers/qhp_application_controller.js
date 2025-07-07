@@ -22,7 +22,7 @@ export default class extends Controller {
       } else {
         this.EditApplicantButtonTargets.forEach(button => {
           if (button.dataset.memberId === applicantParam) {
-            button.click()
+            this.editApplicant(null, button)
           }
         });
       }
@@ -78,15 +78,16 @@ export default class extends Controller {
       })
   }
 
-  async editApplicant(event) {
+  async editApplicant(event, button=event.currentTarget) {
     // This function will be built to handle applicant editing
     // It will likely make an AJAX call to fetch the edit form
     // and update the appropriate section of the page
     // append it to the form
     // disable other buttons
     // scroll to the edit form
-    event.preventDefault()
-    const button = event.currentTarget
+    if (event) {
+      event.preventDefault()
+    }
     const memberId = button.dataset.memberId
     const editApplicantForm = this.EditApplicantFormTargets.find(form => form.dataset.memberId === memberId)
     const applicantRow = this.ApplicantRowTargets.find(row => row.dataset.memberId === memberId)

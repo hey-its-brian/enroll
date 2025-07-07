@@ -18,7 +18,7 @@ export default class extends Controller {
     "ImmigrationStatusContainer",
     "AddressContainer",
     "addressFields",
-    "NewAddressFields",
+    "newAddressFields",
     "NewMailingAddressFieldsTemplate",
     "NewHomeAddressFieldsTemplate",
     "EligibleImmigrationStatusContainer",
@@ -345,8 +345,8 @@ export default class extends Controller {
 
   addMailingAddress(event) {
     event.preventDefault()
-    this.NewAddressFieldsTarget.innerHTML = ''
-    this.NewAddressFieldsTarget.insertAdjacentHTML('beforeend', this.sanitize(this.NewMailingAddressFieldsTemplateTarget.innerHTML))
+    this.newAddressFieldsTarget.innerHTML = ''
+    this.newAddressFieldsTarget.insertAdjacentHTML('beforeend', this.sanitize(this.NewMailingAddressFieldsTemplateTarget.innerHTML))
     document.getElementById('add_mail_address').classList.add('d-none')
     document.getElementById('remove_mail_address').classList.remove('d-none')
   }
@@ -354,10 +354,10 @@ export default class extends Controller {
   removeMailingAddress(event) {
     event.preventDefault()
     // Clear any content in the NewAddressFields target
-    if (this.NewAddressFieldsTarget.firstChild) {
-      this.NewAddressFieldsTarget.removeChild(this.NewAddressFieldsTarget.firstChild)
+    if (this.newAddressFieldsTarget.firstChild) {
+      this.newAddressFieldsTarget.removeChild(this.newAddressFieldsTarget.firstChild)
     }
-    this.NewAddressFieldsTarget.innerHTML = ''
+    this.newAddressFieldsTarget.innerHTML = ''
 
     // Toggle button visibility
     document.getElementById('remove_mail_address').classList.add('d-none')

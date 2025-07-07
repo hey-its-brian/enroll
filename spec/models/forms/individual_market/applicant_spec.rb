@@ -15,6 +15,10 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
     application.applicants.last
   end
 
+  let(:mailing_address) do
+    application.applicants.last.addresses.find { |a| a.kind == "mailing" }
+  end
+
   let(:params) do
     {
       is_dependent: !input_applicant.is_primary_applicant,
@@ -44,6 +48,14 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
       address_same_as_primary: input_applicant.address_same_as_primary,
       addresses_attributes: { :'0' => { kind: 'home',
                                         address_1: '123 Main St',
+                                        address_2: '',
+                                        city: 'Anytown',
+                                        state: 'CA',
+                                        zip: '12345',
+                                        county: 'Any County',
+                                        _destroy: 'false'},
+                              :'1' => { kind: 'mailing',
+                                        address_1: '1234 Main St',
                                         address_2: '',
                                         city: 'Anytown',
                                         state: 'CA',
@@ -101,11 +113,28 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
       expect(application.relationships.where(source_id: input_applicant.id, kind: "spouse").count).to eq(1)
     end
 
-    it 'should handle address changes' do
+    it 'should not create a new home address if address_same_as_primary is true' do
       @applicant_form = described_class.new(params)
       @applicant_form.save
       application.reload
-      expect(application.applicants.last.addresses.count).to eq(1)
+      expect(application.applicants.last.home_address).not_to be_present
+    end
+
+    it 'should create a new mailing address' do
+      @applicant_form = described_class.new(params)
+      @applicant_form.save
+      application.reload
+      expect(application.applicants.last.mailing_address).to be_present
+    end
+
+    it 'should be able to remove the mailing address' do
+      params[:addresses_attributes][:'1'][:_destroy] = 'true'
+      params[:addresses_attributes][:'1'][:id] = BSON::ObjectId.new
+      @applicant_form = described_class.new(params)
+      @applicant_form.save
+      application.reload
+      application.applicants.last.reload
+      expect(application.applicants.last.mailing_address).not_to be_present
     end
   end
 

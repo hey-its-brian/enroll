@@ -502,7 +502,9 @@
       <% show_address_fields = !is_dependent || f.object.address_same_as_primary == false %>
       <div id="address_info" data-target="family-information.addressFields">
         <% if show_address_fields %>
-          <% addresses = f.object.addresses.any? ? f.object.addresses : [Forms::Locations::AddressForm.new(kind: "home")] %>
+          <% home_address = f.object.addresses.find { |a| a.kind == "home" } || Forms::Locations::AddressForm.new(kind: "home") %>
+          <% mailing_address = f.object.addresses.find { |a| a.kind == "mailing" } %>
+          <% addresses = [home_address, mailing_address].compact_blank %>
           <%= f.fields_for :addresses, addresses do |address| %>
             <%= render partial: 'address_fields',
                 locals: {
@@ -546,7 +548,7 @@
       </template>
 
       <% has_mailing = f.object.addresses.any? { |form| form.kind == 'mailing' } %>
-      <div class="<%= 'hide' unless show_address_fields %>" data-target="family-information.AddressButtons">
+      <div class="<%= 'hide' unless show_address_fields  %>" data-target="family-information.AddressButtons">
         <button class="<%= 'd-none' unless has_mailing %> form-action btn-error <%= pundit_class Family, :updateable?%> mb-3"
                 id="remove_mail_address"
                 type="button"
@@ -555,7 +557,7 @@
           <%= l10n("qhp_application.remove_mailing") %>
         </button>
         <button id="add_mail_address"
-                class="<%= 'd-none' if has_mailing && !show_address_fields %> form-action btn-secondary <%= pundit_class Family, :updateable? %> mb-3"
+                class="<%= 'd-none' if has_mailing %> form-action btn-secondary <%= pundit_class Family, :updateable? %> mb-3"
                 type="button"
                 data-action="click->family-information#addMailingAddress">
           <%= l10n("qhp_application.add_mailing") %>
@@ -572,10 +574,15 @@
         <% if is_dependent && is_editing %>
           <div id="remove_confirm" class="hidden"></div>
           <%= h(link_to l10n('remove_member'), form_url, class: 'btn button-error outline close-2', :method => :delete, :remote => true) %>
+          <%= f.button(class: "btn btn-primary") do %>
+            <%= l10n("confirm_member") %>
+          <% end %>
+        <% else %>
+          <%= f.button(class: "btn btn-primary") do %>
+            <%= l10n("save_changes") %>
+          <% end %>
         <% end %>
-        <%= f.button(class: "btn btn-primary") do %>
-          <%= l10n("confirm_member") %>
-        <% end %>
+
       </div>
     </div>
   <% end %>

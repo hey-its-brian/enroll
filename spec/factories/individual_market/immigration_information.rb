@@ -17,6 +17,7 @@ FactoryBot.define do
     country_of_citizenship  { 'United States' }
     expiration_date         { Date.current + 1.year }
     issuing_country         { 'United States' }
+    immigration_doc_statuses { ['None of these'] }
     description             { 'This is type of immigration document information to prove the lawful presence in the US.' }
   end
 end

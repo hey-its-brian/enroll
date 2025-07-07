@@ -105,8 +105,8 @@ module Forms
       # @option address [String] :_destroy Whether to destroy the address ('true' or 'false')
       # @option address [String, nil] :id The address ID if it exists
       # @return [Boolean] true if the address should be destroyed, false otherwise
-      def destroy_mailing_address?(address)
-        address[:kind] == ::Locations::Address::MAILING_KIND && address[:_destroy] == 'true' && address[:id].present?
+      def destroy_mailing_address?(applicant)
+        applicant.mailing_address.present? && applicant_params[:addresses].detect{|a| a[:id].present? && a[:kind] == 'mailing' && a[:_destroy] == "true"}.present?
       end
 
       # Saves the form data and creates or updates the applicant
@@ -480,9 +480,8 @@ module Forms
       # @param values [Hash] The values to update with
       # @return [IndividualMarket::Applicant] The updated applicant
       def update_existing_applicant(applicant, values)
-        handle_address_changes(applicant)
         applicant.update(values.except(:eligibilities))
-        build_addresses(applicant, values[:addresses])
+        applicant.save
         handle_address_changes(applicant)
         applicant
       end
@@ -493,15 +492,8 @@ module Forms
       def create_new_applicant(values)
         applicant = application.applicants.build
         applicant.assign_attributes(values.except(:eligibilities))
-        build_addresses(applicant, values[:addresses])
-        applicant
-      end
-
-      def build_addresses(applicant, addresses)
-        addresses.each do |address|
-          applicant.addresses.new(address)
-        end
         applicant.save
+        applicant
       end
 
       # Handles address changes for an applicant
@@ -509,15 +501,10 @@ module Forms
       # @return [Boolean] The result of saving the applicant
       def handle_address_changes(applicant)
         # Handle home address
-        applicant.home_address&.destroy if !applicant.is_primary_applicant && address_same_as_primary
+        applicant.home_address&.destroy if !applicant.is_primary_applicant && applicant.address_same_as_primary == true
 
         # Handle mailing address
-        if applicant.mailing_address.present? &&
-           addresses_attributes.values.any? { |address| destroy_mailing_address?(address) }
-          applicant.mailing_address.destroy!
-        end
-
-        applicant.save
+        applicant.mailing_address.destroy! if destroy_mailing_address?(applicant)
       end
 
     end

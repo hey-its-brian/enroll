@@ -52,7 +52,8 @@ module IndividualMarket
         country_of_citizenship: country_of_citizenship,
         expiration_date: expiration_date,
         issuing_country: issuing_country,
-        description: description
+        description: description,
+        immigration_doc_statuses: immigration_doc_statuses
       )
     end
 

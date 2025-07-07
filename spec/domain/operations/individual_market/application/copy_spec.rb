@@ -231,6 +231,7 @@ RSpec.describe Operations::IndividualMarket::Application::Copy, dbclean: :after_
           expect(result_immigration_information.expiration_date).to eq(immigration_information.expiration_date)
           expect(result_immigration_information.issuing_country).to eq(immigration_information.issuing_country)
           expect(result_immigration_information.description).to eq(immigration_information.description)
+          expect(result_immigration_information.immigration_doc_statuses).to eq(immigration_information.immigration_doc_statuses)
         end
 
         context 'for addresses' do
