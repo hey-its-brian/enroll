@@ -11,7 +11,7 @@ module Insured
       before_action :find_application
       before_action :find_applicant, only: [:edit, :update, :destroy, :show]
       before_action :check_for_editable_application, only: [:index, :create, :update, :destroy, :new, :edit, :update_preferences]
-      before_action :set_consumer_bookmark_url, except: [:new, :edit, :destroy, :create, :update, :shown_ssn]
+      before_action :set_consumer_bookmark_url, except: [:new, :edit, :destroy, :create, :update, :show_ssn]
       before_action :enable_bs4_layout
 
       layout "progress"
