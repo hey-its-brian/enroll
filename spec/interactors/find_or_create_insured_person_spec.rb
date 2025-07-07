@@ -14,7 +14,8 @@ describe FindOrCreateInsuredPerson, :dbclean => :after_each do
     let(:context_arguments) do
       { :first_name => first_name,
         :last_name => last_name,
-        :dob => dob }
+        :dob => dob,
+        :no_ssn => "0"}
     end
 
     it "should create that person and return them" do
@@ -24,14 +25,19 @@ describe FindOrCreateInsuredPerson, :dbclean => :after_each do
     it "should communicate it created a new person" do
       expect(result.is_new).to be_truthy
     end
+
+    it "should set no_ssn on the newly created person" do
+      expect(result.person.no_ssn).to eq "0"
+    end
   end
 
   context "given a person who does exist" do
-    let!(:found_person) { FactoryBot.create(:person, ssn: nil, :first_name => first_name, :last_name => last_name, :dob => dob) }
+    let!(:found_person) { FactoryBot.create(:person, ssn: nil, :first_name => first_name, :last_name => last_name, :dob => dob, :no_ssn => nil) }
     let(:context_arguments) do
       { :first_name => first_name,
         :last_name => last_name,
-        :dob => dob }
+        :dob => dob,
+        :no_ssn => "1"}
     end
 
     it "should return the found person" do
@@ -40,6 +46,10 @@ describe FindOrCreateInsuredPerson, :dbclean => :after_each do
 
     it "should communicate that a new person was not created" do
       expect(result.is_new).to be_falsey
+    end
+
+    it "should set no_ssn on the existing found person" do
+      expect(result.person.no_ssn).to eq "1"
     end
   end
 

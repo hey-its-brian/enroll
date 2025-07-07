@@ -15,6 +15,7 @@ class FindOrCreateInsuredPerson
         #matched on last_name and dob
         person.ssn = context.ssn
         person.gender = context.gender
+        person.no_ssn = context.no_ssn
       end
       set_person_emails(person, user)
       person.save
@@ -23,15 +24,16 @@ class FindOrCreateInsuredPerson
     when 0
       return if context.ssn.present? && Person.where(encrypted_ssn: Person.encrypt_ssn(context.ssn)).present?
       if user.try(:person).try(:present?)
-        if user.person.first_name.downcase == context.first_name.downcase and
-          user.person.last_name.downcase == context.last_name.downcase # if user enters lowercase during matching.
+        if (user.person.first_name.downcase == context.first_name.downcase) &&
+           (user.person.last_name.downcase == context.last_name.downcase) # if user enters lowercase during matching.
           person = user.person
           person.assign_attributes(name_sfx: context.name_sfx,
-                        middle_name: context.middle_name,
-                        name_pfx: context.name_pfx,
-                        ssn: context.ssn,
-                        dob: context.dob,
-                        gender: context.gender)
+                                   middle_name: context.middle_name,
+                                   name_pfx: context.name_pfx,
+                                   ssn: context.ssn,
+                                   dob: context.dob,
+                                   gender: context.gender,
+                                   no_ssn: context.no_ssn)
           set_person_emails(person, user)
           person.save
           is_new = false
