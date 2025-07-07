@@ -79,6 +79,10 @@ RSpec.describe Operations::IndividualMarket::Families::CreateOrUpdate, type: :mo
   let(:returned_family) { @result.success[1] }
   let(:returned_thhg) { returned_family.tax_household_groups.order_by(created_at: :desc).first }
 
+  before :each do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+  end
+
   describe '#call' do
     # Deactivation of a family member who is not present on the application
     context "when:
@@ -86,7 +90,7 @@ RSpec.describe Operations::IndividualMarket::Families::CreateOrUpdate, type: :mo
       - primary_applicant's information is different from the existing person
       - secondary applicant does not exist
       - dependent family member with person exists
-    " do
+      " do
 
       let(:secondary_person) do
         per = FactoryBot.create(:person, :with_consumer_role)
@@ -400,6 +404,89 @@ RSpec.describe Operations::IndividualMarket::Families::CreateOrUpdate, type: :mo
 
       it 'updates the application with family_updated_at' do
         expect(application.family_updated_at).to be_present
+      end
+    end
+
+    context "when:
+      - primary applicant's family member and person exists
+      - primary_applicant's information is different from the existing person
+      - secondary applicant's family member and person exists
+      - secondary_applicant's information is different from the existing person
+      - primary applicant is determined to be eligible for QHP and CSR
+      - secondary applicant is determined to be eligible for QHP only
+      " do
+
+      let(:secondary_person) do
+        per = FactoryBot.create(:person, :with_consumer_role)
+        primary_person.person_relationships.create(relative_id: per.id, kind: 'child')
+        per
+      end
+      let(:secondary_family_member) { FactoryBot.create(:family_member, family: family, person: secondary_person) }
+      let(:secondary_family_member_id) { secondary_family_member.id }
+      let(:current_thhg) { FactoryBot.create(:tax_household_group, :active_current_year, family: family) }
+      let(:applicant1_eligibility) { primary_applicant.individual_market_eligibility }
+      let(:app1_csr_determination) { FactoryBot.create(:csr_determination, :with_csr_limited, eligibility: applicant1_eligibility) }
+      let(:app1_qhp_determination) { FactoryBot.create(:individual_market_determination, eligibility: applicant1_eligibility) }
+      let(:applicant2_eligibility) { secondary_applicant.individual_market_eligibility }
+      let(:app2_qhp_determination) { FactoryBot.create(:individual_market_determination, eligibility: applicant2_eligibility) }
+
+      let(:eligibility_determination) { @result.success[1].eligibility_determination }
+      let(:primary_subject) { eligibility_determination.subjects.where(person_id: primary_applicant.family_member.person_id).first }
+      let(:secondary_subject) { eligibility_determination.subjects.where(person_id: secondary_applicant.family_member.person_id).first }
+      let(:primary_qhp_grant) do
+        primary_subject.eligibility_states.where(eligibility_item_key: :aca_individual_market_eligibility).first.grants.first
+      end
+      let(:primary_csr_grant) do
+        primary_subject.eligibility_states.where(eligibility_item_key: :aptc_csr_credit).first.grants.first
+      end
+      let(:secondary_qhp_grant) do
+        secondary_subject.eligibility_states.where(eligibility_item_key: :aca_individual_market_eligibility).first.grants.first
+      end
+
+      before :each do
+        app1_csr_determination
+        app1_qhp_determination
+        app2_qhp_determination
+        current_thhg
+        @result = subject.call(application: relationship.application)
+        primary_person.reload
+        secondary_person.reload
+        family.reload
+        application.reload
+      end
+
+      it 'returns a success result' do
+        expect(@result.success?).to be_truthy
+      end
+
+      it 'creates qhp grant for the primary applicant' do
+        expect(primary_qhp_grant).to have_attributes(
+          title: 'qhp_grant',
+          key: 'QhpGrant',
+          value: 'true',
+          assistance_year: application.assistance_year,
+          member_ids: [primary_applicant.family_member_id]
+        )
+      end
+
+      it 'creates csr grant for the primary applicant' do
+        expect(primary_csr_grant).to have_attributes(
+          title: 'csr_grant',
+          key: 'CsrAdjustmentGrant',
+          value: '-1',
+          assistance_year: application.assistance_year,
+          member_ids: [primary_applicant.family_member_id]
+        )
+      end
+
+      it 'creates qhp grant for the secondary applicant' do
+        expect(secondary_qhp_grant).to have_attributes(
+          title: 'qhp_grant',
+          key: 'QhpGrant',
+          value: 'true',
+          assistance_year: application.assistance_year,
+          member_ids: [secondary_applicant.family_member_id]
+        )
       end
     end
   end

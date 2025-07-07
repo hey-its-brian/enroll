@@ -39,9 +39,17 @@ module Eligibilities
 
       private
 
+      # Returns the latest Financial Assistance Application instance for the subject.
+      #
+      # If the QHP application feature is enabled, it returns the latest FAA application.
+      # Otherwise, it returns the latest determined FAA application from the subject's family.
+      #
+      # @param subject [FamilyMember] The subject for which the application instance is needed.
+      #
+      # @return [FinancialAssistanceApplication, nil] The latest FAA application instance or nil if not found.
       def application_instance_for(subject)
         if qhp_application_feature_enabled?
-          family.latest_application
+          family.latest_application if family.latest_application_type == 'faa'
         else
           subject.family.latest_determined_faa_application
         end

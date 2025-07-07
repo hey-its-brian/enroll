@@ -23,7 +23,7 @@ module Operations
           _result               = yield build_tax_household_group(application, family, family_members_result)
           family                = yield assign_latest_application_gid(family)
           family                = yield persist_family(family)
-          #_family_determination = yield recreate_family_eligibility_determination(family)
+          _family_determination = yield recreate_family_eligibility_determination(family)
           application           = yield update_application(application, family_members_result, people_result)
 
           Success([application, family])

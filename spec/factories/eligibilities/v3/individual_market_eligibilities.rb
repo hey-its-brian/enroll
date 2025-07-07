@@ -45,5 +45,19 @@ FactoryBot.define do
         eligibility.determinations << FactoryBot.build(:v3_determination, eligibility: eligibility)
       end
     end
+
+    # After building the eligibility, an individual market determination is created for it
+    trait :with_qhp_determination do
+      after(:build) do |eligibility|
+        eligibility.determinations << FactoryBot.build(:individual_market_determination, eligibility: eligibility)
+      end
+    end
+
+    # After building the eligibility, an CSR determination is created for it with csr_limited type
+    trait :with_csr_limited_determination do
+      after(:build) do |eligibility|
+        eligibility.determinations << FactoryBot.build(:csr_determination, :with_csr_limited, eligibility: eligibility)
+      end
+    end
   end
 end
