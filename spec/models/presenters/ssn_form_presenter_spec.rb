@@ -36,6 +36,14 @@ RSpec.describe ::Presenters::SsnFormPresenter, dbclean: :after_each do
       demographics: demographics
     )
   end
+  let(:dependent_qhp_applicant) do
+    FactoryBot.build(
+      :individual_market_applicant,
+      application: qhp_application,
+      is_primary_applicant: false,
+      demographics: demographics
+    )
+  end
   let(:demographics) do
     {
       ssn: '123456789',
@@ -208,6 +216,33 @@ RSpec.describe ::Presenters::SsnFormPresenter, dbclean: :after_each do
 
       it 'sets the disabled to true' do
         expect(presenter.disabled).to eq(true)
+      end
+    end
+
+    context 'user is not an admin and applicant is dependent' do
+      let(:form_object) { dependent_qhp_applicant.demographics }
+      let(:admin) { false }
+
+      context 'when the people tab is disabled' do
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:people_tab).and_return(false)
+        end
+
+        it 'sets the disabled to false' do
+          presenter.sanitize_ssn_params
+          expect(presenter.disabled).to eq(false)
+        end
+      end
+
+      context 'when the people tab is enabled' do
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:people_tab).and_return(true)
+          presenter.sanitize_ssn_params
+        end
+
+        it 'sets the disabled to true' do
+          expect(presenter.disabled).to eq(true)
+        end
       end
     end
   end

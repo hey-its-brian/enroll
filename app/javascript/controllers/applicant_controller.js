@@ -27,7 +27,7 @@ export default class extends Controller {
         if (response.data.status == 200) {
           let payload = response.data.payload;
           this.populateHtmlElement(applicantId, payload);
-
+          this.noSsn(applicantId);
           this.showSsnInput(applicantId);
         } else {
           console.log("Unauthorized.");
@@ -35,6 +35,16 @@ export default class extends Controller {
       }).catch(() => {
         console.log('Error retrieving info');
       })
+    }
+  }
+
+  noSsn(applicantId) {
+    let noSsnCheckbox = document.querySelector(`#personal_info .no-ssn-container input[type="checkbox"]`)
+    if (noSsnCheckbox && noSsnCheckbox.checked) {
+      let input = document.querySelector(`.ssn-input-${applicantId}`)
+      if (input) {
+        input.value = ''
+      }
     }
   }
 

@@ -462,6 +462,40 @@ export default class extends Controller {
     }
   }
 
+  toggleNoSsn(event) {
+    if (event.target.checked) {
+      let input = this.SsnInputTarget.querySelector('input')
+      let eye = this.SsnInputTarget.querySelector('img[class^=ssn-eye-off-]')
+      if (eye) {
+        eye.click()
+      }
+      input.value = ''
+    }
+  }
+
+  ssnValueChanged(event) {
+    if (event.target.value !== '') {
+      this.NoSsnCheckboxTarget.checked = false
+    }
+  }
+
+  checkValidations(event) {
+    event.preventDefault()
+    if (this.hasNoSsnCheckboxTarget && this.hasSsnInputTarget) {
+      let input = this.SsnInputTarget.querySelector('input')
+      if (this.NoSsnCheckboxTarget.checked && input.value.length > 1) {
+        input.setCustomValidity("Cannot provide an SSN and claim you don't have a SSN")
+        input.reportValidity()
+      } else {
+        input.setCustomValidity("")
+        input.reportValidity()
+        this.element.querySelector('form').submit()
+      }
+    } else {
+      this.element.querySelector('form').submit()
+    }
+  }
+
   sanitize(dirty) {
     const allowedTags = sanitizeHtml.defaults.allowedTags.concat([ 'input', 'label', 'select', 'option' ])
 

@@ -1217,6 +1217,7 @@ module ApplicationHelper
       }
     }
     attrs[:data][:"admin-can-enable"] = true if admin_can_enable
+    attrs[:data][:action] = "change->family-information#ssnValueChanged" if EnrollRegistry.feature_enabled?(:qhp_application)
     attrs
   end
 

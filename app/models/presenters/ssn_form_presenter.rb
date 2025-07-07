@@ -107,7 +107,7 @@ module Presenters
       @applicant_id = @form_object.applicant&.id&.to_s
       obscure_ssn(@form_object)
 
-      @disabled = !@admin
+      @disabled = ssn_disabled?(@form_object.ssn, @form_object.applicant.is_primary_applicant?)
     end
 
     def obscure_ssn(subject = @form_object)

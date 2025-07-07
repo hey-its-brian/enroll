@@ -1,8 +1,9 @@
 <% if @bs4 %>
   <div class="mt-4 mb-4">
+    <% pattern = qhp_application_feature_enabled? ? "[0-9]{8,12}" : "[a-zA-Z0-9]{8,12}" %>
     <%= v.label :visa_number, l10n("insured.consumer_roles.docs_shared.visa_number"), class: "weight-n" %>
     <%= v.text_field :visa_number, :placeholder => l10n("insured.consumer_roles.docs_shared.visa_number"),
-                    :pattern => "[a-zA-Z0-9]{8,12}",
+                    :pattern => pattern,
                     :class => "doc_fields",
                     :title => l10n("insured.consumer_roles.docs_shared.visa_number_req").gsub("-li-", ""),
                     :id => "visa_number" %>
