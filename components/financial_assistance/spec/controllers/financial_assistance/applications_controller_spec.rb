@@ -246,6 +246,46 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       end
     end
   end
+
+  describe 'GET #show' do
+    let(:primary_person) { FactoryBot.create(:person, :with_consumer_role) }
+    let(:new_family) { FactoryBot.create(:family, :with_primary_family_member, person: primary_person) }
+    let(:application) { FactoryBot.create(:financial_assistance_application, family_id: new_family.id) }
+
+    before :each do
+      sign_in(logged_user)
+      primary_person.consumer_role.move_identity_documents_to_verified
+      session[:person_id] = primary_person.id
+      get :show, params: { id: application.id }
+    end
+
+    context 'when the logged in user is same as the consumer' do
+      let(:logged_user) { FactoryBot.create(:user, person: primary_person) }
+
+      it 'returns success' do
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'does not set raise unauthorized error flash message' do
+        expect(flash[:error]).to be_nil
+      end
+    end
+
+    context 'when the logged in user is Hbx Admin' do
+      let(:hbx_person) { FactoryBot.create(:person) }
+      let(:permission) { FactoryBot.create(:permission, :super_admin) }
+      let(:hbx_staff) { FactoryBot.create(:hbx_staff_role, person: hbx_person, permission_id: permission.id) }
+      let(:logged_user) { FactoryBot.create(:user, person: hbx_staff.person) }
+
+      it 'returns success' do
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'does not set raise unauthorized error flash message' do
+        expect(flash[:error]).to be_nil
+      end
+    end
+  end
 end
 
 RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each, type: :controller do

@@ -250,15 +250,12 @@ module FinancialAssistance
       respond_to :html
     end
 
+    # This action is used to show the application details in a read-only format.
+    # It is authorized by the application policy's show? method.
+    #
+    # @return [void]
     def show
-      unless current_user.has_hbx_staff_role?
-        flash[:error] = 'You are not authorized to access'
-        redirect_to applications_path
-        return
-      end
-
       authorize @application, :show?
-
       respond_to :html
     end
 
