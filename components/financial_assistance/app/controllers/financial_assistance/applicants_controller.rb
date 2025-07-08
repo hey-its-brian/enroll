@@ -271,7 +271,8 @@ module FinancialAssistance
 
       if action_name == 'update' && EnrollRegistry.feature_enabled?(:people_tab)
         applicant_params["dob"] = @applicant.dob&.strftime("%Y-%m-%d")
-        applicant_params.delete("ssn") if @applicant&.ssn.present?
+        applicant_params["ssn"] = @applicant&.ssn
+        applicant_params["no_ssn"] = @applicant&.no_ssn
       end
 
       params[:applicant] = applicant_params

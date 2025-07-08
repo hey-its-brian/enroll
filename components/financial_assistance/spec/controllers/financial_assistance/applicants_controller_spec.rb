@@ -853,6 +853,40 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
           expect(dependent.age_off_excluded).to eq true
         end
       end
+
+      context 'when dependent has ssn already and people tab is enabled' do
+        let!(:is_applying_coverage) { true }
+        let(:us_citizen) { true }
+
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:people_tab).and_return(true)
+          patch :update, params: dependent_params.merge(applicant: applicant_params.merge(ssn: "123456789", no_ssn: "1"))
+          application.reload
+          dependent.reload
+        end
+
+        it "should not update ssn and no_ssn" do
+          expect(dependent.ssn).to eq nil
+          expect(dependent.no_ssn).to eq "0"
+        end
+      end
+
+      context 'when dependent has ssn already and people tab is disabled' do
+        let!(:is_applying_coverage) { true }
+        let(:us_citizen) { true }
+
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:people_tab).and_return(false)
+          patch :update, params: dependent_params.merge(applicant: applicant_params.merge(ssn: "123456789", no_ssn: "1"))
+          application.reload
+          dependent.reload
+        end
+
+        it "should update ssn and no_ssn" do
+          expect(dependent.ssn).to eq "123456789"
+          expect(dependent.no_ssn).to eq "1"
+        end
+      end
     end
 
     context "when the people tab flag is enabled" do
