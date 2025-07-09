@@ -118,7 +118,7 @@ demographics:
       value: <%= @applicant.ethnicity_selections&.compact_blank&.any? ? @applicant.ethnicity_selections.compact_blank.join(', ') : 'Not answered' %>
 
 addresses:
-  title: <%= l10n('qhp_application.review.address_info') %>
+  title: <%= l10n('qhp_application.review.contact_info') %>
   rows:
     <% addresses = @applicant.addresses %>
             <% if addresses.present? %>

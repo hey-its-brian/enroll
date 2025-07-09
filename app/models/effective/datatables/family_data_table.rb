@@ -72,7 +72,7 @@ module Effective
                                 secure_message_link_type(row, current_user)])
           end
 
-          unless ::EnrollRegistry.feature_enabled?(:people_tab)
+          unless ::EnrollRegistry.feature_enabled?(:people_tab) || ::EnrollRegistry.feature_enabled?(:qhp_application)
             dropdown.insert(9,
                             [sanitize_html("<div class='#{pundit_class(Family, :can_update_ssn?)}'> Edit DOB / SSN </div>"),
                              edit_dob_ssn_path(id: row.primary_applicant.person.id, row_actions_id: "family_actions_#{row.id}"), 'ajax'])
