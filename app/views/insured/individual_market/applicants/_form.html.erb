@@ -362,7 +362,8 @@
                 <%= demographics.select(:tribal_state, options_for_select(State::STATE_IDS, selected: demographics.object.tribal_state), {include_blank: l10n("insured.consumer_roles.select_state")}, id: "tribal-state", data: { target: "family-information.TribalState", action: "change->family-information#handleTribalStateChange" })  %>
               </div>
 
-              <fieldset class="mb-4 d-block featured-tribe-container hide" data-target="family-information.FeaturedTribeContainer">
+              <% show_tribal_name = demographics.object.tribal_state == EnrollRegistry[:enroll_app].setting(:state_abbreviation).item || demographics.object.tribal_name.present? %>
+              <fieldset class="mb-4 d-block featured-tribe-container <%= 'hide' unless show_tribal_name %>" data-target="family-information.FeaturedTribeContainer">
                 <legend class="weight-n" for="tribe_codes"><%= l10n("insured.tribal_name") %> *</legend>
                 <%= demographics.collection_check_boxes(:tribe_codes, featured_tribes_collection, :value, :name, {}, :class => 'tribe_codes')  do |tribe| %>
                   <div>
@@ -374,7 +375,8 @@
                 <% end %>
               </fieldset>
 
-              <div class="mb-4 tribal-name-container hide" data-target="family-information.TribalNameContainer">
+              <% show_other_tribe_name = demographics.object.tribal_name.present? && !demographics.object.tribal_name.in?(featured_tribes_collection.map(&:value).delete("OT")) %>
+              <div class="mb-4 tribal-name-container <%= 'hide' unless show_other_tribe_name %>" data-target="family-information.TribalNameContainer">
                 <%= demographics.label :tribal_name, l10n("insured.tribal_name"), class: "required weight-n" %>
                 <div id="tribal-name-alert" class="hide">
                   <div class="alert alert-warning d-flex" role="alert">
@@ -571,14 +573,14 @@
                 data-member-id="<%= @applicant.id %>">
           <%= l10n("cancel") %>
         </button>
-        <% if is_dependent && is_editing %>
-          <div id="remove_confirm" class="hidden"></div>
-          <%= h(link_to l10n('remove_member'), form_url, class: 'btn button-error outline close-2', :method => :delete, :remote => true) %>
-          <%= f.button(class: "btn btn-primary", data: {action: "family-information#checkValidations"}) do %>
+        <% if !is_editing %>
+          <%= f.button(class: "btn btn-primary") do %>
             <%= l10n("confirm_member") %>
           <% end %>
         <% else %>
-          <%= f.button(class: "btn btn-primary", data: {action: "family-information#checkValidations"}) do %>
+          <div id="remove_confirm" class="hidden"></div>
+          <%= h(link_to l10n('remove_member'), form_url, class: 'btn button-error outline close-2', :method => :delete, :remote => true) %>
+          <%= f.button(class: "btn btn-primary") do %>
             <%= l10n("save_changes") %>
           <% end %>
         <% end %>

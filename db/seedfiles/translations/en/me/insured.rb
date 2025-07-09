@@ -977,7 +977,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.qhp_application.nav_header' => "Enroll in Coverage",
   :'en.qhp_application.generation_reason' => "Generation Reason",
   :'en.qhp_application.origin' => "Origin Kind",
-  :'en.qhp_application.nav.family_info_details' => "If you need to get health insurance coverage for other members of your family, select ‘Add New Member to Household’. When you’re finished, select “Continue to Next Step”.",
+  :'en.qhp_application.nav.family_info_details' => "If you need to get health insurance coverage for other members of your family, select ‘Add New Member to Household’. When you’re finished, select ‘Continue to Next Step’.",
   :'en.qhp_application.nav.voter_registration' => "Voter Registration",
   :'en.qhp_application.nav.attest' => "Agreements",
   :'en.qhp_application.nav.review_label' => "Review",

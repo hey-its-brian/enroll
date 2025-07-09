@@ -56,12 +56,12 @@
   <% if applying_coverage %>
     <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("insured.us_citizen") %></dt>
-      <dd class="text-right"><%= applicant.demographics.citizen_status.in?(["us_citizen", "naturalized_citizen"]) ? l10n("yes") : l10n("no") %></dd>
+      <dd class="text-right"><%= applicant.demographics.us_citizen ? l10n("yes") : l10n("no") %></dd>
     </div>
     <% if applicant.demographics.citizen_status.in?(["us_citizen", "naturalized_citizen"]) %>
       <div class="d-flex justify-content-between align-items-start">
         <dt class="col-8 px-0"><%= l10n("insured.consumer_roles.naturalized_question") %></dt>
-        <dd class="text-right"><%= applicant.demographics.citizen_status.in?(["naturalized_citizen"]) ? l10n("yes") : l10n("no") %></dd>
+        <dd class="text-right"><%= applicant.demographics.naturalized_citizen ? l10n("yes") : l10n("no") %></dd>
       </div>
     <% else %>
       <div class="d-flex justify-content-between align-items-start">

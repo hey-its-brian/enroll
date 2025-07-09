@@ -9,7 +9,7 @@ export default class extends Controller {
   modalWhenLeavingFormUnfinished() {
     const headerLogOutLink = document.querySelector('header a[data-method="delete"]')
     headerLogOutLink.removeAttribute('data-method')
-    const headerLinks = Array.from(document.querySelectorAll('header a, .progress-nav-container a')).filter(link => !link.closest('.progress-nav')).filter(link => !link.closest('.modal')).filter(link => !link.dataset.target).filter(link => link.href.length > 1)
+    const headerLinks = Array.from(document.querySelectorAll('header a, .progress-nav-container a')).filter(link => !link.closest('.progress-nav')).filter(link => !link.closest('.modal')).filter(link => !link.dataset.target).filter(link => !link.dataset.toggle).filter(link => link.href.length > 1)
     headerLinks.forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault()

@@ -64,7 +64,16 @@ export default class extends Controller {
   }
 
   showTribalFields() {
-    this.TribalContainerTarget.classList.remove('hide')
+    this.TribalContainerTarget.classList.remove('hide');
+    const enrollStateAbbr = this.element.querySelector('#enroll_state_abbr').value
+    const isFeaturedTribesEnabled = this.element.querySelector('#is_featured_tribes_selection_enabled').value === 'true'
+    if (isFeaturedTribesEnabled && selectedState === enrollStateAbbr) {
+      this.TribalNameContainerTarget.classList.remove('hide')
+      this.toggleOtherTribeName()
+    } else {
+      this.TribalNameContainerTarget.classList.remove('hide')
+      this.setTribalNameRequired(true)
+    }
   }
 
   hideTribalFields() {
