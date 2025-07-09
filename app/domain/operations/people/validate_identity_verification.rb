@@ -98,7 +98,7 @@ module Operations
           end
         end
 
-        Success("Report created with #{users.size} records")
+        Success("Report created with #{users.count} records")
       end
 
       def update_identity_verification(persons, type)
@@ -111,7 +111,7 @@ module Operations
           person.consumer_role.update_attributes!(identity_validation: "valid")
         end
 
-        Success("Identity verification updated for #{persons.size} persons")
+        Success("Identity verification updated for #{person_hbx_ids.count} persons")
       end
     end
   end
