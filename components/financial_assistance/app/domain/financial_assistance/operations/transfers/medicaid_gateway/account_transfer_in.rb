@@ -80,7 +80,7 @@ module FinancialAssistance
               end
             end
 
-            failure_message = "Unable to find county objects for zips #{@zips_with_missing_counties.uniq}" if @zips_with_missing_counties.present?
+            failure_message = "Zip Code is invalid for state of #{EnrollRegistry[:enroll_app].settings(:state_name).item} #{@zips_with_missing_counties.uniq}" if @zips_with_missing_counties.present?
             failure_message = "Unable to match county for #{@zips_with_multiple_counties.uniq}, as multiple counties have this zip code." if @zips_with_multiple_counties.present?
             return Failure(failure_message) if failure_message.present?
 

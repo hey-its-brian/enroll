@@ -641,7 +641,7 @@ RSpec.describe ::FinancialAssistance::Operations::Transfers::MedicaidGateway::Ac
           end
 
           it 'should return failure' do
-            expect(@result).to eq(Failure("Unable to find county objects for zips [\"04330\"]"))
+            expect(@result).to eq(Failure("Zip Code is invalid for state of #{EnrollRegistry[:enroll_app].settings(:state_name).item} [\"04330\"]"))
           end
         end
       end
