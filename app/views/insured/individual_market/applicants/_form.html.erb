@@ -213,10 +213,13 @@
                       </div>
                     </label>
                     <div id="immigration-checkbox">
+                      <div>
                       <%= demographics.check_box :eligible_immigration_status,
                           { data: { action: "change->immigration-documents#toggleDocumentSelect" } },
                           "true",
                           "" %> <span class="ml-1"><%= l10n('yes') %></span>
+                      </div>
+                      <a href="#eligible_immigration_status" data-toggle="modal" data-target="#eligible_immigration_status"><%= l10n('not_sure') %></a>
                     </div>
                   <% else %>
                     <fieldset>
@@ -249,8 +252,8 @@
                         </label>
                       </div>
                     </fieldset>
+                    <a href="#eligible_immigration_status" data-toggle="modal" data-target="#eligible_immigration_status"><%= l10n('not_sure') %></a>
                   <% end %>
-                  <a href="#eligible_immigration_status" data-toggle="modal" data-target="#eligible_immigration_status">Not sure?</a>
                   <%= render partial: 'shared/modal_support_text_household', locals: {key: "eligible_immigration_status"} %>
                 </div>
 
@@ -275,7 +278,7 @@
                 <% end %>
                 <div data-target="immigration-documents.ImmigrationDocumentsContainer"></div>
                 <template data-target="immigration-documents.NewImmigrationStatusTemplate">
-                  <div class="generated_fields">
+                  <div class="generated_fields mt-3">
                     <%= f.fields_for :immigration_information, immigration_form do |immigration| %>
                       <div class="document-select-container mb-3">
                         <%= immigration.label :subject, l10n("insured.consumer_roles.select_doc_type"), class: "weight-n" %>
