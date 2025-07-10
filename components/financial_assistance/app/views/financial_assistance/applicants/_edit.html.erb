@@ -1,7 +1,21 @@
 <% if @bs4 %>
-  <%= form_for @applicant, url: application_applicant_path(@application, @applicant), method: :patch do |f|%>
+  <%= form_for @applicant, url: application_applicant_path(@application, @applicant), method: :patch, remote: true do |f|%>
     <%= hidden_field_tag :is_dependent, @applicant.is_dependent? %>
     <% readonly_status = @applicant.is_primary_applicant? %>
+
+    <% if @applicant_form.present? && @applicant_form.errors.any? %>
+      <div class="alert alert-error">
+        <h4>
+          <%= l10n("insured.consumer_roles.dependent_error.header") %>
+        </h4>
+        <ul>
+          <% @applicant_form.errors.full_messages.each do |msg| %>
+            <% msg = (msg == l10n("insured.consumer_roles.dependent_error.gender") && EnrollRegistry.feature_enabled?(:gender_to_sex)) ? l10n("insured.consumer_roles.dependent_error.sex") : msg %>
+            <li> <%= msg %> </li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
 
     <div id="personal_info" class="house">
       <div class="@applicant_notice_div_<%= @applicant.id%>"></div>
@@ -35,7 +49,8 @@
       <div class="d-flex mb-md-4">
         <div class="col-md-6 col-lg-3 p-0">
           <%= f.label :dob, l10n("date_of_birth"), class: "required" %>
-          <%= f.date_field :dob, placeholder: "MM/DD/YYYY", min: 110.years.ago, max:"9999-12-31", required: true, readonly: disable_dob_ssn_field?(@applicant.dob, true, @applicant.is_primary_applicant?) %>
+          <%= readonly_status = qhp_application_feature_enabled? ? disable_dob_ssn_field? : (@applicant.is_primary_applicant? || EnrollRegistry.feature_enabled?(:people_tab)) %>
+          <%= f.date_field :dob, placeholder: "MM/DD/YYYY", min: 110.years.ago, max:"9999-12-31", required: true, readonly: readonly_status %>
         </div>
         <div class="col-md-6 col-lg-3 p-0">
           <%= f.label :gender, l10n("gender"), class: 'required' %>
@@ -47,7 +62,11 @@
 
       <div class="d-flex mb-md-4">
         <div class="col-md-6 col-lg-3 p-0">
-          <% ssn_enabled = disable_dob_ssn_field?(@applicant.try(:ssn), true, @applicant.is_primary_applicant?) %>
+          <% ssn_enabled = if qhp_application_feature_enabled?
+                             disable_dob_ssn_field?
+                           else
+                             EnrollRegistry.feature_enabled?(:people_tab) ? @applicant.try(:ssn).present? : false
+                           end %>
           <%= f.label :ssn, l10n("social_security") %>
           <% if EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields) %>
             <% presenter = organize_ssn_params(f.object) %>

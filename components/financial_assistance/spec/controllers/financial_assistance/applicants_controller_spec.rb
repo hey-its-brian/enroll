@@ -524,6 +524,7 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
 
     context "primary applicant updating information" do
       it "should update primary's information when relationship param is blank" do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
         patch :update, params: update_params
         applicant.reload
         expect(applicant.is_applying_coverage).to eq false
@@ -884,6 +885,45 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
 
         it "should update ssn and no_ssn" do
           expect(dependent.ssn).to eq "123456789"
+          expect(dependent.no_ssn).to eq "1"
+        end
+      end
+
+      context "when admin is updating applicant's ssn and QHP application is enabled" do
+        let!(:is_applying_coverage) { true }
+        let(:us_citizen) { true }
+
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:people_tab).and_return(true)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          allow(subject).to receive(:can_update_ssn?).and_return(true)
+          patch :update, params: dependent_params.merge(applicant: applicant_params.merge(ssn: "123456789", no_ssn: "1"))
+          application.reload
+          dependent.reload
+        end
+
+        it "should update ssn and no_ssn" do
+          expect(dependent.ssn).to eq "123456789"
+          expect(dependent.no_ssn).to eq "1"
+        end
+      end
+
+      context "when admin is updating applicant's ssn to nil and no_ssn is checked and QHP application is enabled" do
+        let!(:is_applying_coverage) { true }
+        let(:us_citizen) { true }
+
+        before do
+          dependent.update(ssn: "123456789")
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:people_tab).and_return(true)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          allow(subject).to receive(:can_update_ssn?).and_return(true)
+          patch :update, params: dependent_params.merge(applicant: applicant_params.merge(ssn: "", no_ssn: "1"))
+          application.reload
+          dependent.reload
+        end
+
+        it "should unset ssn and set no_ssn" do
+          expect(dependent.ssn).to eq nil
           expect(dependent.no_ssn).to eq "1"
         end
       end

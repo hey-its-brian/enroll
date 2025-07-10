@@ -47,7 +47,8 @@
         <div class="d-flex mb-md-4">
           <div class="col-md-6 col-lg-3 p-0">
             <%= demographics.label :dob, l10n("date_of_birth"), class: "required" %>
-            <%= demographics.date_field :dob, placeholder: "MM/DD/YYYY", min: 110.years.ago, max: "9999-12-31", required: true, readonly: disable_dob_ssn_field?(demographics.object.dob, is_editing, !is_dependent) %>
+            <% readonly_status = is_editing ? disable_dob_ssn_field? : false %>
+            <%= demographics.date_field :dob, placeholder: "MM/DD/YYYY", min: 110.years.ago, max: "9999-12-31", required: true, readonly: readonly_status %>
           </div>
           <div class="col-md-6 col-lg-3 p-0">
             <%= demographics.label :gender, l10n("gender"), class: 'required' %>
@@ -59,7 +60,7 @@
 
         <div class="d-flex mb-md-4 <%= 'new_dependent' unless is_editing %>">
           <% ssn_object = is_editing ? demographics.object : @demographics_form %>
-          <% ssn_enabled = disable_dob_ssn_field?(ssn_object&.ssn, is_editing, !is_dependent) %>
+          <% ssn_enabled = is_editing ? disable_dob_ssn_field? : false %>
           <div class="col-md-6 col-lg-3 p-0" data-target="family-information.SsnInput">
             <%= demographics.label :ssn, l10n("social_security") %>
             <% if is_editing && EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields)  %>

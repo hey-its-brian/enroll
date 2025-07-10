@@ -58,4 +58,68 @@ RSpec.describe FinancialAssistance::Validators::ApplicantContract,  dbclean: :af
       end
     end
   end
+
+  context 'when qhp application feature is enabled and is_applying_coverage is set to false' do
+    context 'when ssn is nil and no_ssn is unchecked' do
+      it 'should fail validation and return error' do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        all_params[:ssn] = nil
+        all_params[:no_ssn] = '0'
+        result = subject.call(all_params)
+        expect(result.success?).to be_falsey
+        expect(result.errors.to_h).to eq({nil => [l10n("ssn_or_no_ssn_not_provided")]})
+      end
+    end
+
+    context 'when ssn is present' do
+      it 'should not fail validation' do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        all_params[:no_ssn] = '0'
+        result = subject.call(all_params)
+        expect(result.success?).to be_truthy
+      end
+    end
+
+    context 'when ssn is not present but no_ssn is checked' do
+      it 'should not fail validation' do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        all_params[:ssn] = nil
+        all_params[:no_ssn] = '1'
+        result = subject.call(all_params)
+        expect(result.success?).to be_truthy
+      end
+    end
+  end
+
+  context 'when qhp application feature is disabled and is_applying_coverage is set to false' do
+    context 'when ssn is nil and no_ssn is unchecked' do
+      it 'should not fail validation' do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+        all_params[:ssn] = nil
+        all_params[:no_ssn] = '0'
+        result = subject.call(all_params)
+        expect(result.success?).to be_truthy
+      end
+    end
+
+    context 'when ssn is present ' do
+      it 'should not fail validation' do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+        all_params[:ssn] = nil
+        all_params[:no_ssn] = '0'
+        result = subject.call(all_params)
+        expect(result.success?).to be_truthy
+      end
+    end
+
+    context 'when ssn is not present but no_ssn is checked' do
+      it 'should not fail validation' do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+        all_params[:ssn] = nil
+        all_params[:no_ssn] = '1'
+        result = subject.call(all_params)
+        expect(result.success?).to be_truthy
+      end
+    end
+  end
 end

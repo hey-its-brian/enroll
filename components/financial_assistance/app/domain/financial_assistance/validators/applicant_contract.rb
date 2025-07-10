@@ -86,7 +86,9 @@ module FinancialAssistance
       end
 
       rule(:ssn, :no_ssn) do
-        base.failure("SSN is missing") if values[:ssn].blank? && values[:no_ssn] == '0' && values[:is_applying_coverage]
+        feature_enabled = ::EnrollRegistry.feature_enabled?(:qhp_application)
+
+        base.failure(I18n.t("ssn_or_no_ssn_not_provided").to_s) if values[:ssn].blank? && values[:no_ssn] == '0' && (feature_enabled || values[:is_applying_coverage])
       end
 
       rule(:is_primary_applicant) do

@@ -9,7 +9,7 @@ module FinancialAssistance
     before_action :find_application, :except => [:age_of_applicant]
     before_action :find_applicant, only: [:age_of_applicant]
     before_action :set_cache_headers, only: [:other_questions, :tax_info]
-    before_action :enable_bs4_layout, only: [:index, :show, :edit, :other_questions, :tax_info]
+    before_action :enable_bs4_layout, only: [:index, :show, :edit, :other_questions, :tax_info, :update]
     before_action :set_summary_helpers, only: [:show]
 
     include ::ApplicationHelper
@@ -94,18 +94,27 @@ module FinancialAssistance
         head :ok, content_type: "text/html"
       else
         sanitized_applicant_params
-        @applicant = FinancialAssistance::Forms::Applicant.new(params.require(:applicant).permit(*applicant_parameters))
-        @applicant.is_dependent = params[:is_dependent]
-        @applicant.application_id = params[:application_id]
-        @applicant.applicant_id = params[:id]
-        @applicant.save
+        @applicant_form = FinancialAssistance::Forms::Applicant.new(params.require(:applicant).permit(*applicant_parameters))
+        @applicant_form.is_dependent = params[:is_dependent]
+        @applicant_form.application_id = params[:application_id]
+        @applicant_form.applicant_id = params[:id]
+        success, _result = @applicant_form.save
 
-        redirect_link = if EnrollRegistry.feature_enabled?(:qhp_application)
-                          application_applicants_path(@application)
-                        else
-                          edit_application_path(@application)
-                        end
-        redirect_to redirect_link
+        respond_to do |format|
+          link = if EnrollRegistry.feature_enabled?(:qhp_application)
+                   application_applicants_path(@application)
+                 else
+                   edit_application_path(@application)
+                 end
+          if success
+            format.html { redirect_to link }
+            format.js { render js: "window.location = '#{link}'"}
+          else
+            load_support_texts
+            format.html { redirect_to link }
+            format.js { render 'edit' }
+          end
+        end
       end
     end
 
@@ -269,13 +278,25 @@ module FinancialAssistance
         end
       end
 
-      if action_name == 'update' && EnrollRegistry.feature_enabled?(:people_tab)
-        applicant_params["dob"] = @applicant.dob&.strftime("%Y-%m-%d")
-        applicant_params["ssn"] = @applicant&.ssn
-        applicant_params["no_ssn"] = @applicant&.no_ssn
+      if action_name == 'update' && (EnrollRegistry.feature_enabled?(:people_tab) || EnrollRegistry.feature_enabled?(:qhp_application))
+        applicant_params["dob"] = can_update_ssn? ? applicant_params["dob"] : @applicant.dob&.strftime("%Y-%m-%d")
+        applicant_params["ssn"] = determine_ssn_value(applicant_params)
+        applicant_params["no_ssn"] = can_update_ssn? ? applicant_params["no_ssn"] : @applicant&.no_ssn
       end
 
       params[:applicant] = applicant_params
+    end
+
+    def determine_ssn_value(applicant_params)
+      return @applicant&.ssn unless can_update_ssn?
+
+      if applicant_params["ssn"].present?
+        applicant_params["ssn"]
+      elsif applicant_params["no_ssn"] == "1"
+        nil
+      else
+        @applicant&.ssn
+      end
     end
 
     def applicant_is_spouse_of_primary(applicant)

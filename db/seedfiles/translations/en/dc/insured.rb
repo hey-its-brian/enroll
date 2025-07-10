@@ -890,4 +890,5 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.invalid_phone_error_message' => "Person update failed. Phone is invalid",
   :'en.person_update_failed' => "Person update failed.",
   :'en.error_header_text' => "You need to correct the following errors:",
+  :'en.ssn_or_no_ssn_not_provided' => "Enter a valid social security number or select 'I don't have an SSN'",
 }.freeze

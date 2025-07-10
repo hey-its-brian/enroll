@@ -1210,9 +1210,11 @@ describe "Enabled/Disabled IVL market" do
       allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
     end
 
-    context 'when the field is not being edited' do
-      it 'returns false when the field is present' do
-        expect(helper.disable_dob_ssn_field?(person.ssn, false, true)).to eq(false)
+
+    context 'when qhp application feature is false' do
+      it 'returns false' do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+        expect(helper.disable_dob_ssn_field?).to eq(false)
       end
     end
 
@@ -1222,48 +1224,19 @@ describe "Enabled/Disabled IVL market" do
         allow(hbx_staff_role).to receive(:permission).and_return permission
       end
 
-      it 'returns false when the field is present, being edited and is a primary' do
-        expect(helper.disable_dob_ssn_field?(person.dob, true, true)).to eq(false)
+      it 'returns false' do
+        expect(helper.disable_dob_ssn_field?).to eq(false)
       end
     end
 
     context 'when qhp application is enabled and the user is not an hbx staff user' do
       before do
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        allow(helper).to receive(:can_update_ssn?).and_return(false)
       end
 
-      it 'returns true for primaries where the field is present' do
-        expect(helper.disable_dob_ssn_field?(person.dob, true, true)).to eq(false)
-      end
-    end
-
-    context 'when the field is not present' do
-      it 'returns false when the field is being edited for a primary' do
-        expect(helper.disable_dob_ssn_field?(nil, true, true)).to eq(false)
-      end
-    end
-
-    context 'when the field is present and is being edited' do
-      it 'returns true when the field is being edited for a primary' do
-        expect(helper.disable_dob_ssn_field?(person.ssn, true, true)).to eq(true)
-      end
-
-      context 'when dependent' do
-        context 'when people_tab feature is enabled' do
-          before do
-            allow(EnrollRegistry).to receive(:feature_enabled?).with(:people_tab).and_return(true)
-          end
-
-          it 'returns true' do
-            expect(helper.disable_dob_ssn_field?(person.ssn, true, false)).to eq(true)
-          end
-        end
-
-        context 'when people_tab feature is disabled' do
-          it 'returns false' do
-            expect(helper.disable_dob_ssn_field?(person.ssn, true, false)).to eq(false)
-          end
-        end
+      it 'returns true' do
+        expect(helper.disable_dob_ssn_field?).to eq(true)
       end
     end
   end

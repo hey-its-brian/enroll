@@ -1068,4 +1068,5 @@ now, your application will be saved as a draft and you can finish it later.',
   :'en.qhp_application.zip.outside' => 'Zip code outside supported area',
   :'en.qhp_application.member_details.header' => '%{name}\'s Details',
   :'en.error_header_text' => "You need to correct the following errors:",
+  :'en.ssn_or_no_ssn_not_provided' => "Enter a valid social security number or select 'I don't have an SSN'",
 }.freeze

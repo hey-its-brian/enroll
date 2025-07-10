@@ -68,6 +68,7 @@ $(document).on('ajax:success', '#edit-dependent-person', function (event) {
     }
 
     if (!$('#showWarning').hasClass('hidden')) {
+      immigrationDocWarning = false;
       if (!immigrationDocWarning) {
         immigrationDocWarning = true;
         $(this).removeAttr('disabled').removeClass('disabled');

@@ -138,6 +138,7 @@ module FinancialAssistance
             # Destroys mailing address if it is marked for destroy.
             applicant.mailing_address.destroy! if applicant.mailing_address.present? && addresses_attributes.values.any? { |address| destroy_mailing_address?(address) }
 
+            applicant.unset(:encrypted_ssn) if values[:ssn].blank? && applicant.ssn.present?
             applicant.update(values)
           elsif qhp_application_feature_enabled?
             result = ssn_is_taken?(values)

@@ -307,12 +307,11 @@ module ApplicationHelper
     hbx_staff_role.permission&.can_update_ssn
   end
 
-  def disable_dob_ssn_field?(value, is_editing, is_primary)
-    return false unless is_editing
-    return false if can_update_ssn? && EnrollRegistry.feature_enabled?(:qhp_application)
-    return false unless value.present?
-    return true if is_primary
-    EnrollRegistry.feature_enabled?(:people_tab)
+  def disable_dob_ssn_field?
+    return false unless EnrollRegistry.feature_enabled?(:qhp_application)
+    return false if can_update_ssn?
+
+    true
   end
 
   # Formats a number into a nine-digit US Federal Entity Identification Number string (nn-nnnnnnn)

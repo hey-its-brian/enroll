@@ -41,7 +41,7 @@ module Forms
       if ssn.present?
         errors.add(:base, l10n("invalid_ssn")) unless ssn.match?(SSN_REGEX)
       elsif no_ssn == "0"
-        errors.add(:base, "Enter a valid social security number or select 'I don't have an SSN'")
+        errors.add(:base, l10n("ssn_or_no_ssn_not_provided"))
       end
     end
 
