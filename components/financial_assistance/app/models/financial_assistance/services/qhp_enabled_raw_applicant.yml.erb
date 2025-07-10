@@ -23,11 +23,8 @@ personal_info:
     relationship:
       key: <%= l10n('qhp_application.review.relationship_to_primary_member') %>
       value: <%= @applicant.is_primary_applicant? ? l10n('self') : @applicant.relationships.find_by(relative_id: @application.primary_applicant.id).kind.humanize %>
-    status:
-      key: <%= l10n('status') %>
-      value: <%= @applicant.citizen_status.present? ? @applicant.format_citizen : nil %>
     coverage:
-      key: <%= l10n('faa.review.personal.needs_coverage') %>
+      key: <%= l10n("does_person_need_coverage", person: @applicant.first_name.presence || "this person") %>
       value: "<%= human_boolean(@applicant.is_applying_coverage) %>"
     us_citizen:
       key: <%= l10n('insured.us_citizen') %>

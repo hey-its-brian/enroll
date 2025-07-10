@@ -37,6 +37,7 @@
         <% if row.is_a?(Array) %> <%# nested section %>
           <%= render partial: 'financial_assistance/applications/summary_subsection', locals: {is_nested: true}, collection: row, as: :subsection %>
         <% else %> <%# single row %>
+          <% next if row[:key] == l10n('ageoff_exclusion') && !current_user.has_hbx_staff_role? %>
           <div class="d-flex justify-content-between align-items-center">
             <% admin_class = row[:key] == l10n('ageoff_exclusion') ? 'admin-designation' : "" %>
             <dt class="col-8 px-0 <%= admin_class %>"><%= row[:key] %></dt>
