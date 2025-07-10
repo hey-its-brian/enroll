@@ -13,26 +13,37 @@ export default class extends Controller {
     headerLinks.forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault()
-        this.showLeavingModal(link.href, headerLogOutLink)
+        this.showLeavingModal(link, headerLogOutLink)
       })
     })
     const buttons = Array.from(document.querySelectorAll('header button, .progress-nav-container button')).filter(button => !button.closest('.progress-nav')).filter(button => !button.closest('.modal')).filter(button => !button.dataset.target)
     buttons.forEach(button => {
       button.addEventListener('click', (e) => {
         e.preventDefault()
-        this.showLeavingModal(button.href, headerLogOutLink)
+        this.showLeavingModal(button, headerLogOutLink)
       })
     })
   }
 
-  showLeavingModal(href, headerLogOutLink) {
+  showLeavingModal(target, headerLogOutLink) {
     const leavingModalTrigger = document.getElementById('leavingWarningModalTrigger')
     leavingModalTrigger.click()
     this.leavingApplicationButtonTarget.addEventListener('click', () => {
       if (this.leavingApplicationButtonTarget.textContent === 'Logout') {
         headerLogOutLink.setAttribute('data-method', 'delete')
       }
-      window.location.href = href
+      // need to check if the href type to trigger the default action
+      if (target.nodeName === 'A') {
+        // if it is an anchor tag, we just need to navigate to the href
+        window.location.href = target.href
+      } else if (target.nodeName === 'BUTTON' && target.type === 'submit' && target.closest('form')) {
+        // need to submit the form if it is a submit button
+        target.closest('form').submit()
+      } else if (target.nodeName === 'BUTTON') {
+        // need to unbind the click event set above and then click the button
+        this.leavingApplicationButtonTarget.removeEventListener('click', this.showLeavingModal)
+        target.click()
+      }
     })
   }
 }

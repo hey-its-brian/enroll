@@ -20,23 +20,23 @@
   </div>
 
   <div id="primary-person" class="py-3">
-    <% primary_person = @application.primary_applicant %>
+    <% primary_applicant = @application.primary_applicant %>
     <div class="d-flex flex-row align-items-center">
       <h2 class="mb-0"><%= l10n('member') %> 1</h2>
     </div>
-    <div data-target="qhp-application.ApplicantRow" data-member-id="<%= primary_person&.id %>">
-      <div id="member-<%= primary_person.id %>-info-display" class="d-flex flex-row flex-wrap justify-content-between">
+    <div data-target="qhp-application.ApplicantRow" data-member-id="<%= primary_applicant.reference_id %>">
+      <div id="member-<%= primary_applicant.id %>-info-display" class="d-flex flex-row flex-wrap justify-content-between">
         <div>
           <label for="primary-name"><%= l10n("name")%></label>
-          <input id="primary-name" type="text" value="<%= "#{primary_person.person_name.given_name} #{primary_person.person_name.middle_name} #{primary_person.person_name.family_name}" %>" disabled >
+          <input id="primary-name" type="text" value="<%= "#{primary_applicant.person_name.given_name} #{primary_applicant.person_name.middle_name} #{primary_applicant.person_name.family_name}" %>" disabled >
         </div>
         <div>
           <label for="primary-age"><%= l10n("age")%></label>
-          <input id="primary-age" type="text" value="<%= primary_person.age_on(TimeKeeper.date_of_record) %>" disabled >
+          <input id="primary-age" type="text" value="<%= primary_applicant.age_on(TimeKeeper.date_of_record) %>" disabled >
         </div>
         <div>
           <label for="primary-gender"><%= l10n("gender")%></label>
-          <input id="primary-gender" type="text" value="<%= "#{primary_person.demographics.gender&.humanize}" %>" disabled >
+          <input id="primary-gender" type="text" value="<%= "#{primary_applicant.demographics.gender&.humanize}" %>" disabled >
         </div>
         <div>
           <label for="primary-relation"><%= l10n("relationship")%></label>
@@ -44,19 +44,19 @@
         </div>
       </div>
 
-      <div class="mt-3 member-<%= primary_person.id %>-buttons">
+      <div class="mt-3 member-<%= primary_applicant.id %>-buttons">
         <button type="button"
                 class="btn btn-secondary outline"
                 data-action="qhp-application#editApplicant"
-                data-member-id="<%= primary_person.id %>"
+                data-member-id="<%= primary_applicant.reference_id %>"
                 data-target="qhp-application.EditApplicantButton"
-                data-qhp-application-url-value="<%= edit_insured_individual_market_application_applicant_path(@application, primary_person) %>">
+                data-qhp-application-url-value="<%= edit_insured_individual_market_application_applicant_path(@application, primary_applicant) %>">
           <%= l10n("edit_member") %>
         </button>
       </div>
     </div>
 
-    <div class="append_consumer_info" data-target="qhp-application.EditApplicantForm" data-member-id="<%= primary_person.id %>">
+    <div class="append_consumer_info" data-target="qhp-application.EditApplicantForm" data-member-id="<%= primary_applicant.reference_id %>">
     </div>
   </div>
 
@@ -68,8 +68,7 @@
             <h2 class="mb-0"><%= l10n('member') %> <%= index + 2 %></h2>
           </div>
           <div class="dependent_notice_div_<%= dependent.id%>"></div>
-
-          <div data-target="qhp-application.ApplicantRow" data-member-id="<%= dependent.id %>">
+          <div data-target="qhp-application.ApplicantRow" data-member-id="<%= dependent.reference_id %>">
             <div id="member-<%= dependent.id %>-info-display" class="d-flex flex-row flex-wrap justify-content-between">
               <div>
                 <label for="dependent-<%= dependent.id%>-name"><%= l10n("name")%></label>
@@ -93,7 +92,7 @@
               <button type="button"
                       class="btn btn-secondary outline"
                       data-action="qhp-application#editApplicant"
-                      data-member-id="<%= dependent.id %>"
+                      data-member-id="<%= dependent.reference_id %>"
                       data-target="qhp-application.EditApplicantButton"
                       data-qhp-application-url-value="<%= edit_insured_individual_market_application_applicant_path(@application, dependent) %>">
                 <%= l10n("edit_member") %>
@@ -102,7 +101,7 @@
           </div>
         </div>
 
-        <div class="append_consumer_info" data-target="qhp-application.EditApplicantForm" data-member-id="<%= dependent.id %>">
+        <div class="append_consumer_info" data-target="qhp-application.EditApplicantForm" data-member-id="<%= dependent.reference_id %>">
         </div>
       </div>
     <% end %>

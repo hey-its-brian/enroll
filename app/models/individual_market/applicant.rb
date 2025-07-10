@@ -277,6 +277,15 @@ module IndividualMarket
       new_applicant
     end
 
+    # this attribute is used to identify the applicant in the application
+    # so it works with the qhp application javascript controller to properly identify the applicant
+    # to open the correct applicant edit form.
+    # @!attribute reference_id
+    #   @return [String] The reference ID for the applicant
+    def reference_id
+      family_member_id || id
+    end
+
     def build_individual_market_evidences
       return unless individual_market_eligibility.present?
       build_citizenship_evidence
