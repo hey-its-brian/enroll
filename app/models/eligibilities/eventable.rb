@@ -4,6 +4,7 @@ module Eligibilities
   # Eventable module
   module Eventable
     include EventSource::Command
+    include ::ResourceRegistryHelper
 
     def self.included(base)
       base.extend ClassMethods
@@ -19,6 +20,7 @@ module Eligibilities
     # instance methods
     module InstanceMethods
       def generate_evidence_updated_event
+        return if qhp_application_feature_enabled?
         return unless self.valid?
 
         global_id = self.to_global_id.uri
