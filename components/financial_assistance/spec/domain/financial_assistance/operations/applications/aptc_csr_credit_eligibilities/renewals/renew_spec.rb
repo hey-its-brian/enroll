@@ -41,6 +41,9 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
 
   let(:event) { Success(double) }
   let(:operation_instance) { described_class.new }
+  let!(:hbx_profile)   { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
+  let(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
+  let(:benefit_coverage_period) { hbx_profile.benefit_sponsorship.benefit_coverage_periods.first }
 
   before do
     allow(operation_instance.class).to receive(:new).and_return(operation_instance)

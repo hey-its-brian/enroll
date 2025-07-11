@@ -155,6 +155,7 @@ module IndividualMarket
       determination_failed
       determined
       expired
+      cancelled
     ].freeze
 
     state_transitions do
@@ -164,6 +165,7 @@ module IndividualMarket
       action :failed_determination, from: [:submitted], to: :determination_failed
       action :determine, from: [:submitted], to: :determined
       action :expire, from: [:initial, :submission_failed, :submitted, :determination_failed, :determined], to: :expired
+      action :cancel, from: [:initial, :submission_failed, :submitted, :determination_failed], to: :cancelled
     end
 
     # Finds and returns the applicant who is marked as the primary applicant

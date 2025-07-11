@@ -286,7 +286,7 @@
                         <%= immigration.select :subject,
                             options_for_select(VlpDocument::VLP_DOCUMENT_KINDS),
                             { prompt: "Select document type" },
-                            { data: { action: "change->immigration-documents#handleDocumentChange" } } %>
+                            { data: { action: "change->immigration-documents#handleDocumentChange" }, class: "w-75" } %>
                       </div>
                       <div data-target="immigration-documents.documentFields" class="hidden"></div>
                     <% end %>

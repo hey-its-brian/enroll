@@ -71,20 +71,28 @@ RSpec.describe Operations::IndividualMarket::GenerateApplication, dbclean: :afte
           applicants: instance_of(Array)
         }
       end
+      let(:existing_application) { FactoryBot.create(:individual_market_application, :initial, family_id: family.id) }
 
       let(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
       let(:benefit_coverage_period) { hbx_profile.benefit_sponsorship.benefit_coverage_periods.first }
 
+      before do
+        existing_application
+        @result = subject.call(params)
+      end
+
       it 'returns success' do
-        result = subject.call(params)
-        expect(result).to be_success
-        expect(result.success.is_a?(BSON::ObjectId)).to be_truthy
+        expect(@result).to be_success
+        expect(@result.success.is_a?(BSON::ObjectId)).to be_truthy
       end
 
       it 'creates an application' do
-        result = subject.call(params)
-        application = IndividualMarket::Application.find(result.success)
+        application = IndividualMarket::Application.find(@result.success)
         expect(application).not_to be nil
+      end
+
+      it 'cancels previous applications' do
+        expect(existing_application.reload.current_state).to eq(:cancelled)
       end
     end
 

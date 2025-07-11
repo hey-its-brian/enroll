@@ -20,7 +20,11 @@ module Operations
       def call(params)
         validated_params             = yield validate(params)
         application_params           = yield parse_family(validated_params)
-        apply(application_params)
+        application_id               = yield apply(application_params)
+        new_application              = yield fetch_application(application_id)
+        _cancelled                   = yield cancel_previous_applications(new_application)
+
+        Success(application_id)
       end
 
       private
@@ -82,6 +86,14 @@ module Operations
         end
       end
 
+      def fetch_application(application_id)
+        application = ::IndividualMarket::Application.where(id: application_id).first
+        application ? Success(application) : Failure("Application with id #{application_id} not found.")
+      end
+
+      def cancel_previous_applications(application)
+        ::Operations::Sbm::Applications::CancelPreviousApplications.new.call(application: application)
+      end
     end
   end
 end

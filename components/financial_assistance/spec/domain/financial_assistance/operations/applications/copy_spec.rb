@@ -12,6 +12,9 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
     DatabaseCleaner.clean
   end
 
+  let!(:hbx_profile)   { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
+  let(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
+  let(:benefit_coverage_period) { hbx_profile.benefit_sponsorship.benefit_coverage_periods.first }
   let!(:person1) { FactoryBot.create(:person, :with_consumer_role, first_name: 'Person_11')}
   let!(:person2) do
     per = FactoryBot.create(:person, :with_consumer_role, dob: Date.today - 30.years)

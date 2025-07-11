@@ -15,6 +15,7 @@ module Operations
         def call(application:, origin:, generation_reason:)
           application, origin, generation_reason  = yield validate_application(application, origin, generation_reason)
           copied_application                      = yield copy_application(application, origin, generation_reason)
+          _cancelled                              = yield cancel_previous_applications(copied_application)
 
           Success(copied_application)
         end
@@ -66,6 +67,10 @@ module Operations
         rescue StandardError => e
           Rails.logger.error("QHP Application - Copy operation failed for application with hbx_id: #{application.hbx_id} - Error: #{e.message}, Backtrace: #{e.backtrace.join("\n")}")
           Failure("Copy operation failed for application with hbx_id: #{application.hbx_id} - Error: #{e.message}")
+        end
+
+        def cancel_previous_applications(application)
+          ::Operations::Sbm::Applications::CancelPreviousApplications.new.call(application: application)
         end
       end
     end

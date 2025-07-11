@@ -130,7 +130,7 @@ module Operations
       # @return [Dry::Monads::Result::Success] Success monad with a message
       def cancel_previous_applications(new_application)
         if qhp_application_feature_enabled?
-          ::FinancialAssistance::Operations::Applications::CancelPreviousApplications.new.call(
+          ::Operations::Sbm::Applications::CancelPreviousApplications.new.call(
             application: new_application
           )
           Success('Previous applications cancelled successfully')

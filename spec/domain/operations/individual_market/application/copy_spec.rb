@@ -431,6 +431,19 @@ RSpec.describe Operations::IndividualMarket::Application::Copy, dbclean: :after_
           )
         end
       end
+
+      context 'when there is a previous draft application' do
+        let(:previous_application) { FactoryBot.create(:individual_market_application, :initial, family: family) }
+
+        before do
+          previous_application
+        end
+
+        it 'cancels the previous application' do
+          expect(result.success?).to be_truthy
+          expect(previous_application.reload.current_state).to eq(:cancelled)
+        end
+      end
     end
   end
 end

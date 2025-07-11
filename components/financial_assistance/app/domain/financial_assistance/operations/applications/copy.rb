@@ -253,7 +253,8 @@ module FinancialAssistance
             source_app_params[:origin] = @origin
             source_app_params[:generation_reason] = @generation_reason
           end
-
+          # need to add assistance year to the params for qhp in order to properly cancel previous applications
+          source_app_params[:assistance_year] = source_application.family.application_applicable_year || TimeKeeper.date_of_record.year if qhp_application_feature_enabled?
           source_app_params.merge({ aasm_state: 'draft',
                                     hbx_id: FinancialAssistance::HbxIdGenerator.generate_application_id })
         end
@@ -297,7 +298,7 @@ module FinancialAssistance
         # @return [Dry::Monads::Result::Success] Success monad with a message
         def cancel_previous_applications(draft_app)
           if qhp_application_feature_enabled?
-            ::FinancialAssistance::Operations::Applications::CancelPreviousApplications.new.call(
+            ::Operations::Sbm::Applications::CancelPreviousApplications.new.call(
               application: draft_app
             )
             Success('Previous applications cancelled successfully')

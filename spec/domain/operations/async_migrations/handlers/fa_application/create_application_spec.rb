@@ -9,6 +9,9 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
     DatabaseCleaner.clean
   end
 
+  let!(:hbx_profile) { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
+  let(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
+  let(:benefit_coverage_period) { hbx_profile.benefit_sponsorship.benefit_coverage_periods.first }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
   let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true, first_name: "main_name") }
   let(:consumer_role) do
@@ -173,7 +176,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                       aasm_state: "draft",
                       effective_date: (TimeKeeper.date_of_record - 12.days),
                       origin: :migration,
-                      generation_reason: :user)
+                      assistance_year: nil,
+                      generation_reason: :manual)
   end
 
   let!(:draft_applicant) do
@@ -192,6 +196,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                       aasm_state: "determined",
                       effective_date: (TimeKeeper.date_of_record - 12.days),
                       origin: :migration,
+                      assistance_year: TimeKeeper.date_of_record.year,
                       generation_reason: :manual)
   end
 
@@ -263,6 +268,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
 
       context 'when the application is created' do
         before do
+          allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
           @result = subject.call({document_id: application.id.to_s})
           @old_applicant = application.applicants.first
           @new_application_hbx_id = @result.value![1]
