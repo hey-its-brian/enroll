@@ -85,7 +85,6 @@ module Operations
                 person_name: name(applicant),
                 demographics: demographics(applicant),
                 eligibilities: eligibilities(applicant),
-                immigration_information: immigration_information(applicant),
                 family_member_reference: family_member_reference(applicant),
                 is_primary_applicant: applicant.is_primary_applicant,
                 address_same_as_primary: applicant.address_same_as_primary,
@@ -94,6 +93,7 @@ module Operations
                 addresses: addresses(applicant)
               }
 
+              applicant.merge!(immigration_information: immigration_information(applicant)) if applicant.immigration_information.present?
               result << applicant_hash
               result
             end
@@ -149,9 +149,11 @@ module Operations
             end
           end
 
-          def immigration_information(_applicant)
-            # TODO: Implement as needed
-            {}
+          def immigration_information(applicant)
+            applicant.immigration_information.attributes.slice(:subject, :alien_number, :i94_number, :visa_number, :passport_number, :sevis_id,
+                                                               :naturalization_number, :receipt_number, :citizenship_number, :card_number,
+                                                               :country_of_citizenship, :expiration_date, :issuing_country,
+                                                               :description, :immigration_doc_statuses)
           end
 
           def family_member_reference(applicant)
