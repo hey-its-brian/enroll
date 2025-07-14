@@ -25,7 +25,7 @@
     </div>
 
     <div class="mt-3 member-<%= dependent.id %>-buttons mb-3">
-      <%= h(link_to l10n("edit_member"), edit_application_applicant_path(@application, dependent, {bs4: @bs4}), id: 'edit-dependent-person', remote: true, class: 'btn secondary outline close-2', data: {target: "qhp-application.EditApplicantButton", member_id: "#{dependent.id}"}) %>
+      <%= h(link_to l10n("edit_member"), edit_application_applicant_path(@application, dependent, {bs4: @bs4}), id: 'edit-dependent-person', remote: true, class: 'btn secondary outline close-2', data: {target: "faa-application.EditApplicantButton", member_id: "#{dependent.id}"}) %>
     </div>
   </div>
 

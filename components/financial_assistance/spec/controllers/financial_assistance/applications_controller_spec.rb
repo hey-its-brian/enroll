@@ -118,6 +118,82 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       application.relationships << ::FinancialAssistance::Relationship.new(kind: 'spouse', applicant_id: applicants[0].id, relative_id: applicants[1].id)
     end
 
+    context 'when QHP feature is enabled and has applicant_hbx_id in params' do
+      before do
+        allow(Family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      end
+
+      context "when person_info is set to true in params" do
+        it "redirects to the new application applicant path" do
+          get :copy, params: { id: application.id, applicant_hbx_id: person1.hbx_id, personal_info: true }
+          application = assigns(:application).reload
+          applicant = application.applicants.where(person_hbx_id: person1.hbx_id).first
+
+          expect(response).to redirect_to(application_applicants_path(application, applicant: applicant.id))
+        end
+      end
+
+      context "when preferences is set to true in params" do
+        it "redirects to the new application preferences page" do
+          get :copy, params: { id: application.id, applicant_hbx_id: person1.hbx_id, preferences: true }
+          application = assigns(:application).reload
+
+          expect(response).to redirect_to(preferences_application_path(application))
+        end
+      end
+
+      context "when tax_info is set to true in params" do
+        it "redirects to the new application tax_info page" do
+          get :copy, params: { id: application.id, applicant_hbx_id: person1.hbx_id, tax_info: true }
+          application = assigns(:application).reload
+          applicant = application.applicants.where(person_hbx_id: person1.hbx_id).first
+
+          expect(response).to redirect_to(go_to_step_application_applicant_path(application, applicant, 1))
+        end
+      end
+
+      context "when income is set to true in params" do
+        it "redirects to the new application income page" do
+          get :copy, params: { id: application.id, applicant_hbx_id: person1.hbx_id, income: true }
+          application = assigns(:application).reload
+          applicant = application.applicants.where(person_hbx_id: person1.hbx_id).first
+
+          expect(response).to redirect_to(application_applicant_incomes_path(application, applicant))
+        end
+      end
+
+      context "when income_adjustments is set to true in params" do
+        it "redirects to the new application income_adjustments page" do
+          get :copy, params: { id: application.id, applicant_hbx_id: person1.hbx_id, income_adjustments: true }
+          application = assigns(:application).reload
+          applicant = application.applicants.where(person_hbx_id: person1.hbx_id).first
+
+          expect(response).to redirect_to(application_applicant_deductions_path(application, applicant))
+        end
+      end
+
+      context "when health_coverage is set to true in params" do
+        it "redirects to the new application health_coverage page" do
+          get :copy, params: { id: application.id, applicant_hbx_id: person1.hbx_id, health_coverage: true }
+          application = assigns(:application).reload
+          applicant = application.applicants.where(person_hbx_id: person1.hbx_id).first
+
+          expect(response).to redirect_to(application_applicant_benefits_path(application, applicant))
+        end
+      end
+
+      context "when other_questions is set to true in params" do
+        it "redirects to the new application other_questions page" do
+          get :copy, params: { id: application.id, applicant_hbx_id: person1.hbx_id, other_questions: true }
+          application = assigns(:application).reload
+          applicant = application.applicants.where(person_hbx_id: person1.hbx_id).first
+
+          expect(response).to redirect_to(other_questions_application_applicant_path(application, applicant))
+        end
+      end
+    end
+
     context 'when application service raises an error' do
 
       before do
@@ -544,6 +620,93 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
         }
       end
 
+      context 'applicant tries to save his phone number and email' do
+        let(:params_with_contact_method) do
+          {
+            id: application.id,
+            application: {
+              applicants_attributes: {
+                "0" => {
+                  id: applicant.id,
+                  contact_method: ["Mail", "Text"],
+                  "phones_attributes": {
+                    "0" => {
+                      "kind": "home",
+                      "full_phone_number": "9876543210"
+                    }
+                  },
+                  "emails_attributes": {
+                    "0" => {
+                      "kind": "home",
+                      "address": "ivltest@gmail.com"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        end
+
+        it "transforms contact_method properly and saves phone and emails on applicant" do
+          expect(controller).to receive(:transform_contact_methods!)
+          post :save_preferences, params: params_with_contact_method
+          applicant.reload
+          expect(applicant.phones).to be_present
+          expect(applicant.emails).to be_present
+          expect(response).to redirect_to(submit_your_application_application_path(application))
+        end
+      end
+
+      context 'applicant tries to remove his phone and email' do
+
+        before do
+          applicant.phones.create!(kind: "home", full_phone_number: "9876543210")
+          applicant.emails.create!(kind: "home", address: "test@test.com")
+        end
+
+        let(:params_with_contact_method) do
+          {
+            id: application.id,
+            application: {
+              applicants_attributes: {
+                "0" => {
+                  id: applicant.id,
+                  contact_method: ["Mail", "Text"],
+                  "phones_attributes": {
+                    "0" => {
+                      "id": applicant.phones.first.id,
+                      "kind": "home",
+                      "_destroy": "false",
+                      "full_phone_number": ""
+                    }
+                  },
+                  "emails_attributes": {
+                    "0" => {
+                      "id": applicant.emails.first.id,
+                      "kind": "home",
+                      "_destroy": "false",
+                      "address": ""
+                    }
+                  }
+                }
+              }
+            }
+          }
+        end
+
+        it "transforms contact_method properly and destroys phone and emails on applicant if blank" do
+          expect(controller).to receive(:transform_contact_methods!)
+          expect(applicant.phones).to be_present
+          expect(applicant.emails).to be_present
+          post :save_preferences, params: params_with_contact_method
+
+          applicant.reload
+          expect(applicant.phones).not_to be_present
+          expect(applicant.emails).not_to be_present
+          expect(response).to redirect_to(submit_your_application_application_path(application))
+        end
+      end
+
       it "transforms contact_method properly when saving" do
         expect(controller).to receive(:transform_contact_methods!)
         post :save_preferences, params: params_with_contact_method
@@ -725,6 +888,7 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
     end
 
     before do
+      allow(File).to receive(:read).and_call_original
       allow(File).to receive(:read).with("./components/financial_assistance/app/views/financial_assistance/applications/raw_application_hra.yml.erb").and_return("")
       allow(File).to receive(:read).with("./components/financial_assistance/app/views/financial_assistance/applications/raw_application.yml.erb").and_return("")
       allow(YAML).to receive(:safe_load).with("").and_return(temp_file)
@@ -742,10 +906,10 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       expect(response).to redirect_to(applications_path)
     end
 
-    it "should not redirect to applications page for draft application if qhp application feature is enabled" do
+    it "should redirect to applications page for draft application if qhp application feature is enabled" do
       allow(controller).to receive(:qhp_application_feature_enabled?).and_return(true)
       get :raw_application, params: { id: application.id }
-      expect(response).to render_template(:raw_application)
+      expect(response).to redirect_to(application_path(application))
     end
 
     it 'raises an error if application cannot be found' do

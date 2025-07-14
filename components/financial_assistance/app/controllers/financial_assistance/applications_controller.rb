@@ -120,6 +120,10 @@ module FinancialAssistance
         @application.clean_conditional_params(params[:application])
         attrs = application_params.to_h
         transform_contact_methods!(attrs[:applicants_attributes])
+        # Mark empty phones for destruction
+        mark_empty_phones_for_destruction(attrs[:applicants_attributes]) if attrs[:applicants_attributes].present?
+        mark_empty_emails_for_destruction(attrs[:applicants_attributes]) if attrs[:applicants_attributes].present?
+
         @application.assign_attributes(attrs)
         if @application.save
           redirection_link = if qhp_application_feature_enabled?
@@ -188,11 +192,8 @@ module FinancialAssistance
           @application = copy_result.success
           @application.configure_assistance_year
           assistance_year_page = EnrollRegistry.feature_enabled?(:iap_year_selection) && (HbxProfile.current_hbx.under_open_enrollment? || EnrollRegistry.feature_enabled?(:iap_year_selection_form))
-          redirect_path = if assistance_year_page
-                            application_year_selection_application_path(@application)
-                          else
-                            qhp_application_feature_enabled? ? application_applicants_path(application_id: @application.id) : edit_application_path(@application)
-                          end
+
+          redirect_path = get_redirect_path(@application, assistance_year_page)
 
           redirect_to redirect_path
         else
@@ -241,6 +242,8 @@ module FinancialAssistance
     end
 
     def review
+      return redirect_to application_path(@application) if qhp_application_feature_enabled?
+
       save_faa_bookmark(request.original_url)
       return redirect_to applications_path if @application.blank?
 
@@ -265,6 +268,8 @@ module FinancialAssistance
         redirect_to applications_path
         return
       end
+
+      return redirect_to application_path(@application) if qhp_application_feature_enabled?
 
       if @application.nil? || (@application.is_draft? && !qhp_application_feature_enabled?)
         redirect_to applications_path
@@ -402,6 +407,39 @@ module FinancialAssistance
       return unless qhp_application_feature_enabled?
 
       redirect_to main_app.insured_sbm_applications_path
+    end
+
+    # Returns the redirect path based on the application and assistance year page
+    # @param application [FinancialAssistance::Application] The financial assistance application
+    # @param assistance_year_page [Boolean] Indicates if the assistance year page is being displayed
+    # @return [String] The redirect path based on the application state and parameters
+    def get_redirect_path(application, assistance_year_page)
+      if qhp_application_feature_enabled? && params[:applicant_hbx_id].present?
+        applicant = application.applicants.detect { |app| app.person_hbx_id == params[:applicant_hbx_id] }
+
+        if applicant.present?
+          path_mapping = {
+            personal_info: -> { application_applicants_path(application, applicant: applicant.id) },
+            preferences: -> { preferences_application_path(application) },
+            tax_info: -> { go_to_step_application_applicant_path(application, applicant, 1) },
+            income: -> { application_applicant_incomes_path(application, applicant) },
+            income_adjustments: -> { application_applicant_deductions_path(application, applicant) },
+            health_coverage: -> { application_applicant_benefits_path(application, applicant) },
+            other_questions: -> { other_questions_application_applicant_path(application, applicant) }
+          }
+
+          path_key = path_mapping.keys.find { |key| params[key].present? }
+          return path_mapping[path_key].call if path_key
+        end
+      end
+
+      if assistance_year_page
+        application_year_selection_application_path(application)
+      elsif qhp_application_feature_enabled?
+        application_applicants_path(application_id: application.id)
+      else
+        edit_application_path(application)
+      end
     end
 
     # Prepares parameters for copying an existing financial assistance application
@@ -701,6 +739,30 @@ module FinancialAssistance
         mapped = IndividualMarket::Applicant::CONTACT_METHOD_MAPPING[cm]
         # overwrite the array
         applicant_h["contact_method"] = mapped
+      end
+    end
+
+    # This method marks empty phone numbers for destruction in the applicants_attributes hash.
+    # It iterates through each applicant's phones_attributes and sets the _destroy flag to true if the full_phone_number is blank.
+    # @param applicants_attributes [Hash] The hash containing applicants and their phone attributes.
+    # # @return [void] The method modifies the applicants_attributes in place.
+    def mark_empty_phones_for_destruction(applicants_attributes)
+      applicants_attributes.each do |_, applicant_attrs|
+        next unless applicant_attrs[:phones_attributes].present?
+
+        applicant_attrs[:phones_attributes].each do |_, phone_attrs|
+          phone_attrs[:_destroy] = "1" if phone_attrs[:full_phone_number].blank? && phone_attrs[:id].present?
+        end
+      end
+    end
+
+    def mark_empty_emails_for_destruction(applicants_attributes)
+      applicants_attributes.each do |_, applicant_attrs|
+        next unless applicant_attrs[:emails_attributes].present?
+
+        applicant_attrs[:emails_attributes].each do |_, email_attrs|
+          email_attrs[:_destroy] = "1" if email_attrs[:address].blank? && email_attrs[:id].present?
+        end
       end
     end
   end

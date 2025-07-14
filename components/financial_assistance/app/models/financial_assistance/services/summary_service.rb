@@ -55,8 +55,6 @@ module FinancialAssistance
       #
       # @return [Boolean] True if the action is editable, false otherwise.
       private_class_method def self.editable_action?(action_name, application)
-        return false unless application.draft?
-
         %w[review_and_submit show].include?(action_name)
       end
 

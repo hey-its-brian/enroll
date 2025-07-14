@@ -646,7 +646,7 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
     it "should not redirect to applications page for draft application if qhp application feature is enabled" do
       allow(controller).to receive(:qhp_application_feature_enabled?).and_return(true)
       get :raw_application, params: { id: application.id }
-      expect(response).to render_template(:raw_application)
+      expect(response).to redirect_to(application_path(application))
     end
 
     it 'raises an error if application cannot be found' do

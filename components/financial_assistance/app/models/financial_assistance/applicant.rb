@@ -386,9 +386,9 @@ module FinancialAssistance
     embeds_many :eligibilities, class_name: 'Eligibilities::V3::Eligibility', as: :eligible, cascade_callbacks: true
 
     accepts_nested_attributes_for :incomes, :deductions, :benefits, :income_evidence, :esi_evidence, :non_esi_evidence, :local_mec_evidence, :member_determinations
-    accepts_nested_attributes_for :phones, :reject_if => proc { |addy| addy[:full_phone_number].blank? }, allow_destroy: true
+    accepts_nested_attributes_for :phones, :reject_if => proc { |addy| addy[:full_phone_number].blank? && addy[:_destroy] != '1' }, allow_destroy: true
     accepts_nested_attributes_for :addresses, :reject_if => proc { |addy| addy[:address_1].blank? && addy[:city].blank? && addy[:state].blank? && addy[:zip].blank? }, allow_destroy: true
-    accepts_nested_attributes_for :emails, :reject_if => proc { |addy| addy[:address].blank? }, allow_destroy: true
+    accepts_nested_attributes_for :emails, :reject_if => proc { |addy| addy[:address].blank? && addy[:_destroy] != '1' }, allow_destroy: true
 
     validate :unique_eligibilities
 
