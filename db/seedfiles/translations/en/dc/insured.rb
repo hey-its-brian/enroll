@@ -797,7 +797,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.insured.tribal_id_alert' => 'Tribal ID number is required',
   :'en.insured.preferences.heading' => "Your Preferences",
   :'en.insured.preferences.instructions' => "Tell us your preferences. When you’re finished, select",
-  :'en.insured.preferences.instructions_continue' => "“Continue to Next Step”",
+  :'en.insured.preferences.instructions_continue' => "'Continue to Next Step'",
   :'en.insured.preferences.agreements' => "Agreements",
   :'en.insured.preferences.question1' => "To make it easier to determine my eligibility for premium reductions in future years, I agree to allow %{site_short_name} to use my income date, including information from tax returns, for the next five years. %{site_short_name} will send me a notice, let me make any changes, and I can opt out at any time. ",
   :'en.insured.preferences.i_agree' => 'I Agree',
