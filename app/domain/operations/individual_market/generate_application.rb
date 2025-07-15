@@ -7,8 +7,8 @@ module Operations
   module IndividualMarket
     # This class constructs ivl_application params_hash,
     # then validates it against the ApplicationContract
-    # then calls Operations::IndividualMarket::Create
-    # gets back IndividualMarket::Application object_id
+    # then calls Operations::IndividualMarket::Build to build the application
+    # and its associated applicants. Finally, it cancels any previous applications for the same family.
     class GenerateApplication
       include Dry::Monads[:do, :result]
       include ResourceRegistryHelper
@@ -16,15 +16,14 @@ module Operations
       # @param [ FamilyId ] family_id bson_id of a family
       # @param [ Origin ] origin
       # @param [ GenerationReason ] generation_reason
-      # @return [ IndividualMarket::Application ] application_id
+      # @return [ IndividualMarket::Application ] application
       def call(params)
         validated_params             = yield validate(params)
         application_params           = yield parse_family(validated_params)
-        application_id               = yield apply(application_params)
-        new_application              = yield fetch_application(application_id)
-        _cancelled                   = yield cancel_previous_applications(new_application)
+        application                  = yield build(application_params)
+        _cancelled                   = yield cancel_previous_applications(application)
 
-        Success(application_id)
+        Success(application)
       end
 
       private
@@ -56,8 +55,8 @@ module Operations
         contract_result.success? ? Success(contract_result.to_h) : Failure(contract_result.errors)
       end
 
-      def apply(application_params)
-        result = ::Operations::IndividualMarket::Application::Create.new.call(params: application_params)
+      def build(application_params)
+        result = ::Operations::IndividualMarket::Application::Build.new.call(params: application_params)
 
         if result.success?
           Success(result.success)

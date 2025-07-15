@@ -83,12 +83,12 @@ RSpec.describe Operations::IndividualMarket::GenerateApplication, dbclean: :afte
 
       it 'returns success' do
         expect(@result).to be_success
-        expect(@result.success.is_a?(BSON::ObjectId)).to be_truthy
       end
 
-      it 'creates an application' do
-        application = IndividualMarket::Application.find(@result.success)
-        expect(application).not_to be nil
+      it 'builds an application' do
+        expect(@result.success).to be_a(IndividualMarket::Application)
+        expect(@result.success.family_id).to eq(family.id)
+        expect(@result.success.persisted?).to be_falsey
       end
 
       it 'cancels previous applications' do

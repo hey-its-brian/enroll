@@ -351,7 +351,7 @@ class Insured::ConsumerRolesController < ApplicationController
     elsif EnrollRegistry.feature_enabled?(:qhp_application)
       begin
         result = Operations::IndividualMarket::GenerateApplication.new.call(apply_params(@person, current_user))
-        if result.success?
+        if result.success? && result.success.save!
           redirect_to insured_individual_market_application_applicants_path(result.success)
         else
           flash[:error] = get_error_messages(result)

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Operations::IndividualMarket::Application::Create, dbclean: :after_each do
+RSpec.describe Operations::IndividualMarket::Application::Build, dbclean: :after_each do
   subject { described_class.new }
 
   describe '#call' do
@@ -86,38 +86,35 @@ RSpec.describe Operations::IndividualMarket::Application::Create, dbclean: :afte
 
     context 'with valid params' do
       let(:result) { subject.call(params: valid_params) }
-      let(:application) { IndividualMarket::Application.find(result.success) }
 
       it 'is successful' do
         expect(result.success?).to be_truthy
       end
 
-      it 'exports an application_id' do
-        expect(result.success).to be_a_kind_of(BSON::ObjectId)
-      end
-
-      it 'created an application' do
-        application = IndividualMarket::Application.find(result.success)
-        expect(application).not_to be nil
+      it 'returns an application that is not persisted' do
+        expect(result.success).to be_a_kind_of(IndividualMarket::Application)
+        expect(result.success.persisted?).to be_falsey
       end
 
       it 'has the right number of applicants' do
-        application = IndividualMarket::Application.find(result.success)
-        expect(application.applicants.count).to be(3)
+        application = result.success
+        expect(application.applicants.size).to be(3)
       end
 
-      it 'has created relationships for dependents' do
-        application = IndividualMarket::Application.find(result.success)
-        expect(application.relationships.count).to eq(2)
+      it 'has built relationships for dependents' do
+        application = result.success
+        expect(application.relationships.size).to eq(2)
         expect(application.relationships.last.kind).to eq('child')
       end
 
       it 'applicant has an Individual Market Eligibility' do
-        application = IndividualMarket::Application.find(result.success)
-        expect(application.applicants.first.eligibilities.first).to be_a_kind_of(Eligibilities::V3::IndividualMarketEligibility)
+        application = result.success
+        eligibility = application.applicants.first.eligibilities.first
+        expect(eligibility).to be_a(Eligibilities::V3::Eligibility)
+        expect(eligibility.key).to eq(:individual_market_eligibility)
+        expect(eligibility.title).to eq('Individual Market Eligibility')
+        expect(eligibility._type).to eq('Eligibilities::V3::IndividualMarketEligibility')
       end
-
     end
-
   end
 end

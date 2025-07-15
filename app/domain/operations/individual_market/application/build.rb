@@ -6,9 +6,10 @@ require 'dry/monads/do'
 module Operations
   module IndividualMarket
     module Application
-      # Operation to create a new Individual Market Application with associated applicants
-      # Uses dry-monads for result handling and validation
-      class Create
+      # This operation builds an Individual Market Application and its associated applicants
+      # It validates the input parameters, creates the application, builds applicants,
+      # and establishes relationships between applicants.
+      class Build
         include Dry::Monads[:do, :result]
 
         ELIGIBILITY_CLASSES = {
@@ -22,7 +23,9 @@ module Operations
         # @return [Dry::Monads::Result] Returns Success(application_id) or Failure(errors)
         def call(params:)
           values = yield validate(params)
-          create(values)
+          application = yield build(values)
+
+          Success(application)
         end
 
         private
@@ -40,10 +43,11 @@ module Operations
           end
         end
 
-        # Creates the application and its associated applicants
-        # @param values [Hash] The validated parameters
-        # @return [Dry::Monads::Result] Returns Success(application_id) or Failure(errors)
-        def create(values)
+        # Builds the application and its associated applicants
+        # @param values [Hash] The validated parameters for the application
+        #
+        # @return [Dry::Monads::Result] Returns Success(application) or Failure(errors
+        def build(values)
           application = ::IndividualMarket::Application.new(values.except(:applicants))
 
           applicants_results = values[:applicants].map do |applicant|
@@ -63,8 +67,8 @@ module Operations
 
           build_relationships(application)
 
-          if application.save
-            Success(application.id)
+          if application.valid?
+            Success(application)
           else
             Failure(application.errors)
           end
@@ -78,7 +82,7 @@ module Operations
         # @return [void]
         def build_eligibilities(applicant, eligibilities)
           eligibilities.each do |eligibility|
-            eligibility_class = ::Eligibilities::V3::IndividualMarketEligibility::ELIGIBILITY_CLASSES[eligibility[:key]]
+            eligibility_class = ELIGIBILITY_CLASSES[eligibility[:key]]
             next unless eligibility_class
 
             applicant.eligibilities.build(eligibility.merge(_type: eligibility_class))
