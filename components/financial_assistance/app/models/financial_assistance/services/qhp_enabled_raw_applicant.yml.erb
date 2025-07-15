@@ -26,40 +26,45 @@ personal_info:
     coverage:
       key: <%= l10n("does_person_need_coverage", person: @applicant.first_name.presence || "this person") %>
       value: "<%= human_boolean(@applicant.is_applying_coverage) %>"
+    <% if @applicant.is_applying_coverage %>
     us_citizen:
       key: <%= l10n('insured.us_citizen') %>
       value: "<%= human_boolean(@applicant.us_citizen) %>"
+    <% if @applicant.citizen_status.in?(%w[us_citizen naturalized_citizen]) %>
     naturalized_citizen:
       key: <%= l10n('insured.consumer_roles.naturalized_question') %>
       value: "<%= human_boolean(@applicant.naturalized_citizen) %>"
+    <% else %>
     eligible:
       key: <%= l10n('faa.question.eligible_immigration_status') %>
       value: "<%= human_boolean(@applicant.eligible_immigration_status) %>"
+    <% end %>
+    <% end %>
     american_indian_or_alaska_native_tribe:
       key: <%= l10n('qhp_application.review.ai_na_member') %>
       value: "<%= human_boolean(@applicant.indian_tribe_member) %>"
+    <% if @applicant.is_applying_coverage %>
     is_incarcerated:
       key: <%= l10n('insured.incarcerated') %>
       value: "<%= human_boolean(@applicant.is_incarcerated) %>"
+    <% end %>
     age_off_excluded:
       key: <%= l10n('ageoff_exclusion') %>
       value: "<%= human_boolean(@applicant.age_off_excluded) %>"
 
-tribal_and_immigration_information:
-  title: <%= l10n('tribal_and_immigration_information') %>
+tribal_information:
+  title: <%= l10n('qhp_application.review.tribe_info') %>
   rows:
-    <% if FinancialAssistanceRegistry.feature_enabled?(:tribes_information_raw_review) %>
     tribe_state:
-      key: <%= l10n('faa.review.personal.tribal_state') %>
+      key: <%= l10n('insured.tribal_state') %>
       value: "<%= human_value(@applicant.tribal_state) %>"
     tribe_name:
-      key: <%= l10n('faa.review.personal.tribal_name') %>
+      key: <%= l10n('insured.tribal_name') %>
       value: "<%= human_value(@applicant.tribal_name) %>"
-    tribe_codes:
-      key: <%= l10n('faa.review.personal.tribe_codes') %>
-      value: <%= @applicant.tribe_codes %>
-    <% end %>
-    <% if @applicant.has_citizen_immigration_status? %>
+
+immigration_information:
+  title: <%= l10n('qhp_application.review.immigration_info') %>
+  rows:
     document_type:
       key: <%= l10n('faa.review.personal.document_type') %>
       value: <%= immigration_field_value(:vlp_subject) %>
@@ -102,7 +107,10 @@ tribal_and_immigration_information:
     issuing_country:
       key: <%= l10n('faa.review.personal.issuing_country') %>
       value: <%= immigration_field_value(:issuing_country) %>
-    <% end %>
+    immigration_doc_statuses:
+      key: <%= l10n('immigration_doc_statuses') %>
+      value: <%= value = immigration_field_value(:immigration_doc_statuses)
+                 value.is_a?(Array) ? value.join(", ") : value %>
 
 demographics:
   title: <%= l10n('qhp_application.demographic_info') %>

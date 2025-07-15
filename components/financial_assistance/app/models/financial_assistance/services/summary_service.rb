@@ -279,8 +279,14 @@ module FinancialAssistance
                 super
                 map[:income][:rows].delete(:ai_an_income)
                 if qhp_application_feature_enabled?
-                  map[:personal_info][:rows].merge!(map[:tribal_and_immigration_information][:rows]) if map.dig("tribal_and_immigration_information", "rows").present?
-                  map.delete(:tribal_and_immigration_information)
+                  map[:personal_info][:rows]
+                  map.delete(:tribal_information) unless @applicant.indian_tribe_member
+                  if @applicant.has_citizen_immigration_status?
+                    immigration_rows = map.dig(:immigration_information, :rows)
+                    immigration_rows.reject! { |_, attributes| attributes[:value].nil? }
+                  else
+                    map.delete(:immigration_information)
+                  end
                 else
                   map[:personal_info][:rows].merge!(map[:demographics][:rows])
                   map.delete(:demographics)
@@ -330,8 +336,14 @@ module FinancialAssistance
               def filter_subsections(map)
                 super
                 if qhp_application_feature_enabled?
-                  map[:personal_info][:rows].merge!(map[:tribal_and_immigration_information][:rows]) if map.dig("tribal_and_immigration_information", "rows").present?
-                  map.delete(:tribal_and_immigration_information)
+                  map[:personal_info][:rows]
+                  map.delete(:tribal_information) unless @applicant.indian_tribe_member
+                  if @applicant.has_citizen_immigration_status?
+                    immigration_rows = map.dig(:immigration_information, :rows)
+                    immigration_rows.reject! { |_, attributes| attributes[:value].nil? }
+                  else
+                    map.delete(:immigration_information)
+                  end
                 else
                   map.delete(:demographics)
                 end
