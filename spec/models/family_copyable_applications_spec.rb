@@ -383,15 +383,13 @@ RSpec.describe Family, type: :model do
         let(:qhp_submitted_at) { 1.day.ago }
         let(:faa_submitted_at) { 2.days.ago }
 
-        it 'returns the most recently submitted application ID for that year' do
+        it 'returns the most recently submitted application IDs for that year one per each type' do
           result = family.fetch_copyable_application_ids
 
-          expect(result).to eq([qhp_app1.id])
-          expect(result).not_to include(faa_app1.id)
-          expect(result.count).to eq(1)
+          expect(result).to eq([faa_app1.id, qhp_app1.id])
+          expect(result.count).to eq(2)
         end
       end
-
 
       context 'when applications are for different years' do
         let(:qhp_assistance_year) { current_year }
