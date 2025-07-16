@@ -175,6 +175,13 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
         expect(@result.success?).to be_truthy
       end
 
+      it 'should create evidences for primary and secondary person' do
+        primary_subject = family.eligibility_determination.subjects.detect{|subject| subject.hbx_id == primary_person.hbx_id}
+        secondary_subject = family.eligibility_determination.subjects.detect{|subject| subject.hbx_id == secondary_person.hbx_id}
+        expect(primary_subject.aptc_csr_eligibility_state.evidence_states).to be_present
+        expect(secondary_subject.aptc_csr_eligibility_state.evidence_states).to be_present
+      end
+
       it 'assigns latest application GID' do
         expect(family.latest_application_gid).to eq(application.to_global_id.uri.to_s)
       end

@@ -175,6 +175,10 @@ RSpec.describe Operations::IndividualMarket::Families::CreateOrUpdate, type: :mo
 
       before :each do
         current_thhg
+        relationship.application.applicants.each do |applicant|
+          applicant.build_individual_market_evidences
+          applicant.save
+        end
         @result = subject.call(application: relationship.application)
         primary_person.reload
         secondary_person.reload
@@ -184,6 +188,13 @@ RSpec.describe Operations::IndividualMarket::Families::CreateOrUpdate, type: :mo
 
       it 'returns a success result' do
         expect(@result.success?).to be_truthy
+      end
+
+      it 'should create citizenship evidence for primary and secondary person under aca individual eligibility state' do
+        primary_subject = family.eligibility_determination.subjects.detect{|subject| subject.hbx_id == primary_person.hbx_id}
+        secondary_subject = family.eligibility_determination.subjects.detect{|subject| subject.hbx_id == secondary_person.hbx_id}
+        expect(primary_subject.aca_individual_market_eligibility_state.evidence_states).to be_present
+        expect(secondary_subject.aca_individual_market_eligibility_state.evidence_states).to be_present
       end
 
       it 'assigns latest application GID' do

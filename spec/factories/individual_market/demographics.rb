@@ -10,6 +10,7 @@ FactoryBot.define do
     indian_tribe_member     { false }
     is_physically_disabled  { false }
     no_ssn                  { true }
+    citizen_status         { 'us_citizen' }
   end
 
   trait :alternate_demographics do

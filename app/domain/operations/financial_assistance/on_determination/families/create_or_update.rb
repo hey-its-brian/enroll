@@ -34,8 +34,10 @@ module Operations
             _result               = yield build_tax_household_group(application, family, family_members_result)
             family                = yield assign_latest_application_gid(family)
             family                = yield persist_family(family)
-            _family_determination = yield recreate_family_eligibility_determination(family)
             application           = yield update_application(application, family_members_result, people_result)
+            _family_determination = yield recreate_family_eligibility_determination(family)
+            application           = yield update_family_timestamp(application)
+
 
             Success([application, family])
           end
@@ -333,13 +335,25 @@ module Operations
               applicant.family_member_id = family_members_result[applicant.id].id
               applicant.person_hbx_id = people_result[applicant.id].hbx_id
             end
-            application.family_updated_at = Time.current
             application.save!
 
             Success(application)
           rescue StandardError => e
             Rails.logger.error("QHP Application - Error while saving application: #{e.message}, backtrace: #{e.backtrace.join('\n')}")
             Failure("Error while saving application with error message: #{e.message}")
+          end
+
+          # Updates the family_updated_at timestamp for the application
+          # @param application [FinancialAssistance::Application] the financial assistance application
+          #
+          # @return [Dry::Monads::Result] Success with application or Failure with error message
+          def update_family_timestamp(application)
+            application.family_updated_at = Time.current
+            application.save!
+            Success(application)
+          rescue StandardError => e
+            Rails.logger.error("QHP Application - Error while updating family timestamp: #{e.message}, backtrace: #{e.backtrace.join('\n')}")
+            Failure("Error while updating family timestamp with error message: #{e.message}")
           end
         end
       end

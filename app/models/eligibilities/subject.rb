@@ -49,6 +49,10 @@ module Eligibilities
       eligibility_states.by_type('aptc_csr_credit').first
     end
 
+    def aca_individual_market_eligibility_state
+      eligibility_states.by_type('aca_individual_market_eligibility').first
+    end
+
     def magi_medicaid_grant_by_year(year)
       aptc_csr_eligibility_state&.magi_medicaid_grant_by_year(year)
     end
