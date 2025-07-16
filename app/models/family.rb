@@ -440,6 +440,33 @@ class Family
   # @return [Mongo::Collection::View] The families that match the criteria.
   scope :with_active_coverage_and_aptc_csr_grants_for_year, ->(assistance_year, csr_list){ all_enrolled_and_renewal_enrollments.with_aptc_csr_grants_for_year(assistance_year, csr_list) }
 
+  # Scope to find families with:
+  #   1. outstanding eligibility determination
+  #   2. income evidence in rejected or outstanding status and due on a specific date
+  #
+  # @return [Mongo::Collection::View] The families that match the criteria.
+  scope :with_outstanding_income_evidence, lambda { |due_on|
+    where(
+      :'eligibility_determination.outstanding_verification_status' => 'outstanding',
+      :'eligibility_determination.subjects' => {
+        :$elemMatch => {
+          eligibility_states: {
+            :$elemMatch => {
+              eligibility_item_key: 'aptc_csr_credit',
+              :evidence_states => {
+                :$elemMatch => {
+                  evidence_item_key: :income_evidence,
+                  :status.in => [:rejected, :outstanding],
+                  due_on: due_on
+                }
+              }
+            }
+          }
+        }
+      }
+    )
+  }
+
   # It fetches active or renewal application for the family based on the year passed
   def active_financial_assistance_application(year = TimeKeeper.date_of_record.year)
     ::FinancialAssistance::Application.where(family_id: self.id).by_year(year).determined.max_by(&:created_at)

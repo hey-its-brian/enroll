@@ -1540,6 +1540,15 @@ module FinancialAssistance
       applicants.each(&:build_aptc_eligibilities_evidences)
     end
 
+    # Extends the income evidence due dates for each applicant.
+    #
+    # @return [void]
+    def extend_income_evidence_due_dates(action, extend_by, modified_by)
+      applicants.each do |applicant|
+        applicant.extend_income_evidence_due_dates(action, extend_by, modified_by)
+      end
+    end
+
     private
 
     # Validates that origin and generation_reason have permitted values

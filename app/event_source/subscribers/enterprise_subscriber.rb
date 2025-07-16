@@ -4,6 +4,7 @@ module Subscribers
   # Subscriber will receive Enterprise requests like date change
   class EnterpriseSubscriber
     include ::EventSource::Subscriber[amqp: 'enroll.enterprise.events']
+    include ResourceRegistryHelper
 
     subscribe(
       :on_date_advanced
@@ -22,7 +23,7 @@ module Subscribers
 
       parsed_date = Date.parse(payload[:date_of_record])
       if EnrollRegistry.feature_enabled?(:aca_individual_market)
-        ::FinancialAssistance::Operations::Applications::AutoExtendIncomeEvidence.new.call(current_due_on: parsed_date) if FinancialAssistanceRegistry.feature_enabled?(:auto_update_income_evidence_due_on)
+        auto_extend_income_evidence_due_date(parsed_date)
         Operations::Eligibilities::Notices::RequestDocumentReminderNotices.new.call(date_of_record: parsed_date)
       end
 
@@ -32,6 +33,22 @@ module Subscribers
       logger.error "EnterpriseSubscriber: errored & acked. error message: #{e.message}, Backtrace: #{e.backtrace}"
       subscriber_logger.error "EnterpriseSubscriber, ack: #{payload}"
       ack(delivery_info.delivery_tag)
+    end
+
+    # This method auto extends the income evidence due date for families with outstanding income evidence
+    # based on the date provided in the payload and based on the :auto_update_income_evidence_due_on feature flag.
+    #
+    # @param parsed_date [Date] The date to use for extending the income evidence due date
+    #
+    # @return [void]
+    def auto_extend_income_evidence_due_date(parsed_date)
+      return unless FinancialAssistanceRegistry.feature_enabled?(:auto_update_income_evidence_due_on)
+
+      if qhp_application_feature_enabled?
+        ::FinancialAssistance::Operations::Evidences::IncomeEvidences::AutoExtendDueDate.new.call(current_due_on: parsed_date)
+      else
+        ::FinancialAssistance::Operations::Applications::AutoExtendIncomeEvidence.new.call(current_due_on: parsed_date)
+      end
     end
 
     subscribe(

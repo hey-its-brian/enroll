@@ -58,9 +58,11 @@ module Eligibilities
         field :due_on_type, type: String # admin, notice
 
         # @!attribute [rw] due_date_extended_at
-        #   @return [DateTime] The date and time when the auto due date was extended
+        #   @return [DateTime] The date and time when the auto due date was extended.
+        #                      This field is a read-only field that is set when the due date is automatically extended.
         #
         # @note An ROP can span across multiple applications, so, this timestamp can be older than the evidence/application created_at timestamp.
+        #       This field needs to be only used in auto due date extension scenarios and not for manual/admin due date extensions.
         field :due_date_extended_at, type: DateTime
 
         # @!attribute [rw] is_active
@@ -164,6 +166,42 @@ module Eligibilities
           self.due_on_type = 'response_from_hub'
 
           true
+        end
+
+        # Adds a new verification history record to the evidence with the specified action, update reason, and updated by user.
+        #
+        # @param action [String] The action performed on the evidence
+        # @param update_reason [String] The reason for the update
+        # @param updated_by [String] The user who performed the update
+        def add_to_history(action, update_reason, updated_by)
+          verification_histories.build(
+            action: action,
+            update_reason: update_reason,
+            updated_by: updated_by
+          )
+        end
+
+        # This ensures that the field is only set once and not overwritten.
+        # Raises RuntimeError to not update the `due_date_extended_at` if it is already set.
+        # This prevents accidental overwriting of the field after it has been set.
+        #
+        # @param value [DateTime] The date and time to set for the due_date_extended_at field
+        #
+        # @raise [RuntimeError] if the due_date_extended_at field is already set
+        def due_date_extended_at=(value)
+          if self.due_date_extended_at.blank?
+            super(value)
+          else
+            # If the field is already set, do not change it.
+            # This prevents overwriting the existing value.
+            # You can also raise an error or log a message if needed.
+            Rails.logger.warn(
+              "Attempted to set due_date_extended_at when it is already set for evidence with id #{
+                self.id}. Current value: #{self.due_date_extended_at}, Attempted value: #{value}"
+            )
+
+            raise 'due_date_extended_at is read-only and cannot be changed once set.'
+          end
         end
       end
     end

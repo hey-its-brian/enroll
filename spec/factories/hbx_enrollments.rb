@@ -56,6 +56,10 @@ FactoryBot.define do
       coverage_kind { "dental" }
     end
 
+    trait :health do
+      coverage_kind { 'health' }
+    end
+
     trait :individual_aptc do
       kind                { 'individual' }
       effective_on        { TimeKeeper.date_of_record.beginning_of_month }

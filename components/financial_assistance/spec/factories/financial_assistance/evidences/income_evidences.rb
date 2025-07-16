@@ -27,6 +27,12 @@ FactoryBot.define do
       due_on { TimeKeeper.date_of_record + 30.days }
     end
 
+    trait :outstanding_with_auto_extension do
+      current_state { :outstanding }
+      due_on { TimeKeeper.date_of_record + 30.days }
+      due_date_extended_at { DateTime.now - 10.days }
+    end
+
     # With state histories
     trait :with_state_histories do
       after(:create) do |evidence|

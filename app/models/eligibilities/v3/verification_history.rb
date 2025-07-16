@@ -15,6 +15,10 @@ module Eligibilities
       field :is_satisfied, type: Boolean
       field :verification_outstanding, type: Boolean
       field :due_on, type: Date
+
+      # Need to verify if this field is necessary, as we do not copy the verification histories between applications to retain this information.
+      # This field is previously used to retain the timestamp of when the verification history object was created on the first application.
+      # To present the date of the action, instead of modifying the created_at field, we used this field.
       field :date_of_action, type: DateTime
 
       # @!scope class

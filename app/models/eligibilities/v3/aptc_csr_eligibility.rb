@@ -94,6 +94,17 @@ module Eligibilities
         end
       end
 
+      # Extends the due date for income evidence if it exists
+      #
+      # @param action [String] The action that triggered the due date extension
+      # @param extend_by [Integer] Number of days to extend the due date by
+      # @param modified_by [String] Identifier of the user or process that modified the due
+      #
+      # @return [void]
+      def extend_income_evidence_due_dates(action, extend_by, modified_by)
+        income_evidence.extend_due_date(action, extend_by, modified_by) if income_evidence.present?
+      end
+
       private
 
       # Adds to errors collection if duplicate evidence types are found

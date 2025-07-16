@@ -1769,6 +1769,13 @@ module FinancialAssistance
       ethnicity.select { |eth| ethnicity_values.include?(eth) }
     end
 
+    # Extends the due dates for income evidence based on the action and extend_by parameters.
+    #
+    # @return [void]
+    def extend_income_evidence_due_dates(action, extend_by, modified_by)
+      aptc_csr_eligibility.extend_income_evidence_due_dates(action, extend_by, modified_by)
+    end
+
     private
 
     # Builds evidences for the individual market eligibility.

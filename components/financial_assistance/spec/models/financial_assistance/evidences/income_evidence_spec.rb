@@ -34,4 +34,54 @@ RSpec.describe FinancialAssistance::Evidences::IncomeEvidence, type: :model do
       expect(evidence.latest_state_history).to eq(result)
     end
   end
+
+  describe '#due_date_extended_at=' do
+    let(:evidence) { FactoryBot.create(:income_evidence, :outstanding, due_date_extended_at: due_date_extended_at, eligibility: aptc_csr_eligibility) }
+
+    context 'when due_date_extended_at is set' do
+      let(:due_date_extended_at) { DateTime.now - 10.days }
+
+      it 'raises a ReadonlyAttribute error when attempted to update the due_date_extended_at field' do
+        expect(evidence.due_date_extended_at).to eq(due_date_extended_at)
+        expect { evidence.due_date_extended_at = DateTime.now }.to raise_error(
+          RuntimeError, 'due_date_extended_at is read-only and cannot be changed once set.'
+        )
+      end
+    end
+
+    context 'when due_date_extended_at is not set' do
+      let(:due_date_extended_at) { nil }
+      let(:current_time) { DateTime.now }
+
+      it 'allows setting the due_date_extended_at field' do
+        expect(evidence.due_date_extended_at).to be_nil
+        expect { evidence.due_date_extended_at = current_time }.not_to raise_error
+      end
+    end
+  end
+
+  describe '#extend_due_date' do
+    let(:evidence) do
+      FactoryBot.create(
+        :income_evidence,
+        current_state: income_state,
+        due_on: income_due_on,
+        due_date_extended_at: income_due_date_extended_at,
+        eligibility: aptc_csr_eligibility
+      )
+    end
+
+    context 'when income evidence is not in outstanding/rejected status' do
+      let(:income_state) { :verified }
+      let(:income_due_on) { nil }
+      let(:income_due_date_extended_at) { nil }
+
+      it 'does not extend the due date' do
+        evidence.extend_due_date('test_action', 5, 'test_user')
+        expect(evidence.reload.due_on).to be_nil
+        expect(evidence.due_date_extended_at).to be_nil
+        expect(evidence.verification_histories.count).to eq(0)
+      end
+    end
+  end
 end
