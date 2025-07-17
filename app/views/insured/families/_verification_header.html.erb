@@ -53,8 +53,9 @@
   <% if summary_rows.include?(:due_on) %>
     <div class='d-flex align-items-center'>
       <dt class="<%= dt_class %>"><%= "#{l10n("insured.families.verifications.detail.summary.due_on")}:" %></dt>
-      <%= strong_if(is_strong: @evidence.is_action_needed?) do %>
-        <% @evidence.due_on&.to_s || l10n('not_applicable') %>
+      <% due_on = @evidence.due_on %>
+      <%= strong_if(is_strong: @evidence.is_action_needed? && due_on.present?) do %>
+        <% due_on&.to_s || l10n('not_applicable') %>
       <% end %>
     </div>
   <% end %>

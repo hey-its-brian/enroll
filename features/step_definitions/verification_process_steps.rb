@@ -343,7 +343,7 @@ end
 
 Then(/the consumer should the summary header with the (.*) status/) do |status|
   within IvlDocumentsPage.summary_header do
-    expect(page).to have_content status.capitalize
+    expect(page).to have_content(/#{Regexp.escape(status)}/i)
   end
 end
 

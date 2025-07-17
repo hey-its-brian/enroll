@@ -14,14 +14,15 @@ Feature: Individual Verification Details Page
     And the consumer should <see_or_not_see_upload_section> the upload section
 
     Examples:
-      | status       | user_facing_status | with_or_without_reason | see_or_not_see_actionable_status | see_or_not_see_upload_section |
-      | rejected     | rejected           | with                   | see                              | see                           |
-      | outstanding  | outstanding        | without                | see                              | see                           |
-      | review       | review             | without                | not see                          | see                           |
-      | pending      | pending            | without                | not see                          | not_see                       |
-      | verified     | verified           | without                | not see                          | not see                       |
-      | attested     | attested           | without                | not see                          | not see                       |
-      | curam        | verified           | without                | not see                          | not see                       |
+      | status                     | user_facing_status | with_or_without_reason | see_or_not_see_actionable_status | see_or_not_see_upload_section |
+      | rejected                   | rejected           | with                   | see                              | see                           |
+      | outstanding                | outstanding        | without                | see                              | see                           |
+      | review                     | review             | without                | not see                          | see                           |
+      | pending                    | pending            | without                | not see                          | not_see                       |
+      | verified                   | verified           | without                | not see                          | not see                       |
+      | attested                   | attested           | without                | not see                          | not see                       |
+      | negative_response_received | not applicable     | without                | not see                          | see                           |
+      | curam                      | verified           | without                | not see                          | not see                       |
 
   Scenario: Consumer presses the Back to Individual button
     And a consumer exists

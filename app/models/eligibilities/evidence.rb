@@ -435,7 +435,7 @@ module Eligibilities
     end
 
     def no_document_upload_required?
-      %w[verified attested negative_response_received].include?(aasm_state)
+      %w[verified attested].include?(aasm_state)
     end
 
     def clone_embedded_documents(new_evidence)

@@ -371,7 +371,7 @@ module VerificationHelper
 
   def display_upload_for_verification?(obj)
     if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
-      obj.grouped_status != :verified && !obj.inactive
+      (obj.grouped_status != :verified || obj.status.to_sym == :negative_response_received) && !obj.inactive
     else
       !obj.no_document_upload_required?
     end
