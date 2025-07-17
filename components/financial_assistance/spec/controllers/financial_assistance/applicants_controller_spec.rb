@@ -70,6 +70,7 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
   context "GET index" do
     before do
       allow_any_instance_of(FinancialAssistance::ApplicantsController).to receive(:authorize).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
     end
 
     it "should assign the application" do

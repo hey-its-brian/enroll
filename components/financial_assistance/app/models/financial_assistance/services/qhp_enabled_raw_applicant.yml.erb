@@ -9,7 +9,7 @@
 
 personal_info:
   title: <%= l10n('personal_information') %>
-  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, applicant_hbx_id: @applicant.person_hbx_id, personal_info: true) : application_applicants_path(@application, applicant: @applicant.id) %>
+  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, applicant_hbx_id: @applicant.person_hbx_id, personal_info: true, applicant: @applicant.id) : application_applicants_path(@application, applicant: @applicant.id) %>
   rows:
     dob:
       key: <%= l10n('date_of_birth') %>
@@ -154,7 +154,7 @@ addresses:
 
 contact_preferences:
   title: <%= l10n('qhp_application.review.contact_preferences') %>
-  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, preferences: true) : preferences_application_path(@application) %>
+  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, preferences: true, applicant: @applicant.id) : preferences_application_path(@application) %>
   rows:
     <% @applicant.phones.each do |phone| %>
     <%= phone.kind.downcase %>_phone:
@@ -192,7 +192,7 @@ tax_info:
 
 income:
   title: <%= l10n('faa.evidence_type_income') %>
-  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, applicant_hbx_id: @applicant.person_hbx_id, income: true) : application_applicant_incomes_path(@application, @applicant) %>
+  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, applicant_hbx_id: @applicant.person_hbx_id, income: true, applicant: @applicant.id) : application_applicant_incomes_path(@application, @applicant) %>
   rows:
         <% assistance_year = FinancialAssistance::Operations::EnrollmentDates::ApplicationYear.new.call.value!.to_s %>
     has_job_income:
@@ -244,7 +244,7 @@ income:
 
 income_adjustments:
   title: <%= l10n('faa.review.income_adjustments') %>
-  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, applicant_hbx_id: @applicant.person_hbx_id, income_adjustments: true) : application_applicant_deductions_path(@application, @applicant) %>
+  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, applicant_hbx_id: @applicant.person_hbx_id, income_adjustments: true, applicant: @applicant.id) : application_applicant_deductions_path(@application, @applicant) %>
   rows:
     income_adjustments:
       key: <%= l10n('faa.deductions.income_adjustments', subject: l10n('faa.this_person'), assistance_year: @application.assistance_year) %>
@@ -252,7 +252,7 @@ income_adjustments:
 
 health_coverage:
   title: <%= l10n('health_coverage') %>
-  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, applicant_hbx_id: @applicant.person_hbx_id, health_coverage: true) : application_applicant_benefits_path(@application, @applicant) %>
+  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, applicant_hbx_id: @applicant.person_hbx_id, health_coverage: true, applicant: @applicant.id) : application_applicant_benefits_path(@application, @applicant) %>
   rows:
     is_enrolled:
       key: <%= l10n(applicant_currently_enrolled_short_key) %>
@@ -298,7 +298,7 @@ health_coverage:
 
 other_questions:
   title: <%= l10n('faa.review.other_questions') %>
-  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, applicant_hbx_id: @applicant.person_hbx_id, other_questions: true) : other_questions_application_applicant_path(@application, @applicant) %>
+  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, applicant_hbx_id: @applicant.person_hbx_id, other_questions: true, applicant: @applicant.id) : other_questions_application_applicant_path(@application, @applicant) %>
   rows:
     ssn_applied:
       key: <%= other_questions_prompt('ssn_apply') %>

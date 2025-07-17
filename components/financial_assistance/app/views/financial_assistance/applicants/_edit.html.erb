@@ -1,4 +1,5 @@
 <% if @bs4 %>
+  <% qhp_enabled = qhp_application_feature_enabled? %>
   <%= form_for @applicant, url: application_applicant_path(@application, @applicant), method: :patch, remote: true do |f|%>
     <%= hidden_field_tag :is_dependent, @applicant.is_dependent? %>
     <% readonly_status = @applicant.is_primary_applicant? %>
@@ -20,7 +21,7 @@
     <div id="personal_info" class="house">
       <div class="@applicant_notice_div_<%= @applicant.id%>"></div>
 
-      <% if current_user.has_hbx_staff_role? %>
+      <% if qhp_enabled && current_user.has_hbx_staff_role? %>
         <aside class="mb-3" id="admin-designation-descriptor">
           <span class="admin-designation"></span>
           <%= l10n('admin.admin_designation_descriptor') %>
@@ -50,7 +51,7 @@
       <div class="d-flex mb-md-4">
         <div class="col-md-6 col-lg-3 p-0">
           <%= f.label :dob, l10n("date_of_birth"), class: "required" %>
-          <%= readonly_status = qhp_application_feature_enabled? ? disable_dob_ssn_field? : (@applicant.is_primary_applicant? || EnrollRegistry.feature_enabled?(:people_tab)) %>
+          <% readonly_status = qhp_enabled ? disable_dob_ssn_field? : (@applicant.is_primary_applicant? || EnrollRegistry.feature_enabled?(:people_tab)) %>
           <%= f.date_field :dob, placeholder: "MM/DD/YYYY", min: 110.years.ago, max:"9999-12-31", required: true, readonly: readonly_status %>
         </div>
         <div class="col-md-6 col-lg-3 p-0">
@@ -63,7 +64,7 @@
 
       <div class="d-flex mb-md-4">
         <div class="col-md-6 col-lg-3 p-0">
-          <% ssn_enabled = if qhp_application_feature_enabled?
+          <% ssn_enabled = if qhp_enabled
                              disable_dob_ssn_field?
                            else
                              EnrollRegistry.feature_enabled?(:people_tab) ? @applicant.try(:ssn).present? : false
@@ -102,7 +103,7 @@
         </div>
       </fieldset>
 
-      <% if current_user.does_not_have_any_staff_role? && !current_user.has_insured_role? %>
+      <% if qhp_enabled && current_user.does_not_have_any_staff_role? && !current_user.has_insured_role? %>
         <div class="d-flex flex-row align-items-center my-md-4">
           <%= f.check_box :age_off_excluded, {id: 'age_off_excluded'}, "true", "false"%>
           <label for="age_off_excluded" class="my-0 admin-designation">
@@ -176,11 +177,12 @@
         <% end %>
       <% end %>
 
+      <% button_text = qhp_enabled ? l10n("save_changes") : l10n("confirm_member") %>
       <%= f.button(id: 'confirm-member', class: "btn btn-primary hidden") do %>
-        <%= l10n("save_changes") %>
+        <%= button_text %>
       <% end %>
       <span tabindex="0" data-keydown-id="confirm_member" id="confirm_member" class="btn btn-primary">
-        <%= l10n("save_changes") %>
+        <%= button_text %>
       </span>
     </div>
   <% end %>

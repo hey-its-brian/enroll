@@ -26,6 +26,11 @@ module FinancialAssistance
     def index
       authorize @application, :index?
 
+      unless EnrollRegistry.feature_enabled?(:qhp_application)
+        redirect_to edit_application_path(@application)
+        return
+      end
+
       respond_to do |format|
         format.html
       end

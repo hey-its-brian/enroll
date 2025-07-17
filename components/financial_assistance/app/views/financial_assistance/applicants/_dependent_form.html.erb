@@ -1,10 +1,11 @@
 <% if @bs4 %>
   <% dependent = @applicant %>
+  <% qhp_enabled = qhp_application_feature_enabled? %>
   <div id="<%= employee_dependent_form_id(dependent) %>" class="dependent_list py-3">
     <% is_editing = dependent.id.present? %>
     <h2><%= is_editing ? l10n("edit_member") : l10n("add_member") %></h2>
 
-    <% if current_user.has_hbx_staff_role? %>
+    <% if qhp_enabled && current_user.has_hbx_staff_role? %>
       <aside class="mb-3" id="admin-designation-descriptor">
         <span class="admin-designation"></span>
         <%= l10n('admin.admin_designation_descriptor') %>
@@ -105,7 +106,7 @@
             </div>
           </fieldset>
 
-           <% if current_user.does_not_have_any_staff_role? && !current_user.has_insured_role? %>
+           <% if qhp_enabled && current_user.does_not_have_any_staff_role? && !current_user.has_insured_role? %>
              <div class="d-flex flex-row align-items-center my-md-4">
                <%= f.check_box :age_off_excluded, {id: 'age_off_excluded'}, "true", "false"%>
                <label for="age_off_excluded" class="my-0 admin-designation">
@@ -156,11 +157,12 @@
             <%= h(link_to l10n('remove_member'), insured_family_member_path(dependent, {bs4: @bs4}), class: 'btn button-error outline close-2', :method => :delete, :remote => true, data: {confirm: l10n("confirm_remove_dependent"), ok: l10n("yes"), cancel: l10n("no")}) %>
           <% end %>
 
+          <% button_text = qhp_enabled ? l10n("save_changes") : l10n("confirm_member") %>
           <%= f.button(id: 'confirm-member', class: "btn btn-primary hidden") do %>
-            <%= l10n("save_changes") %>
+            <%= button_text %>
           <% end %>
           <span tabindex="0" data-keydown-id="confirm-dependent" id="confirm-dependent" class="btn btn-primary">
-            <%= l10n("save_changes") %>
+            <%= button_text %>
           </span>
         </div>
 
