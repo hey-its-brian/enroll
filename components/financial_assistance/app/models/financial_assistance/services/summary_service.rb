@@ -164,7 +164,12 @@ module FinancialAssistance
 
               # Display the value of the immigration field based on the applicant's citizenship status
               def immigration_field_value(field)
-                @applicant.has_citizen_immigration_status? ? @applicant.send(field) : l10n('faa.not_applicable_abbreviation')
+                if @applicant.has_citizen_immigration_status?
+                  value = @applicant.send(field)
+                  field == :expiration_date && qhp_application_feature_enabled? && value ? value.strftime('%m/%d/%Y') : value
+                else
+                  l10n('faa.not_applicable_abbreviation')
+                end
               end
 
               # Constructs a hash of hbx_ids to full names for the application's active applicants

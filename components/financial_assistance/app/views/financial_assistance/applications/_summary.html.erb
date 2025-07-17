@@ -27,13 +27,21 @@
               </td>
               <td><%= embedded_document.frequency_kind.humanize %></td>
               <td>
-                <b>
+                <% if qhp_application_feature_enabled? %>
                   <% if embedded_document.is_a? FinancialAssistance::Deduction %>
                     (<%= number_to_currency(embedded_document.amount.to_s) %>)
                   <% else %>
                     <%= number_to_currency(embedded_document.amount.to_s) %>
                   <% end %>
-                </b>
+                <% else %>
+                  <b>
+                    <% if embedded_document.is_a? FinancialAssistance::Deduction %>
+                      (<%= number_to_currency(embedded_document.amount.to_s) %>)
+                    <% else %>
+                      <%= number_to_currency(embedded_document.amount.to_s) %>
+                    <% end %>
+                  </b>
+                <% end %>
               </td>
               <td class="d-flex justify-content-between">
                   <%= start_to_end_dates(embedded_document) %>
