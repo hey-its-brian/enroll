@@ -1,4 +1,5 @@
 <% if @bs4 %>
+  <% unless qhp_application_feature_enabled?%>
   <section>
     <h2><%= l10n("insured.individual_agreement.agreement.title") %></h2>
     <p><%= l10n("insured.individual_agreement.agreement.report_changes", contact_center_name: contact_center_name, contact_center_phone_number: contact_center_phone_number) %></p>
@@ -24,6 +25,7 @@
     <% end %>
     <label class="agree weight-n d-flex align-items-center" for="terms_check_thank_you"><%= check_box_tag 'terms_check_thank_you', true, false, class: 'mr-2' %><%= l10n("insured.individual_agreement.agreement.i_agree") %></label>
   </section>
+  <% end %>
   <section class="mt-4">
     <h2><%= l10n("insured.individual_agreement.terms_conditions.title") %></h2>
     <p><%= l10n("insured.individual_agreement.terms_conditions.cant_change_terms") %></p>

@@ -1285,6 +1285,8 @@ module ApplicationHelper
 
   def qhp_application_state(application)
     return l10n('draft') if application.current_state == :initial
+    return l10n('determination_error') if application.current_state == :determination_failed
+    return l10n('determined') if application.current_state.in?([:determined, :expired])
 
     application.current_state.to_s.titleize
   end

@@ -33,6 +33,7 @@ export default class extends Controller {
     this.initializeApplyingCoverage()
     this.initializeCitizenshipFields()
     this.maskSSN()
+    this.maskZip()
     this.initializeRequiredFields()
     // using existing init_glossary function for now to be consistent
     init_glossary();
@@ -305,6 +306,7 @@ export default class extends Controller {
         this.addressFieldsTarget.innerHTML = ''
         this.addressFieldsTarget.insertAdjacentHTML('beforeend', this.sanitize(this.NewHomeAddressFieldsTemplateTarget.innerHTML))
         this.AddressButtonsTarget.classList.remove('hide')
+        this.maskZip()
       }
     }
   }
@@ -320,6 +322,7 @@ export default class extends Controller {
     const addressFields = formElement.querySelector('[data-target="family-information.AddressFields"]')
     if (addressFields) {
       addressFields.classList.remove('hide')
+      this.maskZip()
     }
   }
 
@@ -377,6 +380,13 @@ export default class extends Controller {
     const ssnFields = this.element.querySelectorAll('.mask-ssn')
     ssnFields.forEach(field => {
       IMask(field, { mask: "000-00-0000" });
+    })
+  }
+
+  maskZip() {
+    const zipFields = this.element.querySelectorAll('.zip')
+    zipFields.forEach(field => {
+      IMask(field, { mask: "00000" });
     })
   }
 

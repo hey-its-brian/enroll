@@ -9,6 +9,7 @@ class Insured::PlanShoppingsController < ApplicationController
   include Aptc
   include Config::AcaHelper
   include L10nHelper
+  include ::ResourceRegistryHelper
 
   before_action :find_hbx_enrollment
   before_action :set_current_person, :only => [:receipt, :thankyou, :waive, :show, :plans, :checkout, :terminate, :plan_selection_callback, :choose_shopping_method]
