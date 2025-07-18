@@ -28,6 +28,7 @@ $(document).on('click', '.expire-sep-type-end-on-col', function () {
   $('#end_on').attr('min', $('#min_date').val());
 });
 
+var immigrationDocWarning = immigrationDocWarning || false;
 $(document).on('click', '.manage-person-validations-click', function () {
   var element = this;
   var form = $('.edit_person')[0];

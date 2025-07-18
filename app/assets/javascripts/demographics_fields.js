@@ -923,6 +923,7 @@ function demographicValidations() {
           btn.classList.remove('disabled');
         }
         $('#showWarning').addClass('shown');
+        $('#showWarning').get(0).scrollIntoView({behavior: "smooth"})
         e.preventDefault();
         return false;
       }

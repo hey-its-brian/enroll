@@ -21,6 +21,12 @@ Feature: Insured Plan Shopping on Individual market 1
     Then should find I-551 doc type
     And should find alien number
 
+  Scenario: Individual should be able to continue when they see the immigration field warning
+    When Individual selects applying for coverage
+    And Individual selects eligible immigration status
+    And Individual submits the person form
+    Then Individual should see the continue button enabled 
+
   Scenario: New insured user purchases on individual market during open enrollment and see a renewal enrollment generation with initial enrollment
     When Individual click continue button
     And Individual agrees to the privacy agreeement
