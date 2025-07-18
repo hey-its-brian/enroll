@@ -30,7 +30,7 @@ class DocumentsController < ApplicationController
       result = ::Operations::Documents::Download.call({params: cartafact_download_params.to_h.deep_symbolize_keys, user: current_user})
       if result.success?
         response_data = result.value!
-        send_data response_data, get_options(params)
+        send_data response_data, get_cartafact_data(response_data, params)
       else
         errors = result.failure
         redirect_back(fallback_location: root_path, :flash => {error: errors[:message]})
@@ -59,9 +59,10 @@ class DocumentsController < ApplicationController
     authorize @person, :can_download_sbc_documents?
 
     begin
-      sbc_document = fetch_product_sbc_document
-      uri = sbc_document.identifier
-      send_data Aws::S3Storage.find(uri), get_options(params)
+      product = fetch_product
+      uri = product.sbc_document.identifier
+
+      send_data Aws::S3Storage.find(uri), get_s3_data(product, params)
     rescue StandardError => e
       redirect_back(fallback_location: root_path, :flash => {error: e.message})
     end
@@ -242,10 +243,9 @@ class DocumentsController < ApplicationController
     "#{subdomain}-enroll-#{bucket_name}-#{aws_env}"
   end
 
-  def fetch_product_sbc_document
+  def fetch_product
     product_id = params[:product_id]
-    product = BenefitMarkets::Products::Product.find(product_id)
-    product.sbc_document
+    BenefitMarkets::Products::Product.find(product_id)
   end
 
   def fetch_employer_profile_attestation_document
@@ -300,6 +300,26 @@ class DocumentsController < ApplicationController
     options[:filename] = params[:filename] if params[:filename]
     options[:disposition] = params[:disposition] if params[:disposition]
     options
+  end
+
+  def get_cartafact_data(response, params)
+    cartafact_data = {}
+    cartafact_data[:content_type] = response.content_type || 'application/octet-stream'
+    cartafact_data[:filename] = response.headers["content-disposition"][/filename="?([^"]+)"?/, 1]
+    cartafact_data[:disposition] = params[:disposition] if params[:disposition]
+    cartafact_data
+  end
+
+  def get_s3_data(product, params)
+    sbc_document = product.sbc_document
+    content_type = sbc_document.format
+    extension = Rack::Mime::MIME_TYPES.invert[content_type]
+    file_name = product.title.gsub(/[^0-9a-z.]/i,'') + extension
+    s3_data = {}
+    s3_data[:content_type] = content_type
+    s3_data[:filename] = file_name
+    s3_data[:disposition] = params[:disposition] if params[:disposition]
+    s3_data
   end
 
   def authorized_to_download?(owner, documents, document_id)

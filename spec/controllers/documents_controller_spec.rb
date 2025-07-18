@@ -438,11 +438,14 @@ RSpec.describe DocumentsController, dbclean: :after_each, :type => :controller d
 
   describe "GET cartafact_download" do
     let!(:document) {consumer_person.documents.create}
-    let(:tempfile) do
-      tf = Tempfile.new('test.pdf')
-      tf.write("DATA GOES HERE")
-      tf.rewind
-      tf
+
+
+    let(:fake_file_data) { "%PDF-1.4\n..." }
+    let(:fake_file) do
+      double("CartafactFile",
+             body: StringIO.new(fake_file_data),
+             headers: { "content-disposition" => "attachment; filename=\"testfile.pdf\"" },
+             content_type: "application/pdf")
     end
 
     context 'when broker role' do
@@ -452,22 +455,34 @@ RSpec.describe DocumentsController, dbclean: :after_each, :type => :controller d
                                                                                               start_on: Time.now,
                                                                                               writing_agent_id: broker_role.id,
                                                                                               is_active: true)
+
           family.reload
-          allow(Operations::Documents::Download).to receive(:call).and_return(Dry::Monads::Success(tempfile))
+          allow(Operations::Documents::Download).to receive(:call).and_return(Dry::Monads::Success(fake_file))
           sign_in broker_role_user
         end
 
         it 'should be able to download' do
           get :cartafact_download, params: {model: "Person", model_id: consumer_person.id, relation: "documents", relation_id: document.id}
           expect(response.status).to eq(200)
-          expect(response.headers["Content-Disposition"]).to eq 'attachment'
+          expect(response.headers["Content-Disposition"].split(';').first.strip).to eq 'attachment'
         end
 
         it 'downloads document even if Consumer is not RIDP verified' do
           consumer_person.consumer_role.update_attributes!(identity_validation: 'na', application_validation: 'na')
           get :cartafact_download, params: {model: "Person", model_id: consumer_person.id, relation: "documents", relation_id: document.id}
           expect(response.status).to eq(200)
-          expect(response.headers["Content-Disposition"]).to eq 'attachment'
+          expect(response.headers["Content-Disposition"].split(';').first.strip).to eq 'attachment'
+        end
+
+        context 'when params do not match the document in the db' do
+
+          let(:params) { { model: "Person", model_id: consumer_person.id, relation: "documents", relation_id: document.id, content_type: 'application/html', filename: 'testfile.pdf', disposition: 'attachment' } }
+
+          it 'downloads the document in the db and disregards params' do
+            get :cartafact_download, params: params
+            expect(response.status).to eq(200)
+            expect(response.content_type).to eq 'application/pdf'
+          end
         end
       end
 
@@ -485,14 +500,14 @@ RSpec.describe DocumentsController, dbclean: :after_each, :type => :controller d
         let!(:bulk_notice) { FactoryBot.create :bulk_notice, user: broker_role_user, audience_type: 'broker_agency', audience_ids: [broker_agency_profile.organization.id.to_s] }
 
         before(:each) do
-          allow(Operations::Documents::Download).to receive(:call).and_return(Dry::Monads::Success(tempfile))
+          allow(Operations::Documents::Download).to receive(:call).and_return(Dry::Monads::Success(fake_file))
           sign_in broker_role_user
         end
 
         it 'should be able to download' do
           get :cartafact_download, params: {model: "Admin::BulkNotice", model_id: bulk_notice.id, relation: "documents", relation_id: document.id}
           expect(response.status).to eq(200)
-          expect(response.headers["Content-Disposition"]).to eq 'attachment'
+          expect(response.headers["Content-Disposition"]).to include('attachment')
         end
       end
     end
@@ -500,11 +515,11 @@ RSpec.describe DocumentsController, dbclean: :after_each, :type => :controller d
     context 'when hbx staff role' do
       context 'is authorized' do
         it 'should be able to download' do
-          allow(Operations::Documents::Download).to receive(:call).and_return(Dry::Monads::Success(tempfile))
+          allow(Operations::Documents::Download).to receive(:call).and_return(Dry::Monads::Success(fake_file))
           sign_in admin_user
           get :cartafact_download, params: {model: "Person", model_id: consumer_person.id, relation: "documents", relation_id: document.id}
           expect(response.status).to eq(200)
-          expect(response.headers["Content-Disposition"]).to eq 'attachment'
+          expect(response.headers["Content-Disposition"]).to include('attachment')
         end
       end
 
@@ -522,11 +537,11 @@ RSpec.describe DocumentsController, dbclean: :after_each, :type => :controller d
 
     context 'when consumer role' do
       it 'should be able to download' do
-        allow(Operations::Documents::Download).to receive(:call).and_return(Dry::Monads::Success(tempfile))
+        allow(Operations::Documents::Download).to receive(:call).and_return(Dry::Monads::Success(fake_file))
         sign_in consumer_user
         get :cartafact_download, params: {model: "Person", model_id: consumer_person.id, relation: "documents", relation_id: document.id}
         expect(response.status).to eq(200)
-        expect(response.headers["Content-Disposition"]).to eq 'attachment'
+        expect(response.headers["Content-Disposition"]).to include('attachment')
       end
     end
 
@@ -726,9 +741,47 @@ RSpec.describe DocumentsController, dbclean: :after_each, :type => :controller d
     let(:employee_user) { FactoryBot.create(:user, person: employee_person) }
     let(:product) do
       product = FactoryBot.create(:benefit_markets_products_health_products_health_product, benefit_market_kind: :aca_individual, kind: :health, csr_variant_id: '01')
-      product.create_sbc_document(identifier: "urn:opentest:terms:t1:test_storage:t3:bucket:test-test-id-verification-test#sample-key")
+      product.create_sbc_document(title: 'test.pdf', format: 'application/pdf', identifier: "urn:opentest:terms:t1:test_storage:t3:bucket:test-test-id-verification-test#sample-key")
       product.save
       product
+    end
+    let(:formatted_plan_title) { product.title.gsub(/[^0-9a-z.]/i,'') }
+
+    context "consumer role" do
+      let!(:person) { FactoryBot.create(:person, :with_family, :with_consumer_role) }
+      let!(:user) { FactoryBot.create(:user, person: person) }
+
+      let!(:consumer_role) { person.consumer_role }
+
+      it 'current user should be able to download' do
+        sign_in user
+
+        get :product_sbc_download, params: { document_id: product.sbc_document.id, product_id: product.id, content_type: 'application/pdf', filename: 'testfile.pdf', disposition: 'attachment' }
+        expect(response).to be_successful
+      end
+
+      it 'current user should be able to download' do
+        sign_in user
+
+        get :product_sbc_download, params: { document_id: product.sbc_document.id, product_id: product.id }
+        expect(response.content_type).to eq product.sbc_document.format
+      end
+
+      context "when params do not match the document in the db" do
+        let(:params) { { document_id: product.sbc_document.id, product_id: product.id, content_type: 'application/html', filename: 'testfile.pdf', disposition: 'attachment' } }
+
+        it 'downloads the document in the db and disregards params' do
+
+          sign_in user
+          get :product_sbc_download, params: params
+          file_name = response.headers["Content-Disposition"].split(';')[1].strip.split.first[/filename="([^"]+)"/, 1]
+          content_type = product.sbc_document.format
+          extension = Rack::Mime::MIME_TYPES.invert[content_type]
+          expect(response.status).to eq(200)
+          expect(response.content_type).to eq content_type
+          expect(file_name).to eq formatted_plan_title + extension
+        end
+      end
     end
 
     context 'employee role' do
