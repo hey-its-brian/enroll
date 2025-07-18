@@ -14,6 +14,7 @@ module Forms
       include L10nHelper
 
       attr_accessor :id,
+                    :reference_id,
                     :application_id,
                     :family_member_id,
                     :is_primary_applicant,
@@ -123,6 +124,9 @@ module Forms
           updated_applicant.eligibilities.last.save
         end
         return [false, updated_applicant.errors.full_messages] unless updated_applicant.valid?
+
+        result = ssn_is_taken?(values)
+        return [false, result[1]] if result[0]
 
         build_relationship(updated_applicant)
         return [false, updated_applicant.errors.full_messages] unless updated_applicant.save
@@ -505,6 +509,41 @@ module Forms
 
         # Handle mailing address
         applicant.mailing_address.destroy! if destroy_mailing_address?(applicant)
+      end
+
+      # Checks if the SSN is already taken by a non-matching Person.
+      # This method is used to prevent duplicate SSNs from being saved in the system.
+      #
+      # @param values [Hash] the values to check, including the SSN
+      # @return [Boolean] true if the SSN is taken, false otherwise
+      def ssn_is_taken?(values)
+        return [false, nil] if values[:demographics][:ssn].blank?
+
+        result = ::Operations::People::SsnTaken.new.call(
+          {
+            dob: values[:demographics][:dob],
+            first_name: values[:person_name][:given_name],
+            last_name: values[:person_name][:family_name],
+            ssn: values[:demographics][:ssn]
+          }
+        )
+
+        if result.success?
+          if result.success
+            errors.add(:base, 'ssn is already taken')
+            [result.success, 'ssn is already taken']
+          else
+            [result.success, nil]
+          end
+        else
+          errors.add(:base, "Operation failure while checking SSN: #{result.failure}")
+          Rails.logger.error "QHP Application - SSN Taken Operation Failure: #{result.failure}"
+          [true, "Operation failure while checking SSN: #{result.failure}"]
+        end
+      rescue StandardError => e
+        errors.add(:base, "Error raised checking SSN: #{e.message}")
+        Rails.logger.error "QHP Application - SSN Taken Error: #{e.message}, backtrace: #{e.backtrace.join("\n")}"
+        [true, "Error raised checking SSN: #{e.message}"]
       end
 
     end

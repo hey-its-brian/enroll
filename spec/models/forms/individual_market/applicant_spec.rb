@@ -276,4 +276,27 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
       expect(application.applicants.count).to eq(3)
     end
   end
+
+  context 'when dependent ssn is taken' do
+    let(:input_applicant) {spouse_applicant}
+    let(:existing_person) { FactoryBot.create(:person, :with_consumer_role, first_name: spouse_applicant.person_name.given_name, last_name: spouse_applicant.person_name.family_name, dob: spouse_applicant.demographics.dob) }
+
+    before do
+      existing_person.update(ssn: params[:demographics_attributes][:ssn])
+    end
+
+    it 'should save when ssn, name and dob are the same as an existing person' do
+      applicant_form = described_class.new(params)
+      applicant_form.save
+      expect(applicant_form.errors.full_messages).to be_empty
+    end
+
+    it 'should not save when ssn and name but not dob are the same as an existing person' do
+      existing_person.update(dob: existing_person.dob + 1.day)
+      applicant_form = described_class.new(params)
+      applicant_form.save
+      expect(applicant_form.save[0]).to be_falsey
+      expect(applicant_form.errors.full_messages).to include("ssn is already taken")
+    end
+  end
 end
