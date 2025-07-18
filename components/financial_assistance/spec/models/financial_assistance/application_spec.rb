@@ -255,6 +255,48 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
         expect(FinancialAssistance::Application.determined_and_submitted_within_range(date_range).to_a).to eq []
       end
     end
+
+    context '.newest_determined_by_family_and_year' do
+      let!(:current_application_1) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family_id,
+          assistance_year: TimeKeeper.date_of_record.year,
+          aasm_state: 'determined',
+          submitted_at: TimeKeeper.date_of_record - 1.month,
+          created_at: TimeKeeper.date_of_record + 1.year
+        )
+      end
+      let!(:current_application_2) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family_id,
+          assistance_year: TimeKeeper.date_of_record.year,
+          aasm_state: 'determined',
+          submitted_at: TimeKeeper.date_of_record - 2.month
+        )
+      end
+      let!(:prior_application_1) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family_id,
+          assistance_year: TimeKeeper.date_of_record.year - 1,
+          aasm_state: 'determined',
+          submitted_at: TimeKeeper.date_of_record,
+          created_at: TimeKeeper.date_of_record + 1.year
+        )
+      end
+
+      it 'returns the most recent determined application for the family and year' do
+        result = FinancialAssistance::Application.newest_determined_by_family_and_year(family_id, year).first
+        expect(result).to eq(current_application_1)
+      end
+
+      it 'returns nil if no determined application for the year' do
+        result = FinancialAssistance::Application.newest_determined_by_family_and_year(family_id, year - 5).first
+        expect(result).to be_nil
+      end
+    end
   end
 
   describe '.compute_actual_days_worked' do

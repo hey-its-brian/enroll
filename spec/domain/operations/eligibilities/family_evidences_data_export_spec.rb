@@ -284,7 +284,7 @@ RSpec.describe ::Operations::Eligibilities::FamilyEvidencesDataExport,
 
     it 'should indicate the auto extension' do
       result = subject.call(required_params)
-      expect(result.success.first[41]).to eq true
+      expect(result.success.first[42]).to eq true
     end
   end
 end

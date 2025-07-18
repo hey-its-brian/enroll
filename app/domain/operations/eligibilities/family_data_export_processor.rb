@@ -127,6 +127,7 @@ module Operations
           'CSR',
           'Application Hbx ID',
           'Application Created At',
+          'Application Submitted At',
           'Applicant Applying Coverage?',
           'Cur Mth Earned Income Amt',
           'Cur Mth UnEarned Income Amt',

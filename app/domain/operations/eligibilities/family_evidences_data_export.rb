@@ -63,10 +63,8 @@ module Operations
 
       def find_determined_application(values)
         ::FinancialAssistance::Application
-          .where(family_id: values[:family].id)
-          .determined
-          .by_year(values[:assistance_year])
-          .last
+          .newest_determined_by_family_and_year(values[:family].id, values[:assistance_year])
+          .first
       end
 
       def find_matching_applicant(application, family_member)
@@ -191,6 +189,7 @@ module Operations
         data + [
           applicant.application.hbx_id,
           applicant.application.created_at,
+          applicant.application.submitted_at,
           applicant.is_applying_coverage,
           applicant.current_month_earned_incomes.sum(&:amount),
           applicant.current_month_unearned_incomes.sum(&:amount)
