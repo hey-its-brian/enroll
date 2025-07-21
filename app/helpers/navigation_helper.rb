@@ -78,6 +78,19 @@ module NavigationHelper
     nav
   end
 
+  def new_application_nav_options(step)
+    nav = {}
+    nav[:nav_options] = [
+      {step: 1, page_key: :help_paying_coverage, display_label: l10n('qhp_application.nav.application_type')}
+    ]
+    nav[:step] = step
+    nav[:title] = l10n('qhp_application.nav.enroll_in_coverage')
+    nav[:back_to_account_flag] = true
+    nav[:show_account_button] = true
+    nav[:show_help_button] = true
+    nav
+  end
+
   def sign_up_nav_options(step, show_help_button: false, dont_show_exit_button: false)
     nav = {}
 

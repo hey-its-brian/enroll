@@ -4,11 +4,15 @@
     <div class="home-widget col-4 p-2 mr-2">
       <h3><%= l10n("insured.report_a_life_change") %></h3>
       <div class="pr-2 pl-2 pb-2 w-100">
-        <% applications = FinancialAssistance::Application.where({family_id: @person.primary_family.id}) %>
-        <% if applications.any? { |application| application.aasm_state == 'draft' } %>
-          <%= h(link_to l10n("insured.report_a_life_change"), financial_assistance.applications_path, class: 'btn w-100 btn-default', data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
+        <% if qhp_application_feature_enabled? %>
+          <%= h(link_to l10n("insured.report_a_life_change"), current_applications_insured_sbm_applications_path, class: 'btn w-100 btn-default', data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
         <% else %>
-          <%= h(link_to l10n("insured.update_family_information"), manage_family_insured_families_path(tab: 'family'), class: 'btn w-100 btn-default ml-auto pull-right', data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
+          <% applications = FinancialAssistance::Application.where({family_id: @person.primary_family.id}) %>
+          <% if applications.any? { |application| application.aasm_state == 'draft' } %>
+            <%= h(link_to l10n("insured.report_a_life_change"), financial_assistance.applications_path, class: 'btn w-100 btn-default', data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
+          <% else %>
+            <%= h(link_to l10n("insured.update_family_information"), manage_family_insured_families_path(tab: 'family'), class: 'btn w-100 btn-default ml-auto pull-right', data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
+          <% end %>
         <% end %>
       </div>
     </div>

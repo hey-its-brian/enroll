@@ -1,0 +1,95 @@
+<%= render partial: 'shared/family_side_nav' %>
+<h1 class="mb-3"><%= l10n("qhp_application.show.applications") %></h1>
+<!-- this should only show if there is a renewal application and the current year is before open enrollment -->
+<% if @prospective_application.present? %>
+  <div class="alert alert-warning d-flex align-items-start p-2" role="alert">
+    <div class="warning-icon icon mt-1 px-3" alt="warning" aria-hidden="true">&nbsp;</div>
+    <p class="mb-0"><b><%= l10n("insured.sbm.applications.index.pre_oe_warning1") %></b> <%= l10n("insured.sbm.applications.index.pre_oe_warning2") %><b><%= @oe_start_date %></b>.</p>
+  </div>
+<% end %>
+<p><%= l10n("insured.sbm.applications.application_history_description1") %> '<strong><%= l10n("insured.sbm.applications.application_history_description2") %></strong>' <%= l10n("insured.sbm.applications.application_history_description3") %></p>
+
+<section id="start" class="dual-action-accordion mb-2">
+  <div class="card p-2 mb-0">
+    <div id="startApplicationHeading" class="card-header p-0 m-0 bg-transparent">
+      <button class="accordion-dual-action p-0" data-toggle="collapse" data-target="#startApplication" aria-controls="startApplication" aria-expanded="false">
+        <span class="gamma"><%= l10n("applications.how.start") %></span>
+      </button>
+    </div>
+
+    <div id="startApplication" class="collapse" aria-labelledby="startApplicationHeading" data-parent="#start">
+      <div class="card-body">
+        <div class="w-100">
+          <ol class="ml-0 pl-3 mb-0">
+            <li><%= l10n("applications.how.start.step1") %></li>
+            <li><%= l10n("applications.how.start.step2") %></li>
+            <li><%= l10n("applications.how.start.step3") %></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="update" class="dual-action-accordion mb-2">
+  <div class="card p-2 mb-0">
+    <div id="updateApplicationHeading" class="card-header p-0 m-0 bg-transparent">
+      <button class="accordion-dual-action p-0" data-toggle="collapse" data-target="#updateApplication" aria-controls="updateApplication" aria-expanded="false">
+        <span class="gamma"><%= l10n("applications.how.update") %></span>
+      </button>
+    </div>
+
+    <div id="updateApplication" class="collapse" aria-labelledby="updateApplicationHeading" data-parent="#update">
+      <div class="card-body">
+        <div class="w-100">
+          <ol class="ml-0 pl-3 mb-0">
+            <li><%= l10n("applications.how.update.step1") %></li>
+            <li><%= l10n("applications.how.update.step2") %></li>
+            <li><%= l10n("applications.how.update.step3") %></li>
+            <ul>
+              <li><%= l10n("applications.how.update.step3a") %></li>
+            </ul>
+            <li><%= l10n("applications.how.update.step4") %></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="year" class="dual-action-accordion mb-4">
+  <div class="card p-2 mb-0">
+    <div id="whatYearApplicationHeading" class="card-header p-0 m-0 bg-transparent">
+      <button class="accordion-dual-action p-0" data-toggle="collapse" data-target="#whatYearApplication" aria-controls="whatYearApplication" aria-expanded="false">
+        <span class="gamma"><%= l10n("applications.how.year") %></span>
+      </button>
+    </div>
+
+    <div id="whatYearApplication" class="collapse" aria-labelledby="whatYearApplicationHeading" data-parent="#year">
+      <div class="card-body">
+        <div class="w-100">
+          <p class="mb-0 bold">
+            <%= @applicable_year %>
+          </p>
+          <p><%= l10n("applications.how.current", year: @current_year) %> <%= link_to l10n("applications.how.sep_link"), "https://www.coverme.gov/learn-more/special-enrollment-periods", target: "_blank" %></p>
+
+          <p class="mb-0 bold">
+            <%= @previous_year %>
+          </p>
+          <p class="mb-0"><%= l10n("applications.how.previous") %></p>
+          <ul class="mb-0">
+            <li><%= l10n("applications.how.previous.li1", year: @previous_year) %></li>
+            <li><%= l10n("applications.how.previous.li2", year: @previous_year, year2: @current_year) %></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<% if @prospective_application.present? %>
+  <%= render partial: 'insured/sbm/applications/application_card', locals: { application: @prospective_application, year: @prospective_year, renewal: true } %>
+<% end %>
+<%= render partial: 'insured/sbm/applications/application_card', locals: { application: @family.application_for_year(@applicable_year), year: @applicable_year, draft: @family.recent_draft_application_for_year(@applicable_year), renewal: false } %>
+<%= render partial: 'insured/sbm/applications/application_card', locals: { application: @family.application_for_year(@previous_year), year: @previous_year, draft: @family.recent_draft_application_for_year(@previous_year), renewal: false } %>
+
+<%= link_to l10n("insured.sbm.applications.application_history"), insured_sbm_applications_path, class: "btn outline primary mt-4" %>

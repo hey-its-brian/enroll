@@ -32,6 +32,7 @@ module Operations
         return Failure('family_id is expected in BSON format') unless params[:family_id].is_a?(BSON::ObjectId)
         return Failure(I18n.t('faa.errors.invalid_origin_source_error')) if invalid_origin_source?(params)
         return Failure(I18n.t('faa.errors.invalid_generation_reason_error')) if invalid_generation_reason?(params)
+        return Failure(I18n.t('faa.errors.invalid_assistance_year_error')) if invalid_assistance_year?(params)
 
         Success(params)
       end
@@ -44,6 +45,13 @@ module Operations
       def invalid_generation_reason?(params)
         @generation_reason = params[:generation_reason]
         ::IndividualMarket::Application::GENERATION_REASONS.exclude?(params[:generation_reason])
+      end
+
+      def invalid_assistance_year?(params)
+        return false unless params[:assistance_year].present?
+
+        @assistance_year = params[:assistance_year]
+        !@assistance_year.to_s.match?(/\A\d+\z/)
       end
 
       def parse_family(params)
@@ -68,11 +76,11 @@ module Operations
       def application_attributes(family)
         application_attrs = {
           family_id: family.id,
-          assistance_year: family.application_applicable_year,
           origin: @origin,
           generation_reason: @generation_reason
         }
 
+        application_attrs[:assistance_year] = @assistance_year.present? ? @assistance_year.to_i : family.application_applicable_year
         application_attrs.merge!({applicants: applicants_attributes(family)})
         application_attrs
       end

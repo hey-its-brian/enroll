@@ -129,6 +129,7 @@ Feature: A dedicated page that visit the eligibility determination page
   Scenario: FAA Elibility results with combined eligibility results for Non-Applicants when QHP is enabled
     Given bs4_consumer_flow feature is enabled
     And qhp_application feature is enabled
+    And the user visits the portal outside OE
     And that a user with a family has a Financial Assistance application with tax households
     And FAA display_eligibility_results_per_tax_household feature is enabled
     And the application has non-applicants with no determination

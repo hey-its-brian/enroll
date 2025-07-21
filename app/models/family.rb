@@ -1841,7 +1841,147 @@ class Family
     @latest_determined_faa_application = ::FinancialAssistance::Application.newest_determined_by_family_id(id).first
   end
 
+  def application_for_year(year)
+    return @application_for_year[year] if defined?(@application_for_year) && @application_for_year[year]
+
+    applications = fetch_all_applications_for_year(year)
+    result = find_best_application_for_year(applications)
+
+    if result.present?
+      @application_for_year ||= {}
+      @application_for_year[year] = result
+    end
+
+    result
+  end
+
+  def recent_draft_application_for_year(year)
+    return @recent_draft_application_for_year[year] if defined?(@recent_draft_application_for_year) && @recent_draft_application_for_year[year]
+
+    applications = fetch_all_applications_for_year(year)
+    result = find_recent_draft_application(applications)
+
+    if result.present?
+      @recent_draft_application_for_year ||= {}
+      @recent_draft_application_for_year[year] = result
+    end
+
+    result
+  end
+
   private
+
+  def find_best_application_for_year(applications)
+    # Return determined application if it exists
+    determined_app = applications[:determined].max_by(&:submitted_at) if applications[:determined].any?
+    return determined_app if determined_app.present?
+
+    # Return draft application if it exists
+    applications[:draft].max_by(&:created_at) if applications[:draft].any?
+  end
+
+  def find_recent_draft_application(applications)
+    draft_app = applications[:draft].max_by(&:created_at) if applications[:draft].any?
+    return unless draft_app.present?
+
+    determined_app = applications[:determined].max_by(&:submitted_at) if applications[:determined].any?
+    return unless determined_app.present?
+
+    return unless draft_app.created_at > determined_app.submitted_at
+
+    draft_app
+  end
+
+  # Fetches all applications for a given year in just 2 database queries
+  # Returns a hash with :determined and :draft keys containing arrays of applications
+  def fetch_all_applications_for_year(year)
+    return @applications_for_year_cache[year] if defined?(@applications_for_year_cache) && @applications_for_year_cache[year]
+
+    @applications_for_year_cache ||= {}
+
+    # Query 1: Get most recent FAA applications using aggregation
+    # Determined apps use submitted_at, draft apps use created_at
+    faa_pipeline = [
+      { '$match' => {
+        'family_id' => BSON::ObjectId.from_string(id.to_s),
+        'assistance_year' => year,
+        'aasm_state' => { '$in' => ['determined', 'draft'] }
+      }},
+      { '$addFields' => {
+        'sort_date' => {
+          '$cond' => {
+            'if' => { '$eq' => ['$aasm_state', 'determined'] },
+            'then' => '$submitted_at',
+            'else' => '$created_at'
+          }
+        }
+      }},
+      { '$sort' => { 'sort_date' => -1 } },
+      { '$group' => {
+        '_id' => '$aasm_state',
+        'application' => { '$first' => '$$ROOT' }
+      }},
+      { '$replaceRoot' => { 'newRoot' => '$application' } }
+    ]
+
+    faa_apps = ::FinancialAssistance::Application.collection.aggregate(faa_pipeline).to_a
+
+    # Query 2: Get most recent QHP applications using aggregation
+    # Determined apps use submitted_at, initial apps use created_at
+    qhp_pipeline = [
+      { '$match' => {
+        'family_id' => BSON::ObjectId.from_string(id.to_s),
+        'assistance_year' => year,
+        'current_state' => { '$in' => ['determined', 'initial'] }
+      }},
+      { '$addFields' => {
+        'sort_date' => {
+          '$cond' => {
+            'if' => { '$eq' => ['$current_state', 'determined'] },
+            'then' => '$submitted_at',
+            'else' => '$created_at'
+          }
+        }
+      }},
+      { '$sort' => { 'sort_date' => -1 } },
+      { '$group' => {
+        '_id' => '$current_state',
+        'application' => { '$first' => '$$ROOT' }
+      }},
+      { '$replaceRoot' => { 'newRoot' => '$application' } }
+    ]
+
+    qhp_apps = ::IndividualMarket::Application.collection.aggregate(qhp_pipeline).to_a
+
+    # Convert raw documents back to model instances
+    determined_apps = []
+    draft_apps = []
+
+    faa_apps.each do |doc|
+      app = ::FinancialAssistance::Application.instantiate(doc)
+      case app.aasm_state
+      when 'determined'
+        determined_apps << app
+      when 'draft'
+        draft_apps << app
+      end
+    end
+
+    qhp_apps.each do |doc|
+      app = ::IndividualMarket::Application.instantiate(doc)
+      case app.current_state
+      when :determined
+        determined_apps << app
+      when :initial
+        draft_apps << app
+      end
+    end
+
+    @applications_for_year_cache[year] = {
+      determined: determined_apps,
+      draft: draft_apps
+    }
+  end
 
   # Retrieves the IDs of copyable QHP applications for this family
   #
@@ -2003,6 +2143,20 @@ class Family
 
   def update_due_date_on_vlp_documents(new_due_date)
     ::Operations::People::UpdateDueDateOnVlpDocuments.new.call(family: self, due_date: new_due_date)
+  end
+
+  # Clears the application cache for a specific year or all years
+  # @param year [Integer, nil] The year to clear cache for, or nil to clear all
+  def clear_application_cache(year = nil)
+    if year.nil?
+      @applications_for_year_cache = nil
+      @application_for_year = nil
+      @recent_draft_application_for_year = nil
+    else
+      @applications_for_year_cache&.delete(year)
+      @application_for_year&.delete(year)
+      @recent_draft_application_for_year&.delete(year)
+    end
   end
 end
 #rubocop:enable Metrics/ClassLength

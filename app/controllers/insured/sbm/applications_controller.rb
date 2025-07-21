@@ -8,8 +8,17 @@ module Insured
       before_action :set_current_person
       before_action :set_family
       before_action :enable_bs4_layout
+      before_action :set_consumer_bookmark_url
 
       layout "progress"
+
+      def current_applications
+        authorize @family, :current_applications?
+        @applicable_year = Family.application_applicable_year
+        @previous_year = @applicable_year - 1
+
+        set_prospective_year if HbxProfile.current_hbx && !HbxProfile.current_hbx.under_open_enrollment?
+      end
 
       def index
         authorize @family, :index?
@@ -41,6 +50,14 @@ module Insured
       end
 
       private
+
+      def set_prospective_year
+        @prospective_year = @applicable_year + 1
+        prospective_application = @family.application_for_year(@prospective_year)
+        @prospective_application = prospective_application if prospective_application.present? && prospective_application.determined?
+        oe_start_date = ::Operations::Individual::OpenEnrollmentStartOn.new.call({date: TimeKeeper.date_of_record})
+        @oe_start_date = oe_start_date.success? ? oe_start_date.value! : nil
+      end
 
       def set_family
         @family = @person.primary_family

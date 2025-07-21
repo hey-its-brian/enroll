@@ -30,6 +30,7 @@ module Operations
       def validate(params)
         return Failure(I18n.t('faa.errors.invalid_origin_source_error')) if invalid_origin_source?(params)
         return Failure(I18n.t('faa.errors.invalid_generation_reason_error')) if invalid_generation_reason?(params)
+        return Failure(I18n.t('faa.errors.invalid_assistance_year_error')) if invalid_assistance_year?(params)
 
         if params[:family_id]&.is_a?(BSON::ObjectId)
           Success(params[:family_id])
@@ -50,6 +51,14 @@ module Operations
 
         @generation_reason = params[:generation_reason]
         ::FinancialAssistance::Application::GENERATION_REASONS.exclude?(params[:generation_reason])
+      end
+
+      def invalid_assistance_year?(params)
+        return false unless qhp_application_feature_enabled?
+        return false unless params[:assistance_year].present?
+
+        @assistance_year = params[:assistance_year]
+        !@assistance_year.to_s.match?(/\A\d+\z/)
       end
 
       def parse_family(family_id)
@@ -80,6 +89,7 @@ module Operations
         if qhp_application_feature_enabled?
           application_attrs[:origin] = @origin
           application_attrs[:generation_reason] = @generation_reason
+          application_attrs[:assistance_year] = @assistance_year if @assistance_year.present?
         end
 
         application_attrs.merge!({applicants: applicants_attributes(family)})

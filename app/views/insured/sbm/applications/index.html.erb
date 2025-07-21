@@ -1,14 +1,9 @@
 <%= render partial: 'shared/family_side_nav' %>
-
-<% navigation = eligibility_navigation %>
-
-<ul class="breadcrumbs">
-  <% navigation[:breadcrumbs].each do |step| %>
-    <li><%= link_to(*step.values) %></li>
-  <% end %>
+<ul class="breadcrumbs mb-3">
+  <li><%= link_to l10n("qhp_application.show.applications"), insured_sbm_applications_path %></li>
+  <li><%= l10n("insured.sbm.applications.eligibility_history") %></li>
 </ul>
-
-<h1><%= l10n('insured.sbm.applications.application_history') %></h1>
+<h1><%= l10n('insured.sbm.applications.eligibility_history') %></h1>
 <p><b><%= l10n('insured.sbm.applications.eligibility_history.header',
                previous_year: TimeKeeper.date_of_record.year - 1,
                current_year: TimeKeeper.date_of_record.year) %></b></p>
@@ -30,7 +25,7 @@
       <thead>
       <tr>
         <th><%= l10n('ID') %></th>
-        <th><%= l10n('application_type') %></th>
+        <th><%= l10n('insured.sbm.applications.table.program_eligibility') %></th>
         <th><%= l10n('insured.sbm.applications.table.year') %></th>
         <th><%= l10n('insured.sbm.applications.table.status') %></th>
         <th><%= l10n('insured.sbm.applications.table.started') %></th>

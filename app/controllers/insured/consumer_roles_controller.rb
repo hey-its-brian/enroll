@@ -315,9 +315,10 @@ class Insured::ConsumerRolesController < ApplicationController
       set_admin_bookmark_url
       @transaction_id = params[:id]
       @shop_coverage_result ||= params[:shop_coverage_result]
+      @for_year = params["assistance_year"] if params["assistance_year"].present?
 
       draft_application = @person.primary_family&.most_recent_and_draft_financial_assistance_application if EnrollRegistry.feature_enabled?(:draft_application_after_ridp)
-      if draft_application.present?
+      if draft_application.present? && !(qhp_application_feature_enabled? && @for_year.present?)
         next_path = if EnrollRegistry.feature_enabled?(:qhp_application)
                       financial_assistance.application_applicants_path(draft_application)
                     else
@@ -332,6 +333,7 @@ class Insured::ConsumerRolesController < ApplicationController
 
   def help_paying_coverage_response
     set_current_person
+    @for_year = params["assistance_year"] if params["assistance_year"].present? && params["assistance_year"].to_s.match?(/\A\d+\z/) && qhp_application_feature_enabled?
     if params["is_applying_for_assistance"].blank?
       flash[:error] = "Please choose an option before you proceed."
       redirect_to help_paying_coverage_insured_consumer_role_index_path
@@ -376,11 +378,13 @@ class Insured::ConsumerRolesController < ApplicationController
   # @return [Hash] Parameters to pass to the financial assistance application creation
   def apply_params(person, current_user)
     if qhp_application_feature_enabled?
-      {
+      params = {
         family_id: person.primary_family.id,
         origin: fetch_origin(person, current_user),
         generation_reason: :manual
       }
+      params[:assistance_year] = @for_year if @for_year.present?
+      params
     else
       { family_id: person.primary_family.id }
     end
@@ -448,9 +452,10 @@ class Insured::ConsumerRolesController < ApplicationController
   end
 
   def help_paying_coverage_redirect_path(result)
-    if EnrollRegistry.feature_enabled?(:iap_year_selection) && (HbxProfile.current_hbx.under_open_enrollment? || EnrollRegistry.feature_enabled?(:iap_year_selection_form))
-      return financial_assistance.application_year_selection_application_path(id: result.success)
-    end
+    year_selection_enabled = EnrollRegistry.feature_enabled?(:iap_year_selection) && (HbxProfile.current_hbx.under_open_enrollment? || EnrollRegistry.feature_enabled?(:iap_year_selection_form))
+    year_already_selected = qhp_application_feature_enabled? && @for_year.present?
+
+    return financial_assistance.application_year_selection_application_path(id: result.success) if year_selection_enabled && !year_already_selected
 
     financial_assistance.application_checklist_application_path(id: result.success)
   end

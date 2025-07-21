@@ -377,6 +377,7 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   "en.faa.errors.given_application_is_not_submitted_error" => 'Application is not in one of the %{valid_states} states',
   "en.faa.errors.invalid_origin_source_error" => 'Invalid origin.',
   "en.faa.errors.invalid_generation_reason_error" => 'Invalid generation reason.',
+  "en.faa.errors.invalid_assistance_year_error" => 'Invalid assistance year.',
   "en.faa.errors.invalid_household_relationships" => "Invalid set of relationships defined among household members.",
 
   "en.faa.results.eligibility_results" => "Eligibility Results",

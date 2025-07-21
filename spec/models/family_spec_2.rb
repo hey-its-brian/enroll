@@ -484,4 +484,149 @@ RSpec.describe Family, dbclean: :around_each do
       end
     end
   end
+
+  describe '#recent_draft_application_for_year' do
+    let(:family) { FactoryBot.create(:family, :with_primary_family_member) }
+    let(:year) { TimeKeeper.date_of_record.year }
+    let(:two_years_ago) { year - 2 }
+    let(:beginning_of_year) { TimeKeeper.date_of_record.beginning_of_year }
+    let(:one_month_from_beginning_of_year) { beginning_of_year + 1.month }
+    let(:determined_qhp_application) { FactoryBot.create(:individual_market_application, :determined, family: family, submitted_at: beginning_of_year, assistance_year: year) }
+    let(:determined_faa_application) do
+      FactoryBot.create(:financial_assistance_application,
+                        family_id: family.id,
+                        aasm_state: 'determined',
+                        submitted_at: one_month_from_beginning_of_year)
+    end
+    let(:draft_faa_application) do
+      FactoryBot.create(:financial_assistance_application,
+                        family_id: family.id,
+                        aasm_state: 'draft',
+                        created_at: beginning_of_year)
+    end
+    let(:draft_qhp_application) { FactoryBot.create(:individual_market_application, family: family, assistance_year: year, created_at: one_month_from_beginning_of_year) }
+
+    context 'when there are no draft applications for the given year' do
+      before do
+        determined_qhp_application
+        determined_faa_application
+      end
+
+      it 'returns nil' do
+        expect(family.recent_draft_application_for_year(year)).to be_nil
+      end
+    end
+
+    context 'when there no determined applications for the given year' do
+      before do
+        draft_faa_application
+        draft_qhp_application
+      end
+
+      it 'returns nil' do
+        expect(family.recent_draft_application_for_year(year)).to be_nil
+      end
+    end
+
+    context 'when the draft application created at is before the determined application submitted at' do
+      before do
+        draft_faa_application
+        determined_faa_application
+      end
+
+      it 'returns nil' do
+        expect(family.recent_draft_application_for_year(year)).to be_nil
+      end
+    end
+
+    context 'when the draft application created at is after the determined application submitted at' do
+      before do
+        draft_faa_application
+        determined_faa_application
+        draft_faa_application.update_attributes(created_at: one_month_from_beginning_of_year + 1.day)
+      end
+
+      it 'returns the draft application' do
+        expect(family.recent_draft_application_for_year(year)).to eq(draft_faa_application)
+      end
+    end
+  end
+
+  describe '#application_for_year' do
+    let(:family) { FactoryBot.create(:family, :with_primary_family_member) }
+    let(:year) { TimeKeeper.date_of_record.year }
+    let(:two_years_ago) { year - 2 }
+    let(:beginning_of_year) { TimeKeeper.date_of_record.beginning_of_year }
+    let(:one_month_from_beginning_of_year) { beginning_of_year + 1.month }
+    let(:determined_qhp_application) { FactoryBot.create(:individual_market_application, :determined, family: family, submitted_at: beginning_of_year, assistance_year: year) }
+    let(:determined_faa_application) do
+      FactoryBot.create(:financial_assistance_application,
+                        family_id: family.id,
+                        aasm_state: 'determined',
+                        submitted_at: one_month_from_beginning_of_year)
+    end
+    let(:draft_faa_application) do
+      FactoryBot.create(:financial_assistance_application,
+                        family_id: family.id,
+                        aasm_state: 'draft',
+                        created_at: one_month_from_beginning_of_year)
+    end
+    let(:draft_qhp_application) { FactoryBot.create(:individual_market_application, family: family, assistance_year: year, created_at: one_month_from_beginning_of_year) }
+
+    context 'when there are determined applications for the given year' do
+      before do
+        determined_qhp_application
+        determined_faa_application
+        draft_faa_application
+      end
+      it 'returns an application for the given year' do
+        expect(family.application_for_year(year)).not_to be_nil
+        expect(family.application_for_year(year).is_draft?).not_to be_truthy
+      end
+
+      it 'returns the latest determined application for the given year' do
+        expect(family.application_for_year(year)).to eq(determined_faa_application)
+      end
+
+      it 'will return the qhp application if it has a later submitted_at date than the faa application' do
+        determined_qhp_application.update_attributes(submitted_at: one_month_from_beginning_of_year + 1.day)
+        expect(family.application_for_year(year)).to eq(determined_qhp_application)
+      end
+
+      it 'will return the faa application if it has a later submitted_at date than the qhp application' do
+        determined_faa_application.update_attributes(submitted_at: one_month_from_beginning_of_year + 1.day)
+        expect(family.application_for_year(year)).to eq(determined_faa_application)
+      end
+    end
+
+    context 'when there are no determined applications for the given year' do
+      before do
+        draft_qhp_application
+        draft_faa_application
+      end
+      it 'returns returns a draft application for the given year' do
+        expect(family.application_for_year(year).is_draft?).to be_truthy
+      end
+
+      it 'will return the qhp application if it has a later submitted_at date than the faa application' do
+        draft_qhp_application.update_attributes(created_at: one_month_from_beginning_of_year + 1.day)
+        expect(family.application_for_year(year)).to eq(draft_qhp_application)
+      end
+
+      it 'will return the faa application if it has a later submitted_at date than the qhp application' do
+        draft_faa_application.update_attributes(created_at: one_month_from_beginning_of_year + 1.week)
+        expect(family.application_for_year(year)).to eq(draft_faa_application)
+      end
+    end
+
+    context 'when there are no applications for the given year' do
+      before do
+        draft_faa_application
+        draft_faa_application.update_attributes(assistance_year: two_years_ago)
+      end
+      it 'returns nil when there is an application for a previous year' do
+        expect(family.application_for_year(year)).to be_nil
+      end
+    end
+  end
 end

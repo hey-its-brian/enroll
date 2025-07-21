@@ -253,7 +253,11 @@ Rails.application.routes.draw do
     resources :ridp_documents, only: [:destroy]
 
     namespace :sbm do
-      resources :applications, only: [:index]
+      resources :applications, only: [:index] do
+        collection do
+          get :current_applications
+        end
+      end
     end
 
     namespace :individual_market do

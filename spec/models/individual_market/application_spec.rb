@@ -123,17 +123,17 @@ RSpec.describe IndividualMarket::Application, type: :model do
         end
       end
 
-      context 'when set to a year less than 2025' do
+      context 'when set to a year less than 2024' do
         it 'returns false' do
-          application.assistance_year = 2024
+          application.assistance_year = 2023
           expect(application.valid?).to be false
-          expect(application.errors[:assistance_year]).to include('must be greater than or equal to 2025')
+          expect(application.errors[:assistance_year]).to include('must be greater than or equal to 2024')
         end
       end
 
-      context 'when set to a year greater than 2025' do
+      context 'when set to a year greater than 2024' do
         it 'returns true' do
-          application.assistance_year = 2026
+          application.assistance_year = 2025
           expect(application.valid?).to be true
         end
       end

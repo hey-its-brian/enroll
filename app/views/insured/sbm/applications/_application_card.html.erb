@@ -1,0 +1,67 @@
+<% no_application = application.nil? %>
+<% draft_application = application&.is_draft? %>
+<% %>
+
+<% if no_application || draft_application %>
+  <section class="card p-2 my-4">
+    <div class="card-header p-0 m-0 bg-transparent border-0 d-flex justify-content-between align-items-center">
+      <h2 class="d-inline p-0 m-0"><%= year %> <%= l10n("application") %></h2>
+      <% if draft_application %>
+        <% if application.is_a?(FinancialAssistance::Application) %>
+          <%= link_to l10n("applications.resume", year: year), financial_assistance.application_applicants_path(application), class: "btn primary" %>
+        <% else %>
+          <%= link_to l10n("applications.resume", year: year), insured_individual_market_application_applicants_path(application), class: "btn primary" %>
+        <% end %>
+      <% else %>
+        <%= link_to l10n("applications.start", year: year), help_paying_coverage_insured_consumer_role_index_path(assistance_year: year), class: "btn primary" %>
+      <% end %>
+    </div>
+  </section>
+<% else %>
+  <section class="card p-0 my-4">
+    <div class="card-header px-2 py-2 d-flex justify-content-between align-items-center">
+      <h2 class="inline m-0 p-0"><%= year %> <%= l10n("application") %></h2>
+      <% if renewal %>
+        <%= render partial: 'datatables/shared/dropdown', locals: { dropdowns: sbm_applications_index_renewal_dropdowns(application, year) } %>
+      <% else %>
+        <%= render partial: 'datatables/shared/dropdown', locals: { dropdowns: sbm_applications_index_dropdowns(application, year, [application], draft) } %>
+      <% end %>
+    </div>
+    <div class="card-body px-2 py-3">
+      <p>
+        <span class="secondary-semibold"><%= l10n("application_id") %>:</span> <%= application.hbx_id %>
+        <span class="secondary-semibold ml-4"><%= l10n("application.submitted") %>:</span> <%= application.submitted_at&.strftime("%m/%d/%Y") %>
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th><%= l10n("name") %></th>
+            <th><%= l10n("hbx_id") %></th>
+            <th><%= l10n("age") %></th>
+            <th><%= l10n("relationship") %></th>
+            <th><%= l10n("insured.sbm.applications.table.program_eligibility") %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% application.applicants.each do |applicant| %>
+            <tr>
+              <% if application.is_a?(FinancialAssistance::Application) %>
+                <td><%= link_to applicant.full_name, financial_assistance.application_applicant_path(application, applicant) %></td>
+                <td><%= applicant.family_member&.person&.hbx_id %></td>
+                <td><%= applicant.age_on(TimeKeeper.date_of_record) %></td>
+                <td><%= applicant.is_primary_applicant? ? "Self" : applicant.relationship_kind_with_primary&.titleize %></td>
+                <td><%= applicant.program_eligibility %></td>
+              <% else %>
+                <td><%= link_to applicant.person_name.full_name, insured_individual_market_application_applicant_path(application, applicant) %></td>
+                <td><%= applicant.family_member.person.hbx_id %></td>
+                <td><%= applicant.age_on(TimeKeeper.date_of_record) %></td>
+                <td><%= applicant.is_primary_applicant? ? "Self" : applicant.relationship&.titleize %></td>
+                <td><%= applicant.program_eligibility %></td>
+              <% end %>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+<% end %>

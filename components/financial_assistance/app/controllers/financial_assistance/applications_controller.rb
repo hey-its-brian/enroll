@@ -186,13 +186,14 @@ module FinancialAssistance
       authorize @application, :copy?
       begin
         copy_result = ::FinancialAssistance::Operations::Applications::Copy.new.call(
-          copy_params(params[:id], @person, current_user)
+          copy_params(params[:id], @person, current_user, params[:assistance_year])
         )
         if copy_result.success?
           @application = copy_result.success
           @application.configure_assistance_year
-          assistance_year_page = EnrollRegistry.feature_enabled?(:iap_year_selection) && (HbxProfile.current_hbx.under_open_enrollment? || EnrollRegistry.feature_enabled?(:iap_year_selection_form))
-
+          assistance_year_show = EnrollRegistry.feature_enabled?(:iap_year_selection) && (HbxProfile.current_hbx.under_open_enrollment? || EnrollRegistry.feature_enabled?(:iap_year_selection_form))
+          assistance_year_set = params[:assistance_year].present? && params[:assistance_year].to_s.match?(/\A\d+\z/)
+          assistance_year_page = assistance_year_show && !assistance_year_set
           redirect_path = get_redirect_path(@application, assistance_year_page)
 
           redirect_to redirect_path
@@ -432,7 +433,6 @@ module FinancialAssistance
           return path_mapping[path_key].call if path_key
         end
       end
-
       if assistance_year_page
         application_year_selection_application_path(application)
       elsif qhp_application_feature_enabled?
@@ -447,14 +447,17 @@ module FinancialAssistance
     # @param application_id [String] The ID of the application to copy
     # @param person [Person] The person applying for financial assistance
     # @param current_user [User] The current user making the request
+    # @param assistance_year [String] The year for the new application
     # @return [Hash] Parameters to pass to the financial assistance application creation
-    def copy_params(application_id, person, logged_in_user)
+    def copy_params(application_id, person, logged_in_user, assistance_year = nil)
       if qhp_application_feature_enabled?
-        {
+        params = {
           application_id: application_id,
           origin: fetch_origin(person, logged_in_user),
           generation_reason: :manual
         }
+        params[:assistance_year] = assistance_year if assistance_year.present?
+        params
       else
         { application_id: application_id }
       end

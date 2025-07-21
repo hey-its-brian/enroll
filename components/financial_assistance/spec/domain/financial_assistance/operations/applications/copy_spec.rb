@@ -1243,11 +1243,15 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
 
     context 'when qhp_application feature is enabled' do
       let(:enabled) { true }
-      let(:operation_result) { subject.call({ application_id: application.id, generation_reason: :manual, origin: :user }) }
+      let(:operation_result) { subject.call({ application_id: application.id, generation_reason: :manual, origin: :user, assistance_year: 2024 }) }
       let(:new_applicant) { operation_result.success.applicants.first }
 
       it 'returns a success result' do
         expect(operation_result).to be_success
+      end
+
+      it 'returns application with assistance_year 2024' do
+        expect(operation_result.success.assistance_year).to eq(2024)
       end
 
       it 'returns applicant without income_evidence' do

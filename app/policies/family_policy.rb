@@ -21,10 +21,18 @@ class FamilyPolicy < ApplicationPolicy
     show?
   end
 
-  # Determines if the current user has permission to view the list of family records.
+  # Determines if the current user has permission to view the list of family applications.
   # The user can view the list if they have permission to view a single record.
   #
-  # @return [Boolean] Returns true if the user has permission to view the list of records, false otherwise.
+  # @return [Boolean] Returns true if the user has permission to view the list of applications, false otherwise.
+  def current_applications?
+    show?
+  end
+
+  # Determines if the current user has permission to view the application history of the family record.
+  # The user can view the application history if they have permission to view a single record.
+  #
+  # @return [Boolean] Returns true if the user has permission to view the application history, false otherwise.
   def index?
     show?
   end

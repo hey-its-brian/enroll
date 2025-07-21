@@ -48,6 +48,23 @@ RSpec.describe Operations::IndividualMarket::GenerateApplication, dbclean: :afte
           expect(result.failure).to eq(I18n.t('faa.errors.invalid_generation_reason_error'))
         end
       end
+
+      context 'when assistance_year is invalid' do
+        let(:params) do
+          {
+            family_id: BSON::ObjectId.new,
+            origin: :user,
+            generation_reason: :manual,
+            assistance_year: 'invalid_year'
+          }
+        end
+
+        it 'returns failure' do
+          result = subject.call(params)
+          expect(result).to be_failure
+          expect(result.failure).to eq(I18n.t('faa.errors.invalid_assistance_year_error'))
+        end
+      end
     end
 
     context 'with valid params' do

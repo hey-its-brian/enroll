@@ -17,6 +17,7 @@ module IndividualMarket
     include Mongoid::Timestamps
     include Config::AcaModelConcern
     include Eligibilities::Visitors::Visitable
+    include ::L10nHelper
 
   # contact preference mapping
     CONTACT_METHOD_MAPPING = {
@@ -236,6 +237,11 @@ module IndividualMarket
         title: 'Individual Market Eligibility',
         key: :individual_market_eligibility
       )
+    end
+
+    def program_eligibility
+      return l10n("applications.program.did_not_apply") unless is_applying_coverage
+      individual_market_eligibility&.qhp_determination&.is_eligible == true ? l10n("applications.program.qhp_plan", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) : l10n("applications.program.not_eligible")
     end
 
     # Creates a copy of this applicant in a new application

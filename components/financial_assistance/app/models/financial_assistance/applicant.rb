@@ -1078,6 +1078,14 @@ module FinancialAssistance
       rel.kind
     end
 
+    def program_eligibility
+      return l10n("faa.program_eligibility.did_not_apply") unless is_applying_coverage
+      return l10n("faa.program_eligibility.eligible", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) if is_ia_eligible?
+      return l10n("faa.program_eligibility.may_qualify_for_medicaid") if is_medicaid_chip_eligible
+      return l10n("faa.program_eligibility.ineligible") if is_totally_ineligible?
+      l10n("faa.program_eligibility.plan_without_financial_assistance", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item)
+    end
+
     def embedded_document_section_entry_complete?(embedded_document) # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity TODO: Remove this
       case embedded_document
       when :income

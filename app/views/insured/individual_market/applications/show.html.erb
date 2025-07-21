@@ -1,7 +1,6 @@
 <%= render partial: 'shared/family_side_nav' %>
 <ul class="breadcrumbs mb-3">
-  <!-- TODO: Add link to applications page -->
-  <li><%= l10n("qhp_application.show.applications") %></li>
+  <li><%= link_to l10n("qhp_application.show.applications"), current_applications_insured_sbm_applications_path %></li>
   <li><%= l10n("qhp_application.show.application_details") %></li>
 </ul>
 <h1><%= @application.assistance_year %> <%= l10n("qhp_application.show.application_details") %></h1>
@@ -43,7 +42,6 @@
   <%= link_to l10n("qhp_application.show.add_member"), copy_insured_individual_market_application_path(@application, applicant: "new"), class: 'btn secondary' %>
 </div>
 
-<!-- TODO: Add link to return to application -->
 <div class="mt-3">
-  <%= link_to l10n("qhp_application.show.return"), "#", class: 'btn' %>
+  <%= link_to l10n("qhp_application.show.return"), insured_sbm_applications_path, class: 'btn' %>
 </div>

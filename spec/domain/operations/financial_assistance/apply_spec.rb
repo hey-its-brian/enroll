@@ -6,8 +6,8 @@ RSpec.describe Operations::FinancialAssistance::Apply, type: :model, dbclean: :a
     DatabaseCleaner.clean
   end
 
-  let!(:hbx_profile)   { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
-  let!(:person)        { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+  let!(:hbx_profile) { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
+  let!(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
   let!(:person2) do
     per = FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role)
     person.ensure_relationship_with(per, 'child')
@@ -21,6 +21,8 @@ RSpec.describe Operations::FinancialAssistance::Apply, type: :model, dbclean: :a
   end
   let!(:family_member) { FactoryBot.create(:family_member, family: family, person: person2) }
   let(:product)        { FactoryBot.create(:benefit_markets_products_health_products_health_product, :ivl_product) }
+  let(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
+  let(:benefit_coverage_period) { hbx_profile.benefit_sponsorship.benefit_coverage_periods.first }
 
   before :each do
     HbxProfile.current_hbx.benefit_sponsorship.benefit_coverage_periods.each do |bcp|
@@ -95,6 +97,23 @@ RSpec.describe Operations::FinancialAssistance::Apply, type: :model, dbclean: :a
 
         it 'cancels previous draft application' do
           expect(draft_app.reload.cancelled?).to be_truthy
+        end
+      end
+
+      context 'with invalid assistance year' do
+        let(:paraams) { { family_id: family.id, assistance_year: 'invalid', origin: :user, generation_reason: :manual } }
+
+        it 'returns a failure' do
+          expect(@result.failure).to eq('Invalid assistance year.')
+        end
+      end
+
+      context 'with valid assistance year' do
+        let(:paraams) { { family_id: family.id, assistance_year: '2024', origin: :user, generation_reason: :manual } }
+
+        it 'returns a success' do
+          expect(@result.success).to be_a_kind_of(BSON::ObjectId)
+          expect(FinancialAssistance::Application.where(id: @result.success).first.assistance_year).to eq(2024)
         end
       end
 

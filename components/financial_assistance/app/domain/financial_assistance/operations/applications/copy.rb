@@ -40,6 +40,7 @@ module FinancialAssistance
           return Failure({simple_error_message: I18n.t('faa.errors.given_application_is_not_submitted_error', valid_states: VALID_APPLICATION_STATES)}) unless VALID_APPLICATION_STATES.include?(application.aasm_state)
           return Failure({ simple_error_message: I18n.t('faa.errors.invalid_origin_source_error') }) if invalid_origin_source?(params)
           return Failure({ simple_error_message: I18n.t('faa.errors.invalid_generation_reason_error') }) if invalid_generation_reason?(params)
+          return Failure({ simple_error_message: I18n.t('faa.errors.invalid_assistance_year_error') }) if invalid_assistance_year?(params)
 
 
           Success(application)
@@ -57,6 +58,14 @@ module FinancialAssistance
 
           @generation_reason = params[:generation_reason]
           ::FinancialAssistance::Application::GENERATION_REASONS.exclude?(params[:generation_reason])
+        end
+
+        def invalid_assistance_year?(params)
+          return false unless qhp_application_feature_enabled?
+          return false unless params[:assistance_year].present?
+
+          @assistance_year = params[:assistance_year]
+          !@assistance_year.to_s.match?(/\A\d+\z/)
         end
 
         def fetch_active_fms_applicant_params(application)
@@ -252,9 +261,9 @@ module FinancialAssistance
           if qhp_application_feature_enabled?
             source_app_params[:origin] = @origin
             source_app_params[:generation_reason] = @generation_reason
+            assistance_year = @assistance_year || source_application.family.application_applicable_year || TimeKeeper.date_of_record.year
+            source_app_params[:assistance_year] = assistance_year
           end
-          # need to add assistance year to the params for qhp in order to properly cancel previous applications
-          source_app_params[:assistance_year] = source_application.family.application_applicable_year || TimeKeeper.date_of_record.year if qhp_application_feature_enabled?
           source_app_params.merge({ aasm_state: 'draft',
                                     hbx_id: FinancialAssistance::HbxIdGenerator.generate_application_id })
         end

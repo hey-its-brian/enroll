@@ -95,7 +95,7 @@ module Insured
       def copy
         authorize @application, :copy?
         copy_result = ::Operations::IndividualMarket::Application::Copy.new.call(
-          **copy_params(@application, @person, current_user)
+          **copy_params(@application, @person, current_user, params[:assistance_year])
         )
 
         if copy_result.success?
@@ -114,13 +114,16 @@ module Insured
       # @param application [IndividualMarket::Application] The application to copy
       # @param person [Person] The person who is the primary applicant of the application
       # @param current_user [User] The current user making the request
+      # @param assistance_year [Integer] The year of the application to copy
       # @return [Hash] Parameters to pass to the Individual Market application creation
-      def copy_params(application, person, logged_in_user)
-        {
+      def copy_params(application, person, logged_in_user, assistance_year)
+        params = {
           application: application,
           origin: fetch_origin(person, logged_in_user),
           generation_reason: :manual
         }
+        params[:assistance_year] = assistance_year if assistance_year.present? && assistance_year.to_s.match?(/\A\d+\z/)
+        params
       end
 
       def get_redirect_path(application)

@@ -150,6 +150,19 @@ body {
   }
 }
 
+.dual-action-accordion {
+  .card-header {
+    padding: 0;
+    margin: 0;
+    background-color: transparent;
+    border: none;
+
+    &:has(.accordion-dual-action[aria-expanded="true"]) {
+      border-bottom: 1px solid var(--body-divider);
+    }
+  }
+}
+
 a.btn-nav-accordion, a.btn-nav-accordion:hover {
   color: var(--default-font-color)
 }

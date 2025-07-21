@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Insured::ConsumerRolesController do
+RSpec.describe Insured::ConsumerRolesController, dbclean: :after_each, type: :controller do
   describe "PUT update, for an IVL market person with a consumer role" do
     let(:person_id) { "SOME PERSON ID" }
     let(:consumer_role_id) { "SOME CONSUMER ROLE ID" }
@@ -127,6 +127,10 @@ RSpec.describe Insured::ConsumerRolesController do
 
   describe "help_paying_for_coverage_response" do
     let(:user) { FactoryBot.create :user, :with_consumer_role }
+    let!(:hbx_profile)   { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
+    let(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
+    let(:benefit_coverage_period) { hbx_profile.benefit_sponsorship.benefit_coverage_periods.first }
+    let(:individual_market_application) { IndividualMarket::Application.where(family_id: user.person.families.first.id, current_state: :initial).first }
     before { sign_in user }
 
     subject { get :help_paying_coverage_response, params: params }
@@ -134,9 +138,27 @@ RSpec.describe Insured::ConsumerRolesController do
     context "is_applying_for_assistance false" do
       let(:params) { { is_applying_for_assistance: false } }
 
-      it 'redirects to insured_family_members_path' do
-        expect(subject).to redirect_to(insured_family_members_path(consumer_role_id: user.person.consumer_role.id))
+      context 'when qhp application is enabled' do
+        before do
+          user.person.update_attributes(no_ssn: false)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        end
+
+        it 'redirects to insured_individual_market_application_applicants_path' do
+          expect(subject).to redirect_to(insured_individual_market_application_applicants_path(individual_market_application))
+        end
       end
+
+      context 'when qhp application is disabled' do
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+        end
+
+        it 'redirects to insured_family_members_path' do
+          expect(subject).to redirect_to(insured_family_members_path(consumer_role_id: user.person.consumer_role.id))
+        end
+      end
+
     end
 
     context "is_applying_for_assistance true" do
@@ -180,7 +202,8 @@ RSpec.describe Insured::ConsumerRolesController do
   describe 'GET #help_paying_coverage_response' do
     let(:primary_person) { FactoryBot.create(:person, :with_consumer_role) }
     let(:new_family) { FactoryBot.create(:family, :with_primary_family_member, person: primary_person) }
-    let(:application) { FinancialAssistance::Application.where(family_id: new_family.id, aasm_state: 'draft').first }
+    let(:application) { FinancialAssistance::Application.where(family_id: new_family.id, aasm_state: 'draft').last }
+    let(:individual_market_application) { IndividualMarket::Application.where(family_id: new_family.id, current_state: :initial).last }
     let(:hbx_profile) do
       FactoryBot.create(
         :hbx_profile,
@@ -220,6 +243,68 @@ RSpec.describe Insured::ConsumerRolesController do
       end
     end
 
+    context 'when the assistance year is set' do
+      let(:user) { FactoryBot.create(:user, person: primary_person) }
+
+      context 'with invalid assistance year' do
+        let(:params) { { is_applying_for_assistance: true, assistance_year: 'invalid' } }
+
+        before do
+          get :help_paying_coverage_response, params: params
+        end
+
+        it 'returns success' do
+          expect(response).to have_http_status(:redirect)
+        end
+
+        it 'creates a financial assistance application' do
+          expect(application).to be_present
+          expect(application.origin).to eq(:user)
+          expect(application.generation_reason).to eq(:manual)
+          expect(application.assistance_year).to eq(TimeKeeper.date_of_record.year)
+        end
+      end
+
+      context 'when applying for assistance' do
+        let(:params) { { is_applying_for_assistance: true, assistance_year: '2023' } }
+
+        before do
+          get :help_paying_coverage_response, params: params
+        end
+
+        it 'returns success' do
+          expect(response).to have_http_status(:redirect)
+        end
+
+        it 'creates a financial assistance application' do
+          expect(application).to be_present
+          expect(application.origin).to eq(:user)
+          expect(application.generation_reason).to eq(:manual)
+          expect(application.assistance_year).to eq(2023)
+        end
+      end
+
+      context 'when not applying for assistance' do
+        let(:params) { { is_applying_for_assistance: false, assistance_year: '2024' } }
+
+        before do
+          primary_person.update_attributes!(no_ssn: false)
+          get :help_paying_coverage_response, params: params
+        end
+
+        it 'returns success' do
+          expect(response).to have_http_status(:redirect)
+        end
+
+        it 'creates an individual market application' do
+          expect(individual_market_application).to be_present
+          expect(individual_market_application.origin).to eq(:user)
+          expect(individual_market_application.generation_reason).to eq(:manual)
+          expect(individual_market_application.assistance_year).to eq(2024)
+        end
+      end
+    end
+
     context 'when the logged in user is Hbx Staff' do
       let(:hbx_person) { FactoryBot.create(:person) }
       let(:permission) { FactoryBot.create(:permission, :super_admin) }
@@ -227,6 +312,9 @@ RSpec.describe Insured::ConsumerRolesController do
       let(:user) { FactoryBot.create(:user, person: hbx_staff.person) }
 
       before do
+        HbxProfile.current_hbx.benefit_sponsorship.benefit_coverage_periods.each do |bcp|
+          bcp.update_attributes!(slcsp_id: ivl_product.id)
+        end
         get :help_paying_coverage_response, params: {
           id: primary_person.id, is_applying_for_assistance: true
         }

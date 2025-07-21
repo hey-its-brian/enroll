@@ -1,7 +1,6 @@
 <%= render partial: 'shared/family_side_nav' %>
 <ul class="breadcrumbs mb-3">
-  <!-- TODO: Add link to applications page when it's created -->
-  <li><%= l10n("applications") %></li>
+  <li><%= link_to l10n("applications"), current_applications_insured_sbm_applications_path %></li>
   <li><%= link_to l10n("application.detail"), insured_individual_market_application_path(@application) %></li>
   <li><%= l10n("qhp_application.eligibility_criteria") %></li>
 </ul>

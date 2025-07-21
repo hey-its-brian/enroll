@@ -1,8 +1,7 @@
 <%= render partial: 'shared/family_side_nav' %>
 <ul class="breadcrumbs mb-3">
-  <!-- TODO: Add link to applications page -->
-  <li><%= l10n("qhp_application.show.applications") %></li>
+  <li><%= link_to l10n("qhp_application.show.applications"), current_applications_insured_sbm_applications_path %></li>
   <li><%= l10n("qhp_application.show.member_details") %></li>
 </ul>
 <%= render partial: 'insured/individual_market/applicants/summary', locals: {applicant: @applicant, member_details: true} %>
-<%= link_to l10n("qhp_applicant.show.return"), insured_individual_market_application_path(@application), class: 'button' %>
+<%= link_to l10n("qhp_applicant.show.return"), current_applications_insured_sbm_applications_path, class: 'button' %>

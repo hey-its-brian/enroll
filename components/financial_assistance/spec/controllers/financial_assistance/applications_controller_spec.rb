@@ -124,6 +124,16 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
       end
 
+      context "when assistance_year is set to 2024 in params" do
+        it "redirects to the application applicants index page" do
+          get :copy, params: { id: application.id, applicant_hbx_id: person1.hbx_id, personal_info: true, assistance_year: 2024 }
+          application = assigns(:application).reload
+          applicant = application.applicants.where(person_hbx_id: person1.hbx_id).first
+
+          expect(response).to redirect_to(application_applicants_path(application, applicant: applicant.id))
+        end
+      end
+
       context "when person_info is set to true in params" do
         it "redirects to the new application applicant path" do
           get :copy, params: { id: application.id, applicant_hbx_id: person1.hbx_id, personal_info: true }

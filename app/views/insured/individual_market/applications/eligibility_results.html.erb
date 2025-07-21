@@ -72,7 +72,7 @@
 <p data-cuke='next_steps_text'><%= l10n("faa.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
 <div data-cuke='return_to_account_home' class="my-4">
   <!-- TODO: Add link to view my applications when new page is built -->
-  <%= h(link_to l10n("qhp_application.results.view_my_applications"), family_account_path, class: "button secondary outline mr-2") %>
+  <%= h(link_to l10n("qhp_application.results.view_my_applications"), current_applications_insured_sbm_applications_path, class: "button secondary outline mr-2") %>
   <!-- TODO: Add link to continue to shop flow is ready -->
   <% if @in_application_flow %>
     <%= h(link_to l10n("qhp_application.results.continue_to_shop"), family_account_path, class: "button") %>
@@ -97,7 +97,7 @@
           <p><%= l10n("faa.do_not_agree",
             appeal_link: EnrollRegistry[:enroll_app].setting(:appeal_link).item,
             find_expert_link: EnrollRegistry[:enroll_app].setting(:find_expert_link).item) %></p>
-          <%= h(link_to l10n("qhp_application.results.view_my_applications"), family_account_path, class: "button secondary") %>
+          <%= h(link_to l10n("qhp_application.results.view_my_applications"), current_applications_insured_sbm_applications_path, class: "button secondary") %>
         </div>
       </div>
     </div>

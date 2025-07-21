@@ -76,9 +76,10 @@ module IndividualMarket
     # Validates the generation_reason field to ensure it is a valid reason
     validates :generation_reason, inclusion: { in: GENERATION_REASONS }
 
-    # Validates the assistance_year field to ensure it is present and greater than or equal to 2025
-    # @note The year 2025 is used as a minimum value for the assistance year
-    validates :assistance_year, presence: true, numericality: { greater_than_or_equal_to: 2025 }
+    # Validates the assistance_year field to ensure it is present and greater than or equal to 2024
+    # @note The year 2024 is used as a minimum value for the assistance year as it goes live in 2025 and people can submit
+    # previous year applications
+    validates :assistance_year, presence: true, numericality: { greater_than_or_equal_to: 2024 }
 
     # @!attribute effective_on
     # @return [Date] The date the application is effective
@@ -195,6 +196,10 @@ module IndividualMarket
     end
 
     def is_initial?
+      self.current_state == :initial
+    end
+
+    def is_draft?
       self.current_state == :initial
     end
 
