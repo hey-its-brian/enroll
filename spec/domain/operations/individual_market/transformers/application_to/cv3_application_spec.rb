@@ -42,7 +42,7 @@ RSpec.describe Operations::IndividualMarket::Transformers::ApplicationTo::Cv3App
         expect(@payload[:assistance_year]).to eq(application.assistance_year)
         expect(@payload[:hbx_id]).to eq(application.hbx_id)
         expect(@payload[:effective_on]).to eq(application.effective_on)
-        expect(@payload[:submitted_at]).to eq(application.submitted_at)
+        expect(@payload[:submitted_at]).not_to eq nil
         expect(@payload[:origin]).to eq(application.origin)
         expect(@payload[:generation_reason]).to eq(application.generation_reason)
         expect(@payload[:current_state]).to eq(application.current_state)

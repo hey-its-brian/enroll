@@ -60,7 +60,7 @@ module Operations
               assistance_year: application.assistance_year || TimeKeeper.date_of_record.year,
               hbx_id: application.hbx_id,
               effective_on: application.effective_on || TimeKeeper.date_of_record,
-              submitted_at: application.submitted_at,
+              submitted_at: application.submitted_at || DateTime.now,
               is_renewal: application.is_renewal,
               predecessor_id: predecessor_reference(application.predecessor_id),
               origin: application.origin,
@@ -93,7 +93,7 @@ module Operations
                 addresses: addresses(applicant)
               }
 
-              applicant.merge!(immigration_information: immigration_information(applicant)) if applicant.immigration_information.present?
+              applicant_hash.merge!(immigration_information: immigration_information(applicant)) if applicant.immigration_information.present?
               result << applicant_hash
               result
             end
@@ -125,12 +125,13 @@ module Operations
           # @return [Hash] The transformed demographics hash
           def demographics(applicant)
             demographics = applicant.demographics
-            applicant_hash = demographics.attributes.deep_symbolize_keys.slice(:no_ssn, :gender, :is_incarcerated, :is_physically_disabled,
-                                                                               :indian_tribe_member, :tribal_id, :tribal_name, :tribal_state, :language_code, :ethnicity, :race)
-            applicant_hash[:encrypted_ssn] = encrypt(demographics.ssn) if demographics.encrypted_ssn.present?
-            applicant_hash[:dob] = demographics.dob.to_date if demographics.dob.present?
+            demographics_hash = demographics.attributes.deep_symbolize_keys.slice(:no_ssn, :gender, :is_incarcerated, :is_physically_disabled,
+                                                                                  :indian_tribe_member, :tribal_id, :tribal_name, :tribal_state, :language_code, :ethnicity,
+                                                                                  :citizen_status, :race)
+            demographics_hash[:encrypted_ssn] = encrypt(demographics.ssn) if demographics.encrypted_ssn.present?
+            demographics_hash[:dob] = demographics.dob.to_date if demographics.dob.present?
 
-            applicant_hash
+            demographics_hash
           end
 
           # Transforms all eligibilities belonging to an applicant to their CV3 representation
@@ -150,10 +151,13 @@ module Operations
           end
 
           def immigration_information(applicant)
-            applicant.immigration_information.attributes.slice(:subject, :alien_number, :i94_number, :visa_number, :passport_number, :sevis_id,
-                                                               :naturalization_number, :receipt_number, :citizenship_number, :card_number,
-                                                               :country_of_citizenship, :expiration_date, :issuing_country,
-                                                               :description, :immigration_doc_statuses)
+            immigration_information = applicant.immigration_information
+            info_hash = applicant.immigration_information.attributes.slice(:subject, :alien_number, :i94_number, :visa_number, :passport_number, :sevis_id,
+                                                                           :naturalization_number, :receipt_number, :citizenship_number, :card_number,
+                                                                           :country_of_citizenship, :issuing_country,
+                                                                           :description, :immigration_doc_statuses)
+            info_hash.merge!(expiration_date: immigration_information.expiration_date.to_datetime) if immigration_information.expiration_date.present?
+            info_hash
           end
 
           def family_member_reference(applicant)

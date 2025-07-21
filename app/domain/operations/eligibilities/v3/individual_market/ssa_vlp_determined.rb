@@ -209,10 +209,26 @@ module Operations
           def record_request_result(evidence, evidence_entity)
             update_evidence(evidence, evidence_entity)
             evidence.request_results.new(evidence_entity.request_results.first.to_h)
+          rescue StandardError => e
+            record_ingestion_result(evidence, e)
           end
 
           def record_verification_result(evidence, evidence_entity)
             evidence.verification_histories.new(evidence_entity.verification_histories.first.to_h)
+          rescue StandardError => e
+            record_ingestion_result(evidence, e)
+          end
+
+          def record_ingestion_result(evidence, error)
+            add_errors(
+              :record_request_result,
+              "Failed to record request result due to #{error.message}",
+              { job: @job, transmission: @response_transmission, transaction: @response_transaction }
+            )
+            status_result = update_status("Failed to record request result", :failed, { job: @job, transmission: @response_transmission, transaction: @response_transaction })
+            return status_result if status_result.failure?
+
+            evidence.verification_histories.new({ action: 'hub call', update_reason: 'failed to update', updated_by: 'system' })
           end
 
           # Updates a specific evidence based on the verification result
