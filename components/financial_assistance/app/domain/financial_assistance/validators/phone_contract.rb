@@ -10,7 +10,7 @@ module FinancialAssistance
         optional(:area_code).maybe(:string)
         optional(:number).maybe(:string)
         optional(:extension).maybe(:string)
-        optional(:primary).filled(:bool)
+        optional(:primary).maybe(:bool)
         required(:full_phone_number).maybe(:string)
       end
     end

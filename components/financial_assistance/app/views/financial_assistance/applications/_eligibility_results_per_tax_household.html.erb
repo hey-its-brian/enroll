@@ -203,7 +203,8 @@
     <!-- End: Return to Account Home -->
 
     <% unless (action_name == "eligibility_results" || action_name == "review") && (params.keys.exclude?"cur") %>
-      <p data-cuke='continue_text'><%= l10n("faa.results.continue_text") %></p>
+      <% continue_text = qhp_enabled ? l10n("faa.results.shop_for_plans") : l10n("continue_next") %>
+      <p data-cuke='continue_text'><%= l10n("faa.results.continue_text", continue_text: continue_text) %></p>
     <% end %>
 
     <p data-cuke='your_application_reference_2' class="mt-4"><%= l10n("faa.results.your_application_reference_2", application_hbx_id: @application.hbx_id)%></p>

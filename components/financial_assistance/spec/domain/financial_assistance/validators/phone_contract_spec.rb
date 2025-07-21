@@ -46,5 +46,16 @@ module Validators
         expect(subject).to be_success
       end
     end
+
+    describe 'passing primary is passed as nil with kind and full phone number' do
+
+      let(:params) do
+        {kind: 'test', full_phone_number: '9898989898', primary: nil}
+      end
+
+      it 'passes' do
+        expect(subject).to be_success
+      end
+    end
   end
 end

@@ -1,27 +1,29 @@
 <% if @bs4 %>
-    <% if applicant.applicant_validation_complete? %>
-       <% if EnrollRegistry.feature_enabled?(:qhp_application) %>
-          <div class="alert alert-rounded alert-success-light alert-sm d-flex align-items-center p-2 mb-0 ml-4 mt-3" role="alert">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="8" cy="8" r="8" fill="#027314"/>
-              <path fill-rule="evenodd" clip-rule="evenodd" d="M11.7426 5.01197C12.0673 5.31165 12.0875 5.81778 11.7878 6.14243L7.35708 10.9424C7.20563 11.1065 6.99251 11.1998 6.76923 11.1998C6.54596 11.1998 6.33284 11.1065 6.18139 10.9424L4.21216 8.8091C3.91248 8.48444 3.93272 7.97832 4.25738 7.67863C4.58204 7.37895 5.08816 7.39919 5.38785 7.72385L6.76923 9.22036L10.6122 5.05718C10.9118 4.73253 11.418 4.71228 11.7426 5.01197Z" fill="white"/>
-            </svg>
-            <span class="ml-2"><%=l10n("info_complete")%></span>
-          </div>
-        <% else %>
-        <div class="alert alert-success alert-sm d-flex align-items-center p-2 mb-0 ml-4" role="alert">
-          <div class="success-icon icon icon-sm" alt="success" aria-hidden="true">&nbsp;</div>
-          <%=l10n("information_complete")%>
+  <% qhp_enabled = qhp_application_feature_enabled? %>
+  <% if applicant.applicant_validation_complete? %>
+     <% if qhp_enabled %>
+        <div class="alert alert-rounded alert-success-light alert-sm d-flex align-items-center p-2 mb-0 ml-4 mt-3" role="alert">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="8" cy="8" r="8" fill="#027314"/>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M11.7426 5.01197C12.0673 5.31165 12.0875 5.81778 11.7878 6.14243L7.35708 10.9424C7.20563 11.1065 6.99251 11.1998 6.76923 11.1998C6.54596 11.1998 6.33284 11.1065 6.18139 10.9424L4.21216 8.8091C3.91248 8.48444 3.93272 7.97832 4.25738 7.67863C4.58204 7.37895 5.08816 7.39919 5.38785 7.72385L6.76923 9.22036L10.6122 5.05718C10.9118 4.73253 11.418 4.71228 11.7426 5.01197Z" fill="white"/>
+          </svg>
+          <span class="ml-2"><%=l10n("info_complete")%></span>
         </div>
-      <% end %>
-    <% else %>
-      <div class="alert alert-warning d-flex align-items-center p-2 mb-0 ml-4 mt-2" role="alert">
-        <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
-        <%= l10n("additional_info_needed") %>
-        <%= ": (#{l10n("ssn_not_present")}" if applicant.is_applying_coverage && !applicant.ssn_present? %>
-        <%= ": #{l10n("tax_covering_applicant_not_present")}" unless applicant.covering_applicant_exists? %>
+      <% else %>
+      <div class="alert alert-success alert-sm d-flex align-items-center p-2 mb-0 ml-4" role="alert">
+        <div class="success-icon icon icon-sm" alt="success" aria-hidden="true">&nbsp;</div>
+        <%= l10n("information_complete")%>
       </div>
     <% end %>
+  <% else %>
+    <div class="alert alert-warning d-flex align-items-center p-2 mb-0 ml-4 mt-2" role="alert">
+      <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
+      <% warning_label = qhp_enabled ? l10n("additional_info_needed") : l10n("additional_information_needed") %>
+      <%= warning_label %>
+      <%= ": (#{l10n("ssn_not_present")}" if applicant.is_applying_coverage && !applicant.ssn_present? %>
+      <%= ": #{l10n("tax_covering_applicant_not_present")}" unless applicant.covering_applicant_exists? %>
+    </div>
+  <% end %>
 <% else %>
   <% if applicant.applicant_validation_complete? %>
     <span class="success-notice"><span class="glyphicon glyphicon-ok complete-icon success-status-hide"></span>&nbsp;<span class="complete-icon-text"><%=l10n("info_complete")%></span></span>

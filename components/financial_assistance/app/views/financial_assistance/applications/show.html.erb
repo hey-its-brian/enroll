@@ -16,7 +16,7 @@
     <dt><%= l10n("application_id") %>:</dt>
     <dd><%= @application.hbx_id %></dd>
     <dt><%= l10n("qhp_application.show.applied_for_fa") %>:</dt>
-    <dd><%= l10n("no") %></dd>
+    <dd><%= @application.is_determined? ? l10n("yes") : l10n("no") %></dd>
     <dt><%= l10n("qhp_application.origin") %>:</dt>
     <dd class="admin-designation"><%= @application.origin&.to_s&.humanize&.titleize %></dd>
     <dt><%= l10n("qhp_application.generation_reason") %>:</dt>
