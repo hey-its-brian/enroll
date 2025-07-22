@@ -25,7 +25,14 @@ jobs:
           run: |
             export PATH=$PATH:${GITHUB_WORKSPACE}/../codeql/
             ./codeql/create_codeql_report.sh
-        - name: Upload Report
+        - name: Upload Ruby SARIF
           uses: github/codeql-action/upload-sarif@v3
           with:
-            sarif_file: "./codeql.sarif"
+            sarif_file: codeql-ruby.sarif
+            category: ruby
+
+        - name: Upload JavaScript SARIF
+          uses: github/codeql-action/upload-sarif@v3
+          with:
+            sarif_file: codeql-js.sarif
+            category: javascript

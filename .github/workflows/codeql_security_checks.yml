@@ -30,4 +30,16 @@ jobs:
             cd codeql/sarif_reporter/
             npm install
             npm run compile
-            cat ../../codeql.sarif | npm run-script run -- --ignore-file=../ignore.yaml
+            cat ../../codeql-ruby.sarif | npm run-script run -- --ignore-file=../ignore.yaml
+            cat ../../codeql-js.sarif | npm run-script run -- --ignore-file=../ignore.yaml
+        - name: Upload Ruby SARIF
+          uses: github/codeql-action/upload-sarif@v3
+          with:
+            sarif_file: codeql-ruby.sarif
+            category: ruby
+        - name: Upload JavaScript SARIF
+          uses: github/codeql-action/upload-sarif@v3
+          with:
+            sarif_file: codeql-js.sarif
+            category: javascript
+
