@@ -12,6 +12,8 @@ module FinancialAssistance
                         :card_number, :country_of_citizenship, :issuing_country, :status, :vlp_description
 
           def us_citizen=(val)
+            return if val.to_s.blank?
+
             @us_citizen = (val.to_s == "true")
             @naturalized_citizen = false if val.to_s == "false"
           end
@@ -28,7 +30,7 @@ module FinancialAssistance
             immigration_status_required_feature = EnrollRegistry.feature_enabled?(:immigration_status_question_required)
             @eligible_immigration_status = if val.to_s == "true"
                                              true
-                                           elsif !immigration_status_required_feature && val.to_s.blank? && !us_citizen
+                                           elsif !immigration_status_required_feature && val.to_s.blank? && us_citizen == false
                                              false
                                            end
           end

@@ -672,6 +672,19 @@ RSpec.describe Forms::FamilyMember, dbclean: :after_each, type: :form do
       end
     end
 
+    context 'when us_citizen is nil and immigration_status_question is not required' do
+      before do
+        allow(EnrollRegistry[:immigration_status_question_required].feature).to receive(:is_enabled).and_return(false)
+      end
+
+      subject { Forms::FamilyMember.new(member_attributes.merge({:family_id => family_id, "us_citizen" => nil, "indian_tribe_member" => "false", "is_incarcerated" => "false"})) }
+
+      it "should return nil" do
+        subject.eligible_immigration_status = ""
+        expect(subject.eligible_immigration_status).to eq nil
+      end
+    end
+
     context 'when us_citizen is false and immigration_status_question is required' do
       before do
         allow(EnrollRegistry[:immigration_status_question_required].feature).to receive(:is_enabled).and_return(true)
