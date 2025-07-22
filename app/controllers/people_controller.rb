@@ -124,7 +124,7 @@ class PeopleController < ApplicationController
   end
 
   def update_dependent_addresses
-    dependents = @person.primary_family.family_members.reject(&:is_primary_applicant?)
+    dependents = @person.primary_family.family_members.active.reject(&:is_primary_applicant?)
     dependents.each do |dep|
       dependent_same_address_as_primary(dep)
     end

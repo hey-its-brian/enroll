@@ -240,6 +240,202 @@ RSpec.describe PeopleController, dbclean: :after_each do
       end
     end
 
+    context "dependent lives with primary member and inactive dependent" do
+      let(:dependent) { FactoryBot.create(:person) }
+      let(:dependent_2) { FactoryBot.create(:person) }
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+      let(:family_member)   { FactoryBot.create(:family_member, family: family, person: dependent) }
+      let(:family_member_2) { FactoryBot.create(:family_member, family: family, person: dependent_2) }
+
+      let!(:address) do
+        FactoryBot.create(
+          :address,
+          kind: "home",
+          address_1: "address1_a",
+          address_2: "",
+          city: "city1",
+          state: "DC",
+          zip: "22211",
+          person: dependent
+        )
+      end
+
+      let!(:address_2) do
+        FactoryBot.create(
+          :address,
+          kind: "home",
+          address_1: "unmatched_address",
+          address_2: "",
+          city: "differentcity",
+          state: "VA",
+          zip: "33445",
+          person: dependent_2
+        )
+      end
+
+      let!(:primary_address) do
+        FactoryBot.create(
+          :address,
+          kind: "home",
+          address_1: "address1_a",
+          address_2: "",
+          city: "city1",
+          state: "DC",
+          zip: "22211",
+          person: person
+        )
+      end
+
+      let!(:primary_mailing_address) do
+        FactoryBot.create(
+          :address,
+          kind: "mailing",
+          address_1: "address1_b",
+          address_2: "",
+          city: "city1",
+          state: "DC",
+          zip: "22211",
+          person: person
+        )
+      end
+
+      let(:addresses_attributes2) do
+        {
+          "0" => { "kind" => "home",
+                   "address_1" => "address1_changed",
+                   "address_2" => "",
+                   "city" => "city1",
+                   "state" => "DC",
+                   "zip" => "22211",
+                   "id" => person.addresses.where(kind: "home").first.id.to_s },
+          "1" => { "kind" => "mailing",
+                   "address_1" => "address1_b",
+                   "address_2" => "",
+                   "city" => "city1",
+                   "state" => "DC",
+                   "zip" => "22211",
+                   "id" => person.addresses.where(kind: "mailing").first.id.to_s }
+        }
+      end
+
+      before do
+        family.save
+        family_member.save
+        family_member_2.save
+        person.primary_family.reload
+
+        person_attributes[:addresses_attributes] = addresses_attributes2
+        post :update, params: { id: person.id, person: person_attributes }
+      end
+
+      it "updates the address for the first dependent whose address matches the original primary" do
+        updated_dependent = Person.find(dependent.id)
+        expect(updated_dependent.addresses.where(kind: "home").first.address_1).to eq("address1_changed")
+        expect(updated_dependent.addresses.where(kind: "home").first.city).to eq("city1")
+        expect(updated_dependent.addresses.where(kind: "home").first.zip).to eq("22211")
+      end
+    end
+
+    context "dependent lives with primary member and one active dependent" do
+      let(:dependent) { FactoryBot.create(:person) }
+      let(:inactive_dependent) { FactoryBot.create(:person) }
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+      let(:family_member)   { FactoryBot.create(:family_member, family: family, person: dependent) }
+      let(:inactive_family_member) { FactoryBot.create(:family_member, family: family, person: inactive_dependent) }
+
+      let!(:dependent_address) do
+        FactoryBot.create(
+          :address,
+          kind: "home",
+          address_1: "123 Main St",
+          address_2: "",
+          city: "Cityville",
+          state: "DC",
+          zip: "20001",
+          person: dependent
+        )
+      end
+
+      let!(:inactive_address) do
+        FactoryBot.create(
+          :address,
+          kind: "home",
+          address_1: "456 Other St",
+          address_2: "",
+          city: "Elsewhere",
+          state: "VA",
+          zip: "99999",
+          person: inactive_dependent
+        )
+      end
+
+      let!(:primary_home_address) do
+        FactoryBot.create(
+          :address,
+          kind: "home",
+          address_1: "123 Main St",
+          address_2: "",
+          city: "Cityville",
+          state: "DC",
+          zip: "20001",
+          person: person
+        )
+      end
+
+      let!(:primary_mailing_address) do
+        FactoryBot.create(
+          :address,
+          kind: "mailing",
+          address_1: "456 Mailing Ave",
+          address_2: "",
+          city: "Cityville",
+          state: "DC",
+          zip: "20001",
+          person: person
+        )
+      end
+
+      let(:addresses_attributes2) do
+        {
+          "0" => {
+            "kind" => "home",
+            "address_1" => "789 Updated Rd",
+            "address_2" => "",
+            "city" => "Cityville",
+            "state" => "DC",
+            "zip" => "20001",
+            "id" => person.addresses.where(kind: "home").first.id.to_s
+          },
+          "1" => {
+            "kind" => "mailing",
+            "address_1" => "456 Mailing Ave",
+            "address_2" => "",
+            "city" => "Cityville",
+            "state" => "DC",
+            "zip" => "20001",
+            "id" => person.addresses.where(kind: "mailing").first&.id.to_s
+          }
+        }
+      end
+
+      before do
+        family.save!
+        family_member.save!
+        inactive_family_member.update!(is_active: false)
+        person.primary_family.reload
+
+        person_attributes[:addresses_attributes] = addresses_attributes2
+        post :update, params: { id: person.id, person: person_attributes }
+      end
+
+      it "updates the address for the active dependent whose address matched the original primary address" do
+        updated_dependent = Person.find(dependent.id)
+        expect(updated_dependent.addresses.where(kind: "home").first.address_1).to eq("789 Updated Rd")
+        expect(updated_dependent.addresses.where(kind: "home").first.city).to eq("Cityville")
+        expect(updated_dependent.addresses.where(kind: "home").first.zip).to eq("20001")
+      end
+    end
+
     describe 'change ssn' do
       let(:ssn) { '523456989' }
 
