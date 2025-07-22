@@ -3,6 +3,7 @@
 module FinancialAssistance
   class IncomesController < FinancialAssistance::ApplicationController
     include NavigationHelper
+    include ResourceRegistryHelper
 
     before_action :find_application_and_applicant
     before_action :set_cache_headers, only: [:index, :other]
@@ -15,6 +16,7 @@ module FinancialAssistance
     # @before_action
     # @private
     before_action :check_for_uneditable_application
+    before_action :redirect_to_copy_application_if_reviewable, only: [:index]
 
     layout :resolve_layout
 
@@ -81,6 +83,16 @@ module FinancialAssistance
     end
 
     private
+
+    # Checks if the associated application of the current applicant is reviewable.
+    # If so, redirects the user to the copy application path with relevant parameters.
+    #
+    # @return [void]
+    def redirect_to_copy_application_if_reviewable
+      return unless @application&.is_reviewable? && qhp_application_feature_enabled?
+
+      redirect_back(fallback_location: main_app.insured_sbm_applications_path)
+    end
 
     def format_date(params)
       return if params[:income].blank?
