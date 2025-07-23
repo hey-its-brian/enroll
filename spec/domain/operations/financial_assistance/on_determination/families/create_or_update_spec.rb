@@ -71,6 +71,7 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
   end
 
   let(:relationship) { application.relationships.create(applicant_id: primary_applicant.id, relative_id: secondary_applicant.id, kind: 'spouse') }
+  let(:inverse_relationship) { application.relationships.create(applicant_id: secondary_applicant.id, relative_id: primary_applicant.id, kind: 'spouse') }
 
   let(:primary_person) { FactoryBot.create(:person, :with_consumer_role) }
   let(:family) {  FactoryBot.create(:family, :with_primary_family_member, person: primary_person) }
@@ -145,6 +146,52 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
       end
     end
 
+    context "should create proper relationships for the primary person" do
+      let(:third_applicant) do
+        FactoryBot.create(
+          :financial_assistance_applicant,
+          is_primary_applicant: false,
+          eligibility_determination_id: determination.id,
+          addresses: [secondary_address],
+          emails: [secondary_email],
+          phones: [secondary_phone],
+          application: application,
+          gender: 'female'
+        )
+      end
+
+      let(:third_applicant_relationship) { application.relationships.create(applicant_id: third_applicant.id, relative_id: primary_applicant.id, kind: 'child') }
+      let(:third_applicant_inverse_relationship) { application.relationships.create(applicant_id: primary_applicant.id, relative_id: third_applicant.id, kind: 'parent') }
+
+
+      before :each do
+        third_applicant_relationship
+        third_applicant_inverse_relationship
+        primary_applicant.application.build_aptc_eligibilities_evidences
+        third_applicant.application.build_ivl_eligibility_with_evidences
+        application.build_ivl_eligibility_with_evidences
+        application.save!
+        @result = subject.call(application: application)
+        primary_person.reload
+        third_applicant.reload
+        family.reload
+        application.reload
+      end
+
+      it 'returns a success result' do
+        expect(@result.success?).to be_truthy
+      end
+
+      it 'assigns latest application GID' do
+        expect(family.latest_application_gid).to eq(application.to_global_id.uri.to_s)
+      end
+
+      it 'updates the relationship kind' do
+        third_person = third_applicant.family_member.person
+        expect(primary_person.person_relationships.where(relative_id: third_person.id).first.kind).to eq('child')
+      end
+    end
+
     context "when:
       - primary applicant's family member and person exists
       - primary_applicant's information is different from the existing person
@@ -162,6 +209,7 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
 
       before :each do
         relationship.application.build_aptc_eligibilities_evidences
+        inverse_relationship
         application.build_ivl_eligibility_with_evidences
         application.save!
         @result = subject.call(application: application)
@@ -292,6 +340,7 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
 
       before :each do
         relationship.application.build_aptc_eligibilities_evidences
+        inverse_relationship
         application.build_ivl_eligibility_with_evidences
         application.save!
         @result = subject.call(application: application)

@@ -93,13 +93,13 @@ module Operations
             primary_applicant = application.primary_applicant
             primary_person = people_result[primary_applicant.id]
 
-            application.relationships.where(applicant_id: primary_applicant.id).each do |rel|
-              existing_rel = primary_person.person_relationships.where(relative_id: people_result[rel.relative_id].id).first
+            application.relationships.where(relative_id: primary_applicant.id).each do |rel|
+              existing_rel = primary_person.person_relationships.where(relative_id: people_result[rel.applicant_id].id).first
 
               if existing_rel.present?
                 existing_rel.kind = rel.kind
               else
-                primary_person.person_relationships.build(kind: rel.kind, relative_id: people_result[rel.relative_id].id)
+                primary_person.person_relationships.build(kind: rel.kind, relative_id: people_result[rel.applicant_id].id)
               end
             end
 
