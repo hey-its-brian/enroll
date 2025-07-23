@@ -13,7 +13,7 @@ RSpec.describe Operations::IndividualMarket::GenerateApplication, dbclean: :afte
         it 'returns failure' do
           result = subject.call(params)
           expect(result).to be_failure
-          expect(result.failure).to eq('family_id is expected in BSON format')
+          expect(result.failure).to eq('family_id or family is required')
         end
       end
 

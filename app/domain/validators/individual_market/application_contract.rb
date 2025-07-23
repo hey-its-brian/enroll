@@ -40,6 +40,7 @@ module Validators
         required(:applicants).array(:hash)
         optional(:submitted_at).maybe(:date_time)
         optional(:current_state).maybe(:symbol)
+        optional(:is_renewal).maybe(:bool)
       end
 
       rule(:family_id) do

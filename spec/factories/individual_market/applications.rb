@@ -13,9 +13,9 @@ FactoryBot.define do
     _type { 'IndividualMarket::Application' }
 
     hbx_id { SecureRandom.uuid }
-    effective_on { Date.today }
+    effective_on { TimeKeeper.date_of_record }
     submitted_at { nil }
-    assistance_year { Date.today.year }
+    assistance_year { TimeKeeper.date_of_record.year }
     predecessor_id { nil }
     origin { :user }
     generation_reason { :manual }

@@ -117,7 +117,7 @@ module IndividualMarket
 
     # @!attribute is_renewal
     # @return [Boolean] Indicates if the application is a renewal application
-    # @note This field is used to track if the application is a renewal of a previous application
+    # @note This field is used to track if the application is a renewal application
     field :is_renewal, type: Boolean, default: false
 
     # @!attribute family_updated_at

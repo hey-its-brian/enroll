@@ -11,16 +11,14 @@ module Subscribers
         subscribe(:on_create_renewal_draft) do |delivery_info, _metadata, response|
           sub_logger = Logger.new("#{Rails.root}/log/on_create_renewal_draft_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.log")
           payload = JSON.parse(response, symbolize_names: true)
-          # There is no PII in the payload, so it is safe to log.
           sub_logger.info "----- ocrd payload: #{payload}, delivery_info: #{delivery_info}"
 
-          # TODO: Implement the logic to create a renewal draft
-          # result = ::Operations::IndividualMarket::Applications::Renewal::CreateRenewalDraft.new.call(payload)
-          # if result.success?
-          #   sub_logger.info "--------------- ocrd Success. Message: #{result.success}"
-          # else
-          #   sub_logger.error "--------------- ocrd Failed. Message: #{result.failure}"
-          # end
+          result = ::Operations::IndividualMarket::Applications::Renewals::Create.new.call(payload)
+          if result.success?
+            sub_logger.info "--------------- ocrd Success. Message: #{result.success}"
+          else
+            sub_logger.error "--------------- ocrd Failed. Message: #{result.failure}"
+          end
 
           ack(delivery_info.delivery_tag)
         rescue StandardError => e
@@ -36,7 +34,7 @@ module Subscribers
           sub_logger.info "----- osad payload: #{payload}, delivery_info: #{delivery_info}"
 
           # TODO: Implement the logic to submit and determine renewal applications
-          # result = ::Operations::IndividualMarket::Applications::Renewal::SubmitAndDetermine.new.call(payload)
+          # result = ::Operations::IndividualMarket::Applications::Renewals::SubmitAndDetermine.new.call(payload)
           # if result.success?
           #   sub_logger.info "--------------- osad Success. Message: #{result.success}"
           # else
