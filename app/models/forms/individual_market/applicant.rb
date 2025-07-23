@@ -318,9 +318,9 @@ module Forms
           addresses: addresses_params
         }
 
-        if is_primary_applicant == "false" && address_same_as_primary == "true"
-          primary = application.primary_applicant
-          params.merge!(is_homeless: primary.is_homeless?)
+        if is_primary_applicant.to_s == "false" && address_same_as_primary == "true"
+          primary = application&.primary_applicant
+          params.merge!(is_homeless: primary&.is_homeless?)
         end
         params
       end
@@ -337,10 +337,20 @@ module Forms
       # @private
       # @return [Array<Hash>] Array of address parameters
       def addresses_params
-        return [] if address_same_as_primary == "true"
+        return primary_address_params if is_primary_applicant.to_s == "false" && address_same_as_primary == "true"
         return [] if addresses.nil?
 
         addresses.map(&:to_h).compact
+      end
+
+      def primary_address_params
+        applicant&.home_address&.destroy
+        primary = application.primary_applicant
+        home_address = primary.addresses.in(kind: 'home').first
+        return [] unless home_address
+
+        [home_address.attributes.to_h.slice('address_1', 'address_2', 'address_3', 'county',
+                                            'country_name', 'kind', 'city', 'state', 'zip')]
       end
 
       # Determines if immigration information is needed
@@ -504,9 +514,6 @@ module Forms
       # @param applicant [IndividualMarket::Applicant] The applicant whose addresses need handling
       # @return [Boolean] The result of saving the applicant
       def handle_address_changes(applicant)
-        # Handle home address
-        applicant.home_address&.destroy if !applicant.is_primary_applicant && applicant.address_same_as_primary == true
-
         # Handle mailing address
         applicant.mailing_address.destroy! if destroy_mailing_address?(applicant)
       end

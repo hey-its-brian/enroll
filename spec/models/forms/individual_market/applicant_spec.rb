@@ -113,11 +113,11 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
       expect(application.relationships.where(source_id: input_applicant.id, kind: "spouse").count).to eq(1)
     end
 
-    it 'should not create a new home address if address_same_as_primary is true' do
+    it 'should create a new home address if address_same_as_primary is true' do
       @applicant_form = described_class.new(params)
       @applicant_form.save
       application.reload
-      expect(application.applicants.last.home_address).not_to be_present
+      expect(application.applicants.last.home_address).to be_present
     end
 
     it 'should create a new mailing address' do

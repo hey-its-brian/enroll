@@ -104,7 +104,7 @@ module Operations
             last_name: applicant.person_name.family_name,
             name_sfx: applicant.person_name.name_sfx,
             encrypted_ssn: applicant.demographics.encrypted_ssn,
-            no_ssn: applicant.demographics.no_ssn,
+            no_ssn: applicant.demographics.no_ssn ? "1" : "0",
             gender: applicant.demographics.gender,
             dob: applicant.demographics.dob,
             is_incarcerated: applicant.demographics.is_incarcerated,
