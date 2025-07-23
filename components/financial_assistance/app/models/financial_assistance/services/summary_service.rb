@@ -285,6 +285,7 @@ module FinancialAssistance
                 map[:income][:rows].delete(:ai_an_income)
                 if qhp_application_feature_enabled?
                   map[:personal_info][:rows]
+                  map.delete(:contact_preferences) unless @applicant.is_primary_applicant
                   map.delete(:tribal_information) unless @applicant.indian_tribe_member
                   if @applicant.has_citizen_immigration_status?
                     immigration_rows = map.dig(:immigration_information, :rows)
@@ -342,6 +343,7 @@ module FinancialAssistance
                 super
                 if qhp_application_feature_enabled?
                   map[:personal_info][:rows]
+                  map.delete(:contact_preferences) unless @applicant.is_primary_applicant
                   map.delete(:tribal_information) unless @applicant.indian_tribe_member
                   if @applicant.has_citizen_immigration_status?
                     immigration_rows = map.dig(:immigration_information, :rows)
