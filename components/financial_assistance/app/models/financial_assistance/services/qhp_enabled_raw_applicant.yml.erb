@@ -154,7 +154,7 @@ addresses:
 
 contact_preferences:
   title: <%= l10n('qhp_application.review.contact_preferences') %>
-  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, preferences: true, applicant: @applicant.id) : preferences_application_path(@application) %>
+  edit_link: <%= @application.is_reviewable? ? copy_application_path(@application, applicant_hbx_id: @applicant.person_hbx_id, preferences: true, applicant: @applicant.id) : preferences_application_path(@application) %>
   rows:
     <% @applicant.phones.each do |phone| %>
     <%= phone.kind.downcase %>_phone:
