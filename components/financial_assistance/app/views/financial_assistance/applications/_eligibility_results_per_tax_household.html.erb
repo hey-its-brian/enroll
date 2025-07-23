@@ -180,7 +180,7 @@
 
     <div class="my-4">
       <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
-        previous_link: applications_path,
+        previous_link: qhp_enabled ? main_app.current_applications_insured_sbm_applications_path : applications_path,
         previous_button_text: qhp_enabled ? l10n('faa.results.view_my_applications').titleize : nil,
         next_link: @person.consumer_role.present? && is_under_open_enrollment? ? group_selection_url : find_sep_url,
         next_button_text: qhp_enabled ? l10n('faa.results.shop_for_plans') : nil
@@ -233,7 +233,7 @@
                 appeal_link: EnrollRegistry[:enroll_app].setting(:appeal_link).item,
                 find_expert_link: EnrollRegistry[:enroll_app].setting(:find_expert_link).item) %></p>
               <% if qhp_enabled %>
-                <%= h(link_to l10n("faa.results.view_my_applications"), main_app.insured_sbm_applications_path, class: "button secondary") %>
+                <%= h(link_to l10n("faa.results.view_my_applications"), main_app.current_applications_insured_sbm_applications_path, class: "button secondary") %>
               <% else %>
                 <%= h(link_to l10n("faa.results.view_my_applications"), applications_path, class: "button secondary") %>
               <% end %>

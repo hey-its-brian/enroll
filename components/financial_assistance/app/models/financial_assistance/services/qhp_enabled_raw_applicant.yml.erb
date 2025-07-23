@@ -60,7 +60,7 @@ tribal_information:
       value: "<%= human_value(@applicant.tribal_state) %>"
     tribe_name:
       key: <%= l10n('insured.tribal_name') %>
-      value: "<%= human_value(@applicant.tribal_name) %>"
+      value: "<%= human_value(@applicant.tribe_name_display) %>"
 
 immigration_information:
   title: <%= l10n('qhp_application.review.immigration_info') %>

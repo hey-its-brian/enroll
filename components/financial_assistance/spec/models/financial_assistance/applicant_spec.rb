@@ -2825,4 +2825,68 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
     end
   end
 
+  describe '#tribal_names' do
+    before do
+      allow(FinancialAssistanceRegistry).to receive(:[]).with(:featured_tribes_selection)
+                                                        .and_return(double(setting: double(item: featured_tribes_hash)))
+    end
+
+    let(:featured_tribes_hash) do
+      [["Maliseet", "HM"], ["Passamaquoddy", "PD"], ["Penobscot", "PE"], ["Micmac", "AM"], ["Other", "OT"]]
+    end
+
+    context 'when tribe_codes is blank' do
+      before { allow(applicant).to receive(:tribe_codes).and_return([]) }
+
+      it 'returns nil' do
+        expect(applicant.tribal_names).to be_nil
+      end
+    end
+
+    context 'when tribe_codes has values' do
+      before { allow(applicant).to receive(:tribe_codes).and_return(['HM', 'PD']) }
+
+      it 'returns the tribe names joined by commas' do
+        expect(applicant.tribal_names).to eq('Maliseet, Passamaquoddy')
+      end
+    end
+
+    context 'when tribe_codes contains nil or blank values' do
+      before { allow(applicant).to receive(:tribe_codes).and_return(['AM', '', nil, 'OT']) }
+
+      it 'filters out nil and blank values' do
+        expect(applicant.tribal_names).to eq('Micmac, Other')
+      end
+    end
+  end
+
+  describe '#tribe_name_display' do
+    before do
+      allow(applicant).to receive(:tribal_names).and_return('Cherokee, Navajo')
+    end
+
+    context 'when tribal_name is present' do
+      before { allow(applicant).to receive(:tribal_name).and_return('Apache') }
+
+      it 'returns the tribal_name' do
+        expect(applicant.tribe_name_display).to eq('Apache')
+      end
+    end
+
+    context 'when tribal_name is blank' do
+      before { allow(applicant).to receive(:tribal_name).and_return('') }
+
+      it 'returns the tribal_names' do
+        expect(applicant.tribe_name_display).to eq('Cherokee, Navajo')
+      end
+    end
+
+    context 'when tribal_name is nil' do
+      before { allow(applicant).to receive(:tribal_name).and_return(nil) }
+
+      it 'returns the tribal_names' do
+        expect(applicant.tribe_name_display).to eq('Cherokee, Navajo')
+      end
+    end
+  end
 end

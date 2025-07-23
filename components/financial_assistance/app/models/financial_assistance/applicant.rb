@@ -1784,6 +1784,21 @@ module FinancialAssistance
       aptc_csr_eligibility.extend_income_evidence_due_dates(action, extend_by, modified_by)
     end
 
+    def tribal_names
+      return @tribal_names unless @tribal_names.nil?
+      return nil if tribe_codes.blank?
+      tribes = FinancialAssistanceRegistry[:featured_tribes_selection].setting(:featured_tribes).item&.to_h&.invert
+
+      @tribal_names ||= tribe_codes.compact_blank.map{ |code| tribes[code] }.join(', ')
+    end
+
+    # Returns the display name for the tribe
+    #
+    # @return [String] The tribal name if present, otherwise the tribal names from tribe_codes.
+    def tribe_name_display
+      tribal_name.present? ? tribal_name : tribal_names
+    end
+
     private
 
     # Builds evidences for the individual market eligibility.
