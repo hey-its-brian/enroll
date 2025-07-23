@@ -68,6 +68,7 @@ export default class extends Controller {
     this.TribalContainerTarget.classList.remove('hide');
     const enrollStateAbbr = this.element.querySelector('#enroll_state_abbr').value
     const isFeaturedTribesEnabled = this.element.querySelector('#is_featured_tribes_selection_enabled').value === 'true'
+    const selectedState = this.TribalStateTarget?.value
     if (isFeaturedTribesEnabled && selectedState === enrollStateAbbr) {
       this.TribalNameContainerTarget.classList.remove('hide')
       this.toggleOtherTribeName()
@@ -172,9 +173,15 @@ export default class extends Controller {
 
   toggleOtherTribeName() {
     let input = document.querySelector('input#applicant_demographics_attributes_tribe_codes_ot')
+    let tribalCodes = document.querySelectorAll('.tribe_codes')
     if (input.checked) {
       this.TribalNameContainerTarget.classList.remove('hide')
       this.setTribalNameRequired(true)
+      tribalCodes.forEach(code => {
+        code.classList.remove("indicate-invalid")
+        code.setCustomValidity("")
+        code.reportValidity()
+      })
     } else {
       this.TribalNameContainerTarget.classList.add('hide')
       this.setTribalNameRequired(false)
@@ -191,6 +198,12 @@ export default class extends Controller {
         // Show validation message if no tribe is selected
         const tribalNameAlert = document.getElementById('tribal-name-alert')
         if (tribalNameAlert) tribalNameAlert.classList.remove('hide')
+      } else {
+        tribalCodes.forEach(code => {
+          code.classList.remove("indicate-invalid")
+          code.setCustomValidity("")
+          code.reportValidity()
+        })
       }
     }
   }
@@ -500,18 +513,115 @@ export default class extends Controller {
 
   checkValidations(event) {
     event.preventDefault()
+    let ssnValid = this.checkSsnValidation()
+    let tribalStateValid = this.checkTribalStateValidation()
+    let tribalNameValid = true
+    if (tribalStateValid) {
+      tribalNameValid = this.checkTribalNameOrCodeValidation()
+    }
+    let valid = ssnValid && tribalStateValid && tribalNameValid
+
+    if (valid) {
+      this.element.querySelector('form').submit()
+    }
+  }
+
+  checkSsnValidation() {
     if (this.hasNoSsnCheckboxTarget && this.hasSsnInputTarget) {
       let input = this.SsnInputTarget.querySelector('input')
       if (this.NoSsnCheckboxTarget.checked && input.value.length > 1) {
         input.setCustomValidity("Cannot provide an SSN and claim you don't have a SSN")
         input.reportValidity()
+        return false
       } else {
         input.setCustomValidity("")
         input.reportValidity()
-        this.element.querySelector('form').submit()
+        return true
       }
     } else {
-      this.element.querySelector('form').submit()
+      return true
+    }
+  }
+
+  checkTribalStateValidation() {
+    const indianTribeMemberYes = document.querySelector('#indian_tribe_member_yes')
+    const tribalState = this.TribalStateTarget
+    if (indianTribeMemberYes?.checked) {
+      if (this.hasTribalStateTarget && tribalState.value == "") {
+        tribalState.setCustomValidity("Tribal state is required when native american / alaska native is selected")
+        tribalState.reportValidity()
+        return false
+      } else {
+        tribalState.setCustomValidity("")
+        tribalState.reportValidity()
+        return true
+      }
+    } else {
+      return true
+    }
+  }
+
+  checkTribalNameOrCodeValidation() {
+    const enrollStateAbbr = this.element.querySelector('#enroll_state_abbr').value
+    const isFeaturedTribesEnabled = this.element.querySelector('#is_featured_tribes_selection_enabled').value === 'true'
+    const selectedState = this.TribalStateTarget?.value
+    if (isFeaturedTribesEnabled && selectedState === enrollStateAbbr) {
+      return this.checkTribalCodeValidation()
+    } else {
+      return this.checkTribalNameValidation()
+    }
+  }
+
+  checkTribalNameValidation() {
+    if (this.hasTribalNameTarget) {
+      const tribalName = this.TribalNameTarget.value
+      if (tribalName == "") {
+        this.TribalNameTarget.setCustomValidity("Tribal name is required when native american / alaska native is selected")
+        this.TribalNameTarget.reportValidity()
+        return false
+      } else {
+        this.TribalNameTarget.setCustomValidity("")
+        this.TribalNameTarget.reportValidity()
+        return true
+      }
+    } else {
+      return true
+    }
+  }
+  checkTribalCodeValidation() {
+    if (this.hasFeaturedTribeContainerTarget) {
+      const featuredTribesContainer = this.FeaturedTribeContainerTarget
+      let tribalCodes = featuredTribesContainer.querySelectorAll('.tribe_codes')
+      let tribalIds = [...featuredTribesContainer.querySelectorAll('.tribe_codes:checked')].map(option => option.value)
+      if (tribalIds.length == 0) {
+        tribalCodes.forEach(code => {
+          code.classList.add("indicate-invalid")
+          if (code.value == "OT") {
+            code.setCustomValidity("Tribal name is required when native american / alaska native is selected")
+            code.reportValidity()
+          }
+        })
+        return false
+      } else if (tribalIds.includes("OT") && this.hasTribalNameTarget && this.TribalNameTarget.value == "") {
+        this.TribalNameTarget.setCustomValidity("Tribal name is required when native american / alaska native is selected")
+        this.TribalNameTarget.reportValidity()
+        return false
+      } else {
+        tribalCodes.forEach(code => {
+          code.classList.remove("indicate-invalid")
+          code.setCustomValidity("")
+          code.reportValidity()
+        })
+        if (this.hasTribalNameTarget) {
+          this.TribalNameTarget.setCustomValidity("")
+          this.TribalNameTarget.reportValidity()
+        }
+        featuredTribesContainer.setCustomValidity("")
+        featuredTribesContainer.reportValidity()
+        return true
+      }
+    } else {
+      return true
     }
   }
 

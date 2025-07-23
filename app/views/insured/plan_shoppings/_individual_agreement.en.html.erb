@@ -1,5 +1,5 @@
 <% if @bs4 %>
-  <% unless qhp_application_feature_enabled?%>
+  <% unless qhp_application_feature_enabled? %>
   <section>
     <h2><%= l10n("insured.individual_agreement.agreement.title") %></h2>
     <p><%= l10n("insured.individual_agreement.agreement.report_changes", contact_center_name: contact_center_name, contact_center_phone_number: contact_center_phone_number) %></p>

@@ -418,7 +418,7 @@ input[type='date']:invalid::-webkit-datetime-edit {
 }
 
 .was-validated {
-  input:invalid, select:invalid, textarea:invalid  {
+  input:invalid, select:invalid, textarea:invalid, fieldset:invalid  {
     border-color: var(--error-color);
     padding-right: calc(1.5em + 0.75rem) !important;
     background-repeat: no-repeat;
@@ -436,7 +436,7 @@ input[type='date']:invalid::-webkit-datetime-edit {
     }
   }
   input[type='checkbox']:invalid,
-  input[type='radio']:invalid {
+  input[type='radio']:invalid, input[type='radio'] {
     outline: 2px solid var(--error-color);
   }
 }
@@ -446,6 +446,10 @@ input::-webkit-datetime-edit-month-field:focus,
 input::-webkit-datetime-edit-year-field:focus {
     background-color: var(--badge-current-bg);
     outline: none;
+}
+
+.indicate-invalid {
+  outline: 2px solid var(--error-color);
 }
 
 .admin-designation:after {

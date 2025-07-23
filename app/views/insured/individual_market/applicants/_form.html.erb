@@ -392,7 +392,7 @@
                     </div>
                   </div>
                 </div>
-                <%= demographics.text_field :tribal_name, class: "required", id: "tribal-name", data: { target: "family-information.TribalName" }, placeholder: l10n("insured.consumer_roles.tribe_name") %>
+                <%= demographics.text_field :tribal_name, class: "required", id: "tribal-name", data: { target: "family-information.TribalName", action: "keydown->family-information#checkTribalNameValidation" }, placeholder: l10n("insured.consumer_roles.tribe_name") %>
               </div>
             <% else %>
               <div class="mb-4">
@@ -578,13 +578,13 @@
           <%= l10n("cancel") %>
         </button>
         <% if !is_editing %>
-          <%= f.button(class: "btn btn-primary") do %>
+          <%= f.button(class: "btn btn-primary", data: { action: "family-information#checkValidations" }) do %>
             <%= l10n("confirm_member") %>
           <% end %>
         <% else %>
           <div id="remove_confirm" class="hidden"></div>
           <%= h(link_to l10n('remove_member'), form_url, class: 'btn button-error outline close-2', :method => :delete, :remote => true) %>
-          <%= f.button(class: "btn btn-primary") do %>
+          <%= f.button(class: "btn btn-primary", data: { action: "family-information#checkValidations" }) do %>
             <%= l10n("save_changes") %>
           <% end %>
         <% end %>

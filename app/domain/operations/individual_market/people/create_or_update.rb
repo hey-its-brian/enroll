@@ -110,6 +110,7 @@ module Operations
             is_incarcerated: applicant.demographics.is_incarcerated,
             ethnicity: fetch_ethnicity(applicant),
             race: assign_race(applicant),
+            indian_tribe_member: applicant.demographics.indian_tribe_member,
             tribal_id: applicant.demographics.tribal_id,
             tribal_state: applicant.demographics.tribal_state,
             tribal_name: applicant.demographics.tribal_name,
