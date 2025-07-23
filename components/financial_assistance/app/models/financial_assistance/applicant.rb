@@ -1766,7 +1766,7 @@ module FinancialAssistance
     # @return [Array<String>] The subset of the applicant's ethnicity selections that match race options
     def race_selections
       # Returns only the race options selected by the applicant
-      ethnicity.select { |eth| race_values.include?(eth) }
+      ethnicity.select { |eth| race_values.include?(eth) }.uniq
     end
 
     # Filters the applicant's selected ethnicity values to only include latino/ethnicity options
@@ -1774,7 +1774,7 @@ module FinancialAssistance
     # @return [Array<String>] The subset of the applicant's ethnicity selections that match ethnicity options
     def ethnicity_selections
       # Returns only the Latino/ethnicity options selected by the applicant
-      ethnicity.select { |eth| ethnicity_values.include?(eth) }
+      ethnicity.select { |eth| ethnicity_values.include?(eth) }.uniq
     end
 
     # Extends the due dates for income evidence based on the action and extend_by parameters.

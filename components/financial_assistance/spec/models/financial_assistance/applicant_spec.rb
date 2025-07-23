@@ -2678,6 +2678,28 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
         applicant.ethnicity = ["Hispanic or Latino"]
         expect(applicant.race_selections).to be_empty
       end
+
+      it "filters out duplicates from selected race values" do
+        applicant.ethnicity = ["White", "White", "Asian", "Hispanic or Latino"]
+        expect(applicant.race_selections).to match_array(["White", "Asian"])
+      end
+
+      it "handles case when ethnicity array is empty" do
+        applicant.ethnicity = []
+        expect(applicant.race_selections).to be_empty
+      end
+
+      it "ignores invalid race values not in the ethnicity collection" do
+        applicant.ethnicity = ["Invalid Race", "White", "Another Invalid", "Asian"]
+        expect(applicant.race_selections).to match_array(["White", "Asian"])
+      end
+
+      it "returns all race selections when all available races are selected" do
+        applicant.ethnicity = ["White", "Black or African American", "Asian"]
+        expect(applicant.race_selections).to match_array([
+          "White", "Black or African American", "Asian"
+        ])
+      end
     end
 
     describe '#ethnicity_selections' do
@@ -2688,6 +2710,21 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
       it "returns an empty array when no ethnicity values are selected" do
         applicant.ethnicity = ["White", "Black or African American"]
         expect(applicant.ethnicity_selections).to be_empty
+      end
+
+      it "filters out duplicates from selected ethnicity values" do
+        applicant.ethnicity = ["Hispanic or Latino", "Hispanic or Latino", "White"]
+        expect(applicant.ethnicity_selections).to match_array(["Hispanic or Latino"])
+      end
+
+      it "handles case when ethnicity array is empty" do
+        applicant.ethnicity = []
+        expect(applicant.ethnicity_selections).to be_empty
+      end
+
+      it "ignores invalid ethnicity values not in the latino collection" do
+        applicant.ethnicity = ["Invalid Ethnicity", "Hispanic or Latino", "Another Invalid"]
+        expect(applicant.ethnicity_selections).to match_array(["Hispanic or Latino"])
       end
     end
 
