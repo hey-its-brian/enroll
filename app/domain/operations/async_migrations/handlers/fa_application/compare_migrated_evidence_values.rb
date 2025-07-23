@@ -138,7 +138,7 @@ module Operations
               latest_old_request_result.source == latest_new_request_result.source &&
               latest_old_request_result.source_transaction_id == latest_new_request_result.source_transaction_id &&
               latest_old_request_result.code == latest_new_request_result.code &&
-              latest_old_request_result.code_description.to_s == latest_new_request_result.code_description &&
+              latest_old_request_result.code_description.to_s == latest_new_request_result.code_description.to_s &&
               latest_old_request_result.action == latest_new_request_result.action &&
               (latest_old_request_result.raw_payload.present? == latest_new_request_result.raw_payload.present?)
           end

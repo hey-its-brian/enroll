@@ -55,7 +55,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::Families::FetchFamiliesWit
         it 'returns failure' do
           shopping_enrollment
           result = subject.call(params)
-          expect(result).to be_a(Dry::Monads::Result::Failure)
+          expect(result.count).to eql(0)
         end
 
       end
@@ -83,6 +83,35 @@ RSpec.describe Operations::AsyncMigrations::Handlers::Families::FetchFamiliesWit
         it 'should return families without determined fa applications' do
           expect(@result.first.id.to_s).to include(family2.id.to_s)
         end
+      end
+    end
+
+    context 'when family already have qhp application' do
+      before do
+        active_enrollment
+        qhp_application
+        @result = subject.call(params)
+      end
+
+      let(:active_enrollment) do
+        FactoryBot.create(:hbx_enrollment,
+                          family: family2,
+                          household: family2.active_household,
+                          kind: "individual",
+                          coverage_kind: "health",
+                          product: product,
+                          aasm_state: 'coverage_selected',
+                          effective_on: effective_on,
+                          hbx_enrollment_members: [
+                            FactoryBot.build(:hbx_enrollment_member, applicant_id: family2.primary_applicant.id, eligibility_date: effective_on, coverage_start_on: effective_on, is_subscriber: true)
+                          ])
+      end
+      let(:qhp_application) do
+        FactoryBot.create(:individual_market_application, family: family2, current_state: 'determined', hbx_id: "830295", assistance_year: assistance_year)
+      end
+
+      it 'returns no application' do
+        expect(@result.count).to eql(0)
       end
     end
 

@@ -29,6 +29,7 @@ module Operations
           def call(params)
             application_id = yield validate(params)
             application = yield find_application(application_id)
+            yield check_if_application_is_eligible_for_migration(application)
             draft_application = yield generate_new_draft_application(application)
             yield generate_eligibilities(draft_application, application)
             determined_application = yield move_to_determined(draft_application, application)
@@ -61,6 +62,14 @@ module Operations
           def find_application(application_id)
             application = ::FinancialAssistance::Application.where(id: application_id).first
             application ? Success(application) : Failure('Application not found')
+          end
+
+          def check_if_application_is_eligible_for_migration(application)
+            family = application.family
+            existing_app = ::FinancialAssistance::Application.where(family_id: family.id, assistance_year: application.assistance_year, aasm_state: "determined", origin: :migration, generation_reason: :manual)
+            return Failure("Application hbx id: #{application.hbx_id} with family id: #{application.family_id} is not eligible for migration") if existing_app.present?
+
+            Success(true)
           end
 
           def generate_new_draft_application(application)

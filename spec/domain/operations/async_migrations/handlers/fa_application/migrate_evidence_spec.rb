@@ -184,6 +184,12 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvid
         @new_income_evidence = application.applicants.first.aptc_csr_eligibility.evidences.first
       end
 
+      it 'should not migrate if application is already migrated' do
+        result = subject.call({document_id: application.id.to_s})
+        expect(result).to be_failure
+        expect(result.failure).to eq("Applicant with APTC/CSR eligibility found, application hbx id: #{application.hbx_id} is not eligible for migration")
+      end
+
       it 'should be a success' do
         expect(@result).to be_success
         expect(@result.value!).to be_a(Array)

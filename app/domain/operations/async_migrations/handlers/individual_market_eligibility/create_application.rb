@@ -15,6 +15,7 @@ module Operations
 
             family_id = yield validate(params)
             family = yield find_family(family_id)
+            yield check_if_family_is_eligible_for_migration(family)
             application = yield transform_family(family)
             draft_application = yield build_application(application)
             determined_application = yield persist(draft_application)
@@ -43,6 +44,15 @@ module Operations
           def transform_family(family)
             contract_result = ::Validators::IndividualMarket::ApplicationContract.new.call(application_attributes(family))
             contract_result.success? ? Success(contract_result.to_h) : Failure(contract_result.errors)
+          end
+
+          def check_if_family_is_eligible_for_migration(family)
+            qhp_app = ::IndividualMarket::Application.newest_determined_by_family_id(family.id).only(
+              :assistance_year, :current_state, :family_id, :id, :submitted_at
+            ).first
+            return Failure("Family with id: #{family.id} is not eligible for migration") if qhp_app.present?
+
+            Success(true)
           end
 
           def application_attributes(family)
@@ -146,9 +156,7 @@ module Operations
             family = determined_application.family
             family.assign_latest_application_gid
             family.save!
-
-            Success(true)
-            # place holder to build family determination
+            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
           end
 
           def compare_migrated_values(application)

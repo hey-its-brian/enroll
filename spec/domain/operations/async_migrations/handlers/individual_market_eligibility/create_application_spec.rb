@@ -18,15 +18,15 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
   end
   let!(:immigration_type) do
     immigration = FactoryBot.build(:verification_type, type_name: 'Immigration status',
-                                                            validation_status: 'rejected',
-                                                            applied_roles: ['consumer_role'],
-                                                            update_reason: 'initial',
-                                                            rejected: false,
-                                                            external_service: 'some_service',
-                                                            due_date: Date.today,
-                                                            due_date_type: 'admin',
-                                                            updated_by: 'admin',
-                                                            inactive: true)
+                                                       validation_status: 'rejected',
+                                                       applied_roles: ['consumer_role'],
+                                                       update_reason: 'initial',
+                                                       rejected: false,
+                                                       external_service: 'some_service',
+                                                       due_date: Date.today,
+                                                       due_date_type: 'admin',
+                                                       updated_by: 'admin',
+                                                       inactive: true)
     person.verification_types << immigration
     person.save!
   end
@@ -166,336 +166,388 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
 
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
 
-  before do
-    allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
-    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
-    consumer_role.save!
-    person.verification_types.where(type_name: "DC Residency").delete_all
-    person.verification_types.alive_status_type.each do |verification_type|
-      verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
-                                                 modifier: "external Hub",
-                                                 update_reason: "Hub response",
-                                                 event_response_record_id: response3.id,
-                                                 to_validation_status: "verified",
-                                                 from_validation_status: "unverified",
-                                                 created_at: DateTime.now)
+  context '#migration creates family eligibility determination' do
+    before do
+      allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      consumer_role.save!
+      person.verification_types.where(type_name: "DC Residency").delete_all
+      person.verification_types.alive_status_type.each do |verification_type|
+        verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
+                                                   modifier: "external Hub",
+                                                   update_reason: "Hub response",
+                                                   event_response_record_id: response3.id,
+                                                   to_validation_status: "verified",
+                                                   from_validation_status: "unverified",
+                                                   created_at: DateTime.now)
 
-      verification_type.add_type_history_element(action: "call hub",
-                                                 modifier: "admin",
-                                                 update_reason: "Hub request",
-                                                 event_response_record_id: nil,
-                                                 created_at: DateTime.now - 5.minutes)
-      verification_type.save!
+        verification_type.add_type_history_element(action: "call hub",
+                                                   modifier: "admin",
+                                                   update_reason: "Hub request",
+                                                   event_response_record_id: nil,
+                                                   created_at: DateTime.now - 5.minutes)
+        verification_type.save!
+      end
     end
 
-    @result = subject.call({document_id: family.id})
-    @new_application_hbx_id = @result.value![1]
-    @new_application = IndividualMarket::Application.where(hbx_id: @new_application_hbx_id).first
-    @new_applicant = @new_application.applicants.first
-    @individual_market_eligibility = @new_applicant.individual_market_eligibility
-
+    it 'should create family_determination' do
+      expect(family.eligibility_determination).not_to be_present
+      subject.call({document_id: family.id.to_s})
+      family.reload
+      expect(family.eligibility_determination).to be_present
+      expect(family.eligibility_determination.subjects.count).to eq(1)
+      subject = family.eligibility_determination.subjects.first
+      expect(subject.eligibility_states[0].eligibility_item_key).to eq("aptc_csr_credit")
+      expect(subject.eligibility_states[0].evidence_states.count).to eq(0)
+      expect(subject.eligibility_states[1].eligibility_item_key).to eq("aca_individual_market_eligibility")
+      expect(subject.eligibility_states[1].evidence_states.count).to eq(4)
+    end
   end
 
-  it 'should be a success' do
-    expect(@result).to be_success
-    expect(@new_application.origin).to eq(:migration)
-    expect(@new_application.generation_reason).to eq(:manual)
-    expect(@new_application.hbx_id).to be_present
-    expect(@new_application.submitted_at).to be_a(DateTime)
-    expect(@new_application.submitted_at.utc?).to be true
-    expect(@new_application.current_state).to eq(:determined)
-    family.reload
-    expect(family.latest_application_gid).to eq(@new_application.to_global_id.to_s)
-  end
+  context '#migration - others' do
+    before do
+      allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      consumer_role.save!
+      person.verification_types.where(type_name: "DC Residency").delete_all
+      person.verification_types.alive_status_type.each do |verification_type|
+        verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
+                                                   modifier: "external Hub",
+                                                   update_reason: "Hub response",
+                                                   event_response_record_id: response3.id,
+                                                   to_validation_status: "verified",
+                                                   from_validation_status: "unverified",
+                                                   created_at: DateTime.now)
 
-  it 'should migrate contact method, language preference and age off excluded' do
-    expect(@new_applicant.age_off_excluded).to eq(person.age_off_excluded)
-    expect(@new_applicant.contact_method).to eq(consumer_role.contact_method)
-    expect(@new_applicant.language_preference).to eq(consumer_role.language_preference)
-  end
+        verification_type.add_type_history_element(action: "call hub",
+                                                   modifier: "admin",
+                                                   update_reason: "Hub request",
+                                                   event_response_record_id: nil,
+                                                   created_at: DateTime.now - 5.minutes)
+        verification_type.save!
+      end
 
-  context 'should migrate individual_market_eligibility' do
-    it 'should create individual_market_eligibility' do
-      expect(@individual_market_eligibility).to be_present
-      expect(@individual_market_eligibility.evidences.count).to eq(person.verification_types.count)
-      expect(@individual_market_eligibility.evidences.select(&:is_active).count).to eq(person.verification_types.active.count)
-      expect(@individual_market_eligibility.created_at).to be_present
-      expect(@individual_market_eligibility.updated_at).to be_present
-      expect(@individual_market_eligibility.current_state).to eq(:verification_in_progress)
-      expect(@individual_market_eligibility.is_satisfied).to eq(true)
-      expect(@individual_market_eligibility._type).to eq('Eligibilities::V3::IndividualMarketEligibility')
-      expect(@individual_market_eligibility.determined_at).to be_present
-      expect(@individual_market_eligibility.state_histories.count).to eq(1)
-      expect(@individual_market_eligibility.state_histories.first.to_state).to eq(:verification_in_progress)
-      expect(@individual_market_eligibility.state_histories.first.from_state).to eq(:initial)
-      expect(@individual_market_eligibility.state_histories.first.transition_at).to be_present
-      expect(@individual_market_eligibility.state_histories.first.event).to eq(:pend)
-      expect(@individual_market_eligibility.state_histories.first.reason).to eq("migrating for the family #{@new_application.family_id} to create individual_market_eligibility")
+      @result = subject.call({document_id: family.id})
+      @new_application_hbx_id = @result.value![1]
+      @new_application = IndividualMarket::Application.where(hbx_id: @new_application_hbx_id).first
+      @new_applicant = @new_application.applicants.first
+      @individual_market_eligibility = @new_applicant.individual_market_eligibility
+
     end
 
-    context 'should migrate ssn_verification_type' do
-      before do
-        @ssn_verification_type = person.verification_types.ssn_type.first
-        @type_history_elements = @ssn_verification_type.type_history_elements
-        @social_security_number_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "social_security_number_evidence" }.first
-        @verification_histories = @social_security_number_evidence.verification_histories
-        @request_results = @social_security_number_evidence.request_results
-        @state_histories = @social_security_number_evidence.state_histories
-      end
-      # match verification types with applicant evidence
-      it 'should migrate ssn verification type to evidence 3.0' do
-        expect(@social_security_number_evidence).to be_present
-        expect(@social_security_number_evidence.created_at).to be_present
-        expect(@social_security_number_evidence.updated_at).to be_present
-        expect(@social_security_number_evidence._type).to eq('Eligibilities::V3::Evidences::SocialSecurityNumberEvidence')
-        expect(@social_security_number_evidence.current_state).to eq(@ssn_verification_type.validation_status.to_sym)
-        expect(@social_security_number_evidence.is_satisfied).to eq(["outstanding","rejected"].include?(@ssn_verification_type.validation_status) ? false : true)
-        expect(@social_security_number_evidence.verification_outstanding).to eq(["outstanding","rejected"].include?(@ssn_verification_type.validation_status))
-        expect(@social_security_number_evidence.due_on).to eq(@ssn_verification_type.due_date)
-        expect(@social_security_number_evidence.updated_by).to eq(@ssn_verification_type.updated_by)
-        expect(@social_security_number_evidence.external_service).to eq(@ssn_verification_type.external_service)
-        expect(@social_security_number_evidence.is_active).to eq(!@ssn_verification_type.inactive)
-      end
+    it 'should be a success' do
+      expect(@result).to be_success
+      expect(@new_application.origin).to eq(:migration)
+      expect(@new_application.generation_reason).to eq(:manual)
+      expect(@new_application.hbx_id).to be_present
+      expect(@new_application.submitted_at).to be_a(DateTime)
+      expect(@new_application.submitted_at.utc?).to be true
+      expect(@new_application.current_state).to eq(:determined)
+      family.reload
+      expect(family.latest_application_gid).to eq(@new_application.to_global_id.to_s)
+    end
 
-      it 'should create verification_histories' do
-        type_history_elements = @type_history_elements.where(:event_response_record_id => nil).order_by("created_at ASC")
-        expect(@verification_histories).to be_present
-        expect(@verification_histories.count).to eq(type_history_elements.count)
-        expect(@verification_histories.map(&:created_at)).to be_present
-        expect(@verification_histories.map(&:updated_at)).to be_present
-        expect(@verification_histories.map(&:action)).to eq(type_history_elements.map(&:action))
-        expect(@verification_histories.map(&:update_reason)).to eq(type_history_elements.map(&:update_reason))
-        expect(@verification_histories.map(&:updated_by)).to eq(type_history_elements.map(&:modifier))
-        expect(@verification_histories.map(&:date_of_action).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")}).to eq(type_history_elements.map(&:created_at).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")})
-        latest_verification_history = @verification_histories.order_by("date_of_action DESC").first
-        expect(latest_verification_history.is_satisfied).to eq(@social_security_number_evidence.is_satisfied)
-        expect(latest_verification_history.verification_outstanding).to eq(@social_security_number_evidence.verification_outstanding)
+    it 'should migrate contact method, language preference and age off excluded' do
+      expect(@new_applicant.age_off_excluded).to eq(person.age_off_excluded)
+      expect(@new_applicant.contact_method).to eq(consumer_role.contact_method)
+      expect(@new_applicant.language_preference).to eq(consumer_role.language_preference)
+    end
 
+    context 'when script is triggered again' do
+      it 'should not create a new application' do
+        expect { subject.call({document_id: family.id})}.not_to(change { IndividualMarket::Application.count})
       end
 
-      it 'should create request_results' do
-        type_history_elements = @type_history_elements.where(:event_response_record_id.ne => nil).order_by("created_at ASC")
-        responses = consumer_role.lawful_presence_determination.ssa_responses.where(:id.in => type_history_elements.map(&:event_response_record_id))
-        expect(@request_results).to be_present
-        expect(@request_results.count).to eq(type_history_elements.count)
-        expect(@request_results.map(&:created_at)).to be_present
-        expect(@request_results.map(&:updated_at)).to be_present
-        expect(@request_results.map(&:result).compact.flatten).to be_empty
-        expect(@request_results.map(&:source)).to eq(["FDSH"])
-        expect(@request_results.map(&:source_transaction_id).compact.flatten).to be_empty
-        expect(@request_results.map(&:code)).to eq(["HS000000"])
-        expect(@request_results.map(&:code_description)).to eq(["ResponseDescriptionText0"])
-        expect(@request_results.map(&:raw_payload)).to eq(responses.map(&:body))
-
-      end
-
-      it 'should create state_histories' do
-        expect(@state_histories).not_to be_present
-        expect(@state_histories.count).to eq(0)
+      it 'should return error message' do
+        result = subject.call({document_id: family.id})
+        expect(result).to be_failure
+        expect(result.failure).to eq("Family with id: #{family.id} is not eligible for migration")
       end
     end
 
-    context 'should migrate citizenship_verification_type' do
-      before do
-        @citizenship_verification_type = person.verification_types.citizenship_type.first
-        @type_history_elements = @citizenship_verification_type.type_history_elements
-        @citizenship_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "citizenship_evidence" }.first
-        @verification_histories = @citizenship_evidence.verification_histories
-        @request_results = @citizenship_evidence.request_results
-        @state_histories = @citizenship_evidence.state_histories
-
-      end
-      # match verification types with applicant evidence
-      it 'should migrate citizenship verification type to evidence 3.0' do
-        expect(@citizenship_evidence).to be_present
-        expect(@citizenship_evidence.created_at).to be_present
-        expect(@citizenship_evidence.updated_at).to be_present
-        expect(@citizenship_evidence._type).to eq('Eligibilities::V3::Evidences::CitizenshipEvidence')
-        expect(@citizenship_evidence.current_state).to eq(@citizenship_verification_type.validation_status.to_sym)
-        expect(@citizenship_evidence.is_satisfied).to eq(["outstanding","rejected"].include?(@citizenship_verification_type.validation_status) ? false : true)
-        expect(@citizenship_evidence.verification_outstanding).to eq(["outstanding","rejected"].include?(@citizenship_verification_type.validation_status))
-        expect(@citizenship_evidence.due_on).to eq(@citizenship_verification_type.due_date)
-        expect(@citizenship_evidence.updated_by).to eq(@citizenship_verification_type.updated_by)
-        expect(@citizenship_evidence.external_service).to eq(@citizenship_verification_type.external_service)
-        expect(@citizenship_evidence.is_active).to eq(!@citizenship_verification_type.inactive)
+    context 'should migrate individual_market_eligibility' do
+      it 'should create individual_market_eligibility' do
+        expect(@individual_market_eligibility).to be_present
+        expect(@individual_market_eligibility.evidences.count).to eq(person.verification_types.count)
+        expect(@individual_market_eligibility.evidences.select(&:is_active).count).to eq(person.verification_types.active.count)
+        expect(@individual_market_eligibility.created_at).to be_present
+        expect(@individual_market_eligibility.updated_at).to be_present
+        expect(@individual_market_eligibility.current_state).to eq(:verification_in_progress)
+        expect(@individual_market_eligibility.is_satisfied).to eq(true)
+        expect(@individual_market_eligibility._type).to eq('Eligibilities::V3::IndividualMarketEligibility')
+        expect(@individual_market_eligibility.determined_at).to be_present
+        expect(@individual_market_eligibility.state_histories.count).to eq(1)
+        expect(@individual_market_eligibility.state_histories.first.to_state).to eq(:verification_in_progress)
+        expect(@individual_market_eligibility.state_histories.first.from_state).to eq(:initial)
+        expect(@individual_market_eligibility.state_histories.first.transition_at).to be_present
+        expect(@individual_market_eligibility.state_histories.first.event).to eq(:pend)
+        expect(@individual_market_eligibility.state_histories.first.reason).to eq("migrating for the family #{@new_application.family_id} to create individual_market_eligibility")
       end
 
-      it 'should create verification_histories' do
-        type_history_elements = @type_history_elements.where(:event_response_record_id => nil).order_by("created_at ASC")
-        expect(@verification_histories).to be_present
-        expect(@verification_histories.count).to eq(type_history_elements.count)
-        expect(@verification_histories.map(&:created_at)).to be_present
-        expect(@verification_histories.map(&:updated_at)).to be_present
-        expect(@verification_histories.map(&:action)).to eq(type_history_elements.map(&:action))
-        expect(@verification_histories.map(&:update_reason)).to eq(type_history_elements.map(&:update_reason))
-        expect(@verification_histories.map(&:updated_by)).to eq(type_history_elements.map(&:modifier))
-        expect(@verification_histories.map(&:date_of_action).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")}).to eq(type_history_elements.map(&:created_at).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")})
-        latest_verification_history = @verification_histories.order_by("date_of_action DESC").first
-        expect(latest_verification_history.is_satisfied).to eq(@citizenship_evidence.is_satisfied)
-        expect(latest_verification_history.verification_outstanding).to eq(@citizenship_evidence.verification_outstanding)
+      context 'should migrate ssn_verification_type' do
+        before do
+          @ssn_verification_type = person.verification_types.ssn_type.first
+          @type_history_elements = @ssn_verification_type.type_history_elements
+          @social_security_number_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "social_security_number_evidence" }.first
+          @verification_histories = @social_security_number_evidence.verification_histories
+          @request_results = @social_security_number_evidence.request_results
+          @state_histories = @social_security_number_evidence.state_histories
+        end
+        # match verification types with applicant evidence
+        it 'should migrate ssn verification type to evidence 3.0' do
+          expect(@social_security_number_evidence).to be_present
+          expect(@social_security_number_evidence.created_at).to be_present
+          expect(@social_security_number_evidence.updated_at).to be_present
+          expect(@social_security_number_evidence._type).to eq('Eligibilities::V3::Evidences::SocialSecurityNumberEvidence')
+          expect(@social_security_number_evidence.current_state).to eq(@ssn_verification_type.validation_status.to_sym)
+          expect(@social_security_number_evidence.is_satisfied).to eq(["outstanding","rejected"].include?(@ssn_verification_type.validation_status) ? false : true)
+          expect(@social_security_number_evidence.verification_outstanding).to eq(["outstanding","rejected"].include?(@ssn_verification_type.validation_status))
+          expect(@social_security_number_evidence.due_on).to eq(@ssn_verification_type.due_date)
+          expect(@social_security_number_evidence.updated_by).to eq(@ssn_verification_type.updated_by)
+          expect(@social_security_number_evidence.external_service).to eq(@ssn_verification_type.external_service)
+          expect(@social_security_number_evidence.is_active).to eq(!@ssn_verification_type.inactive)
+        end
+
+        it 'should create verification_histories' do
+          type_history_elements = @type_history_elements.where(:event_response_record_id => nil).order_by("created_at ASC")
+          expect(@verification_histories).to be_present
+          expect(@verification_histories.count).to eq(type_history_elements.count)
+          expect(@verification_histories.map(&:created_at)).to be_present
+          expect(@verification_histories.map(&:updated_at)).to be_present
+          expect(@verification_histories.map(&:action)).to eq(type_history_elements.map(&:action))
+          expect(@verification_histories.map(&:update_reason)).to eq(type_history_elements.map(&:update_reason))
+          expect(@verification_histories.map(&:updated_by)).to eq(type_history_elements.map(&:modifier))
+          expect(@verification_histories.map(&:date_of_action).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")}).to eq(type_history_elements.map(&:created_at).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")})
+          latest_verification_history = @verification_histories.order_by("date_of_action DESC").first
+          expect(latest_verification_history.is_satisfied).to eq(@social_security_number_evidence.is_satisfied)
+          expect(latest_verification_history.verification_outstanding).to eq(@social_security_number_evidence.verification_outstanding)
+
+        end
+
+        it 'should create request_results' do
+          type_history_elements = @type_history_elements.where(:event_response_record_id.ne => nil).order_by("created_at ASC")
+          responses = consumer_role.lawful_presence_determination.ssa_responses.where(:id.in => type_history_elements.map(&:event_response_record_id))
+          expect(@request_results).to be_present
+          expect(@request_results.count).to eq(type_history_elements.count)
+          expect(@request_results.map(&:created_at)).to be_present
+          expect(@request_results.map(&:updated_at)).to be_present
+          expect(@request_results.map(&:result).compact.flatten).to be_empty
+          expect(@request_results.map(&:source)).to eq(["FDSH"])
+          expect(@request_results.map(&:source_transaction_id).compact.flatten).to be_empty
+          expect(@request_results.map(&:code)).to eq(["HS000000"])
+          expect(@request_results.map(&:code_description)).to eq(["ResponseDescriptionText0"])
+          expect(@request_results.map(&:raw_payload)).to eq(responses.map(&:body))
+
+        end
+
+        it 'should create state_histories' do
+          expect(@state_histories).not_to be_present
+          expect(@state_histories.count).to eq(0)
+        end
       end
 
-      it 'should create request_results' do
-        type_history_elements = @type_history_elements.where(:event_response_record_id.ne => nil).order_by("created_at ASC")
-        responses = consumer_role.lawful_presence_determination.vlp_responses.where(:id.in => type_history_elements.map(&:event_response_record_id))
-        expect(@request_results).to be_present
-        expect(@request_results.count).to eq(type_history_elements.count)
-        expect(@request_results.map(&:created_at)).to be_present
-        expect(@request_results.map(&:updated_at)).to be_present
-        expect(@request_results.map(&:result).compact.flatten).to be_empty
-        expect(@request_results.map(&:source)).to eq(["FDSH"])
-        expect(@request_results.map(&:source_transaction_id).compact.flatten).to be_empty
-        expect(@request_results.map(&:code)).to eq(["HS000000"])
-        expect(@request_results.map(&:code_description)).to eq(["ResponseDescriptionText0"])
-        expect(@request_results.map(&:raw_payload)).to eq(responses.map(&:body))
+      context 'should migrate citizenship_verification_type' do
+        before do
+          @citizenship_verification_type = person.verification_types.citizenship_type.first
+          @type_history_elements = @citizenship_verification_type.type_history_elements
+          @citizenship_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "citizenship_evidence" }.first
+          @verification_histories = @citizenship_evidence.verification_histories
+          @request_results = @citizenship_evidence.request_results
+          @state_histories = @citizenship_evidence.state_histories
+
+        end
+        # match verification types with applicant evidence
+        it 'should migrate citizenship verification type to evidence 3.0' do
+          expect(@citizenship_evidence).to be_present
+          expect(@citizenship_evidence.created_at).to be_present
+          expect(@citizenship_evidence.updated_at).to be_present
+          expect(@citizenship_evidence._type).to eq('Eligibilities::V3::Evidences::CitizenshipEvidence')
+          expect(@citizenship_evidence.current_state).to eq(@citizenship_verification_type.validation_status.to_sym)
+          expect(@citizenship_evidence.is_satisfied).to eq(["outstanding","rejected"].include?(@citizenship_verification_type.validation_status) ? false : true)
+          expect(@citizenship_evidence.verification_outstanding).to eq(["outstanding","rejected"].include?(@citizenship_verification_type.validation_status))
+          expect(@citizenship_evidence.due_on).to eq(@citizenship_verification_type.due_date)
+          expect(@citizenship_evidence.updated_by).to eq(@citizenship_verification_type.updated_by)
+          expect(@citizenship_evidence.external_service).to eq(@citizenship_verification_type.external_service)
+          expect(@citizenship_evidence.is_active).to eq(!@citizenship_verification_type.inactive)
+        end
+
+        it 'should create verification_histories' do
+          type_history_elements = @type_history_elements.where(:event_response_record_id => nil).order_by("created_at ASC")
+          expect(@verification_histories).to be_present
+          expect(@verification_histories.count).to eq(type_history_elements.count)
+          expect(@verification_histories.map(&:created_at)).to be_present
+          expect(@verification_histories.map(&:updated_at)).to be_present
+          expect(@verification_histories.map(&:action)).to eq(type_history_elements.map(&:action))
+          expect(@verification_histories.map(&:update_reason)).to eq(type_history_elements.map(&:update_reason))
+          expect(@verification_histories.map(&:updated_by)).to eq(type_history_elements.map(&:modifier))
+          expect(@verification_histories.map(&:date_of_action).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")}).to eq(type_history_elements.map(&:created_at).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")})
+          latest_verification_history = @verification_histories.order_by("date_of_action DESC").first
+          expect(latest_verification_history.is_satisfied).to eq(@citizenship_evidence.is_satisfied)
+          expect(latest_verification_history.verification_outstanding).to eq(@citizenship_evidence.verification_outstanding)
+        end
+
+        it 'should create request_results' do
+          type_history_elements = @type_history_elements.where(:event_response_record_id.ne => nil).order_by("created_at ASC")
+          responses = consumer_role.lawful_presence_determination.vlp_responses.where(:id.in => type_history_elements.map(&:event_response_record_id))
+          expect(@request_results).to be_present
+          expect(@request_results.count).to eq(type_history_elements.count)
+          expect(@request_results.map(&:created_at)).to be_present
+          expect(@request_results.map(&:updated_at)).to be_present
+          expect(@request_results.map(&:result).compact.flatten).to be_empty
+          expect(@request_results.map(&:source)).to eq(["FDSH"])
+          expect(@request_results.map(&:source_transaction_id).compact.flatten).to be_empty
+          expect(@request_results.map(&:code)).to eq(["HS000000"])
+          expect(@request_results.map(&:code_description)).to eq(["ResponseDescriptionText0"])
+          expect(@request_results.map(&:raw_payload)).to eq(responses.map(&:body))
+        end
+
+        it 'should create state_histories' do
+          expect(@state_histories).not_to be_present
+          expect(@state_histories.count).to eq(0)
+        end
+
+        it 'should create documents' do
+          expect(@citizenship_evidence.documents).to be_present
+          expect(@citizenship_evidence.documents.count).to eq(2)
+          expect(@citizenship_evidence.documents.map(&:created_at)).to be_present
+          expect(@citizenship_evidence.documents.map(&:updated_at)).to be_present
+          expect_attributes_to_match(@citizenship_evidence.documents.first, @citizenship_verification_type.vlp_documents.first, [:title, :creator, :subject, :publisher, :type, :identifier, :source, :language])
+        end
       end
 
-      it 'should create state_histories' do
-        expect(@state_histories).not_to be_present
-        expect(@state_histories.count).to eq(0)
+      context 'should migrate alive_status_verification_type' do
+        before do
+          @alive_status_verification_type = person.verification_types.alive_status_type.first
+          @type_history_elements = @alive_status_verification_type.type_history_elements
+          @alive_status_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "alive_evidence" }.first
+          @verification_histories = @alive_status_evidence.verification_histories
+          @request_results = @alive_status_evidence.request_results
+          @state_histories = @alive_status_evidence.state_histories
+        end
+        # match verification types with applicant evidence
+        it 'should migrate alive status verification type to evidence 3.0' do
+          alive_status_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "alive_evidence" }.first
+          expect(alive_status_evidence).to be_present
+          expect(alive_status_evidence.created_at).to be_present
+          expect(alive_status_evidence.updated_at).to be_present
+          expect(alive_status_evidence._type).to eq('Eligibilities::V3::Evidences::AliveEvidence')
+          expect(alive_status_evidence.current_state).to eq(@alive_status_verification_type.validation_status.to_sym)
+          expect(alive_status_evidence.is_satisfied).to eq(["outstanding","rejected"].include?(@alive_status_verification_type.validation_status) ? false : true)
+          expect(alive_status_evidence.verification_outstanding).to eq(["outstanding","rejected"].include?(@alive_status_verification_type.validation_status))
+          expect(alive_status_evidence.due_on).to eq(@alive_status_verification_type.due_date)
+          expect(alive_status_evidence.updated_by).to eq(@alive_status_verification_type.updated_by)
+          expect(alive_status_evidence.external_service).to eq(@alive_status_verification_type.external_service)
+          expect(alive_status_evidence.is_active).to eq(!@alive_status_verification_type.inactive)
+        end
+
+        it 'should create verification_histories' do
+          type_history_elements = @type_history_elements.where(:event_response_record_id => nil).order_by("created_at ASC")
+          expect(@verification_histories).to be_present
+          expect(@verification_histories.count).to eq(type_history_elements.count)
+          expect(@verification_histories.map(&:created_at)).to be_present
+          expect(@verification_histories.map(&:updated_at)).to be_present
+          expect(@verification_histories.map(&:action)).to eq(type_history_elements.map(&:action))
+          expect(@verification_histories.map(&:update_reason)).to eq(type_history_elements.map(&:update_reason))
+          expect(@verification_histories.map(&:updated_by)).to eq(type_history_elements.map(&:modifier))
+          expect(@verification_histories.map(&:date_of_action).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")}).to eq(type_history_elements.map(&:created_at).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")})
+          latest_verification_history = @verification_histories.order_by("date_of_action DESC").first
+          expect(latest_verification_history.is_satisfied).to eq(@alive_status_evidence.is_satisfied)
+          expect(latest_verification_history.verification_outstanding).to eq(@alive_status_evidence.verification_outstanding)
+        end
+
+        it 'should create request_results' do
+          type_history_elements = @type_history_elements.where(:event_response_record_id.ne => nil).order_by("created_at ASC")
+          responses = consumer_role.alive_status_responses.where(:id.in => type_history_elements.map(&:event_response_record_id))
+          expect(@request_results).to be_present
+          expect(@request_results.count).to eq(type_history_elements.count)
+          expect(@request_results.map(&:created_at)).to be_present
+          expect(@request_results.map(&:updated_at)).to be_present
+          expect(@request_results.map(&:result).compact.flatten).to be_empty
+          expect(@request_results.map(&:source)).to eq(["FDSH"])
+          expect(@request_results.map(&:source_transaction_id).compact.flatten).to be_empty
+          expect(@request_results.map(&:code)).to eq(["HS000000"])
+          expect(@request_results.map(&:code_description)).to eq(["ResponseDescriptionText0"])
+          expect(@request_results.map(&:raw_payload)).to eq(responses.map(&:body))
+        end
+
+        it 'should create state_histories' do
+          type_history_elements = @type_history_elements.where(:event_response_record_id.ne => nil, :to_validation_status.ne => nil).order_by("created_at ASC")
+          expect(@state_histories).to be_present
+          expect(@state_histories.count).to eq(type_history_elements.count)
+          expect(@state_histories.map(&:created_at)).to be_present
+          expect(@state_histories.map(&:updated_at)).to be_present
+          expect(@state_histories.first.to_state).to eq(type_history_elements.first.to_validation_status.to_sym)
+          expect(@state_histories.first.from_state).to eq(@alive_status_verification_type.validation_status.to_sym)
+          expect(@state_histories.map(&:effective_on)).to be_present
+          expect(@state_histories.first.reason).to eq(type_history_elements.first.update_reason)
+          expect(@state_histories.first.created_at).to be_present
+          expect(@state_histories.first.transition_at).to be_present
+          expect(@state_histories.first.event).to eq(:verify)
+        end
       end
 
-      it 'should create documents' do
-        expect(@citizenship_evidence.documents).to be_present
-        expect(@citizenship_evidence.documents.count).to eq(2)
-        expect(@citizenship_evidence.documents.map(&:created_at)).to be_present
-        expect(@citizenship_evidence.documents.map(&:updated_at)).to be_present
-        expect_attributes_to_match(@citizenship_evidence.documents.first, @citizenship_verification_type.vlp_documents.first, [:title, :creator, :subject, :publisher, :type, :identifier, :source, :language])
-      end
-    end
-
-    context 'should migrate alive_status_verification_type' do
-      before do
-        @alive_status_verification_type = person.verification_types.alive_status_type.first
-        @type_history_elements = @alive_status_verification_type.type_history_elements
-        @alive_status_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "alive_evidence" }.first
-        @verification_histories = @alive_status_evidence.verification_histories
-        @request_results = @alive_status_evidence.request_results
-        @state_histories = @alive_status_evidence.state_histories
-      end
-      # match verification types with applicant evidence
-      it 'should migrate alive status verification type to evidence 3.0' do
-        alive_status_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "alive_evidence" }.first
-        expect(alive_status_evidence).to be_present
-        expect(alive_status_evidence.created_at).to be_present
-        expect(alive_status_evidence.updated_at).to be_present
-        expect(alive_status_evidence._type).to eq('Eligibilities::V3::Evidences::AliveEvidence')
-        expect(alive_status_evidence.current_state).to eq(@alive_status_verification_type.validation_status.to_sym)
-        expect(alive_status_evidence.is_satisfied).to eq(["outstanding","rejected"].include?(@alive_status_verification_type.validation_status) ? false : true)
-        expect(alive_status_evidence.verification_outstanding).to eq(["outstanding","rejected"].include?(@alive_status_verification_type.validation_status))
-        expect(alive_status_evidence.due_on).to eq(@alive_status_verification_type.due_date)
-        expect(alive_status_evidence.updated_by).to eq(@alive_status_verification_type.updated_by)
-        expect(alive_status_evidence.external_service).to eq(@alive_status_verification_type.external_service)
-        expect(alive_status_evidence.is_active).to eq(!@alive_status_verification_type.inactive)
-      end
-
-      it 'should create verification_histories' do
-        type_history_elements = @type_history_elements.where(:event_response_record_id => nil).order_by("created_at ASC")
-        expect(@verification_histories).to be_present
-        expect(@verification_histories.count).to eq(type_history_elements.count)
-        expect(@verification_histories.map(&:created_at)).to be_present
-        expect(@verification_histories.map(&:updated_at)).to be_present
-        expect(@verification_histories.map(&:action)).to eq(type_history_elements.map(&:action))
-        expect(@verification_histories.map(&:update_reason)).to eq(type_history_elements.map(&:update_reason))
-        expect(@verification_histories.map(&:updated_by)).to eq(type_history_elements.map(&:modifier))
-        expect(@verification_histories.map(&:date_of_action).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")}).to eq(type_history_elements.map(&:created_at).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")})
-        latest_verification_history = @verification_histories.order_by("date_of_action DESC").first
-        expect(latest_verification_history.is_satisfied).to eq(@alive_status_evidence.is_satisfied)
-        expect(latest_verification_history.verification_outstanding).to eq(@alive_status_evidence.verification_outstanding)
-      end
-
-      it 'should create request_results' do
-        type_history_elements = @type_history_elements.where(:event_response_record_id.ne => nil).order_by("created_at ASC")
-        responses = consumer_role.alive_status_responses.where(:id.in => type_history_elements.map(&:event_response_record_id))
-        expect(@request_results).to be_present
-        expect(@request_results.count).to eq(type_history_elements.count)
-        expect(@request_results.map(&:created_at)).to be_present
-        expect(@request_results.map(&:updated_at)).to be_present
-        expect(@request_results.map(&:result).compact.flatten).to be_empty
-        expect(@request_results.map(&:source)).to eq(["FDSH"])
-        expect(@request_results.map(&:source_transaction_id).compact.flatten).to be_empty
-        expect(@request_results.map(&:code)).to eq(["HS000000"])
-        expect(@request_results.map(&:code_description)).to eq(["ResponseDescriptionText0"])
-        expect(@request_results.map(&:raw_payload)).to eq(responses.map(&:body))
-      end
-
-      it 'should create state_histories' do
-        type_history_elements = @type_history_elements.where(:event_response_record_id.ne => nil, :to_validation_status.ne => nil).order_by("created_at ASC")
-        expect(@state_histories).to be_present
-        expect(@state_histories.count).to eq(type_history_elements.count)
-        expect(@state_histories.map(&:created_at)).to be_present
-        expect(@state_histories.map(&:updated_at)).to be_present
-        expect(@state_histories.first.to_state).to eq(type_history_elements.first.to_validation_status.to_sym)
-        expect(@state_histories.first.from_state).to eq(@alive_status_verification_type.validation_status.to_sym)
-        expect(@state_histories.map(&:effective_on)).to be_present
-        expect(@state_histories.first.reason).to eq(type_history_elements.first.update_reason)
-        expect(@state_histories.first.created_at).to be_present
-        expect(@state_histories.first.transition_at).to be_present
-        expect(@state_histories.first.event).to eq(:verify)
-      end
-    end
-
-    context 'should migrate immigration_verification_type' do
-      before do
-        @immigration_verification_type = person.verification_types.by_name('Immigration status').first
-        @type_history_elements = @immigration_verification_type.type_history_elements
-        @immigration_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "immigration_evidence" }.first
-        @verification_histories = @immigration_evidence.verification_histories
-        @request_results = @immigration_evidence.request_results
-        @state_histories = @immigration_evidence.state_histories
-      end
-      # match verification types with applicant evidence
-      it 'should migrate immigration verification type to evidence 3.0' do
-        expect(@immigration_evidence).to be_present
-        expect(@immigration_evidence.created_at).to be_present
-        expect(@immigration_evidence.updated_at).to be_present
-        expect(@immigration_evidence._type).to eq('Eligibilities::V3::Evidences::ImmigrationEvidence')
-        expect(@immigration_evidence.current_state).to eq(@immigration_verification_type.validation_status.to_sym)
-        expect(@immigration_evidence.is_satisfied).to eq(["outstanding","rejected"].include?(@immigration_verification_type.validation_status) ? false : true)
-        expect(@immigration_evidence.verification_outstanding).to eq(["outstanding","rejected"].include?(@immigration_verification_type.validation_status))
-        expect(@immigration_evidence.due_on).to eq(@immigration_verification_type.due_date)
-        expect(@immigration_evidence.updated_by).to eq(@immigration_verification_type.updated_by)
-        expect(@immigration_evidence.external_service).to eq(@immigration_verification_type.external_service)
-        expect(@immigration_evidence.is_active).to eq(!@immigration_verification_type.inactive)
-      end
+      context 'should migrate immigration_verification_type' do
+        before do
+          @immigration_verification_type = person.verification_types.by_name('Immigration status').first
+          @type_history_elements = @immigration_verification_type.type_history_elements
+          @immigration_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "immigration_evidence" }.first
+          @verification_histories = @immigration_evidence.verification_histories
+          @request_results = @immigration_evidence.request_results
+          @state_histories = @immigration_evidence.state_histories
+        end
+        # match verification types with applicant evidence
+        it 'should migrate immigration verification type to evidence 3.0' do
+          expect(@immigration_evidence).to be_present
+          expect(@immigration_evidence.created_at).to be_present
+          expect(@immigration_evidence.updated_at).to be_present
+          expect(@immigration_evidence._type).to eq('Eligibilities::V3::Evidences::ImmigrationEvidence')
+          expect(@immigration_evidence.current_state).to eq(@immigration_verification_type.validation_status.to_sym)
+          expect(@immigration_evidence.is_satisfied).to eq(["outstanding","rejected"].include?(@immigration_verification_type.validation_status) ? false : true)
+          expect(@immigration_evidence.verification_outstanding).to eq(["outstanding","rejected"].include?(@immigration_verification_type.validation_status))
+          expect(@immigration_evidence.due_on).to eq(@immigration_verification_type.due_date)
+          expect(@immigration_evidence.updated_by).to eq(@immigration_verification_type.updated_by)
+          expect(@immigration_evidence.external_service).to eq(@immigration_verification_type.external_service)
+          expect(@immigration_evidence.is_active).to eq(!@immigration_verification_type.inactive)
+        end
 
 
-      it 'should create verification_histories' do
-        type_history_elements = @type_history_elements.where(:event_response_record_id => nil).order_by("created_at ASC")
-        expect(@verification_histories).to be_present
-        expect(@verification_histories.count).to eq(type_history_elements.count)
-        expect(@verification_histories.map(&:created_at)).to be_present
-        expect(@verification_histories.map(&:updated_at)).to be_present
-        expect(@verification_histories.map(&:action)).to eq(type_history_elements.map(&:action))
-        expect(@verification_histories.map(&:update_reason)).to eq(type_history_elements.map(&:update_reason))
-        expect(@verification_histories.map(&:updated_by)).to eq(type_history_elements.map(&:modifier))
-        expect(@verification_histories.map(&:date_of_action).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")}).to eq(type_history_elements.map(&:created_at).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")})
-        latest_verification_history = @verification_histories.order_by("date_of_action DESC").first
-        expect(latest_verification_history.is_satisfied).to eq(@immigration_evidence.is_satisfied)
-        expect(latest_verification_history.verification_outstanding).to eq(@immigration_evidence.verification_outstanding)
-      end
+        it 'should create verification_histories' do
+          type_history_elements = @type_history_elements.where(:event_response_record_id => nil).order_by("created_at ASC")
+          expect(@verification_histories).to be_present
+          expect(@verification_histories.count).to eq(type_history_elements.count)
+          expect(@verification_histories.map(&:created_at)).to be_present
+          expect(@verification_histories.map(&:updated_at)).to be_present
+          expect(@verification_histories.map(&:action)).to eq(type_history_elements.map(&:action))
+          expect(@verification_histories.map(&:update_reason)).to eq(type_history_elements.map(&:update_reason))
+          expect(@verification_histories.map(&:updated_by)).to eq(type_history_elements.map(&:modifier))
+          expect(@verification_histories.map(&:date_of_action).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")}).to eq(type_history_elements.map(&:created_at).flatten.collect{|a| a.strftime("%m/%d/%Y %H:%M %L %:z")})
+          latest_verification_history = @verification_histories.order_by("date_of_action DESC").first
+          expect(latest_verification_history.is_satisfied).to eq(@immigration_evidence.is_satisfied)
+          expect(latest_verification_history.verification_outstanding).to eq(@immigration_evidence.verification_outstanding)
+        end
 
-      it 'should create request_results' do
-        type_history_elements = @type_history_elements.where(:event_response_record_id.ne => nil).order_by("created_at ASC")
-        responses = consumer_role.lawful_presence_determination.vlp_responses.where(:id.in => type_history_elements.map(&:event_response_record_id))
-        expect(@request_results).to be_present
-        expect(@request_results.count).to eq(type_history_elements.count)
-        expect(@request_results.map(&:created_at)).to be_present
-        expect(@request_results.map(&:updated_at)).to be_present
-        expect(@request_results.map(&:result).compact.flatten).to be_empty
-        expect(@request_results.map(&:source)).to eq(["FDSH"])
-        expect(@request_results.map(&:source_transaction_id).compact.flatten).to be_empty
-        expect(@request_results.map(&:code)).to eq(["HS000000"])
-        expect(@request_results.map(&:code_description)).to eq(["ResponseDescriptionText0"])
-        expect(@request_results.map(&:raw_payload)).to eq(responses.map(&:body))
-      end
+        it 'should create request_results' do
+          type_history_elements = @type_history_elements.where(:event_response_record_id.ne => nil).order_by("created_at ASC")
+          responses = consumer_role.lawful_presence_determination.vlp_responses.where(:id.in => type_history_elements.map(&:event_response_record_id))
+          expect(@request_results).to be_present
+          expect(@request_results.count).to eq(type_history_elements.count)
+          expect(@request_results.map(&:created_at)).to be_present
+          expect(@request_results.map(&:updated_at)).to be_present
+          expect(@request_results.map(&:result).compact.flatten).to be_empty
+          expect(@request_results.map(&:source)).to eq(["FDSH"])
+          expect(@request_results.map(&:source_transaction_id).compact.flatten).to be_empty
+          expect(@request_results.map(&:code)).to eq(["HS000000"])
+          expect(@request_results.map(&:code_description)).to eq(["ResponseDescriptionText0"])
+          expect(@request_results.map(&:raw_payload)).to eq(responses.map(&:body))
+        end
 
-      it 'should create documents' do
-        expect(@immigration_evidence.documents).to be_present
-        expect(@immigration_evidence.documents.count).to eq(2)
-        expect(@immigration_evidence.documents.map(&:created_at)).to be_present
-        expect(@immigration_evidence.documents.map(&:updated_at)).to be_present
-        expect_attributes_to_match(@immigration_evidence.documents.first, @immigration_verification_type.vlp_documents.first, [:title, :creator, :subject, :publisher, :type, :identifier, :source, :language])
+        it 'should create documents' do
+          expect(@immigration_evidence.documents).to be_present
+          expect(@immigration_evidence.documents.count).to eq(2)
+          expect(@immigration_evidence.documents.map(&:created_at)).to be_present
+          expect(@immigration_evidence.documents.map(&:updated_at)).to be_present
+          expect_attributes_to_match(@immigration_evidence.documents.first, @immigration_verification_type.vlp_documents.first, [:title, :creator, :subject, :publisher, :type, :identifier, :source, :language])
+        end
       end
     end
   end

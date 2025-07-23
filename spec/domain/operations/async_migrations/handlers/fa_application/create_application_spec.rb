@@ -175,7 +175,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                       family_id: family.id,
                       aasm_state: "draft",
                       effective_date: (TimeKeeper.date_of_record - 12.days),
-                      origin: :migration,
+                      origin: :user,
                       assistance_year: nil,
                       generation_reason: :manual)
   end
@@ -195,7 +195,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                       family_id: family.id,
                       aasm_state: "determined",
                       effective_date: (TimeKeeper.date_of_record - 12.days),
-                      origin: :migration,
+                      origin: :user,
                       assistance_year: TimeKeeper.date_of_record.year,
                       generation_reason: :manual)
   end
@@ -295,6 +295,12 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           expect(@new_applicant.language_preference).to eq(consumer_role.language_preference)
           expect(@new_applicant.eligibility_determination_id).not_to eq(@old_applicant.eligibility_determination_id)
         end
+
+        it 'should not create application again when triggered the script again' do
+          second_result = subject.call({document_id: application.id.to_s})
+          expect(second_result).to be_failure
+          expect(second_result.failure).to eq("Application hbx id: #{application.hbx_id} with family id: #{application.family_id} is not eligible for migration")
+        end
       end
 
       context 'should migrate individual_market_eligibility' do
@@ -306,6 +312,12 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           @new_application.reload
           @new_applicant = @new_application.applicants.first
           @individual_market_eligibility = @new_applicant.individual_market_eligibility
+          @ssn_verification_type = person.verification_types.ssn_type.first
+          @type_history_elements = @ssn_verification_type.type_history_elements
+          @social_security_number_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "social_security_number_evidence" }.first
+          @verification_histories = @social_security_number_evidence.verification_histories
+          @request_results = @social_security_number_evidence.request_results
+          @state_histories = @social_security_number_evidence.state_histories
         end
 
         it 'should create individual_market_eligibility' do
@@ -327,21 +339,6 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
         end
 
         context 'should migrate ssn_verification_type' do
-          before do
-            @result = subject.call({document_id: application.id.to_s})
-            @old_applicant = application.applicants.first
-            @new_application_hbx_id = @result.value![1]
-            @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
-            @new_application.reload
-            @new_applicant = @new_application.applicants.first
-            @individual_market_eligibility = @new_applicant.individual_market_eligibility
-            @ssn_verification_type = person.verification_types.ssn_type.first
-            @type_history_elements = @ssn_verification_type.type_history_elements
-            @social_security_number_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "social_security_number_evidence" }.first
-            @verification_histories = @social_security_number_evidence.verification_histories
-            @request_results = @social_security_number_evidence.request_results
-            @state_histories = @social_security_number_evidence.state_histories
-          end
           # match verification types with applicant evidence
           it 'should migrate ssn verification type to evidence 3.0' do
             expect(@social_security_number_evidence).to be_present
@@ -397,20 +394,12 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
 
         context 'should migrate citizenship_verification_type' do
           before do
-            @result = subject.call({document_id: application.id.to_s})
-            @old_applicant = application.applicants.first
-            @new_application_hbx_id = @result.value![1]
-            @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
-            @new_application.reload
-            @new_applicant = @new_application.applicants.first
-            @individual_market_eligibility = @new_applicant.individual_market_eligibility
             @citizenship_verification_type = person.verification_types.citizenship_type.first
             @type_history_elements = @citizenship_verification_type.type_history_elements
             @citizenship_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "citizenship_evidence" }.first
             @verification_histories = @citizenship_evidence.verification_histories
             @request_results = @citizenship_evidence.request_results
             @state_histories = @citizenship_evidence.state_histories
-
           end
           # match verification types with applicant evidence
           it 'should migrate citizenship verification type to evidence 3.0' do
@@ -474,13 +463,6 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
 
         context 'should migrate alive_status_verification_type' do
           before do
-            @result = subject.call({document_id: application.id.to_s})
-            @old_applicant = application.applicants.first
-            @new_application_hbx_id = @result.value![1]
-            @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
-            @new_application.reload
-            @new_applicant = @new_application.applicants.first
-            @individual_market_eligibility = @new_applicant.individual_market_eligibility
             @alive_status_verification_type = person.verification_types.alive_status_type.first
             @type_history_elements = @alive_status_verification_type.type_history_elements
             @alive_status_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "alive_evidence" }.first
@@ -552,13 +534,6 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
 
         context 'should migrate immigration_verification_type' do
           before do
-            @result = subject.call({document_id: application.id.to_s})
-            @old_applicant = application.applicants.first
-            @new_application_hbx_id = @result.value![1]
-            @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
-            @new_application.reload
-            @new_applicant = @new_application.applicants.first
-            @individual_market_eligibility = @new_applicant.individual_market_eligibility
             @immigration_verification_type = person.verification_types.by_name('Immigration status').first
             @type_history_elements = @immigration_verification_type.type_history_elements
             @immigration_evidence = @individual_market_eligibility.evidences.select { |e| e.key == "immigration_evidence" }.first

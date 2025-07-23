@@ -42,6 +42,7 @@ module Operations
           def call(params)
             application_id = yield validate(params)
             application = yield find_application(application_id)
+            yield check_if_application_is_eligible_for_migration?(application)
             result = yield migrate_evidence(application)
             comparison_result = yield compare_migrated_values(application, result)
             yield publish(comparison_result)
@@ -70,6 +71,11 @@ module Operations
           def find_application(application_id)
             application = ::FinancialAssistance::Application.where(id: application_id).first
             application ? Success(application) : Failure('Application not found')
+          end
+
+          def check_if_application_is_eligible_for_migration?(application)
+            result = application.applicants.any? { |applicant| applicant.aptc_csr_eligibility.present? }
+            result ? Failure("Applicant with APTC/CSR eligibility found, application hbx id: #{application.hbx_id} is not eligible for migration") : Success("No applicant with APTC/CSR eligibility found")
           end
 
           # Migrates evidence for all applicants in the application.
