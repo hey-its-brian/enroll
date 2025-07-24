@@ -819,18 +819,19 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
 
       context "when dependent is not applying for coverage" do
         let!(:is_applying_coverage) { false }
-        let(:us_citizen) { true }
+        let(:us_citizen) { false }
+        let(:eligible_immigration_status) { true }
 
         before do
-          patch :update, params: dependent_params.merge(applicant: applicant_params.merge(same_with_primary: "true"))
+          patch :update, params: dependent_params.merge(applicant: applicant_params.merge(same_with_primary: "true", us_citizen: us_citizen, eligible_immigration_status: eligible_immigration_status))
           application.reload
           dependent.reload
         end
 
-        it "should update citizen status/eligible immigration status to nil " do
-          expect(dependent.us_citizen).to eq nil
-          expect(dependent.naturalized_citizen).to eq nil
-          expect(dependent.eligible_immigration_status).to eq nil
+        it "should not nullify status/eligible immigration status" do
+          expect(dependent.us_citizen).not_to be_nil
+          expect(dependent.naturalized_citizen).not_to be_nil
+          expect(dependent.eligible_immigration_status).not_to be_nil
         end
 
         it "should not update tribal details to nil" do

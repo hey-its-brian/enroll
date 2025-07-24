@@ -272,10 +272,7 @@ module FinancialAssistance
 
       if applicant_params["is_applying_coverage"] == 'false'
         fields_to_unset = {
-          us_citizen: nil,
-          naturalized_citizen: nil,
-          eligible_immigration_status: nil,
-          is_incarcerated: nil,
+          is_incarcerated: nil
         }
 
         fields_to_unset.each do |field, value|

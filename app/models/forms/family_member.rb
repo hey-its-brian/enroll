@@ -342,17 +342,12 @@ module Forms
                 :is_moving_to_state => member.try(:person).try(:is_moving_to_state),
                 :is_tobacco_user => member&.person&.is_tobacco_user}
 
-      consumer_fields = if action == "edit" && member.person.consumer_role.is_applying_coverage == false
-                          { :citizen_status => nil,
-                            :naturalized_citizen => nil,
-                            :eligible_immigration_status => nil,
-                            :is_incarcerated => nil}
-                        else
-                          {:citizen_status => member.citizen_status,
-                           :naturalized_citizen => member.naturalized_citizen,
-                           :eligible_immigration_status => member.eligible_immigration_status,
-                           :is_incarcerated => member.is_incarcerated}
-                        end
+      consumer_fields = {
+        :citizen_status => member.citizen_status,
+        :naturalized_citizen => member.naturalized_citizen,
+        :eligible_immigration_status => member.eligible_immigration_status,
+        :is_incarcerated => (action == "edit" && member.person.consumer_role.is_applying_coverage == false) ? nil : member.is_incarcerated
+      }
 
       params.merge!(consumer_fields)
       params

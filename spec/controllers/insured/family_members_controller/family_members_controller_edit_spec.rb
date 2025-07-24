@@ -26,15 +26,23 @@ RSpec.describe Insured::FamilyMembersController do
         sign_in(user)
       end
 
-      it "should set consumer fields values to nil" do
+      it "should set incarcerated field to nil" do
         expect(dependent_consumer_role.is_applying_coverage).to eq false
         expect(dependent_consumer_role.is_incarcerated).to eq false
-        expect(dependent_consumer_role.citizen_status).to eq 'us_citizen'
         get :edit, params: dependent_edit_properties
         dependent_form = assigns(:dependent)
         expect(assigns(:dependent).family_member.person.consumer_role.is_applying_coverage).to eq false
         expect(dependent_form.is_incarcerated).to eq nil
-        expect(dependent_form.citizen_status).to eq nil
+      end
+
+      it 'should not set citizenship field to nil' do
+        expect(dependent_consumer_role.is_applying_coverage).to eq false
+        expect(dependent_consumer_role.citizen_status).to eq 'us_citizen'
+        get :edit, params: dependent_edit_properties
+        dependent_form = assigns(:dependent)
+        expect(assigns(:dependent).family_member.person.consumer_role.is_applying_coverage).to eq false
+        expect(dependent_form.citizen_status).to eq 'us_citizen'
+        expect(dependent_form.us_citizen).to eq true
       end
 
       it 'should not set AI/AN status to nil' do

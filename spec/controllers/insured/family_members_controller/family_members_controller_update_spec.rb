@@ -92,6 +92,11 @@ RSpec.describe Insured::FamilyMembersController do
         expect(person.tribal_state).to be_present
         expect(person.tribal_name).to be_present
       end
+
+      it "should not set citizenship field to nil" do
+        allow(EnrollRegistry[:indian_alaskan_tribe_details].feature).to receive(:is_enabled).and_return(true)
+        expect(dependent_consumer_role.person.us_citizen).to eq true
+      end
     end
   end
 end

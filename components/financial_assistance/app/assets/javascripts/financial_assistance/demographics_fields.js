@@ -31,17 +31,8 @@ function isApplyingCoverage(target){
 
 function resetFormFields() {
   // Set radio buttons to unchecked
-  $('#us_citizen_true').prop('checked', false);
-  $('#us_citizen_false').prop('checked', false);
-  $('#naturalized_citizen_true').prop('checked', false);
-  $('#naturalized_citizen_false').prop('checked', false);
-  $('#eligible_immigration_status_true').prop('checked', false);
-  $('#eligible_immigration_status_false').prop('checked', false);
   $('#is_incarcerated_true').prop('checked', false);
   $('#is_incarcerated_false').prop('checked', false);
-
-  // Set checkboxes to unchecked
-  $('#applicant_eligible_immigration_status').prop('checked', false);
 }
 
 function addEventOnNoSsn(target){
@@ -430,7 +421,7 @@ var ApplicantValidations = (function(window, undefined) {
   }
 
   function validationForVlpDocuments(e) {
-    if (validationForPersonOrDependent()) {
+    if ($('#is_applying_coverage_true').prop('checked') && validationForPersonOrDependent()) {
       $('#showWarning').removeClass('hidden');
     }
     if ($('#vlp_documents_container').is(':visible')) {
