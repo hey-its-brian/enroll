@@ -16,7 +16,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
     let(:consumer_role) { person.consumer_role }
     let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
     let(:primary_family_member) { family.primary_family_member }
-    let(:application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: "draft") }
+    let(:application) { FactoryBot.create(:financial_assistance_application, family_id: family.id) }
     let(:primary_applicant) do
       FactoryBot.create(
         :financial_assistance_applicant,
@@ -46,61 +46,10 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
       let(:params) { { application_id: application.id, applicant_id: primary_applicant.id } }
 
       context 'logged in user has developer role' do
-        context 'when application is not reviewable' do
-          it 'denies access and redirects to a different path' do
-            applicant_income
-            get :index, params: params
-            expect(flash[:error]).to eq(
-              'Access not allowed for financial_assistance/applicant_policy.index?, (Pundit policy)'
-            )
-          end
-        end
-
-        context 'when application is reviewable and qhp feature is enabled' do
-          let(:reviewable_application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: "submitted") }
-          let(:reviewable_applicant) do
-            FactoryBot.create(
-              :financial_assistance_applicant,
-              application: reviewable_application,
-              family_member_id: primary_family_member.id,
-              person_hbx_id: user.person.hbx_id
-            )
-          end
-          let(:reviewable_params) { { application_id: reviewable_application.id, applicant_id: reviewable_applicant.id } }
-
-          before do
-            allow_any_instance_of(FinancialAssistance::IncomesController).to receive(:qhp_application_feature_enabled?).and_return(true)
-          end
-
-          it 'redirects back before authorization check' do
-            get :index, params: reviewable_params
-            expect(response).to redirect_to('/insured/sbm/applications')
-            expect(flash[:error]).to be_nil
-          end
-        end
-
-        context 'when application is reviewable but qhp feature is disabled' do
-          let(:reviewable_application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: "submitted") }
-          let(:reviewable_applicant) do
-            FactoryBot.create(
-              :financial_assistance_applicant,
-              application: reviewable_application,
-              family_member_id: primary_family_member.id,
-              person_hbx_id: user.person.hbx_id
-            )
-          end
-          let(:reviewable_params) { { application_id: reviewable_application.id, applicant_id: reviewable_applicant.id } }
-
-          before do
-            allow_any_instance_of(FinancialAssistance::IncomesController).to receive(:qhp_application_feature_enabled?).and_return(false)
-          end
-
-          it 'proceeds to authorization and denies access' do
-            get :index, params: reviewable_params
-            expect(flash[:error]).to eq(
-              'Access not allowed for financial_assistance/applicant_policy.index?, (Pundit policy)'
-            )
-          end
+        it 'denies access and redirects to a different path' do
+          applicant_income
+          get :index, params: params
+          expect(flash[:error]).to eq('Access not allowed for financial_assistance/applicant_policy.index?, (Pundit policy)')
         end
       end
     end

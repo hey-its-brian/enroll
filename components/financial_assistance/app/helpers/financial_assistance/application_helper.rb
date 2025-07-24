@@ -160,13 +160,43 @@ module FinancialAssistance
     end
 
     def income_and_deductions_edit(application, applicant, embedded_document)
-      if embedded_document.instance_of?(FinancialAssistance::Deduction)
-        application_applicant_deductions_path(application, applicant)
-      elsif [FinancialAssistance::Income::JOB_INCOME_TYPE_KIND, FinancialAssistance::Income::NET_SELF_EMPLOYMENT_INCOME_KIND].include? embedded_document.kind
-        application_applicant_incomes_path(application, applicant)
+      if qhp_application_feature_enabled? && application.is_reviewable?
+        qhp_reviewable_path(application, applicant, embedded_document)
       else
-        other_application_applicant_incomes_path(application, applicant)
+        standard_income_and_deductions_path(application, applicant, embedded_document)
       end
+    end
+
+    def qhp_reviewable_path(application, applicant, embedded_document)
+      financial_assistance.copy_application_path(application,
+                                                 applicant: applicant.id,
+                                                 applicant_hbx_id: applicant.person_hbx_id,
+                                                 **qhp_params_for_document(embedded_document))
+    end
+
+    def standard_income_and_deductions_path(application, applicant, embedded_document)
+      if embedded_document.is_a?(FinancialAssistance::Deduction)
+        financial_assistance.application_applicant_deductions_path(application, applicant)
+      elsif job_or_self_employment_income?(embedded_document)
+        financial_assistance.application_applicant_incomes_path(application, applicant)
+      else
+        financial_assistance.other_application_applicant_incomes_path(application, applicant)
+      end
+    end
+
+    def qhp_params_for_document(embedded_document)
+      if embedded_document.is_a?(FinancialAssistance::Deduction)
+        { income_adjustments: true }
+      elsif job_or_self_employment_income?(embedded_document)
+        { income: true }
+      else
+        { other_incomes: true }
+      end
+    end
+
+    def job_or_self_employment_income?(embedded_document)
+      [FinancialAssistance::Income::JOB_INCOME_TYPE_KIND,
+       FinancialAssistance::Income::NET_SELF_EMPLOYMENT_INCOME_KIND].include?(embedded_document.kind)
     end
 
     def show_net_amount_for(other_income)

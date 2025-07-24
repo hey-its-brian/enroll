@@ -47,8 +47,7 @@
                   <%= start_to_end_dates(embedded_document) %>
                   <% if @summary_helper.can_edit_incomes %>
                     <span>
-                      <% edit_link = @application.is_reviewable? ? copy_application_path(@application, applicant_hbx_id: applicant.person_hbx_id, income: true) : application_applicant_incomes_path(@application, applicant) %>
-                      <%= h(link_to(edit_link, id: 'edit-income-and-deductions-pencil') do %>
+                      <%= h(link_to(income_and_deductions_edit(@application, applicant, embedded_document), id: 'edit-income-and-deductions-pencil') do %>
                         <%= l10n("edit") %>
                       <% end) %>
                     </span>

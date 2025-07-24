@@ -35,70 +35,9 @@ RSpec.describe FinancialAssistance::IncomesController, dbclean: :after_each, typ
   end
 
   context "GET index" do
-
-    context "when application is not reviewable" do
-      it "should render template financial assistance" do
-        get :index, params: { application_id: application.id, applicant_id: applicant.id }
-        if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
-          expect(response).to render_template(:financial_assistance_progress)
-        else
-          expect(response).to render_template(:financial_assistance_nav)
-        end
-      end
-    end
-
-    context "when application is reviewable" do
-      let!(:reviewable_application) { FactoryBot.create(:application, family_id: family_id, aasm_state: "submitted", effective_date: TimeKeeper.date_of_record) }
-      let!(:reviewable_applicant) { FactoryBot.create(:applicant, application: reviewable_application, family_member_id: family_member_id) }
-
-      before do
-        # Mock the qhp_application_feature_enabled? method to return true
-        allow_any_instance_of(FinancialAssistance::IncomesController).to receive(:qhp_application_feature_enabled?).and_return(true)
-      end
-
-      it "should redirect back to previous page or fallback location via before_action" do
-        # Set up the referer to test redirect_back behavior
-        request.env["HTTP_REFERER"] = "http://example.com/previous_page"
-        get :index, params: { application_id: reviewable_application.id, applicant_id: reviewable_applicant.id }
-        expect(response).to redirect_to("http://example.com/previous_page")
-      end
-
-      it "should redirect to fallback location when no referer is present" do
-        # No referer set, should use fallback location
-        get :index, params: { application_id: reviewable_application.id, applicant_id: reviewable_applicant.id }
-        expect(response).to redirect_to('/insured/sbm/applications')
-      end
-
-      it "should not render the template when redirecting" do
-        get :index, params: { application_id: reviewable_application.id, applicant_id: reviewable_applicant.id }
-        if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
-          expect(response).not_to render_template(:financial_assistance_progress)
-        else
-          expect(response).not_to render_template(:financial_assistance_nav)
-        end
-      end
-
-      it "should redirect before authorization occurs" do
-        # The before_action should trigger before authorize is called
-        expect_any_instance_of(FinancialAssistance::IncomesController).not_to receive(:authorize)
-        get :index, params: { application_id: reviewable_application.id, applicant_id: reviewable_applicant.id }
-        expect(response).to be_redirect
-      end
-
-      context "when qhp_application_feature is disabled" do
-        before do
-          allow_any_instance_of(FinancialAssistance::IncomesController).to receive(:qhp_application_feature_enabled?).and_return(false)
-        end
-
-        it "should not redirect and proceed with normal flow" do
-          get :index, params: { application_id: reviewable_application.id, applicant_id: reviewable_applicant.id }
-          if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
-            expect(response).to render_template(:financial_assistance_progress)
-          else
-            expect(response).to render_template(:financial_assistance_nav)
-          end
-        end
-      end
+    it "should render template financial assistance" do
+      get :index, params: { application_id: application.id, applicant_id: applicant.id }
+      expect(response).to render_template(:financial_assistance_nav)
     end
   end
 

@@ -2,6 +2,8 @@
 
 require 'rails_helper'
 RSpec.describe ::FinancialAssistance::ApplicationHelper, :type => :helper, dbclean: :after_each do
+  include FinancialAssistance::Engine.routes.url_helpers
+
   let!(:application) { FactoryBot.create(:financial_assistance_application, family_id: BSON::ObjectId.new) }
   let!(:ed) { FactoryBot.create(:financial_assistance_eligibility_determination, application: application) }
   let!(:applicant) do
@@ -12,7 +14,9 @@ RSpec.describe ::FinancialAssistance::ApplicationHelper, :type => :helper, dbcle
                       is_claimed_as_tax_dependent: false,
                       is_required_to_file_taxes: true,
                       first_name: 'Test',
-                      last_name: 'Test10')
+                      last_name: 'Test10',
+                      incomes: [job_income, net_self_employment_income, other_income],
+                      deductions: [deduction])
   end
 
   let!(:applicant2) do
@@ -24,6 +28,11 @@ RSpec.describe ::FinancialAssistance::ApplicationHelper, :type => :helper, dbcle
                       first_name: 'TEst2',
                       last_name: 'Test10')
   end
+
+  let(:deduction) { FactoryBot.build(:financial_assistance_deduction) }
+  let(:job_income) { FactoryBot.build(:financial_assistance_income, kind: FinancialAssistance::Income::JOB_INCOME_TYPE_KIND) }
+  let(:net_self_employment_income) { FactoryBot.build(:financial_assistance_income, kind: FinancialAssistance::Income::NET_SELF_EMPLOYMENT_INCOME_KIND) }
+  let(:other_income) { FactoryBot.build(:financial_assistance_income, kind: 'capital_gains') }
 
   describe 'claim_eligible_tax_dependents' do
     let!(:applicant3) do
@@ -743,6 +752,107 @@ RSpec.describe ::FinancialAssistance::ApplicationHelper, :type => :helper, dbcle
           ).to be_truthy
         end
       end
+    end
+  end
+
+  describe '#income_and_deductions_edit' do
+    subject { helper.income_and_deductions_edit(application, applicant, embedded_document) }
+
+    context 'when QHP feature is enabled and application is reviewable' do
+      before do
+        allow(helper).to receive(:qhp_application_feature_enabled?).and_return(true)
+        allow(application).to receive(:is_reviewable?).and_return(true)
+      end
+
+      context 'with Deduction document' do
+        let(:embedded_document) { deduction }
+
+        it 'returns copy_application_path with income_adjustments param' do
+          expected_path = financial_assistance.copy_application_path(
+            application,
+            applicant: applicant.id,
+            applicant_hbx_id: applicant.person_hbx_id,
+            income_adjustments: true
+          )
+          expect(subject).to eq(expected_path)
+        end
+      end
+
+      context 'with Job Income document' do
+        let(:embedded_document) { job_income }
+
+        it 'returns copy_application_path with income param' do
+          expected_path = financial_assistance.copy_application_path(
+            application,
+            applicant: applicant.id,
+            applicant_hbx_id: applicant.person_hbx_id,
+            income: true
+          )
+          expect(subject).to eq(expected_path)
+        end
+      end
+
+      context 'with Other Income document' do
+        let(:embedded_document) { other_income }
+
+        it 'returns copy_application_path with other_questions param' do
+          expected_path = financial_assistance.copy_application_path(
+            application,
+            applicant: applicant.id,
+            applicant_hbx_id: applicant.person_hbx_id,
+            other_incomes: true
+          )
+          expect(subject).to eq(expected_path)
+        end
+      end
+    end
+
+    context 'when QHP feature is disabled or application is not reviewable' do
+      before do
+        allow(helper).to receive(:qhp_application_feature_enabled?).and_return(false)
+        allow(application).to receive(:is_reviewable?).and_return(false)
+      end
+
+      context 'with Deduction document' do
+        let(:embedded_document) { deduction }
+
+        it 'returns application_applicant_deductions_path' do
+          expected_path = financial_assistance.application_applicant_deductions_path(application, applicant)
+          expect(subject).to eq(expected_path)
+        end
+      end
+
+      context 'with Job Income document' do
+        let(:embedded_document) { job_income }
+
+        it 'returns application_applicant_incomes_path' do
+          expected_path = financial_assistance.application_applicant_incomes_path(application, applicant)
+          expect(subject).to eq(expected_path)
+        end
+      end
+
+      context 'with Other Income document' do
+        let(:embedded_document) { other_income }
+
+        it 'returns other_application_applicant_incomes_path' do
+          expected_path = financial_assistance.other_application_applicant_incomes_path(application, applicant)
+          expect(subject).to eq(expected_path)
+        end
+      end
+    end
+  end
+
+  describe '#job_or_self_employment_income?' do
+    it 'returns true for job income kind' do
+      expect(helper.send(:job_or_self_employment_income?, job_income)).to be true
+    end
+
+    it 'returns true for net self-employment income kind' do
+      expect(helper.send(:job_or_self_employment_income?, net_self_employment_income)).to be true
+    end
+
+    it 'returns false for other income kind' do
+      expect(helper.send(:job_or_self_employment_income?, other_income)).to be false
     end
   end
 end
