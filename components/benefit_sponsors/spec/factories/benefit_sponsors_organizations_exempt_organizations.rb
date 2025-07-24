@@ -32,6 +32,12 @@ FactoryBot.define do
       end
     end
 
+    trait :with_me_site do
+      after :build do |organization, _evaluator|
+        new_site = create(:benefit_sponsors_site, :me, :with_owner_exempt_organization)
+        organization.site = new_site
+      end
+    end
   end
 
 

@@ -74,7 +74,10 @@ class SamlInformation
     'community_health_options_pay_now_relay_state',
     'taro_health_pay_now_url',
     'taro_health_pay_now_audience',
-    'taro_health_pay_now_relay_state'
+    'taro_health_pay_now_relay_state',
+    'mending_health_pay_now_url',
+    'mending_health_pay_now_audience',
+    'mending_health_pay_now_relay_state'
   ].freeze
 
   attr_reader :config

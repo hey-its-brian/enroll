@@ -38,6 +38,13 @@
                 <p class="mb-0"><%=l10n("plans.call")%> <a href=<%=l10n("plans.taro_href_phone_1")%> ><%=l10n("plans.taro_phone_1")%></a></p>
                 <p><%=l10n("plans.taro_contact_url")%></p>
               </div>
+            <% when "Mending Health" %>
+              <div>
+                <p class="bold mb-0"><%=l10n("plans.mending")%></p>
+                <p class="mb-0"><%=l10n("plans.mending_hours")%></p>
+                <p class="mb-0"><%=l10n("plans.call")%> <a href=<%=l10n("plans.mending_href_phone_1")%> ><%=l10n("plans.mending_phone_1")%></a></p>
+                <p><%=l10n("plans.mending_contact_url")%></p>
+              </div>
             <% when "Harvard Pilgrim Health Care" %>
               <div>
                 <p class="bold mb-0"><%=l10n("plans.hphc")%></p>
@@ -108,6 +115,18 @@
               </strong><br/>
               <%=l10n("plans.taro_hours")%> <br/>
               <%=l10n("plans.taro_contact_url")%>
+              <br/>
+              <br/>
+            </div>
+          <% when "Mending Health" %>
+            <div>
+              <strong><%=l10n("plans.mending")%></strong><br/>
+              <%=l10n("plans.call")%>
+              <strong>
+                <a href=<%=l10n("plans.mending_href_phone_1")%> ><%=l10n("plans.mending_phone_1")%></a>
+              </strong><br/>
+              <%=l10n("plans.mending_hours")%> <br/>
+              <%=l10n("plans.mending_contact_url")%>
               <br/>
               <br/>
             </div>
