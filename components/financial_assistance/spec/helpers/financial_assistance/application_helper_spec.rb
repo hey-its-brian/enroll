@@ -855,4 +855,184 @@ RSpec.describe ::FinancialAssistance::ApplicationHelper, :type => :helper, dbcle
       expect(helper.send(:job_or_self_employment_income?, other_income)).to be false
     end
   end
+
+  describe '#faa_nav_options' do
+    let!(:family) { FactoryBot.create(:family, :with_primary_family_member) }
+    let!(:application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: 'draft') }
+    let!(:ed) { FactoryBot.create(:financial_assistance_eligibility_determination, application: application) }
+    let!(:applicant) do
+      FactoryBot.create(:financial_assistance_applicant,
+                        application: application,
+                        eligibility_determination_id: ed.id,
+                        is_ia_eligible: true,
+                        is_claimed_as_tax_dependent: false,
+                        is_required_to_file_taxes: true,
+                        first_name: 'Test',
+                        last_name: 'User')
+    end
+
+    before do
+      allow(helper).to receive(:l10n).and_call_original
+      allow(helper).to receive(:financial_assistance).and_return(double)
+      allow(helper.financial_assistance).to receive(:application_applicants_path).and_return('/path/to/applicants')
+      allow(helper.financial_assistance).to receive(:edit_application_path).and_return('/path/to/edit')
+      allow(helper.financial_assistance).to receive(:applications_path).and_return('/path/to/applications')
+      allow(helper.financial_assistance).to receive(:application_relationships_path).and_return('/path/to/relationships')
+      allow(helper.financial_assistance).to receive(:preferences_application_path).and_return('/path/to/preferences')
+      allow(helper.financial_assistance).to receive(:review_and_submit_application_path).and_return('/path/to/review')
+      allow(helper.financial_assistance).to receive(:submit_your_application_application_path).and_return('/path/to/submit')
+      allow(helper).to receive(:applicant_faa_nav_options).and_return([
+        {step: 1, label: 'Tax Info', link: '/tax-info', step_complete: true},
+        {step: 2, label: 'Job Income', link: '/job-income', step_complete: false}
+      ])
+      allow(helper).to receive(:no_applicant_faa_nav_options).and_return([
+        {step: 1, label: 'Family Info', link: '/family-info'},
+        {step: 2, label: 'Review', link: '/review'}
+      ])
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:back_to_account_all_shop).and_return(true)
+      allow(family).to receive(:eligibility_determination?).and_return(true)
+      allow(application).to receive(:family).and_return(family)
+    end
+
+    context 'when applicant is present' do
+      let(:step) { 2 }
+
+      context 'when QHP feature is enabled' do
+        before do
+          allow(helper).to receive(:qhp_application_feature_enabled?).and_return(true)
+        end
+
+        it 'returns correct navigation structure' do
+          result = helper.faa_nav_options(step, application, applicant)
+
+          expect(result[:nav_options]).to eq([
+            {step: 1, label: 'Tax Info', link: '/tax-info', step_complete: true},
+            {step: 2, label: 'Job Income', link: '/job-income', step_complete: false}
+          ])
+          expect(result[:links]).to be true
+          expect(result[:step]).to eq step
+          expect(result[:title]).to eq helper.l10n("faa.nav.my_household")
+          expect(result[:title_link]).to eq '/path/to/applicants'
+          expect(result[:subheading]).to be_nil
+          expect(result[:show_help_button]).to be true
+          expect(result[:show_exit_button]).to be true
+          expect(result[:show_previous_button]).to be false
+          expect(result[:show_account_button]).to be true
+          expect(result[:back_to_account_flag]).to be true
+        end
+      end
+
+      context 'when QHP feature is disabled' do
+        before do
+          allow(helper).to receive(:qhp_application_feature_enabled?).and_return(false)
+        end
+
+        context 'when application is draft' do
+          it 'returns correct navigation structure with my_household title' do
+            result = helper.faa_nav_options(step, application, applicant)
+
+            expect(result[:nav_options]).to eq([
+              {step: 1, label: 'Tax Info', link: '/tax-info', step_complete: true},
+              {step: 2, label: 'Job Income', link: '/job-income', step_complete: false}
+            ])
+            expect(result[:title]).to eq helper.l10n("faa.nav.my_household")
+            expect(result[:title_link]).to eq '/path/to/edit'
+            expect(result[:subheading]).to eq helper.l10n("faa.nav.applicant_subheader")
+          end
+        end
+
+        context 'when application is not draft' do
+          before do
+            allow(application).to receive(:is_draft?).and_return(false)
+          end
+
+          it 'returns correct navigation structure with applications title' do
+            result = helper.faa_nav_options(step, application, applicant)
+
+            expect(result[:title]).to eq helper.l10n("faa.results.view_my_applications").titleize
+            expect(result[:title_link]).to eq '/path/to/applications'
+          end
+        end
+      end
+    end
+
+    context 'when applicant is not present' do
+      let(:step) { 1 }
+      let(:applicant) { nil }
+
+      context 'when QHP feature is enabled' do
+        before do
+          allow(helper).to receive(:qhp_application_feature_enabled?).and_return(true)
+        end
+
+        it 'returns correct navigation structure' do
+          result = helper.faa_nav_options(step, application, applicant)
+
+          expect(result[:nav_options]).to eq([
+            {step: 1, label: 'Family Info', link: '/family-info'},
+            {step: 2, label: 'Review', link: '/review'}
+          ])
+          expect(result[:links]).to be true
+          expect(result[:step]).to eq step
+          expect(result[:title]).to eq helper.l10n("faa.nav.enroll_in_coverage")
+          expect(result[:title_link]).to be_nil
+          expect(result[:subheading]).to be_nil
+        end
+      end
+
+      context 'when QHP feature is disabled' do
+        before do
+          allow(helper).to receive(:qhp_application_feature_enabled?).and_return(false)
+        end
+
+        context 'when step is 1 and application is draft' do
+          it 'returns view_my_applications title' do
+            result = helper.faa_nav_options(step, application, applicant)
+
+            expect(result[:title]).to eq helper.l10n("faa.results.view_my_applications").titleize
+            expect(result[:title_link]).to eq '/path/to/applications'
+            expect(result[:subheading]).to eq helper.l10n("faa.nav.applicant_subheader")
+          end
+        end
+
+        context 'when step is not 1' do
+          let(:step) { 2 }
+
+          it 'returns my_household title' do
+            result = helper.faa_nav_options(step, application, applicant)
+
+            expect(result[:title]).to eq helper.l10n("faa.nav.my_household")
+            expect(result[:title_link]).to eq '/path/to/edit'
+          end
+        end
+      end
+    end
+
+    context 'when back_to_account feature is disabled' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:back_to_account_all_shop).and_return(false)
+        allow(helper).to receive(:qhp_application_feature_enabled?).and_return(true)
+      end
+
+      it 'sets show_account_button to false' do
+        result = helper.faa_nav_options(1, application, applicant)
+
+        expect(result[:show_account_button]).to be false
+      end
+    end
+
+    context 'when family does not have eligibility determination' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:back_to_account_all_shop).and_return(true)
+        allow(family).to receive(:eligibility_determination?).and_return(false)
+        allow(helper).to receive(:qhp_application_feature_enabled?).and_return(true)
+      end
+
+      it 'sets show_account_button to false' do
+        result = helper.faa_nav_options(1, application, applicant)
+
+        expect(result[:show_account_button]).to be false
+      end
+    end
+  end
 end

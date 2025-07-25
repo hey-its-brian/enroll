@@ -1,4 +1,4 @@
-<%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(4)} %>
+<%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(4 ,show_account_button: @family.eligibility_determination.present?)} %>
 
 <h1><%= l10n("faa.review.review_and_submit") %></h1>
 <p><%= l10n("qhp_application.review_description") %><b><%= l10n("qhp_application.continue_to_next_step") %></b>.</p>

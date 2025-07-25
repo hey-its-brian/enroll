@@ -183,7 +183,7 @@ module NavigationHelper
     { breadcrumbs: steps.values[0..current_step_index], previous_step: steps.values[current_step_index - 1] }
   end
 
-  def individual_market_nav_options(step)
+  def individual_market_nav_options(step, show_account_button: true)
     nav = {}
 
     nav[:nav_options] = [
@@ -199,7 +199,7 @@ module NavigationHelper
     nav[:show_help_button] = true
     nav[:show_exit_button] = true
     nav[:show_previous_button] = false
-    nav[:show_account_button] = EnrollRegistry.feature_enabled?(:back_to_account_all_shop)
+    nav[:show_account_button] = EnrollRegistry.feature_enabled?(:back_to_account_all_shop) && show_account_button
     nav[:back_to_account_flag] = true
     nav
   end

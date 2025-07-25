@@ -459,10 +459,16 @@ module FinancialAssistance
       nav[:show_help_button] = true
       nav[:show_exit_button] = true
       nav[:show_previous_button] = false
-      nav[:show_account_button] = EnrollRegistry.feature_enabled?(:back_to_account_all_shop)
+      nav[:show_previous_button] = false
+      nav[:show_account_button] = EnrollRegistry.feature_enabled?(:back_to_account_all_shop) && is_enabled_for_qhp?(application)
       nav[:back_to_account_flag] = true
 
       nav
+    end
+
+    def is_enabled_for_qhp?(application)
+      return true unless qhp_application_feature_enabled?
+      application.family.eligibility_determination?
     end
 
     def applicant_faa_nav_options(application, applicant)
