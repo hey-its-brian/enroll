@@ -513,16 +513,15 @@ export default class extends Controller {
 
   checkValidations(event) {
     event.preventDefault()
+    const form = this.element.querySelector('form')
     let ssnValid = this.checkSsnValidation()
     let tribalStateValid = this.checkTribalStateValidation()
-    let tribalNameValid = true
-    if (tribalStateValid) {
-      tribalNameValid = this.checkTribalNameOrCodeValidation()
-    }
-    let valid = ssnValid && tribalStateValid && tribalNameValid
+    let valid = ssnValid && tribalStateValid && form.checkValidity()
 
     if (valid) {
-      this.element.querySelector('form').submit()
+      form.submit()
+    } else {
+      form.reportValidity()
     }
   }
 
@@ -546,6 +545,7 @@ export default class extends Controller {
   checkTribalStateValidation() {
     const indianTribeMemberYes = document.querySelector('#indian_tribe_member_yes')
     const tribalState = this.TribalStateTarget
+    const tribalName = this.TribalNameTarget
     if (indianTribeMemberYes?.checked) {
       if (this.hasTribalStateTarget && tribalState.value == "") {
         tribalState.setCustomValidity("Tribal state is required when native american / alaska native is selected")
@@ -554,9 +554,15 @@ export default class extends Controller {
       } else {
         tribalState.setCustomValidity("")
         tribalState.reportValidity()
-        return true
+        return this.checkTribalNameOrCodeValidation()
       }
     } else {
+      tribalState.setCustomValidity("")
+      tribalState.reportValidity()
+      if (tribalName) {
+        tribalName.setCustomValidity("")
+        tribalName.reportValidity()
+      }
       return true
     }
   }
