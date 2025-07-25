@@ -22,7 +22,7 @@ module Operations
           application = yield validate(application)
           application = yield submit_application(application)
           applicant_results = yield determine_applicants(application)
-          _applicants = yield generate_evidences(applicant_results)
+          _applicants = yield create_evidences(applicant_results)
           determined_application = yield determine_application(application)
           _calls = yield call_hubs(application)
           _family = yield update_family(application)
@@ -82,11 +82,10 @@ module Operations
         #
         # @param applicant_results [Array] array of applicant results
         # @return [Dry::Monads::Result] Success with message
-        def generate_evidences(applicant_results)
+        def create_evidences(applicant_results)
           applicants = applicant_results.map do |applicant|
             Try do
               applicant.build_individual_market_evidences
-              applicant.save
             rescue StandardError => e
               Failure("Failed to generate evidences for applicant #{applicant.id}: #{e.message}")
             end

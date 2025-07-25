@@ -146,7 +146,7 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
       end
     end
 
-    context "should create proper relationships for the primary person" do
+    context "relationships/vlp documents" do
       let(:third_applicant) do
         FactoryBot.create(
           :financial_assistance_applicant,
@@ -189,6 +189,16 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
       it 'updates the relationship kind' do
         third_person = third_applicant.family_member.person
         expect(primary_person.person_relationships.where(relative_id: third_person.id).first.kind).to eq('child')
+      end
+
+      it 'should not create vlp document for secondary person' do
+        third_person = third_applicant.family_member.person
+        expect(third_person.consumer_role.vlp_documents.size).to eq(0)
+      end
+
+      it 'should set is_applicant status on consumer role' do
+        third_person = third_applicant.family_member.person
+        expect(third_person.consumer_role.is_applicant).to eq(third_applicant.is_primary_applicant)
       end
     end
 

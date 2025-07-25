@@ -1515,6 +1515,15 @@ RSpec.describe ConsumerRole, dbclean: :after_each, type: :model do
       end
     end
 
+    describe "in unverified status and qhp feature is enabled" do
+      let(:current_state) { "unverified" }
+      it "should not fire coverage_selected!" do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        expect(subject).not_to receive(:coverage_purchased!)
+        subject.ivl_coverage_selected
+      end
+    end
+
     it_behaves_like "a consumer role unchanged by ivl_coverage_selected", :ssa_pending
     it_behaves_like "a consumer role unchanged by ivl_coverage_selected", :dhs_pending
     it_behaves_like "a consumer role unchanged by ivl_coverage_selected", :verification_outstanding

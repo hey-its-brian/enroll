@@ -16,6 +16,7 @@ class ConsumerRole
   include L10nHelper
   include EventSource::Command
   include ChildcareSubsidyConcern
+  include ResourceRegistryHelper
 
   embedded_in :person
 
@@ -293,6 +294,8 @@ class ConsumerRole
   delegate :addresses, to: :person, allow_nil: true
 
   def ivl_coverage_selected
+    return if qhp_application_feature_enabled?
+
     if unverified?
       coverage_purchased!(verification_attr)
     end

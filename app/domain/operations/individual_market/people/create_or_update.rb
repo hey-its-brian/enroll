@@ -132,6 +132,7 @@ module Operations
         def build_or_update_consumer_role(person, applicant)
           consumer_role = person.consumer_role || person.build_consumer_role
 
+          consumer_role.is_applicant = applicant.is_primary_applicant
           consumer_role.contact_method = applicant.contact_method
           consumer_role.is_applying_coverage = applicant.is_applying_coverage
           consumer_role.language_preference = applicant.language_preference
@@ -149,10 +150,10 @@ module Operations
         def build_or_update_vlp_document(consumer_role, applicant)
           # Clear all existing VLP documents
           consumer_role.vlp_documents.clear
-
+          return if applicant.immigration_information.blank?
           # Build a new VLP document
           vlp_doc = consumer_role.vlp_documents.build
-          assign_vlp_document_attributes(vlp_doc, applicant) if applicant.immigration_information.present?
+          assign_vlp_document_attributes(vlp_doc, applicant)
           # Sets the active_vlp_document_id to the consumer_role
           consumer_role.active_vlp_document_id = vlp_doc.id
         end

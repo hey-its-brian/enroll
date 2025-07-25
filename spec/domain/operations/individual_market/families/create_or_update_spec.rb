@@ -390,6 +390,14 @@ RSpec.describe Operations::IndividualMarket::Families::CreateOrUpdate, type: :mo
         )
       end
 
+      it 'should not create vlp document for secondary person' do
+        expect(new_person.consumer_role.vlp_documents.size).to eq(0)
+      end
+
+      it 'should set is_applicant status on consumer role' do
+        expect(new_person.consumer_role.is_applicant).to eq(secondary_applicant.is_primary_applicant)
+      end
+
       it 'creates emails for the new person' do
         expect(new_person.emails.size).to eq(1)
         expect(new_person.emails.first).to have_attributes(
