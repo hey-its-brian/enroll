@@ -87,7 +87,7 @@ class ApplicationController < ActionController::Base
   end
 
   def user_not_authorized(exception)
-    policy_name = exception.policy.class.to_s.underscore
+    policy_name = exception.policy.is_a?(Class) ? exception.policy.to_s.underscore : exception.policy.class.to_s.underscore
 
     flash[:error] = "Access not allowed for #{policy_name}.#{exception.query}, (Pundit policy)"
     respond_to do |format|

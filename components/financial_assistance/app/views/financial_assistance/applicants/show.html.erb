@@ -21,7 +21,6 @@
 <% if income_and_deductions_for(@applicant).present? %>
   <section>
     <h2><%= l10n("faa.deductions") %></h2>
-    <p><%= l10n("faa.review.income.information_entered") %></p>
     <table>
       <thead>
       <tr>
@@ -88,3 +87,5 @@
     <%= render partial: 'financial_assistance/applications/summary_subsection', collection: subsections, as: :subsection %>
   </section>
 <% end %>
+
+<%= link_to l10n("return_to_applications"), main_app.current_applications_insured_sbm_applications_path, class: 'button btn-primary' %>

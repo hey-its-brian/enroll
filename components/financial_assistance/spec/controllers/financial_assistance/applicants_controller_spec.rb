@@ -143,6 +143,29 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
         expect(response).to render_template(layout: "layouts/financial_assistance_nav")
       end
     end
+
+    context 'pundit authorization' do
+      context 'when invalid application id is provided' do
+        it 'should raise Pundit::NotAuthorizedError' do
+          get :show, params: { application_id: BSON::ObjectId.new, id: applicant.id }
+          expect(flash[:error]).to eq('Access not allowed for financial_assistance/applicant.show?, (Pundit policy)')
+        end
+      end
+
+      context 'when invalid applicant id is provided' do
+        it 'should raise Pundit::NotAuthorizedError' do
+          get :show, params: { application_id: BSON::ObjectId.new, id: applicant.id }
+          expect(flash[:error]).to eq('Access not allowed for financial_assistance/applicant.show?, (Pundit policy)')
+        end
+      end
+
+      context 'when valid application id applicant id is provided' do
+        it 'should not raise Pundit::NotAuthorizedError' do
+          get :show, params: { application_id: application.id, id: applicant.id }
+          expect(flash[:error]).to eq nil
+        end
+      end
+    end
   end
 
   context "GET other questions" do

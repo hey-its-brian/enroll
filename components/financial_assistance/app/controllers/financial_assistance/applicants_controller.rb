@@ -5,8 +5,9 @@ module FinancialAssistance
   class ApplicantsController < FinancialAssistance::ApplicationController
 
     before_action :set_current_person, :set_family, only: [:index, :show]
-    before_action :find, :except => [:index, :age_of_applicant]
-    before_action :find_application, :except => [:age_of_applicant]
+    before_action :find, :except => [:show, :index, :age_of_applicant]
+    before_action :find_application, :except => [:show, :age_of_applicant]
+    before_action :fetch_application_and_applicant, only: [:show]
     before_action :find_applicant, only: [:age_of_applicant]
     before_action :set_cache_headers, only: [:other_questions, :tax_info]
     before_action :enable_bs4_layout, only: [:index, :show, :edit, :other_questions, :tax_info, :update]
@@ -249,6 +250,38 @@ module FinancialAssistance
     end
 
     private
+
+    def fetch_application_and_applicant
+      application_id = params[:application_id] || params[:id]
+      applicant_id   = params[:id]
+
+      @application = fetch_application(application_id)
+      not_authorized!('show?') if @application.blank?
+
+      @applicant = @application.active_applicants.where(id: applicant_id).last
+      not_authorized!('show?') if @applicant.blank?
+
+      @model = @applicant
+    end
+
+    def fetch_application(application_id)
+      if current_user&.person&.agent?
+        FinancialAssistance::Application.find_by(id: application_id)
+      else
+        FinancialAssistance::Application.where(
+          id: application_id,
+          family_id: get_current_person.financial_assistance_identifier
+        ).last
+      end
+    end
+
+    def not_authorized!(query)
+      raise Pundit::NotAuthorizedError.new(
+        query: query,
+        record: nil,
+        policy: FinancialAssistance::Applicant
+      )
+    end
 
     def resolve_layout
       EnrollRegistry.feature_enabled?(:bs4_consumer_flow) ? "financial_assistance_progress" : "financial_assistance_nav"
