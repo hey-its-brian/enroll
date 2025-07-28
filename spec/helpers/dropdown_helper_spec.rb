@@ -477,4 +477,291 @@ RSpec.describe DropdownHelper, type: :helper do
       end
     end
   end
+
+  describe '#current_applications_dropdowns' do
+    let(:ivl_application) { FactoryBot.create(:individual_market_application, current_state: app_state, family: family, assistance_year: year) }
+    let(:faa_application) { FactoryBot.create(:financial_assistance_application, aasm_state: faa_app_state, family: family, assistance_year: year) }
+    let(:app_state) { :determined }
+    let(:faa_app_state) { "determined" }
+    let(:draft_qhp_application) { FactoryBot.create(:individual_market_application, :initial) }
+    let(:draft_faa_application) { FactoryBot.create(:financial_assistance_application, :draft) }
+    let(:year) { 2025 }
+    let(:alt_year) { 2024 }
+
+    context 'when application a financial assistance application' do
+      it 'returns the update option' do
+        expect(helper.current_applications_dropdowns(faa_application, year, draft_faa_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.update_year', year: year))
+      end
+
+      it 'has a draft link if a draft application exists' do
+        expect(helper.current_applications_dropdowns(faa_application, year, draft_faa_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.resume_draft_year', year: year))
+      end
+
+      it 'does not have a draft link if a draft application does not exist' do
+        expect(helper.current_applications_dropdowns(faa_application, year, nil, alt_year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.resume_draft_year', year: year))
+      end
+
+      it 'includes the update option' do
+        expect(helper.current_applications_dropdowns(faa_application, year, draft_faa_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.update_year', year: year))
+      end
+
+      it "includes the view eligibility option if the application is determined" do
+        faa_application.update_attributes(aasm_state: "determined")
+        expect(helper.current_applications_dropdowns(faa_application, year, draft_faa_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.view_eligibility'))
+      end
+
+      it "does not include the view eligibility option if the application is not determined" do
+        expect(helper.current_applications_dropdowns(draft_faa_application, year, nil, alt_year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.view_eligibility'))
+      end
+
+      it 'includes the copy to alt year option' do
+        options = helper.current_applications_dropdowns(faa_application, year, draft_faa_application, alt_year)
+        expect(options.collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.copy_to_alt_year', alt_year: alt_year))
+      end
+
+      it 'does not include the copy to alt year option if the alt year is not set' do
+        expect(helper.current_applications_dropdowns(faa_application, year, draft_faa_application, nil).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.copy_to_alt_year', alt_year: alt_year))
+      end
+
+      context 'when the transfer history feature is enabled' do
+        before do
+          allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:transfer_history_page).and_return(true)
+        end
+
+        context 'when the user is an HBX staff member' do
+          let(:current_user) { admin_user }
+          it 'includes the transfer history option' do
+            expect(helper.current_applications_dropdowns(faa_application, year, draft_faa_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.transfer_history'))
+          end
+        end
+
+        context 'when the user is not an HBX staff member' do
+          let(:current_user) { user }
+          it 'does not include the transfer history option' do
+            expect(helper.current_applications_dropdowns(faa_application, year, draft_faa_application, alt_year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.transfer_history'))
+          end
+        end
+      end
+
+      context 'when the current user is an HBX staff member and qhp applications is enabled' do
+        let(:current_user) { admin_user }
+
+        it 'includes the review option when the application is determined' do
+          faa_application.update_attributes(aasm_state: "determined")
+          expect(helper.current_applications_dropdowns(faa_application, year, draft_faa_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+
+        it 'includes the review option when the application is a draft and qhp applications is enabled' do
+          faa_application.update_attributes(aasm_state: "draft")
+          allow(helper).to receive(:qhp_application_feature_enabled?).and_return(true)
+          expect(helper.current_applications_dropdowns(draft_faa_application, year, nil, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+      end
+
+      context 'when the current user is not an HBX staff member' do
+        let(:current_user) { user }
+
+        it 'does not include the review option when the application is a draft' do
+          faa_application.update_attributes(aasm_state: "draft")
+          expect(helper.current_applications_dropdowns(draft_faa_application, year, nil, alt_year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+
+        it 'includes the review option when the application is determined' do
+          faa_application.update_attributes(aasm_state: "determined")
+          expect(helper.current_applications_dropdowns(faa_application, year, draft_faa_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+      end
+    end
+
+    context 'when the application is an IVL application' do
+      it 'includes the update option' do
+        expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.update_year', year: year))
+      end
+
+      it 'has a draft link if a draft application exists' do
+        expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.resume_draft_year', year: year))
+      end
+
+      it 'does not have a draft link if a draft application does not exist' do
+        expect(helper.current_applications_dropdowns(ivl_application, year, nil, alt_year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.resume_draft_year', year: year))
+      end
+
+      it 'does not include the restore financial assistance option if the family has no financial assistance applications' do
+        expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.restore_fa'))
+      end
+
+      context 'when the family has a determined financial assistance application' do
+        let(:faa_application) { FactoryBot.create(:financial_assistance_application, aasm_state: "determined", family: family, assistance_year: year - 1) }
+
+        before do
+          allow(family).to receive(:latest_determined_faa_application).and_return(faa_application)
+        end
+
+        it 'includes the restore financial assistance option if the assistance year is the previous year' do
+          faa_application.update_attributes(assistance_year: alt_year)
+          expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.restore_fa'))
+        end
+
+        it 'includes the restore financial assistance option if the assistance year is the current year' do
+          faa_application.update_attributes(assistance_year: year)
+          expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.restore_fa'))
+        end
+
+        it 'does not include the restore financial assistance option if the assistance year is not the current or previous year' do
+          faa_application.update_attributes(assistance_year: year + 1)
+          expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.restore_fa'))
+        end
+      end
+
+      it "includes the view eligibility option if the application is determined" do
+        ivl_application.update_attributes(current_state: :determined)
+        expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.view_eligibility'))
+      end
+
+      it "does not include the view eligibility option if the application is not determined" do
+        ivl_application.update_attributes(current_state: :initial)
+        expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.view_eligibility'))
+      end
+
+      it "includes the view eligibility criteria option if the application is determined" do
+        ivl_application.update_attributes(current_state: :determined)
+        expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.view_criteria'))
+      end
+
+      it "does not include the view eligibility criteria option if the application is not determined" do
+        ivl_application.update_attributes(current_state: :initial)
+        expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.view_criteria'))
+      end
+
+      context 'when the current user is not an HBX staff member' do
+        let(:current_user) { user }
+
+        it 'does not include the view eligibility criteria option' do
+          expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.view_criteria'))
+        end
+      end
+
+      it 'includes the copy to alt year option' do
+        options = helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year)
+        expect(options.collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.copy_to_alt_year', alt_year: alt_year))
+      end
+
+      it 'does not include the copy to alt year option if the alt year is not set' do
+        expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, nil).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.copy_to_alt_year', alt_year: alt_year))
+      end
+
+      context 'when the application is determined and current user is an HBX staff member' do
+        let(:app_state) { :determined }
+        let(:current_user) { user }
+
+        it 'includes the review option' do
+          expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+      end
+
+      context 'when the current user is not an HBX staff member' do
+        let(:current_user) { user }
+
+        it 'does not include the review option when the application is a draft' do
+          ivl_application.update_attributes(current_state: :initial)
+          expect(helper.current_applications_dropdowns(draft_qhp_application, year, nil, alt_year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+
+        it 'does include the review option when the application is determined' do
+          ivl_application.update_attributes(current_state: :determined)
+          expect(helper.current_applications_dropdowns(ivl_application, year, draft_qhp_application, alt_year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+      end
+    end
+  end
+
+  describe '#current_applications_renewal_dropdowns' do
+    let(:ivl_application) { FactoryBot.create(:individual_market_application, current_state: app_state, family: family, assistance_year: year) }
+    let(:faa_application) { FactoryBot.create(:financial_assistance_application, aasm_state: faa_app_state, family: family, assistance_year: year) }
+    let(:app_state) { :determined }
+    let(:faa_app_state) { "determined" }
+    let(:year) { 2025 }
+
+    context 'when the application is a financial assistance application' do
+      it 'includes the view eligibility option' do
+        expect(helper.current_applications_renewal_dropdowns(faa_application, year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.view_eligibility'))
+      end
+
+      context 'when the application is determined and current user is an HBX staff member' do
+        let(:app_state) { :determined }
+        let(:current_user) { user }
+
+        it 'includes the review option' do
+          expect(helper.current_applications_renewal_dropdowns(faa_application, year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+      end
+
+      context 'when the current user is not an HBX staff member' do
+        let(:current_user) { user }
+
+        it 'does not include the review option when the application is a draft' do
+          faa_application.update_attributes(aasm_state: :initial)
+          expect(helper.current_applications_renewal_dropdowns(faa_application, year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+
+        it 'does include the review option when the application is determined' do
+          faa_application.update_attributes(aasm_state: :determined)
+          expect(helper.current_applications_renewal_dropdowns(faa_application, year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+      end
+    end
+
+    context 'when the application is an IVL application' do
+      it 'includes the view eligibility option' do
+        expect(helper.current_applications_renewal_dropdowns(ivl_application, year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.view_eligibility'))
+      end
+
+      it "includes the view eligibility criteria option if the application is determined" do
+        ivl_application.update_attributes(current_state: :determined)
+        expect(helper.current_applications_renewal_dropdowns(ivl_application, year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.view_criteria'))
+      end
+
+      it "does not include the view eligibility criteria option if the application is not determined" do
+        ivl_application.update_attributes(current_state: :initial)
+        expect(helper.current_applications_renewal_dropdowns(ivl_application, year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.view_criteria'))
+      end
+
+      context 'when the current user is not an HBX staff member' do
+        let(:current_user) { user }
+
+        it 'does not include the view eligibility criteria option' do
+          expect(helper.current_applications_renewal_dropdowns(ivl_application, year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.view_criteria'))
+        end
+      end
+
+      context 'when current user is an HBX staff member' do
+        let(:current_user) { admin_user }
+
+        it 'includes the review option when the application is determined' do
+          ivl_application.update_attributes(current_state: :determined)
+          expect(helper.current_applications_renewal_dropdowns(ivl_application, year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+
+        it 'includes the review option when the application is a draft when qhp applications is enabled' do
+          ivl_application.update_attributes(current_state: :initial)
+          allow(helper).to receive(:qhp_application_feature_enabled?).and_return(true)
+          expect(helper.current_applications_renewal_dropdowns(ivl_application, year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+      end
+
+      context 'when the current user is not an HBX staff member' do
+        let(:current_user) { user }
+
+        it 'does not include the review option when the application is a draft' do
+          ivl_application.update_attributes(current_state: :initial)
+          expect(helper.current_applications_renewal_dropdowns(ivl_application, year).collect { |dropdwn| dropdwn[:title] }).not_to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+
+        it 'does include the review option when the application is determined' do
+          ivl_application.update_attributes(current_state: :determined)
+          expect(helper.current_applications_renewal_dropdowns(ivl_application, year).collect { |dropdwn| dropdwn[:title] }).to include(l10n('insured.sbm.applications.actions.review_year', year: year))
+        end
+      end
+    end
+  end
 end

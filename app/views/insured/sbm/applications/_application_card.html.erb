@@ -1,6 +1,5 @@
 <% no_application = application.nil? %>
 <% draft_application = application&.is_draft? %>
-<% %>
 
 <% if no_application || draft_application %>
   <section class="card p-2 my-4">
@@ -22,9 +21,9 @@
     <div class="card-header px-2 py-2 d-flex justify-content-between align-items-center">
       <h2 class="inline m-0 p-0"><%= year %> <%= l10n("application") %></h2>
       <% if renewal %>
-        <%= render partial: 'datatables/shared/dropdown', locals: { dropdowns: sbm_applications_index_renewal_dropdowns(application, year) } %>
+        <%= render partial: 'datatables/shared/dropdown', locals: { dropdowns: current_applications_renewal_dropdowns(application, year) } %>
       <% else %>
-        <%= render partial: 'datatables/shared/dropdown', locals: { dropdowns: sbm_applications_index_dropdowns(application, year, [application], draft) } %>
+        <%= render partial: 'datatables/shared/dropdown', locals: { dropdowns: current_applications_dropdowns(application, year, draft, alt_year) } %>
       <% end %>
     </div>
     <div class="card-body px-2 py-3">

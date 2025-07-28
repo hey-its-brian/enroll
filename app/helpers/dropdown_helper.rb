@@ -182,31 +182,21 @@ module DropdownHelper
     construct_options(option_args)
   end
 
-  def sbm_applications_index_dropdowns(application, year, copyable_application_ids, draft_application)
-    # resume 2025 draft -> jump to existing draft application
-    # update 2025 application-> create new application for year of the same type
-    # view 2025 eligibility determination -> view eligibility for the application
-    # review 2025 application -> go to review application page for current year application
-    # 2025 eligibility criteria -> go to eligibility criteria page for the application???
-    # restore 2025 financial assistance -> copy latest FAA determined application to the targeted year as a draft application
-
+  def current_applications_dropdowns(application, year, draft_application, alt_year)
     if application.is_a?(::FinancialAssistance::Application)
-      sbm_faa_dropdown(application, year, copyable_application_ids, draft_application)
+      sbm_faa_dropdown(application, year, draft_application, alt_year)
     else
-      sbm_qhp_dropdown(application, year, copyable_application_ids, draft_application)
+      sbm_qhp_dropdown(application, year, draft_application, alt_year)
     end
   end
 
-  def sbm_faa_dropdown(application, year, copyable_application_ids, draft_application)
+  def sbm_faa_dropdown(application, year, draft_application, alt_year)
     option_args = []
 
     add_draft_link(option_args, draft_application, year)
-    option_args << [l10n("insured.sbm.applications.actions.update_year", year: year), financial_assistance.copy_application_path(application), :default] unless do_not_allow_copy?(application, current_user, copyable_application_ids)
+    option_args << [l10n("insured.sbm.applications.actions.update_year", year: year), financial_assistance.copy_application_path(application, assistance_year: year), :default]
     option_args << [l10n("insured.sbm.applications.actions.view_eligibility"), financial_assistance.eligibility_results_application_path(application), :default] if application.is_determined? || application.is_terminated?
-    if application.is_reviewable? || (qhp_application_feature_enabled? && application.is_draft? && current_user.has_hbx_staff_role?)
-      option_args << [l10n("insured.sbm.applications.actions.review_year", year: year), financial_assistance.review_application_path(application),
-                      :default]
-    end
+    option_args << [l10n("insured.sbm.applications.actions.copy_to_alt_year", alt_year: alt_year), financial_assistance.copy_application_path(application, assistance_year: alt_year), :default] if alt_year.present?
 
     if current_user.has_hbx_staff_role? && FinancialAssistanceRegistry.feature_enabled?(:transfer_history_page)
       option_args << (
@@ -216,6 +206,11 @@ module DropdownHelper
           :default
         ]
       )
+    end
+
+    if application.is_reviewable? || (qhp_application_feature_enabled? && application.is_draft? && current_user.has_hbx_staff_role?)
+      option_args << [l10n("insured.sbm.applications.actions.review_year", year: year), financial_assistance.review_application_path(application),
+                      :default]
     end
     construct_options(option_args)
   end
@@ -227,43 +222,44 @@ module DropdownHelper
     option_args << [l10n("insured.sbm.applications.actions.resume_draft_year", year: year), draft_link, :default]
   end
 
-  def sbm_qhp_dropdown(application, year, copyable_application_ids, draft_application)
+  def sbm_qhp_dropdown(application, year, draft_application, alt_year)
     option_args = []
 
     add_draft_link(option_args, draft_application, year)
-
-    option_args << [l10n("insured.sbm.applications.actions.update_year", year: year), copy_insured_individual_market_application_path(application), :default] unless do_not_allow_copy?(application, current_user, copyable_application_ids)
+    option_args << [l10n("insured.sbm.applications.actions.update_year", year: year), copy_insured_individual_market_application_path(application, assistance_year: year), :default]
+    add_restore_faa_link(option_args, application, year)
     option_args << [l10n("insured.sbm.applications.actions.view_eligibility"), eligibility_results_insured_individual_market_application_path(application), :default] if application.determined?
+    option_args << [l10n("insured.sbm.applications.actions.view_criteria"), eligibility_criteria_insured_individual_market_application_path(application), :default] if application.determined? && current_user.has_hbx_staff_role?
+    option_args << [l10n("insured.sbm.applications.actions.copy_to_alt_year", alt_year: alt_year), copy_insured_individual_market_application_path(application, assistance_year: alt_year), :default] if alt_year.present?
     if application.is_reviewable? || (qhp_application_feature_enabled? && application.is_draft? && current_user.has_hbx_staff_role?)
       option_args << [l10n("insured.sbm.applications.actions.review_year", year: year), insured_individual_market_application_path(application),
                       :default]
     end
-    option_args << [l10n("insured.sbm.applications.actions.view_criteria"), eligibility_criteria_insured_individual_market_application_path(application), :default] if application.determined? && current_user.has_hbx_staff_role?
     construct_options(option_args)
   end
 
-  def sbm_applications_index_renewal_dropdowns(application, year)
+  def add_restore_faa_link(option_args, application, year)
+    last_faa = application.family&.latest_determined_faa_application
+    option_args << [l10n("insured.sbm.applications.actions.restore_fa"), financial_assistance.copy_application_path(last_faa, assistance_year: year), :default] if last_faa.present? && last_faa.assistance_year.in?([year - 1, year])
+  end
+
+  def current_applications_renewal_dropdowns(application, year)
     option_args = []
-
-    if application.is_a?(::IndividualMarket::Application)
-      last_faa = application.family&.latest_determined_faa_application
-      sbm_ivl_renewals(option_args, application, last_faa, year)
-    end
-
     if application.is_a?(::FinancialAssistance::Application)
       option_args << [l10n("insured.sbm.applications.actions.view_eligibility"), financial_assistance.eligibility_results_application_path(application), :default] if application.is_determined? || application.is_terminated?
       if application.is_reviewable? || (qhp_application_feature_enabled? && application.is_draft? && current_user.has_hbx_staff_role?)
         option_args << [l10n("insured.sbm.applications.actions.review_year", year: year), financial_assistance.review_application_path(application),
                         :default]
       end
+    elsif application.is_a?(::IndividualMarket::Application)
+      sbm_ivl_renewals(option_args, application, year)
     end
     construct_options(option_args)
   end
 
-  def sbm_ivl_renewals(option_args, application, last_faa, year)
-    option_args << [l10n("insured.sbm.applications.actions.restore_fa"), financial_assistance.copy_application_path(last_faa, assistance_year: year), :default] if last_faa.present? && last_faa.assistance_year == (year - 1)
-    option_args << [l10n("insured.sbm.applications.actions.view_criteria"), eligibility_criteria_insured_individual_market_application_path(application), :default] if application.determined? && current_user.has_hbx_staff_role?
+  def sbm_ivl_renewals(option_args, application, year)
     option_args << [l10n("insured.sbm.applications.actions.view_eligibility"), eligibility_results_insured_individual_market_application_path(application), :default] if application.determined?
+    option_args << [l10n("insured.sbm.applications.actions.view_criteria"), eligibility_criteria_insured_individual_market_application_path(application), :default] if application.determined? && current_user.has_hbx_staff_role?
     can_be_reviewed = application.is_reviewable? || (qhp_application_feature_enabled? && application.is_draft? && current_user.has_hbx_staff_role?)
     option_args << [l10n("insured.sbm.applications.actions.review_year", year: year), insured_individual_market_application_path(application), :default] if can_be_reviewed
   end
