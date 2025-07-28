@@ -532,6 +532,10 @@ export default class extends Controller {
         input.setCustomValidity("Cannot provide an SSN and claim you don't have a SSN")
         input.reportValidity()
         return false
+      } else if (!this.NoSsnCheckboxTarget.checked && input.value.length == 0) {
+        input.setCustomValidity("One of the following is required: SSN, or check the box that you don't have an SSN")
+        input.reportValidity()
+        return false
       } else {
         input.setCustomValidity("")
         input.reportValidity()
