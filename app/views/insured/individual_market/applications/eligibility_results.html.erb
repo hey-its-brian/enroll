@@ -67,6 +67,9 @@
   </ul>
 <% end %>
 
+<% if qhp_application_feature_enabled? %>
+  <p data-cuke='more_details'><%= l10n("faa.results.more_details_text") %></p>
+<% end%>
 
 <h2 data-cuke='next_steps' class="mt-4"><%= l10n("faa.results.next_steps") %></h2>
 <p data-cuke='next_steps_text'><%= l10n("faa.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>

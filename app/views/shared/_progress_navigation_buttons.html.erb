@@ -13,9 +13,7 @@
 <% run_person_validations = local_assigns[:run_person_validations] ? run_person_validations : false %>
 <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
 <% show_back_to_household_button = local_assigns[:show_back_to_household_button] ? show_back_to_household_button : false %>
-<% if qhp_application_feature_enabled? %>
-  <p> <%= l10n("eligibility.review_results_prompt") %></p>
-<% end%>
+
 <div class="d-flex flex-column flex-sm-row align-items-center">
   <% if show_back_to_household_button && @application.present? %>
     <%= link_to l10n("qhp_application.attestation.back_to_household"), insured_individual_market_application_applicants_path(@application), class: "btn outline mr-2" %>
