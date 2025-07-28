@@ -7,6 +7,7 @@ module Operations
       include Dry::Monads[:do, :result]
 
       def call(params)
+        yield validate_feature_flag
         old_name, new_name = yield validate(params)
         @logger = yield create_logger
         organizations = yield fetch_organizations(old_name)
@@ -16,6 +17,12 @@ module Operations
       end
 
       private
+
+      def validate_feature_flag
+        return Failure("Taro rebranding feature flag is not enabled. Operation aborted.") unless EnrollRegistry.feature?(:taro_rebranding) && EnrollRegistry.feature_enabled?(:taro_rebranding)
+
+        Success()
+      end
 
       def validate(params)
         return Failure("Missing old name") if params[:old_name].blank?

@@ -15,9 +15,12 @@ module Insured
         "Harvard Pilgrim Health Care" => "https://www.harvardpilgrim.org/public/home",
         "Anthem Blue Cross and Blue Shield" => "https://www.anthem.com/contact-us/maine",
         "Northeast Delta Dental" => "https://www.nedelta.com/Home",
-        "Taro Health" => EnrollRegistry['taro_health_pay_now'].setting(:taro_health_home_page_url).item,
-        "Mending Health" => EnrollRegistry['mending_health_pay_now'].setting(:mending_health_home_page_url).item
-      }.freeze
+        "Taro Health" => EnrollRegistry['taro_health_pay_now'].setting(:taro_health_home_page_url).item
+      }
+
+      LINK_URL["Mending Health"] = EnrollRegistry['mending_health_pay_now'].setting(:mending_health_home_page_url).item if EnrollRegistry.feature?(:taro_rebranding) && EnrollRegistry.feature_enabled?(:taro_rebranding)
+
+      LINK_URL.freeze
 
       def show_pay_now?(source, hbx_enrollment)
         @carrier_key = fetch_carrier_key_from_legal_name(hbx_enrollment&.product&.issuer_profile&.legal_name)

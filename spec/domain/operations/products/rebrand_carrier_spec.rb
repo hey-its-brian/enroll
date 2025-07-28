@@ -8,6 +8,11 @@ RSpec.describe ::Operations::Products::RebrandCarrier, dbclean: :after_each do
   describe 'invalid params' do
     let(:params) { {} }
 
+    before do
+      allow(EnrollRegistry).to receive(:feature?).with(:taro_rebranding).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:taro_rebranding).and_return(true)
+    end
+
     it 'returns failure when old_name is missing' do
       result = subject.call(params)
       expect(result.failure?).to eq true
@@ -22,7 +27,7 @@ RSpec.describe ::Operations::Products::RebrandCarrier, dbclean: :after_each do
     end
   end
 
-  describe 'valid params' do
+  describe 'valid params with feature flag enabled' do
     let(:old_name) { "Taro Health" }
     let(:new_name) { "Mending Health" }
 
@@ -46,6 +51,8 @@ RSpec.describe ::Operations::Products::RebrandCarrier, dbclean: :after_each do
     let(:params) { { old_name: old_name, new_name: new_name } }
 
     before do
+      allow(EnrollRegistry).to receive(:feature?).with(:taro_rebranding).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:taro_rebranding).and_return(true)
       @result = subject.call(params)
     end
 
@@ -64,8 +71,30 @@ RSpec.describe ::Operations::Products::RebrandCarrier, dbclean: :after_each do
     end
   end
 
+  describe 'valid params with feature flag disabled' do
+    before do
+      allow(EnrollRegistry).to receive(:feature?).with(:taro_rebranding).and_return(false)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:taro_rebranding).and_return(false)
+    end
+
+    let(:old_name) { "Taro Health" }
+    let(:new_name) { "Mending Health" }
+    let(:params) { { old_name: old_name, new_name: new_name } }
+
+    it 'returns failure when feature flag is disabled' do
+      result = subject.call(params)
+      expect(result.failure?).to eq true
+      expect(result.failure).to eq "Taro rebranding feature flag is not enabled. Operation aborted."
+    end
+  end
+
   describe 'no organizations found' do
     let(:params) { { old_name: "Nonexistent Carrier", new_name: "New Carrier Name" } }
+
+    before do
+      allow(EnrollRegistry).to receive(:feature?).with(:taro_rebranding).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:taro_rebranding).and_return(true)
+    end
 
     it 'returns failure when no organizations match' do
       result = subject.call(params)

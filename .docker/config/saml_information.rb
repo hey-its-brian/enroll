@@ -74,11 +74,16 @@ class SamlInformation
     'community_health_options_pay_now_relay_state',
     'taro_health_pay_now_url',
     'taro_health_pay_now_audience',
-    'taro_health_pay_now_relay_state',
-    'mending_health_pay_now_url',
-    'mending_health_pay_now_audience',
-    'mending_health_pay_now_relay_state'
-  ].freeze
+    'taro_health_pay_now_relay_state'
+  ]
+
+  # By the time this code is run, we will not have the Resource Registry initialized,
+  # so we cannot use the ResourceRegistry to determine if we should add these keys.
+  # Instead, we check the environment variable directly.
+  # If the Taro rebranding is enabled, we add the keys for Mending Health.
+  REQUIRED_KEYS += ['mending_health_pay_now_url', 'mending_health_pay_now_audience', 'mending_health_pay_now_relay_state'] if ENV['TARO_REBRANDING_IS_ENABLED'] == 'true'
+
+  REQUIRED_KEYS.freeze
 
   attr_reader :config
 

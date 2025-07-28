@@ -388,4 +388,92 @@ RSpec.describe Insured::PlanShopping::PayNowHelper, :type => :helper do
       expect(helper.show_generic_redirect?(hbx_enrollment)).to be_falsey
     end
   end
+
+  describe "LINK_URL constant" do
+    let(:link_url) { described_class::LINK_URL }
+
+    it "contains expected carrier URLs" do
+      expect(link_url["BEST Life"]).to eq('https://www.bestlife.com/exchange/payment_option.html')
+      expect(link_url["CareFirst"]).to eq("https://member.carefirst.com/members/home.page")
+      expect(link_url["Delta Dental"]).to eq("https://www1.deltadentalins.com/login.html")
+      expect(link_url["Dominion National"]).to eq("https://www.dominionmembers.com/")
+      expect(link_url["Kaiser"]).to eq("https://kp.org/paypremium")
+      expect(link_url["Kaiser Permanente"]).to eq("https://kp.org/paypremium")
+      expect(link_url["Community Health Options"]).to eq("https://healthoptions.org")
+      expect(link_url["Harvard Pilgrim Health Care"]).to eq("https://www.harvardpilgrim.org/public/home")
+      expect(link_url["Anthem Blue Cross and Blue Shield"]).to eq("https://www.anthem.com/contact-us/maine")
+      expect(link_url["Northeast Delta Dental"]).to eq("https://www.nedelta.com/Home")
+      expect(described_class::LINK_URL["Taro Health"]).to eq(false)
+    end
+
+    it "is a hash" do
+      expect(link_url).to be_a(Hash)
+    end
+
+    it "contains expected keys" do
+      expected_keys = [
+        "BEST Life",
+        "CareFirst",
+        "Delta Dental",
+        "Dominion National",
+        "Kaiser",
+        "Kaiser Permanente",
+        "Community Health Options",
+        "Harvard Pilgrim Health Care",
+        "Anthem Blue Cross and Blue Shield",
+        "Northeast Delta Dental",
+        "Taro Health"
+      ]
+      expect(link_url.keys).to include(*expected_keys)
+    end
+
+    it "is not empty" do
+      expect(link_url).not_to be_empty
+    end
+
+    it "is not nil" do
+      expect(link_url).not_to be_nil
+    end
+
+    it "is a constant" do
+      expect(described_class.const_defined?(:LINK_URL)).to be true
+    end
+
+    it "is not modifiable" do
+      expect { link_url["New Carrier"] = "https://newcarrier.com/pay" }.to raise_error(FrozenError)
+    end
+
+    it "is frozen" do
+      expect(link_url).to be_frozen
+    end
+
+    context "when taro_rebranding feature is enabled" do
+      before do
+        allow(EnrollRegistry).to receive(:feature?).with(:taro_rebranding).and_return(true)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:taro_rebranding).and_return(true)
+        allow(EnrollRegistry).to receive(:[]).with(:mending_health_pay_now).and_return(
+          double(setting: double(item: 'https://mendinghealth.com/pay'))
+        )
+        stub_const("Insured::PlanShopping::PayNowHelper::LINK_URL",
+                   link_url.merge("Mending Health" => 'https://mendinghealth.com/pay').freeze)
+      end
+
+      it "includes Mending Health URL" do
+        expect(described_class::LINK_URL["Mending Health"]).to eq('https://mendinghealth.com/pay')
+      end
+    end
+
+    context "when taro_rebranding feature is disabled" do
+      before do
+        allow(EnrollRegistry).to receive(:feature?).with(:taro_rebranding).and_return(false)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:taro_rebranding).and_return(false)
+        stub_const("Insured::PlanShopping::PayNowHelper::LINK_URL",
+                   link_url.except("Mending Health").freeze)
+      end
+
+      it "does not include Mending Health URL" do
+        expect(described_class::LINK_URL["Mending Health"]).to be_nil
+      end
+    end
+  end
 end

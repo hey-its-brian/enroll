@@ -19,7 +19,13 @@ cp = org.create_carrier_profile(id: "53e67210eb899a4603000037", abbrev: "ANTHM",
 org = Organization.new(fein: "010286541", legal_name: "Northeast Delta Dental", office_locations: [hbx_office])
 cp = org.create_carrier_profile(id: "53e67210eb899a4603000073", abbrev: "NEDD", hbx_carrier_id: 30_005, ivl_health: true, ivl_dental: true, shop_health: false, shop_dental: false, issuer_hios_ids: ['50165'])
 
-org = Organization.new(fein: "873357382", legal_name: "Mending Health", office_locations: [hbx_office])
+# This file is used to seed the database with ME Carriers
+# It creates carrier profiles for various health insurance providers in Maine
+if EnrollRegistry.feature?(:taro_rebranding) && EnrollRegistry.feature_enabled?(:taro_rebranding)
+  org = Organization.new(fein: "873357382", legal_name: "Mending Health", office_locations: [hbx_office])
+else
+  org = Organization.new(fein: "873357382", legal_name: "Taro Health Plan of Maine, Inc.", office_locations: [hbx_office])
+end
 cp = org.create_carrier_profile(id: "53e67210eb899a4603000077", abbrev: "TARO", hbx_carrier_id: 30_006, ivl_health: true, ivl_dental: true, shop_health: false, shop_dental: false, issuer_hios_ids: ['54879'])
 
 puts "::: Generated ME Carriers :::"
