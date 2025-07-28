@@ -44,10 +44,26 @@ module Operations
           end
 
           def check_if_family_is_eligible_for_migration(family)
+            assistance_year = family.application_applicable_year
+
             qhp_app = ::IndividualMarket::Application.newest_determined_by_family_id(family.id).only(
               :assistance_year, :current_state, :family_id, :id, :submitted_at
             ).first
-            return Failure("Family with id: #{family.id} is not eligible for migration") if qhp_app.present?
+            return Failure("Family with id: #{family.id} is not eligible for migration, QHP application exists") if qhp_app.present?
+
+            any_determined_financial_assistance_applications = ::FinancialAssistance::Application.only(:id, :family_id, :assistance_year, :submitted_at, :aasm_state)
+                                                                                                 .where(aasm_state: 'determined', family_id: family.id, assistance_year: assistance_year)
+                                                                                                 .order_by(submitted_at: :desc)
+                                                                                                 .group_by(&:assistance_year)
+
+            return Failure("Family with id: #{family.id} is not eligible for migration, determined financial assistance applications exist for assistance year #{assistance_year}") if any_determined_financial_assistance_applications.present?
+
+            any_valid_hbx_enrollments = HbxEnrollment.only(:family_id, :effective_on, :aasm_state)
+                                                     .where(family_id: family.id,
+                                                            effective_on: {'$gte' => Date.new(assistance_year), '$lte' => Date.new(assistance_year).end_of_year},
+                                                            aasm_state: { '$in' => ['coverage_selected', 'coverage_canceled', 'coverage_terminated', 'auto_renewing', 'unverified']})
+
+            return Failure("Family with id: #{family.id} is not eligible for migration, valid hbx enrollments does not exist") unless any_valid_hbx_enrollments.present?
 
             Success(true)
           end

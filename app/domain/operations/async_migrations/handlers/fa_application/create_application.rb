@@ -193,7 +193,7 @@ module Operations
 
               [[old_income_evidence, new_income_evidence], [old_esi_evidence, new_esi_evidence], [old_local_mec_evidence, new_local_mec_evidence], [old_non_esi_evidence, new_non_esi_evidence]].each do |old_evidence, new_evidence|
                 next unless old_evidence.present?
-                status = [application.hbx_id, "migrated", "", applicant.person_hbx_id]
+                status = [application.family_id, application.hbx_id, "migrated", "", applicant.person_hbx_id]
                 compare_aptc_csr_eligibility_evidences(old_evidence, new_evidence, status)
                 application_result << status
               end
@@ -237,9 +237,26 @@ module Operations
                 status.push("#{new_evidence.key}_state_history", false)
               end
 
+              if documents_matched?(old_evidence, new_evidence)
+                status.push("#{new_evidence.key}_document", true)
+              else
+                status.push("#{new_evidence.key}_document", false)
+              end
+
             else
               status.push(new_evidence.key.to_s, false)
             end
+          end
+
+          def documents_matched?(old_evidence, new_evidence)
+            old_evidence.documents.count == new_evidence.documents.count &&
+              old_evidence.documents.all? do |old_doc|
+                new_evidence.documents.any? do |new_doc|
+                  old_doc.title == new_doc.title &&
+                    old_doc.subject == new_doc.subject &&
+                    old_doc.description == new_doc.description
+                end
+              end
           end
 
           def attributes_match?(obj1, obj2, attributes)

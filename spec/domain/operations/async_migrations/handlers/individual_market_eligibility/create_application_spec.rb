@@ -165,6 +165,21 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
   end
 
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+  let(:product) {FactoryBot.create(:benefit_markets_products_health_products_health_product, benefit_market_kind: :aca_individual, kind: :health, csr_variant_id: '01')}
+  let(:effective_on) { TimeKeeper.date_of_record.beginning_of_year}
+  let!(:active_enrollment) do
+    FactoryBot.create(:hbx_enrollment,
+                      family: family,
+                      household: family.active_household,
+                      kind: "individual",
+                      coverage_kind: "health",
+                      product: product,
+                      aasm_state: 'coverage_selected',
+                      effective_on: effective_on,
+                      hbx_enrollment_members: [
+                        FactoryBot.build(:hbx_enrollment_member, applicant_id: family.primary_applicant.id, eligibility_date: effective_on, coverage_start_on: effective_on, is_subscriber: true)
+                      ])
+  end
 
   context '#migration creates family eligibility determination' do
     before do
@@ -201,6 +216,61 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
       expect(subject.eligibility_states[0].evidence_states.count).to eq(0)
       expect(subject.eligibility_states[1].eligibility_item_key).to eq("aca_individual_market_eligibility")
       expect(subject.eligibility_states[1].evidence_states.count).to eq(4)
+    end
+  end
+
+  context 'when family has FAApplication' do
+    let!(:application) do
+      FactoryBot.create(:application,
+                        family_id: family.id,
+                        aasm_state: "determined",
+                        effective_date: (TimeKeeper.date_of_record - 12.days),
+                        origin: :user,
+                        assistance_year: TimeKeeper.date_of_record.year,
+                        generation_reason: :manual)
+    end
+
+    let!(:eligibility_determination1) { FactoryBot.create(:financial_assistance_eligibility_determination, application: application) }
+
+    let!(:applicant) do
+      FactoryBot.create(:applicant,
+                        first_name: "app_nmae",
+                        application: application,
+                        dob: TimeKeeper.date_of_record - 40.years,
+                        is_primary_applicant: true,
+                        family_member_id: family.family_members[0].id,
+                        person_hbx_id: person.hbx_id,
+                        addresses: [FactoryBot.build(:financial_assistance_address)],
+                        eligibility_determination_id: eligibility_determination1.id)
+    end
+
+    before do
+      allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+    end
+
+    it 'should not create individual_market_eligibility' do
+      family.assign_latest_application_gid
+      expect(family.latest_application).to eq(application)
+      expect(family.latest_application_gid).to eq(application.to_global_id.to_s)
+      expect { subject.call({document_id: family.id}) }.not_to change(IndividualMarket::Application, :count)
+      result = subject.call({document_id: family.id})
+      expect(result).to be_failure
+      expect(result.failure).to eq("Family with id: #{family.id} is not eligible for migration, determined financial assistance applications exist for assistance year #{TimeKeeper.date_of_record.year}")
+    end
+  end
+
+  context 'when family does not have hbx enrollments' do
+    before do
+      allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+    end
+
+    it 'should not create individual_market_eligibility' do
+      family.hbx_enrollments.destroy_all
+      result = subject.call({document_id: family.id})
+      expect(result).to be_failure
+      expect(result.failure).to eq("Family with id: #{family.id} is not eligible for migration, valid hbx enrollments does not exist")
     end
   end
 
@@ -261,7 +331,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
       it 'should return error message' do
         result = subject.call({document_id: family.id})
         expect(result).to be_failure
-        expect(result.failure).to eq("Family with id: #{family.id} is not eligible for migration")
+        expect(result.failure).to eq("Family with id: #{family.id} is not eligible for migration, QHP application exists")
       end
     end
 

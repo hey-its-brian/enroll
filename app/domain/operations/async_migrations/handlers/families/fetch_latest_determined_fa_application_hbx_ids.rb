@@ -10,9 +10,9 @@ module Operations
           include Dry::Monads[:do, :result]
 
           def call(params)
-            assistance_year = yield validate(params)
-            data_hash = yield fetch_latest_app_for_each_family(assistance_year)
-            yield fetch_ids(data_hash, params)
+            assistance_year, data_type = yield validate(params)
+            data_hash = yield fetch_latest_app_for_each_family(assistance_year, data_type)
+            yield fetch_ids(data_hash, data_type)
           end
 
           private
@@ -22,19 +22,19 @@ module Operations
             assistance_year = params[:additional_params][:assistance_year]
             return Failure("Invalid assistance year provided") unless assistance_year.is_a?(Integer)
 
-            Success(assistance_year)
+            Success([assistance_year, params.dig(:additional_params, :data_type)])
           end
 
-          def fetch_latest_app_for_each_family(assistance_year)
+          def fetch_latest_app_for_each_family(assistance_year, data_type)
             result = ::FinancialAssistance::Application.collection.aggregate(
-              pipeline_query(assistance_year), allow_disk_use: true
+              pipeline_query(assistance_year, data_type), allow_disk_use: true
             )
 
             Success(result)
           end
 
-          def fetch_ids(data_hash, params)
-            result = if params.dig(:additional_params, :data_type) == 'family_ids'
+          def fetch_ids(data_hash, data_type)
+            result = if data_type == 'family_ids'
                        data_hash.collect do |hash|
                          hash['family_id']
                        end
@@ -47,14 +47,15 @@ module Operations
             Success(result)
           end
 
-          def pipeline_query(assistance_year)
-            [
+          def pipeline_query(assistance_year, data_type)
+            query = [
                 { '$match' => { 'assistance_year' => assistance_year, 'aasm_state' => "determined" } },
                 { '$sort' => { 'submitted_at' => -1 } },
-                { '$group' => { '_id' => '$family_id', 'application_bson_id' => { '$first' => '$_id' }, 'application_origin' => { '$first' => '$origin' } } },
-                { '$match' => { 'application_origin' => { '$ne' => 'migration'} } },
-                { '$project' => { '_id' => 0, 'application_bson_id' => 1, 'family_id' => '$_id' } }
+                { '$group' => { '_id' => '$family_id', 'application_bson_id' => { '$first' => '$_id' }, 'application_origin' => { '$first' => '$origin' } } }
             ]
+
+            query.push({'$match' => { 'application_origin' => { '$ne' => 'migration'} } }) unless data_type == 'family_ids'
+            query.push({ '$project' => { '_id' => 0, 'application_bson_id' => 1, 'family_id' => '$_id' } })
           end
         end
       end
