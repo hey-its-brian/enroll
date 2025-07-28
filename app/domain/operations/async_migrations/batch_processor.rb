@@ -79,6 +79,16 @@ module Operations
       # @param params [Hash] parameters for the batch processing
       # @return [Dry::Monads::Result] A Success monad with a success message, or a Failure monad with an error message.
       def process_migration_batch(query, params)
+        if params.dig(:additional_params,:data_type) == "Array"
+          process_migration_batch_for_array(params)
+        else
+          process_migration_for_mongo_objects(query, params)
+        end
+      rescue StandardError => e
+        Failure("Error processing batch request with params: #{params} - #{e.message}")
+      end
+
+      def process_migration_for_mongo_objects(query, params)
         migration_handler_name = params[:migration_handler_name]
         skip = params[:skip]
         limit = params[:batch_size]
@@ -92,9 +102,29 @@ module Operations
             @logger.error "Failed to build event for document id #{document.id} with params #{params} - #{event.failure}" unless Rails.env.test?
           end
         end
-        Success("Published batch of events for migration using params: #{params}")
-      rescue StandardError => e
-        Failure("Error processing batch request with params: #{params} - #{e.message}")
+        Success("process_migration_for_mongo_objects: Published batch of events for migration using params: #{params}")
+      end
+
+      # Processes the migration batch by publishing events for each record in the batch.
+      # The event will trigger the migration operation specified by the `migration_handler_name` parameter.
+      #
+      # @param query [Class] The query containing the data targeted for migration.
+      # @param params [Hash] parameters for the batch processing
+      # @return [Dry::Monads::Result] A Success monad with a success message, or a Failure monad with an error message.
+      def process_migration_batch_for_array(params)
+        migration_handler_name = params[:migration_handler_name]
+        records = params[:records]
+
+        records.each do |id|
+          event = build_event(migration_handler_name, id, params)
+          if event.success?
+            event.success.publish
+            @logger.info "Published event for params #{params} - #{event.success}" unless Rails.env.test?
+          else
+            @logger.error "Failed to build event for document id #{id} with params #{params} - #{event.failure}" unless Rails.env.test?
+          end
+        end
+        Success("process_migration_batch_for_array: Published batch of events for migration using params: #{params}")
       end
 
       def records_to_process(query, params)
@@ -121,3 +151,4 @@ module Operations
     end
   end
 end
+

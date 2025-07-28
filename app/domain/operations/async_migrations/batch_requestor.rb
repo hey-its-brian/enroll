@@ -74,6 +74,16 @@ module Operations
       # @param params [Hash] Parameters for the batch request.
       # @return [Dry::Monads::Result] A Success monad with a success message, or a Failure monad with an error message.
       def initiate_batch_requests(query, params)
+        if params.dig(:additional_params, :data_type) == "Array"
+          initiates_batch_requests_for_array(query, params)
+        else
+          initiates_batch_requests_for_objects(query, params)
+        end
+      rescue StandardError => e
+        Failure("Error initiating batch request with params: #{params} - #{e.message}")
+      end
+
+      def initiates_batch_requests_for_objects(query, params)
         batch_size = params[:batch_size]
         total_records_count = records_to_process(query, params).count
         processed_records_count = 0
@@ -92,8 +102,32 @@ module Operations
           processed_records_count += batch_size
         end
         Success("Requested migration batches with params: #{params}")
-      rescue StandardError => e
-        Failure("Error initiating batch request with params: #{params} - #{e.message}")
+      end
+
+      def initiates_batch_requests_for_array(query, params)
+        batch_size = params[:batch_size]
+        records = records_to_process(query, params)
+        total_records_count = records.count
+        sorted_records = records.sort if params.dig(:additional_params, :data_type) == "Array"
+        processed_records_count = 0
+        messages = []
+
+        while processed_records_count < total_records_count
+          @logger.info "Requesting migration batch of size: #{batch_size}, processed records count: #{processed_records_count} of #{total_records_count}" unless Rails.env.test?
+          params.merge!(records: sorted_records.drop(processed_records_count).take(batch_size)) if params.dig(:additional_params, :data_type) == "Array"
+          event = build_event(processed_records_count, params)
+
+          if event.success?
+            event.success.publish
+            @logger.info "Published event for params #{params} - #{event.success.inspect}" unless Rails.env.test?
+          else
+            @logger.error "Failed to build event for params #{params} - #{event.failure}" unless Rails.env.test?
+          end
+
+          messages << "------------------------------------------------------ \n Requested migration batches with params: #{params}"
+          processed_records_count += batch_size
+        end
+        Success(messages)
       end
 
       def records_to_process(query, params)

@@ -73,8 +73,15 @@ module Subscribers
       batch_requestor = ::Operations::AsyncMigrations::BatchRequestor.new
       result = batch_requestor.call(payload)
       if result.success?
-        subscriber_logger.info "BatchProcessSubscriber, #{batch_requestor.class} result: #{result.success}"
-        logger.info "BatchProcessSubscriber, #{batch_requestor.class} result: #{result.success}" unless Rails.env.test?
+        if result.success.is_a?(Array)
+          result.success.each do |message|
+            subscriber_logger.info "BatchProcessSubscriber, #{batch_requestor.class} result: #{message}"
+            logger.info "BatchProcessSubscriber, #{batch_requestor.class} result: #{message}" unless Rails.env.test?
+          end
+        else
+          subscriber_logger.info "BatchProcessSubscriber, #{batch_requestor.class} result: #{result.success}"
+          logger.info "BatchProcessSubscriber, #{batch_requestor.class} result: #{result.success}" unless Rails.env.test?
+        end
       else
         subscriber_logger.error "BatchProcessSubscriber, #{batch_requestor.class} result: #{result.failure}"
         logger.error "BatchProcessSubscriber, #{batch_requestor.class} result: #{result.failure}" unless Rails.env.test?

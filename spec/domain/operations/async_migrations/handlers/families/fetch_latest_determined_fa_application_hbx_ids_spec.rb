@@ -22,6 +22,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::Families::FetchLatestDeter
     }
   end
 
+  # FinancialAssistance::Application.where(:"applicants.eligibilities".size => 24)
+
   describe '#call' do
     context 'when params are valid' do
       before do
@@ -29,11 +31,11 @@ RSpec.describe Operations::AsyncMigrations::Handlers::Families::FetchLatestDeter
       end
 
       it 'returns a mongo criteria' do
-        expect(@result).to be_a(Mongoid::Criteria)
+        expect(@result).to be_a(Array)
       end
 
       it 'should return the determined applications' do
-        expect(@result.first.hbx_id).to include("830293")
+        expect(@result).to include(determined_application.id)
       end
     end
 
@@ -48,6 +50,46 @@ RSpec.describe Operations::AsyncMigrations::Handlers::Families::FetchLatestDeter
         result = subject.call(additional_params: { assistance_year: nil })
         expect(result).to be_a(Dry::Monads::Result::Failure)
         expect(result.failure).to eq('Invalid params provided')
+      end
+    end
+
+    context 'when one family ,
+    - with two applications
+    - one with origin migration exists' do
+      let!(:determined_application_already_migrated) do
+        FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: 'determined', hbx_id: "830293", effective_date: TimeKeeper.date_of_record.beginning_of_year, assistance_year: TimeKeeper.date_of_record.year)
+      end
+
+      before do
+        determined_application_already_migrated.update!(origin: 'migration')
+        @result = subject.call(params)
+      end
+
+      it 'should not return family' do
+        expect(@result.present?).to be_falsey
+      end
+    end
+
+    context 'when two families
+    - one family without migrated data
+    - other family with origin migration application exists' do
+      let!(:person2) { FactoryBot.create(:person, hbx_id: "732021")}
+      let!(:family2) { FactoryBot.create(:family, :with_primary_family_member, person: person2)}
+      let!(:determined_application_for_family_2) do
+        FactoryBot.create(:financial_assistance_application, family_id: family2.id, aasm_state: 'determined', hbx_id: "830293", effective_date: TimeKeeper.date_of_record.beginning_of_year, assistance_year: TimeKeeper.date_of_record.year)
+      end
+      let!(:determined_application_already_migrated) do
+        FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: 'determined', hbx_id: "830293", effective_date: TimeKeeper.date_of_record.beginning_of_year, assistance_year: TimeKeeper.date_of_record.year)
+      end
+
+      before do
+        determined_application_already_migrated.update!(origin: 'migration')
+        @result = subject.call(params)
+      end
+
+      it 'should return one family' do
+        expect(@result.present?).to be_truthy
+        expect(@result).to include(determined_application_for_family_2.id)
       end
     end
   end

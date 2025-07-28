@@ -10,7 +10,7 @@ module Operations
       # @return [Hash] The mapping of model or query names to their corresponding classes.
       QUERY_MAP = {
         'families_with_id' => ::Family.only(:_id),
-        'applications_with_aasm_state_and_hbx_ids' => ::FinancialAssistance::Application.where(:aasm_state.nin => ["imported"]).only(:hbx_id, :aasm_state),
+        'applications_with_aasm_state_and_hbx_ids' => Operations::AsyncMigrations::Handlers::FAApplication::FetchApplicationsWithoutV3Evidences.new,
         'latest_determined_fa_application_with_ids' => ::Operations::AsyncMigrations::Handlers::Families::FetchLatestDeterminedFAApplicationHbxIds.new,
         'families_without_determined_fa_applications_for_current_year' => ::Operations::AsyncMigrations::Handlers::Families::FetchFamiliesWithoutDeterminedFAApplication.new,
         'families_with_tax_household_groups' => Family.exists(:tax_household_groups => true).only(:_id)

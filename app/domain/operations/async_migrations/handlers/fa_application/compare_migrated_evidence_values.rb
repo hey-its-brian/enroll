@@ -30,6 +30,7 @@ module Operations
 
           def fetch_and_validate_migrated_data(application)
             application_result = []
+            application_compact_result = [application.hbx_id, application.aasm_state, "migrated"]
             application.applicants.each do |applicant|
               evidences_array = fetch_evidences(applicant)
 
@@ -68,7 +69,21 @@ module Operations
                 application_result << status
               end
             end
-            Success(application_result)
+
+            Success(fetch_compact_result(application_result, application_compact_result))
+          end
+
+          def fetch_compact_result(application_result, application_compact_result)
+            result = application_result.collect do |matched|
+              matched[4] && matched[6] && matched[8] && matched[10] && matched[12]
+            end
+
+            if result.all? { |value| value == true }
+              application_compact_result.push("All evidences matched successfully")
+            else
+              application_compact_result.push("Some evidences did not match")
+            end
+            application_compact_result
           end
 
           def fetch_evidences(applicant)
@@ -152,7 +167,7 @@ module Operations
             latest_old_transition.to_state.to_s == latest_new_transition.to_state.to_s &&
               latest_old_transition.from_state.to_s == latest_new_transition.from_state.to_s &&
               latest_old_transition.transition_at == latest_new_transition.transition_at &&
-              latest_old_transition.event == latest_new_transition.event &&
+              latest_old_transition.event.to_s == latest_new_transition.event.to_s &&
               latest_old_transition.comment == latest_new_transition.comment &&
               latest_old_transition.reason == latest_new_transition.reason &&
               latest_new_transition.is_eligible == eligible_status_check(latest_new_transition) &&

@@ -24,7 +24,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::Families::FetchFamiliesWit
   let(:params) do
     {
       additional_params: {
-        assistance_year: assistance_year
+        assistance_year: assistance_year,
+        data_type: 'Array'
       }
     }
   end
@@ -34,7 +35,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::Families::FetchFamiliesWit
 
       before do
         allow(subject).to receive(:fetch_families_with_latest_determined_fa_application).and_return(
-          Success(::FinancialAssistance::Application.by_year(assistance_year).determined)
+          Success(::FinancialAssistance::Application.by_year(assistance_year).determined.pluck(:family_id))
         )
       end
 
@@ -81,7 +82,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::Families::FetchFamiliesWit
         end
 
         it 'should return families without determined fa applications' do
-          expect(@result.first.id.to_s).to include(family2.id.to_s)
+          expect(@result).to include(family2.id)
         end
       end
     end
@@ -126,6 +127,49 @@ RSpec.describe Operations::AsyncMigrations::Handlers::Families::FetchFamiliesWit
         result = subject.call(additional_params: { assistance_year: nil })
         expect(result).to be_a(Dry::Monads::Result::Failure)
         expect(result.failure).to eq('Invalid params provided')
+      end
+    end
+  end
+
+  describe "#call for data_type Array" do
+    let(:active_enrollment) do
+      FactoryBot.create(:hbx_enrollment,
+                        family: family2,
+                        household: family2.active_household,
+                        kind: "individual",
+                        coverage_kind: "health",
+                        product: product,
+                        aasm_state: 'coverage_selected',
+                        effective_on: effective_on,
+                        hbx_enrollment_members: [
+                          FactoryBot.build(:hbx_enrollment_member, applicant_id: family2.primary_applicant.id, eligibility_date: effective_on, coverage_start_on: effective_on, is_subscriber: true)
+                        ])
+    end
+
+    let(:params) do
+      {
+        additional_params: {
+          assistance_year: assistance_year,
+          data_type: 'Array'
+        }
+      }
+    end
+
+    before do
+      allow(subject).to receive(:fetch_families_with_latest_determined_fa_application).and_return(
+        Success(::FinancialAssistance::Application.by_year(assistance_year).determined.pluck(:family_id))
+      )
+    end
+
+    context 'returns an array of family ids' do
+      before do
+        active_enrollment
+        @result = subject.call(params)
+      end
+
+      it 'returns be valid' do
+        expect(@result).to be_an(Array)
+        expect(@result.first).to be_a(BSON::ObjectId)
       end
     end
   end

@@ -54,7 +54,7 @@ module Operations
                [american_indian_status_verification_type, american_indian_evidence],
                [immigration_verification_type, immigration_evidence]].each do |old_evidence, new_evidence|
                 next if old_evidence.nil? && new_evidence.nil?
-                status = [application.hbx_id, "migrated", "", person.hbx_id]
+                status = [application.family_id, application.hbx_id, "migrated", "", person.hbx_id]
                 compare_verification_types_with_evidences(old_evidence, new_evidence, responses, status)
 
                 application_result << status

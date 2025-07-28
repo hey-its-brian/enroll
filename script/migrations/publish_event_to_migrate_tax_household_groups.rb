@@ -3,12 +3,14 @@ p '********** STARTING - Script to fetch families with tax household groups ****
 
 # Measures the execution time of the migration process.
 elapsed_time = Caches::BenchmarkCache.with_benchmark do
+  batch_size = ARGV[0].present? ? ARGV[0].to_i : 3000
+  data_type = ARGV[1].present? ? ARGV[1].to_s : nil
 
   params = {
     data_source: 'families_with_tax_household_groups', # Specifies the data source for the migration
     migration_handler_name: 'migrate_tax_household_group', # Mapping key for the migration handler
-    batch_size: 3000, # Number of records to process in each batch
-    additional_params: { assistance_year: 2025 } # Additional parameters for the migration
+    batch_size: batch_size, # Number of records to process in each batch
+    additional_params: { assistance_year: 2025 , data_type: data_type } # Additional parameters for the migration
   }
 
   result = ::Operations::AsyncMigrations::InitiateMigration.new.call(params)

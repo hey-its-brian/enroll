@@ -4,17 +4,17 @@ module Operations
   module AsyncMigrations
     module Handlers
       module Families
-        # Fetch
+        # Fetch families without determined financial assistance applications.
+        # This operation can be retriggered multiple times, and it will only return families that do not have determined QHP applications.
         class FetchFamiliesWithoutDeterminedFAApplication
           include Dry::Monads[:do, :result]
 
           def call(params)
             assistance_year = yield validate(params)
-            applications = yield fetch_families_with_latest_determined_fa_application(assistance_year)
-            families_without_determined_fa_applications = yield fetch_families_without_determined_fa_applications(applications)
+            family_ids = yield fetch_families_with_latest_determined_fa_application(assistance_year)
+            families_without_determined_fa_applications = yield fetch_families_without_determined_fa_applications(family_ids)
             filtered_family_ids = yield fetch_families_with_enrollment_in_current_year(families_without_determined_fa_applications, assistance_year)
-            filtered_family_ids = yield remove_families_with_any_qhp_application(filtered_family_ids)
-            yield fetch_families_as_object(filtered_family_ids)
+            yield remove_families_with_any_qhp_application(filtered_family_ids)
           end
 
           private
@@ -29,14 +29,14 @@ module Operations
 
           def fetch_families_with_latest_determined_fa_application(assistance_year)
             result = ::Operations::AsyncMigrations::Handlers::Families::FetchLatestDeterminedFAApplicationHbxIds.new.call(
-              additional_params: { assistance_year: assistance_year }
+              additional_params: { assistance_year: assistance_year, data_type: 'family_ids' }
             )
 
             Success(result)
           end
 
-          def fetch_families_without_determined_fa_applications(applications)
-            Success(Family.only(:_id).where(:id.nin => applications.pluck(:family_id)))
+          def fetch_families_without_determined_fa_applications(family_ids)
+            Success(Family.only(:_id).where(:id.nin => family_ids))
           end
 
           def fetch_families_with_enrollment_in_current_year(families, assistance_year)
@@ -59,10 +59,6 @@ module Operations
           def remove_families_with_any_qhp_application(filtered_family_ids)
             family_ids_with_qhp = ::IndividualMarket::Application.only(:family_id).where(current_state: :determined).pluck(:family_id)
             Success(filtered_family_ids - family_ids_with_qhp)
-          end
-
-          def fetch_families_as_object(filtered_family_ids)
-            Success(Family.only(:_id).where(:id.in => filtered_family_ids))
           end
         end
       end

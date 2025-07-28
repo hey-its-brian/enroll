@@ -24,7 +24,7 @@ module Operations
           def validate(params)
             return Failure('family_id is expected in BSON format') unless BSON::ObjectId.legal?(params[:document_id])
 
-            Success(params[:document_id])
+            Success(params[:document_id].to_s)
           end
 
           def find_family(family_id)

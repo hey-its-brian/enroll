@@ -8,22 +8,19 @@ module Operations
         class CreateApplication
           include Dry::Monads[:do, :result]
           include EventSource::Command
-          include ::ResourceRegistryHelper
 
           def call(params)
-            # Extract the necessary parameters
-
             family_id = yield validate(params)
             family = yield find_family(family_id)
             yield check_if_family_is_eligible_for_migration(family)
             application = yield transform_family(family)
             draft_application = yield build_application(application)
-            determined_application = yield persist(draft_application)
-            yield regenerate_family_determination(determined_application)
-            comparison_result = yield compare_migrated_values(determined_application)
+            result = yield persist(draft_application)
+            yield regenerate_family_determination(result)
+            comparison_result = yield compare_migrated_values(result)
             yield publish(comparison_result)
 
-            Success(["QHP application created successfully for the family: #{family_id} with application ID:", determined_application.hbx_id])
+            Success(["completed request for family #{family_id}, check report for the status of the application creation", draft_application.hbx_id])
           end
 
           private
@@ -31,7 +28,7 @@ module Operations
           def validate(params)
             return Failure('family_id is expected in BSON format') unless BSON::ObjectId.legal?(params[:document_id])
 
-            Success(params[:document_id])
+            Success(params[:document_id].to_s)
           end
 
           def find_family(family_id)
@@ -146,25 +143,32 @@ module Operations
               )
               draft_application.save!
 
-              Success(draft_application)
+              Success([draft_application, true, "Application created successfully"])
             else
-              Failure(draft_application.errors)
+              Success([draft_application.family_id, false, draft_application.errors.full_messages.join(", ")])
             end
           end
 
-          def regenerate_family_determination(determined_application)
+          def regenerate_family_determination(result)
+            return Success(true) unless result[1] #false indicates failure in application creation
+            determined_application = result[0]
             family = determined_application.family
             family.assign_latest_application_gid
             family.save!
             ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
           end
 
-          def compare_migrated_values(application)
-            Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::CompareMigratedEvidenceValues.new.call(application: application)
+          def compare_migrated_values(result)
+            if result[1]
+              Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::CompareMigratedEvidenceValues.new.call(application: result[0])
+            else
+              Success([[result[0], '', false, result[2]]])
+            end
           end
 
           def publish(rows)
-            csv_headers = ["Application HBX ID",
+            csv_headers = ["Family ID",
+                           "Application HBX ID",
                            "Migration Result",
                            "Errors",
                            "Applicant HBX ID",

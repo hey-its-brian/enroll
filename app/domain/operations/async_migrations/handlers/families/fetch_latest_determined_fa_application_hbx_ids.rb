@@ -5,13 +5,14 @@ module Operations
     module Handlers
       module Families
         # Fetches families with determined applications.
+        # This Operation can be retriggered multiple times, and it will only return families that do not have determined applications that migrated recently.
         class FetchLatestDeterminedFAApplicationHbxIds
           include Dry::Monads[:do, :result]
 
           def call(params)
             assistance_year = yield validate(params)
-            application_hbx_ids = yield fetch_latest_app_for_each_family(assistance_year)
-            yield fetch_applications_as_object(application_hbx_ids)
+            data_hash = yield fetch_latest_app_for_each_family(assistance_year)
+            yield fetch_ids(data_hash, params)
           end
 
           private
@@ -29,25 +30,30 @@ module Operations
               pipeline_query(assistance_year), allow_disk_use: true
             )
 
-            application_hbx_ids = result.collect do |hash|
-              hash['application_hbx_id']
-            end
-
-            Success(application_hbx_ids)
+            Success(result)
           end
 
-          def fetch_applications_as_object(application_hbx_ids)
-            result = ::FinancialAssistance::Application.only(:_id, :hbx_id, :aasm_state, :family_id).where(hbx_id: { '$in' => application_hbx_ids })
+          def fetch_ids(data_hash, params)
+            result = if params.dig(:additional_params, :data_type) == 'family_ids'
+                       data_hash.collect do |hash|
+                         hash['family_id']
+                       end
+                     else
+                       data_hash.collect do |hash|
+                         hash['application_bson_id']
+                       end
+                     end
 
             Success(result)
           end
 
           def pipeline_query(assistance_year)
             [
-              { '$match' => { 'assistance_year' => assistance_year, 'aasm_state' => "determined", 'origin' => {'$ne' => 'migration'} } },
-              { '$sort' => { 'submitted_at' => -1 } },
-              { '$group' => { '_id' => '$family_id', 'application_hbx_id' => { '$first' => '$hbx_id' } } },
-              { '$project' => { '_id' => 0, 'family_id' => '$_id', 'application_hbx_id' => 1 } }
+                { '$match' => { 'assistance_year' => assistance_year, 'aasm_state' => "determined" } },
+                { '$sort' => { 'submitted_at' => -1 } },
+                { '$group' => { '_id' => '$family_id', 'application_bson_id' => { '$first' => '$_id' }, 'application_origin' => { '$first' => '$origin' } } },
+                { '$match' => { 'application_origin' => { '$ne' => 'migration'} } },
+                { '$project' => { '_id' => 0, 'application_bson_id' => 1, 'family_id' => '$_id' } }
             ]
           end
         end

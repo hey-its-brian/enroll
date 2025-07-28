@@ -46,6 +46,7 @@ module Operations
             result = yield migrate_evidence(application)
             comparison_result = yield compare_migrated_values(application, result)
             yield publish(comparison_result)
+
             Success(comparison_result)
           end
 
@@ -88,6 +89,8 @@ module Operations
           #   A success monad if the migration completes successfully, or a failure monad with an error message.
           def migrate_evidence(application)
             app_hbx_id = application.hbx_id
+            return Success([app_hbx_id, application.aasm_state,"not eligible for migration", application.errors.full_messages.join(", ")]) unless application.valid?
+
             migration_status = []
             application.applicants.each do |applicant|
               aptc_csr_eligibility = applicant.build_aptc_csr_eligibility
@@ -189,39 +192,27 @@ module Operations
             if result[2] == "migrated"
               Operations::AsyncMigrations::Handlers::FAApplication::CompareMigratedEvidenceValues.new.call(application: application)
             else
-              Success([result])
+              Success(result)
             end
           end
 
-          def publish(rows)
+          def publish(row)
             csv_headers = ["Application HBX ID",
                            "Application State",
-                           "Migration Result",
-                           "Errors",
-                           "Applicant HBX ID",
-                           "evidence_type",
-                           "evidence_values_matched?",
-                           "evidence_verification_history",
-                           "evidence_verification_histories_matched?",
-                           "evidence_request_result",
-                           "evidence_request_results_matched?",
-                           "evidence_state_transition",
-                           "evidence_state_transitions_matched?",
-                           "evidence_document",
-                           "evidence_documents_matched?"]
+                           "Migration Status",
+                           "Migrated Evidence Result"]
 
-            result = rows.collect do |row|
-              event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "migrated_evidences_1.0_to_3.0_report", csv_headers: csv_headers, csv_row: row})
+            # result = rows.collect do |row|
+            event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "migrated_evidences_1.0_to_3.0_report", csv_headers: csv_headers, csv_row: row})
 
-              if event.success?
-                event.success.publish
-                true
-              else
-                false
-              end
-            end
-
-            result.all?(true) ? Success("Evidence migration event published successfully") : Failure("Evidence migration event publishing failed")
+            result = if event.success?
+                       event.success.publish
+                       true
+                     else
+                       false
+                     end
+            # end
+            result ? Success("Evidence migration event published successfully") : Failure("Evidence migration event publishing failed")
           end
         end
       end

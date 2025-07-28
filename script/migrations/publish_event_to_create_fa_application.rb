@@ -6,7 +6,8 @@
 # of the operation along with the total execution time.
 #
 # @example Run the script
-#   #   CLIENT=me bundle exec rails runner script/migrations/pubish_event_to_create_fa_application.rb
+#   #   CLIENT=me bundle exec rails runner script/migrations/publish_event_to_create_fa_application.rb
+#       CLIENT=me bundle exec rails runner script/migrations/publish_event_to_create_fa_application.rb 3000 'Array'
 #
 # @see Operations::AsyncMigrations::InitiateMigration
 #   The operation used to initiate the migration process.
@@ -19,6 +20,10 @@ p '********** STARTING - Script to create financial assistance applications ****
 
 # Measures the execution time of the migration process.
 elapsed_time = Caches::BenchmarkCache.with_benchmark do
+  # Parameters for reducing the records size
+  batch_size = ARGV[0].present? ? ARGV[0].to_i : 3000
+  data_type = ARGV[1].present? ? ARGV[1].to_s : nil
+
   # Parameters for initiating the migration
   #
   # @param [Hash] params The parameters required to initiate the migration.
@@ -29,8 +34,8 @@ elapsed_time = Caches::BenchmarkCache.with_benchmark do
   params = {
     data_source: 'latest_determined_fa_application_with_ids', # Specifies the data source for the migration
     migration_handler_name: 'create_financial_assistance_application', # Mapping key for the migration handler
-    batch_size: 3000, # Number of records to process in each batch
-    additional_params: { assistance_year: 2025 } # Additional parameters for the migration
+    batch_size: batch_size, # Number of records to process in each batch
+    additional_params: { assistance_year: 2025, data_type: data_type } # Additional parameters for the migration
   }
 
   # Initiates the migration operation
