@@ -1,4 +1,4 @@
-<%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(2, show_account_button: @family.eligibility_determination.present?)} %>
+<%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(2, @application, show_account_button: @family.eligibility_determination.present?)} %>
 <div data-controller="contact-methods">
 <h1><%= l10n("qhp_application.nav.preferences_label") %></h1>
 <h2><%= l10n("qhp_application.review.contact_preferences") %></h2>
@@ -14,8 +14,8 @@
             <% kind = phone.object.kind.upcase %>
             <% required = kind == 'HOME' ? "required" : "" %>
             <%= phone.hidden_field :kind %>
-            <%= phone.hidden_field :_destroy %>
-            <div class="col-sm col-md-6 p-0">
+            <div class="col-sm col-md-6 p-0" data-target="contact-methods.methodContainer">
+              <%= phone.hidden_field :_destroy, class: "destroy" %>
               <div class="col-md-12 <%= phone.index.even? ? 'pl-0' : 'pr-0'%>">
                 <% unless kind == 'FAX' && params[:action] == "personal" %>
                   <%= phone.label :full_phone_number, l10n(kind + "Phone") %>
@@ -33,9 +33,9 @@
           <%= f.fields_for :emails, [email, work_email], errors: {}, fieldset: true do |f| %>
             <% kind = f.object.kind %>
             <div class="col-sm col-md-6 p-0">
-              <div class="col-md-12 <%= f.index.even? ? 'pl-0' : 'pr-0'%>">
+              <div class="col-md-12 <%= f.index.even? ? 'pl-0' : 'pr-0'%>" data-target="contact-methods.methodContainer">
                 <%= f.hidden_field :kind %>
-                <%= f.hidden_field :_destroy %>
+                <%= f.hidden_field :_destroy, class: "destroy" %>
                 <%= f.label :address, kind.upcase.eql?('HOME') ? l10n("personal_email_address") : l10n(kind + " Email Address").titleize %>
                 <%= f.email_field :address, placeholder: "example@mail.com", class: "full-width", data: {target: "contact-methods.homeEmail", action: "change->contact-methods#canSubmitCheck"} %>
               </div>
@@ -53,7 +53,7 @@
               "insured.preferences.notices_disclosure",
               site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item,
               operating_entity: EnrollRegistry[:enroll_app].setting(:operating_entity).item
-            ) 
+            )
           %>
           <br>
           <%= l10n("insured.preferences.sms_note") %>
@@ -61,7 +61,7 @@
       <% else %>
         <p><%= l10n("insured.preferences.notices_description", site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %><br><%= l10n("insured.preferences.data_rates_notice") %></p>
       <% end %>
-      
+
       <div class="<%= 'hidden' if @identifier %>">
         <fieldset class="d-block col-sm-12 p-0">
           <legend><%= l10n("insured.preferences.contact_methods") %></legend>
@@ -117,13 +117,7 @@
     <h2 class="mt-4"><%= l10n("insured.preferences.voter_registration_header") %></h2>
 
     <% if FinancialAssistanceRegistry.feature_enabled?(:voter_registration_through_ext_url) %>
-      <p>
-        <%= l10n("insured.preferences.voter_registration_description") %>
-        <%= h(link_to(l10n("insured.preferences.voter_registration_link"),
-              l10n("insured.preferences.voter_registration_link"),
-              target: "_blank",
-              rel: 'noopener noreferrer')) %>.
-      </p>
+      <p><%= l10n("insured.preferences.voter_registration_description") %> <%= h(link_to(l10n("qhp_application.preferences.voter_registration_link_text"), l10n("insured.preferences.voter_registration_link"), target: "_blank", rel: 'noopener noreferrer')) %>.</p>
     <% end %>
 
     <%= content_for :submit_button do %>

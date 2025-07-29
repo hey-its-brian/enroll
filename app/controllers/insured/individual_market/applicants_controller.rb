@@ -11,7 +11,7 @@ module Insured
       before_action :find_application
       before_action :find_applicant, only: [:edit, :update, :destroy, :show]
       before_action :check_for_editable_application, only: [:index, :create, :update, :destroy, :new, :edit, :update_preferences]
-      before_action :set_consumer_bookmark_url, except: [:new, :edit, :destroy, :create, :update, :show_ssn]
+      before_action :set_consumer_bookmark_url, except: [:new, :edit, :destroy, :create, :update, :show_ssn, :update_preferences]
       before_action :enable_bs4_layout
 
       layout "progress"
@@ -112,6 +112,8 @@ module Insured
 
         @applicant.update_attributes(preferences_params.except(:contact_method).merge(contact_method: contact_method))
 
+        destroy_removed_contact_methods
+
         if @applicant.save
           redirect_to review_insured_individual_market_application_path(@application)
         else
@@ -175,6 +177,27 @@ module Insured
         return unless contact_method.is_a?(Array)
         return if contact_method.empty?
         ::IndividualMarket::Applicant::CONTACT_METHOD_MAPPING[contact_method]
+      end
+
+      def destroy_removed_contact_methods
+        destroy_phones
+        destroy_emails
+      end
+
+      def destroy_phones
+        phones_params = params.dig("individual_market_applicant", "phones_attributes")
+        phones_to_destroy = phones_params&.select { |_key, phone| phone[:_destroy] == "true" && phone[:id].present? }
+        phones_to_destroy&.each do |phone|
+          @applicant.phones.where(id: phone.last[:id]).destroy_all
+        end
+      end
+
+      def destroy_emails
+        emails_params = params.dig("individual_market_applicant", "emails_attributes")
+        emails_to_destroy = emails_params&.select { |_key, email| email[:_destroy] == "true" && email[:id].present? }
+        emails_to_destroy&.each do |email|
+          @applicant.emails.where(id: email.last[:id]).destroy_all
+        end
       end
 
       def base_attributes

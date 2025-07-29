@@ -183,18 +183,19 @@ module NavigationHelper
     { breadcrumbs: steps.values[0..current_step_index], previous_step: steps.values[current_step_index - 1] }
   end
 
-  def individual_market_nav_options(step, show_account_button: true)
+  def individual_market_nav_options(step, application,show_account_button: true)
     nav = {}
 
     nav[:nav_options] = [
-      {step: 1, page_key: :family_info, display_label: l10n('family_info')},
-      {step: 2, page_key: :preferred_language, display_label: l10n('qhp_application.nav.preferences_label')},
-      {step: 4, page_key: :review, display_label: l10n('qhp_application.nav.review_label')},
-      {step: 5, page_key: :attest, display_label: l10n('submit')},
-      {step: 6, page_key: :results, display_label: l10n('qhp_application.nav.results')}
+      {step: 1, page_key: :family_info, link: insured_individual_market_application_applicants_path(application), label: l10n('family_info')},
+      {step: 2, page_key: :preferred_language, link: preferences_insured_individual_market_application_path(application), label: l10n('qhp_application.nav.preferences_label')},
+      {step: 4, page_key: :review, link: "#", label: l10n('qhp_application.nav.review_label')},
+      {step: 5, page_key: :attest, link: "#", label: l10n('submit')},
+      {step: 6, page_key: :results, link: "#", label: l10n('qhp_application.nav.results')}
     ]
     nav[:step] = step
     nav[:title] = l10n("qhp_application.nav_header")
+    nav[:links] = true
 
     nav[:show_help_button] = true
     nav[:show_exit_button] = true

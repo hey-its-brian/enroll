@@ -1,5 +1,5 @@
 <% if @in_application_flow %>
-  <%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(6, show_account_button: @family.eligibility_determination.present?)} %>
+  <%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(6, @application, show_account_button: @family.eligibility_determination.present?)} %>
 <% else %>
   <%= render partial: 'shared/family_side_nav' %>
   <ul class="breadcrumbs mb-3">

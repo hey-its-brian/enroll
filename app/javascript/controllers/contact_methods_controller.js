@@ -1,11 +1,13 @@
 import { Controller } from "stimulus"
+import IMask from "imask"
 
 export default class extends Controller {
   static targets = ["preferencesForm", "homePhone", "mobilePhone", "homeEmail", "workEmail", "submitButton", "mailPreference", "emailPreference", "textPreference",
-  "yearsToRenew"]
+  "yearsToRenew", "methodContainer"]
 
   connect() {
     this.canSubmitCheck()
+    this.maskPhones()
   }
 
   canSubmitCheck() {
@@ -100,10 +102,16 @@ export default class extends Controller {
   }
 
   alertForInvalidContactMethods(event) {
-    if (!this.yearsToRenewTarget.checkValidity()) {
-      event.preventDefault();
-      this.yearsToRenewTarget.reportValidity();
-      return;
+    if (this.hasYearsToRenewTarget) {
+      if (!this.yearsToRenewTarget.checkValidity()) {
+        event.preventDefault();
+        this.yearsToRenewTarget.reportValidity();
+        return;
+      }
+    }
+
+    if (this.hasMethodContainerTarget) {
+      this.setDestroys()
     }
 
     let mailPreference = this.mailPreferenceTarget.checked
@@ -121,6 +129,16 @@ export default class extends Controller {
     }
   }
 
+  setDestroys() {
+    this.methodContainerTargets.forEach(container => {
+      let input = container.querySelector('input.full-width')
+      let destroy = container.querySelector('input.destroy')
+      if (input && input.value.length === 0 && destroy) {
+        destroy.value = true
+      }
+    })
+  }
+
   textMessageOnly() {
     let textPreference = this.textPreferenceTarget.checked
     let mailPreference = this.mailPreferenceTarget.checked
@@ -131,6 +149,11 @@ export default class extends Controller {
     } else {
       return true
     }
+  }
+
+  maskPhones() {
+    IMask(this.homePhoneTarget, { mask: "(000) 000-0000" })
+    IMask(this.mobilePhoneTarget, { mask: "(000) 000-0000" })
   }
 
 }

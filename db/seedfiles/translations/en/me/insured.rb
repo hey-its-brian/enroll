@@ -1005,7 +1005,6 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.qhp_application.demographic_info' => "Demographic Information",
   :'en.qhp_application.review_description' => "You’re almost done! Review the application summary below and make sure it’s correct. Select the ‘Edit Section’ button to go back to any section and make changes. When you’re finished, select ",
   :'en.qhp_application.continue_to_next_step' => '‘Continue to Next Step’',
-  :'en.qhp_application.review.edit_member' => "Edit Member Details",
   :'en.qhp_application.review.personal' => "Personal Information",
   :'en.qhp_application.review.contact_preferences' => "Contact Preferences",
   :'en.qhp_application.review.ssn_provided' => "Social Security Number Provided?",

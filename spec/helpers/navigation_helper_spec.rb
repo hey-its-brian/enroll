@@ -40,6 +40,7 @@ RSpec.describe NavigationHelper, :type => :helper, dbclean: :after_each do
   end
 
   describe 'show_account_button functionality' do
+
     before do
       allow(helper).to receive(:l10n).and_return('test_translation')
     end
@@ -114,6 +115,7 @@ RSpec.describe NavigationHelper, :type => :helper, dbclean: :after_each do
     end
 
     describe '#individual_market_nav_options' do
+      let(:application) { FactoryBot.create(:individual_market_application, :with_primary) }
       let(:step) { 1 }
 
       before do
@@ -123,14 +125,14 @@ RSpec.describe NavigationHelper, :type => :helper, dbclean: :after_each do
       context 'when back_to_account_all_shop feature is enabled' do
         context 'with show_account_button parameter true (default)' do
           it 'sets show_account_button to true' do
-            result = individual_market_nav_options(step)
+            result = individual_market_nav_options(step, application)
             expect(result[:show_account_button]).to be true
           end
         end
 
         context 'with show_account_button parameter false' do
           it 'sets show_account_button to false' do
-            result = individual_market_nav_options(step, show_account_button: false)
+            result = individual_market_nav_options(step, application, show_account_button: false)
             expect(result[:show_account_button]).to be false
           end
         end
@@ -142,20 +144,20 @@ RSpec.describe NavigationHelper, :type => :helper, dbclean: :after_each do
         end
 
         it 'sets show_account_button to false regardless of parameter' do
-          result = individual_market_nav_options(step, show_account_button: true)
+          result = individual_market_nav_options(step, application, show_account_button: true)
           expect(result[:show_account_button]).to be false
         end
       end
 
       it 'includes all expected navigation properties' do
-        result = individual_market_nav_options(step)
+        result = individual_market_nav_options(step, application)
         expected_keys = [:nav_options, :step, :title, :show_help_button, :show_exit_button,
                          :show_previous_button, :show_account_button, :back_to_account_flag]
         expect(result.keys).to include(*expected_keys)
       end
 
       it 'sets other expected boolean flags correctly' do
-        result = individual_market_nav_options(step)
+        result = individual_market_nav_options(step, application)
         expect(result[:show_help_button]).to be true
         expect(result[:show_exit_button]).to be true
         expect(result[:show_previous_button]).to be false
@@ -163,22 +165,24 @@ RSpec.describe NavigationHelper, :type => :helper, dbclean: :after_each do
       end
 
       it 'includes navigation options with expected structure' do
-        result = individual_market_nav_options(step)
+        result = individual_market_nav_options(step, application)
         expect(result[:nav_options]).to be_an(Array)
-        expect(result[:nav_options].first).to include(:step, :page_key, :display_label)
+        expect(result[:nav_options].first).to include(:step, :page_key, :link, :label)
       end
     end
 
     describe 'feature flag integration' do
+      let(:application) { FactoryBot.create(:individual_market_application, :with_primary) }
+
       it 'responds to EnrollRegistry feature flags' do
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:back_to_account_all_shop).and_return(false)
 
-        result = individual_market_nav_options(1)
+        result = individual_market_nav_options(1, application)
         expect(result[:show_account_button]).to be false
 
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:back_to_account_all_shop).and_return(true)
 
-        result = individual_market_nav_options(1)
+        result = individual_market_nav_options(1, application)
         expect(result[:show_account_button]).to be true
       end
     end

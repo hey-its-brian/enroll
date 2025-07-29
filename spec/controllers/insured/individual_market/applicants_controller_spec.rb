@@ -458,6 +458,75 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
             expect(applicant.is_homeless).to be_falsey
           end
 
+          context "when there is a phone change" do
+            let(:phone_params) do
+              {
+                phones_attributes: {
+                  "0" => { kind: "home", full_phone_number: "(438) 763-7476", id: applicant.phones.first.id, _destroy: "false" }
+                }
+              }
+            end
+            before do
+              applicant.phones.create(kind: "mobile", number: "2234567890")
+            end
+
+            it "updates the phone if the number changed" do
+              post :update_preferences, params: {
+                application_id: application.id,
+                applicant_id: applicant.id,
+                individual_market_applicant: phone_params
+              }
+              applicant.reload
+              expect(applicant.phones.count).to eq(1)
+              expect(applicant.phones.first.number).to eq("7637476")
+            end
+
+            it "destroys the phone if marked for destruction" do
+              phone_params[:phones_attributes]["0"][:_destroy] = "true"
+              post :update_preferences, params: {
+                application_id: application.id,
+                applicant_id: applicant.id,
+                individual_market_applicant: phone_params
+              }
+              applicant.reload
+              expect(applicant.phones.count).to eq(0)
+            end
+          end
+
+          context "when there is an email change" do
+            let(:email_params) do
+              {
+                emails_attributes: {
+                  "0" => { kind: "work", address: "test@test.com", id: applicant.work_email.id, _destroy: "false" }
+                }
+              }
+            end
+            before do
+              applicant.emails.create(kind: "work", address: "example@example.com")
+            end
+
+            it "updates the email if the address changed" do
+              post :update_preferences, params: {
+                application_id: application.id,
+                applicant_id: applicant.id,
+                individual_market_applicant: email_params
+              }
+              applicant.reload
+              expect(applicant.work_email.address).to eq("test@test.com")
+            end
+
+            it "destroys the email if marked for destruction" do
+              email_params[:emails_attributes]["0"][:_destroy] = "true"
+              post :update_preferences, params: {
+                application_id: application.id,
+                applicant_id: applicant.id,
+                individual_market_applicant: email_params
+              }
+              applicant.reload
+              expect(applicant.work_email).to be_nil
+            end
+          end
+
           it "redirects to the applicants review page" do
             post :update_preferences, params: {
               application_id: application.id,
