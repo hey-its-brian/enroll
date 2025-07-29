@@ -46,6 +46,36 @@ And(/the user enters applicant information with us citizen false$/) do
   end
 end
 
+And(/a consumer with immigration status exists$/) do
+  application = FinancialAssistance::Application.first
+  if application.present?
+    applicant = application.primary_applicant
+    applicant.update_attributes!(citizen_status: 'alien_lawfully_present', vlp_subject: 'Naturalization Certificate')
+  else
+    person = Person.all.first
+    person.consumer_role.lawful_presence_determination.update_attributes!(
+      vlp_document_type: 'Naturalization Certificate',
+      vlp_document_number: '123456789',
+      vlp_document_issue_date: Date.new(2010, 1, 1),
+      vlp_document_expiration_date: Date.new(2025, 1, 1),
+      citizen_status: 'alien_lawfully_present'
+    )
+  end
+end
+
+And(/the user edits the primary applicant$/) do
+  find("#edit-primary-applicant").click
+end
+
+Then(/fields related to the (.*) vlp document should display$/) do |type|
+  case type
+  when 'consumer'
+    expect(page).to have_selector("#vlp_documents_container")
+  when 'applicant'
+    expect(page).to have_selector("#immigration_naturalization_cert_container")
+  end
+end
+
 And(/user selects no for applicant's coverage requirement$/) do
   find(:xpath, FinancialAssistance::ApplicantForm.is_applying_coverage_true).click
 end

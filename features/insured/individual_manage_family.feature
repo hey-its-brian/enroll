@@ -31,3 +31,11 @@ Feature: Individual ability to update family information
     When individual clicks on the Manage Family button
     And the individual edits the dependent
     Then the individual should see disabled ssn & dob fields
+
+  Scenario: User edits their information with immigration status
+    Given bs4_consumer_flow feature is enabled
+    And EnrollRegistry people_tab feature is enabled
+    Given a consumer with immigration status exists
+    When individual clicks on the Manage Family button
+    And the individual edits the dependent
+    Then fields related to the consumer vlp document should display

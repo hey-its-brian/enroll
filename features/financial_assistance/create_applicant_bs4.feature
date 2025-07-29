@@ -17,3 +17,8 @@ Feature: Create a new applicant with Bootstrap 4 layout enabled
 		Then the user enters applicant information with us citizen false
 		And user clicks comfirm member
 		Then the user will have to accept alert pop up for missing field
+
+Scenario: User edits an existing applicant with Immigration status
+  Given a consumer with immigration status exists
+  And the user edits the primary applicant
+  Then fields related to the applicant vlp document should display
