@@ -1,7 +1,10 @@
 <%= render partial: 'shared/family_side_nav' %>
 <ul class="breadcrumbs mb-3">
-  <!-- TODO: Add link to applications page -->
-  <li><%= l10n("qhp_application.show.applications") %></li>
+  <% if qhp_application_feature_enabled? %>
+    <li><%= link_to l10n("qhp_application.show.applications"), main_app.current_applications_insured_sbm_applications_path %></li>
+  <% else %>
+    <li><%= l10n("qhp_application.show.applications") %></li>
+  <% end %>
   <li><%= l10n("qhp_application.show.member_details") %></li>
 </ul>
 

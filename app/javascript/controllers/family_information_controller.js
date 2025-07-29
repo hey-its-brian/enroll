@@ -516,6 +516,7 @@ export default class extends Controller {
     const form = this.element.querySelector('form')
     let ssnValid = this.checkSsnValidation()
     let tribalStateValid = this.checkTribalStateValidation()
+
     let valid = ssnValid && tribalStateValid && form.checkValidity()
 
     if (valid) {
