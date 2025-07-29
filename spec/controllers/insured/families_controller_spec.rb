@@ -578,6 +578,36 @@ RSpec.describe Insured::FamiliesController, dbclean: :after_each do
       get :manage_family, params: {market: "shop_market_events"}
       expect(assigns(:manually_picked_role)).to eq nil
     end
+
+    context 'when qhp_application is enabled' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      end
+
+      context 'when person has consumer role' do
+        let(:consumer_role) { FactoryBot.create(:consumer_role, person: person) }
+
+        before do
+          consumer_role
+          get :manage_family
+        end
+
+        it 'redirects to current_applications_insured_sbm_applications_path' do
+          expect(response).to redirect_to(current_applications_insured_sbm_applications_path)
+        end
+      end
+
+      context 'when person has no consumer role' do
+        before do
+          allow(person).to receive(:is_consumer_role_active?).and_return(false)
+          get :manage_family
+        end
+
+        it 'does not redirect' do
+          expect(response).not_to redirect_to(current_applications_insured_sbm_applications_path)
+        end
+      end
+    end
   end
 
   describe "GET personal" do

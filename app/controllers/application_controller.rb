@@ -530,6 +530,11 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def redirect_to_current_applications
+    return unless EnrollRegistry.feature_enabled?(:qhp_application) && @person&.is_consumer_role_active?
+    redirect_to current_applications_insured_sbm_applications_path
+  end
+
   def stashed_user_password
     session["stashed_password"]
   end

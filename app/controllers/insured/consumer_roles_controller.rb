@@ -365,7 +365,11 @@ class Insured::ConsumerRolesController < ApplicationController
       end
     else
       @person.update_attributes is_applying_for_assistance: false
-      redirect_to insured_family_members_path(consumer_role_id: @person.consumer_role.id)
+      if EnrollRegistry.feature_enabled?(:qhp_application)
+        redirect_to current_applications_insured_families_path
+      else
+        redirect_to insured_family_members_path(consumer_role_id: @person.consumer_role.id)
+      end
     end
   end
 

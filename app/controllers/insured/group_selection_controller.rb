@@ -99,7 +99,8 @@ class Insured::GroupSelectionController < ApplicationController
       family_member_eligibility_check(family_member, @benefit)
     end
     if @fm_hash.present? && @fm_hash.values.flatten.detect{|err| err.to_s.match(/incarcerated_not_answered/)}
-      redirect_to manage_family_insured_families_path(tab: 'family')
+      redirect_path = qhp_application_feature_enabled? ? current_applications_insured_sbm_applications_path : manage_family_insured_families_path(tab: 'family')
+      redirect_to redirect_path
       flash[:error] = "A family member has incarceration status unanswered, please answer the question by clicking on edit icon before shopping."
     end
   end

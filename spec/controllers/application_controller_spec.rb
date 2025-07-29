@@ -316,4 +316,52 @@ RSpec.describe ApplicationController do
       end
     end
   end
+
+  describe 'redirect_to_current_applications' do
+    let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+    let(:user) { FactoryBot.create(:user, :person => person) }
+
+    context 'when qhp_application is enabled and person has consumer role' do
+      before do
+        sign_in(user)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        allow(person).to receive(:is_consumer_role_active?).and_return(true)
+        controller.instance_variable_set(:@person, person)
+      end
+
+      it 'redirects to current_applications_insured_sbm_applications_path' do
+        expect(controller).to receive(:redirect_to).with(current_applications_insured_sbm_applications_path)
+        controller.send(:redirect_to_current_applications)
+      end
+    end
+
+    context 'when qhp_application is not enabled and person has consumer role' do
+      before do
+        sign_in(user)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+        allow(person).to receive(:is_consumer_role_active?).and_return(true)
+        controller.instance_variable_set(:@person, person)
+      end
+
+      it 'does not redirect' do
+        expect(controller).not_to receive(:redirect_to)
+        controller.send(:redirect_to_current_applications)
+      end
+    end
+
+    context 'when qhp_application is enabled and person does not have consumer role' do
+      before do
+        sign_in(user)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        allow(person).to receive(:is_consumer_role_active?).and_return(false)
+        controller.instance_variable_set(:@person, person)
+      end
+
+      it 'does not redirect' do
+        expect(controller).not_to receive(:redirect_to)
+        controller.send(:redirect_to_current_applications)
+      end
+    end
+
+  end
 end

@@ -76,9 +76,9 @@
 <div data-cuke='return_to_account_home' class="my-4">
   <!-- TODO: Add link to view my applications when new page is built -->
   <%= h(link_to l10n("qhp_application.results.view_my_applications"), current_applications_insured_sbm_applications_path, class: "button secondary outline mr-2") %>
-  <!-- TODO: Add link to continue to shop flow is ready -->
   <% if @in_application_flow %>
-    <%= h(link_to l10n("qhp_application.results.continue_to_shop"), family_account_path, class: "button") %>
+    <% options = {shop_for_plan: 'shop_for_plan', person_id: @person.id} %>
+    <%= h(link_to l10n("qhp_application.results.continue_to_shop"), new_insured_group_selection_path(options), class: "button") %>
   <% else %>
     <%= link_to l10n("qhp_application.results.return_to_account"), family_account_path, class: "button" %>
   <% end %>

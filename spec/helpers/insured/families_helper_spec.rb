@@ -1052,4 +1052,64 @@ RSpec.describe Insured::FamiliesHelper, :type => :helper, dbclean: :after_each  
 
 
   end
+
+  describe '#build_group_selection_link' do
+    let(:person) {FactoryBot.create(:person)}
+    let(:family) {FactoryBot.create(:family, :with_primary_family_member, person: person)}
+    let(:hbx_enrollments) { [FactoryBot.create(:hbx_enrollment, family: family)] }
+    let(:qle) {FactoryBot.create(:qualifying_life_event_kind)}
+    let(:sep) {FactoryBot.create(:special_enrollment_period, qualifying_life_event_kind_id: qle.id, family: family)}
+
+    context 'without sep' do
+      it 'returns nil' do
+        expect(helper.build_group_selection_link(nil, person, hbx_enrollments)).to be_nil
+      end
+    end
+
+    context 'without qle' do
+      before do
+        sep.qualifying_life_event_kind_id = BSON::ObjectId.new
+        sep.save!
+      end
+
+      it 'returns nil' do
+        expect(helper.build_group_selection_link(sep, person, hbx_enrollments)).to be_nil
+      end
+    end
+
+    context 'valid params' do
+      context 'when qle date options available and sep optional effective date is present' do
+        before do
+          qle.update_attributes(date_options_available: true)
+          qle_on = Date.new(TimeKeeper.date_of_record.year, 4, 14)
+          optional_effective_on = [qle_on + 5.days, qle_on + 6.days, qle_on + 7.days]
+          sep.update_attributes(qle_on: qle_on, optional_effective_on: optional_effective_on)
+        end
+
+        it 'returns a link' do
+          link = helper.build_group_selection_link(sep, person, hbx_enrollments)
+          expect(link).to be_present
+          expect(link).to include('href="#"')
+          expect(link).to include('data-is-self-attested')
+          expect(link).not_to include('shop_for_plan')
+        end
+      end
+
+      context 'when qle date options not available and sep optional effective date is not present' do
+        it 'returns a link with shop_for_plan param if qle.date_options_available is false' do
+          link = helper.build_group_selection_link(sep, person, hbx_enrollments)
+          expect(link).to be_present
+          expect(link).to include('shop_for_plan')
+          expect(link).to include('change_plan')
+          expect(link).to include(person.id.to_s)
+        end
+
+        it 'returns a link without change_plan param if no hbx_enrollments are present' do
+          link = helper.build_group_selection_link(sep, person, [])
+          expect(link).to include('shop_for_plan')
+          expect(link).not_to include('change_plan')
+        end
+      end
+    end
+  end
 end

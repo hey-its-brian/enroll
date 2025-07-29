@@ -110,7 +110,11 @@
                 <% if @family.latest_active_sep %>
                   <p><%= l10n('insured.qualify_for_special_enrollment') %> "<%= @family.latest_active_sep.qualifying_life_event_kind.title %>"
                   </p>
-                  <%= build_link_for_sep_type(@active_sep, l10n('plans.shop_now'), @family.id.to_s, link_class = "btn btn-default") %>
+                  <% if EnrollRegistry.feature_enabled?(:qhp_application) %>
+                    <%= build_group_selection_link(@active_sep, @person, @hbx_enrollments, link_class = "btn btn-default") %>
+                  <% else %>
+                    <%= build_link_for_sep_type(@active_sep, l10n('plans.shop_now'), @family.id.to_s, link_class = "btn btn-default") %>
+                  <% end %>
                   <p class="mt-4"><%= l10n('insured.start_your_coverage') %> </p>
                     <%= h(link_to "#{l10n('plans.qualify_for_new_sep')}", find_sep_insured_families_path(options), class: "btn btn-default pull-left", data: genesys_feature_enabled ? {turbolinks: false} : {}) %></p>
                 <% elsif !is_under_open_enrollment? %>

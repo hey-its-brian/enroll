@@ -5,6 +5,7 @@ class Insured::FamiliesController < FamiliesController
   include Config::SiteConcern
   include Insured::FamiliesHelper
   include ::VerificationHelper
+  include ::ResourceRegistryHelper
 
   layout :resolve_layout
   before_action :enable_bs4_layout, only: [:home, :find_sep, :record_sep, :check_qle_date, :check_move_reason, :check_marriage_reason,
@@ -25,6 +26,7 @@ class Insured::FamiliesController < FamiliesController
     :update_osse_eligibilities
   ]
   before_action :create_evidence, only: [:verification_detail, :verification_history]
+  before_action :redirect_to_current_applications, only: [:manage_family]
 
   around_action :cache_hbx, only: [:home]
 

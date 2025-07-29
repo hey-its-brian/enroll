@@ -87,6 +87,22 @@ RSpec.describe Insured::FamilyMembersController, dbclean: :after_each do
       end
     end
 
+    context 'when qhp_application is enabled and person has consumer role' do
+      let(:consumer_role) { FactoryBot.create(:consumer_role, person: person) }
+
+      before do
+        consumer_role
+        sign_in(user)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        get :index, params: {employee_role_id: employee_role_id}
+      end
+
+      it 'redirects to current_applications_insured_sbm_applications_path' do
+        expect(response).to redirect_to(current_applications_insured_sbm_applications_path)
+      end
+    end
+
+
     # Some times Effective dates vary even for the next day. So creating a new SEP & re-calculating effective on dates
     context "with sep_id in params" do
 

@@ -346,6 +346,23 @@ module Insured::FamiliesHelper
     end
   end
 
+  def build_group_selection_link(sep, person, hbx_enrollments, link_class = nil)
+    return if sep.blank?
+    qle = QualifyingLifeEventKind.where(id: sep.qualifying_life_event_kind_id).first
+    return if qle.blank?
+
+    if qle.date_options_available && sep.optional_effective_on.present?
+      # Take to the QLE like flow of choosing Option dates if available
+      qle_link_generator_for_an_existing_qle(qle, l10n("insured.shop_for_plans"), link_class)
+    else
+      options = { shop_for_plan: 'shop_for_plan' }
+      options.merge!(person_id: person.id) if person.present?
+      options.merge!(change_plan: 'change_plan') if hbx_enrollments&.compact_blank&.any?
+
+      link_to l10n("insured.shop_for_plans"), new_insured_group_selection_path(options), data: {turbolinks: false}, class: link_class
+    end
+  end
+
   def find_qle_for_sep(sep)
     QualifyingLifeEventKind.find(sep.qualifying_life_event_kind_id)
   end

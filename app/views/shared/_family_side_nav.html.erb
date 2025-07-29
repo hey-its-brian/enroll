@@ -52,11 +52,13 @@
           <% end) %>
         </li>
       <% end %>
-      <li>
-        <%= h(link_to(main_app.manage_family_insured_families_path(tab: 'family'), class: "#{'active' if ['personal', 'manage_family'].include?(action_name)}", data: genesys_feature_enabled ? {turbolinks: false} : {}) do %>
-          <%= l10n("my_household") %>
-        <% end) %>
-      </li>
+      <% unless qhp_application_feature_enabled? %>
+        <li>
+          <%= h(link_to(main_app.manage_family_insured_families_path(tab: 'family'), class: "#{'active' if ['personal', 'manage_family'].include?(action_name)}", data: genesys_feature_enabled ? {turbolinks: false} : {}) do %>
+            <%= l10n("my_household") %>
+          <% end) %>
+        </li>
+      <% end %>
       <% if current_user.has_hbx_staff_role? && has_active_resident_members?(@family_members) %>
         <li>
           <%= h(link_to(main_app.upload_application_insured_families_path(tab: 'verification'), class: "#{'active' if action_name == 'upload_application'}", data: genesys_feature_enabled ? {turbolinks: false} : {}) do %>
