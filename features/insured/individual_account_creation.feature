@@ -67,7 +67,7 @@ Feature: UI validations for Email, Username, SSN already in use, and weak Passwo
     Given the strong password length feature is enabled
     When Individual visits the Consumer portal during open enrollment
     When Individual creates a new HBX account with a weak password
-    Then Individual should see a minimum password length of 12
+    Then Individual should see a minimum password length of 14
 
   Scenario: Strong password feature is disabled
     Given the strong password length feature is disabled
