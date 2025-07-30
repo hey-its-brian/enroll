@@ -1,6 +1,6 @@
 <%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(2, @application, show_account_button: @family.eligibility_determination.present?)} %>
 <div data-controller="contact-methods">
-<h1><%= l10n("qhp_application.nav.preferences_label") %></h1>
+<h1 data-cuke='preferences'><%= l10n("qhp_application.nav.preferences_label") %></h1>
 <h2><%= l10n("qhp_application.review.contact_preferences") %></h2>
   <p><%= l10n("insured.preferences.contact_update_info") %><span class="primary-text"><%= link_to l10n("insured.preferences.family_info_page"), insured_individual_market_application_applicants_path(@application, applicant: @applicant.id) %></span></p>
 

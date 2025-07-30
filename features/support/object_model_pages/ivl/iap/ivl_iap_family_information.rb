@@ -7,6 +7,10 @@ class IvlIapFamilyInformation
     '#household_info_add_member'
   end
 
+  def self.add_new_member_to_household
+    '.interaction-click-control-add-new-member-to-household'
+  end
+
   def self.continue_btn
     '#btn-continue'
   end
@@ -309,6 +313,46 @@ class IvlIapFamilyInformation
 
   def self.continue_to_next_step_btn
     '#continue_button'
+  end
+
+  def self.qhp_first_name
+    'applicant_person_name_attributes_given_name'
+  end
+
+  def self.qhp_last_name
+    'applicant_person_name_attributes_family_name'
+  end
+
+  def self.qhp_dob
+    'applicant_demographics_attributes_dob'
+  end
+
+  def self.qhp_gender
+    '#applicant_demographics_attributes_gender'
+  end
+
+  def self.qhp_ssn
+    'applicant_demographics_attributes_ssn'
+  end
+
+  def self.qhp_relationship_dropdown
+    '#applicant_relationship'
+  end
+
+  def self.qhp_us_citizen_true
+    'us_citizen_true'
+  end
+
+  def self.qhp_naturalized_citizen_false
+    'naturalized_citizen_false'
+  end
+
+  def self.qhp_indian_tribe_member_no
+    'indian_tribe_member_no'
+  end
+
+  def self.qhp_is_incarcerated_no
+    'is_incarcerated_false'
   end
 
   def self.start_new_application_btn

@@ -314,6 +314,15 @@ When(/^more than one member exists in the household$/) do
   step 'user completes the required fields'
 end
 
+Then(/^user should see Family Relationship included in the side navigation$/) do
+  expect(page).to have_content(l10n('faa.nav.family_info'))
+  expect(page).to have_content(l10n('faa.nav.family_relationships'))
+  expect(page).to have_content(l10n('faa.nav.income_and_coverage'))
+  expect(page).to have_content(l10n('qhp_application.nav.preferences_label'))
+  expect(page).to have_content(l10n('qhp_application.nav.review_label'))
+  expect(page).to have_content(l10n('qhp_application.nav.results'))
+end
+
 When(/^user clicks on remove member from household$/) do
   find(IvlIapFamilyInformation.edit_dependent_button).click
   find(IvlIapFamilyInformation.remove_member_btn).click
@@ -347,6 +356,25 @@ end
 And(/^the user clicks on Start New Application$/) do
   find(IvlIapFamilyInformation.start_new_application_btn).click
   find_all(IvlIapFamilyInformation.start_new_application_btn).last.click
+end
+
+When(/^Individual clicks on add new member to household$/) do
+  find(IvlIapFamilyInformation.add_new_member_to_household).click
+
+  fill_in IvlIapFamilyInformation.qhp_first_name, with: 'Jane'
+  fill_in IvlIapFamilyInformation.qhp_last_name, with: 'Doe'
+  fill_in IvlIapFamilyInformation.qhp_ssn, with: '223452342'
+  fill_in IvlIapFamilyInformation.qhp_dob, with: '01/01/1990'
+  find(IvlIapFamilyInformation.qhp_gender).click
+  find(:xpath,"//option[@value='female']").click
+  find(IvlIapFamilyInformation.qhp_relationship_dropdown).click
+  sleep 2
+  find(:xpath, "//option[@value='spouse']").click
+  choose(IvlIapFamilyInformation.qhp_us_citizen_true)
+  choose(IvlIapFamilyInformation.qhp_naturalized_citizen_false)
+  choose(IvlIapFamilyInformation.qhp_indian_tribe_member_no)
+  choose(IvlIapFamilyInformation.qhp_incarcerated_no)
+  find_button('Confirm Member').click
 end
 
 Then(/^user should see application in cancelled status$/) do

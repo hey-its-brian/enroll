@@ -55,6 +55,14 @@ Feature: User add's new dependent and submit form after filling required fields
     When the user clicks My Household section on the left navigation
     Then the user will navigate to the FAA Family Information page
 
+    Scenario: Financial Assistance Side Navigation 
+    Given bs4_consumer_flow feature is enabled
+    Given the FAA feature configuration is enabled
+    Given qhp_application feature is enabled
+    And the user is on FAA Family Information page
+    And more than one member exists in the household
+    Then user should see Family Relationship included in the side navigation
+
   @broken
   Scenario: Application transition from draft to cancelled status
     Given bs4_consumer_flow feature is enabled
