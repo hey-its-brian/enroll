@@ -454,13 +454,19 @@ module FinancialAssistance
             end
 
             return if fr_hash.empty?
+            primary_applicant = @application.primary_applicant
+            relationships_link = if @application.is_reviewable?
+                                   copy_application_path(@application, applicant_hbx_id: primary_applicant.person_hbx_id, relationships: true, applicant: primary_applicant.id)
+                                 else
+                                   application_relationships_path(@application)
+                                 end
             section_hash(
               title: l10n('faa.review.your_household'),
               subsections: [
                 subsection_hash(
                   title: l10n('faa.nav.family_relationships'),
                   rows: fr_hash.compact,
-                  edit_link: @can_edit ? application_relationships_path(@application) : nil
+                  edit_link: @can_edit ? relationships_link : nil
                 )
               ]
             )

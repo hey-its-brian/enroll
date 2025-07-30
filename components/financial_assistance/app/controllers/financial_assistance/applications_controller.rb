@@ -427,7 +427,8 @@ module FinancialAssistance
             income_adjustments: -> { application_applicant_deductions_path(application, applicant) },
             other_incomes: -> { other_application_applicant_incomes_path(application, applicant) },
             health_coverage: -> { application_applicant_benefits_path(application, applicant) },
-            other_questions: -> { other_questions_application_applicant_path(application, applicant) }
+            other_questions: -> { other_questions_application_applicant_path(application, applicant) },
+            relationships: -> { application_relationships_path(application) }
           }
 
           path_key = path_mapping.keys.find { |key| params[key].present? }

@@ -202,6 +202,15 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
           expect(response).to redirect_to(other_questions_application_applicant_path(application, applicant))
         end
       end
+
+      context "when relationships is set to true in params" do
+        it "redirects to the new application relationships page" do
+          get :copy, params: { id: application.id, applicant_hbx_id: person1.hbx_id, relationships: true }
+          application = assigns(:application).reload
+
+          expect(response).to redirect_to(application_relationships_path(application))
+        end
+      end
     end
 
     context 'when application service raises an error' do
