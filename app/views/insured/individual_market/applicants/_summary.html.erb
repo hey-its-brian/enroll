@@ -24,7 +24,7 @@
     </div>
   <% end %>
 
-  <% if member_details%>
+  <% if member_details %>
     <div class="d-flex justify-content-between">
       <h3 class="mt-2 mb-0"><%= l10n("qhp_application.review.personal") %></h3>
       <%= link_to(edit_link, class: "btn outline secondary") do %>
@@ -148,45 +148,47 @@
       <dd class="text-right"><%= applicant.is_temporarily_out_of_state? ? l10n("yes") : l10n("no") %></dd>
     </div>
   <% end %>
-  <% applicant.addresses.each do |address| %>
-    <h4><%= address.kind.titleize %> <%= l10n("address") %></h4>
-    <div class="d-flex justify-content-between align-items-start">
-      <dt class="col-8 px-0"><%= l10n("address_1") %></dt>
-      <dd class="text-right">
-          <%= address.address_1 %>
-      </dd>
-    </div>
-    <div class="d-flex justify-content-between align-items-start">
-      <dt class="col-8 px-0"><%= l10n("address_2") %></dt>
-      <dd class="text-right">
-        <%= address.address_2 %>
-      </dd>
-    </div>
-    <div class="d-flex justify-content-between align-items-start">
-      <dt class="col-8 px-0"><%= l10n("city") %></dt>
-      <dd class="text-right">
-        <%= address.city %>
-      </dd>
-    </div>
-    <div class="d-flex justify-content-between align-items-start">
-      <dt class="col-8 px-0"><%= l10n("zip_code") %></dt>
-      <dd class="text-right">
-        <%= address.zip %>
-      </dd>
-    </div>
-    <div class="d-flex justify-content-between align-items-start">
-      <dt class="col-8 px-0"><%= l10n("state") %></dt>
-      <dd class="text-right">
-        <%= address.state.upcase %>
-      </dd>
-    </div>
-    <div class="d-flex justify-content-between align-items-start">
-      <dt class="col-8 px-0"><%= l10n("county") %></dt>
-      <dd class="text-right">
-        <%= address.county.present? ? address.county : l10n("qhp_application.zip.outside") %>
-      </dd>
-    </div>
-  <% end %>
+  <% unless applicant.address_same_as_primary? %>
+    <% applicant.addresses.each do |address| %>
+      <h4><%= address.kind.titleize %> <%= l10n("address") %></h4>
+      <div class="d-flex justify-content-between align-items-start">
+        <dt class="col-8 px-0"><%= l10n("address_1") %></dt>
+        <dd class="text-right">
+            <%= address.address_1 %>
+        </dd>
+      </div>
+      <div class="d-flex justify-content-between align-items-start">
+        <dt class="col-8 px-0"><%= l10n("address_2") %></dt>
+        <dd class="text-right">
+          <%= address.address_2 %>
+        </dd>
+      </div>
+      <div class="d-flex justify-content-between align-items-start">
+        <dt class="col-8 px-0"><%= l10n("city") %></dt>
+        <dd class="text-right">
+          <%= address.city %>
+        </dd>
+      </div>
+      <div class="d-flex justify-content-between align-items-start">
+        <dt class="col-8 px-0"><%= l10n("zip_code") %></dt>
+        <dd class="text-right">
+          <%= address.zip %>
+        </dd>
+      </div>
+      <div class="d-flex justify-content-between align-items-start">
+        <dt class="col-8 px-0"><%= l10n("state") %></dt>
+        <dd class="text-right">
+          <%= address.state.upcase %>
+        </dd>
+      </div>
+      <div class="d-flex justify-content-between align-items-start">
+        <dt class="col-8 px-0"><%= l10n("county") %></dt>
+        <dd class="text-right">
+          <%= address.county.present? ? address.county : l10n("qhp_application.zip.outside") %>
+        </dd>
+      </div>
+    <% end %>
+  <% end%>
   <% if applicant.is_primary_applicant %>
     <% edit_preferences_link = @application.is_initial? ? preferences_insured_individual_market_application_path(@application) : copy_insured_individual_market_application_path(@application, preferences: true) %>
     <div class="d-flex justify-content-between mt-3">

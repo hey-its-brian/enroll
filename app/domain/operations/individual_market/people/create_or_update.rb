@@ -191,8 +191,9 @@ module Operations
         def build_addresses(person, applicant)
           # Clear existing addresses
           person.addresses.clear
+          addresses = applicant.address_same_as_primary? ? applicant.application.primary_applicant.addresses : applicant.addresses
 
-          applicant.addresses.each do |address|
+          addresses.each do |address|
             person.addresses.build(
               kind: address.kind,
               address_1: address.address_1,

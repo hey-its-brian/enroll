@@ -53,7 +53,8 @@ RSpec.describe Operations::IndividualMarket::Families::CreateOrUpdate, type: :mo
       addresses: [secondary_address],
       emails: [secondary_email],
       phones: [secondary_phone],
-      application: application
+      application: application,
+      address_same_as_primary: false
     )
   end
 

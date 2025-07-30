@@ -10,12 +10,13 @@ RSpec.describe Operations::IndividualMarket::People::CreateOrUpdate, type: :mode
       :with_person_name,
       :with_ivl_eligibility,
       :with_immigration_information,
-      family_member_id: primary_family_member_id,
+      family_member_id: family.primary_family_member.id,
       addresses: [primary_address],
       emails: [primary_email],
       phones: [primary_phone],
       application: application,
-      demographics: female_demographics
+      demographics: female_demographics,
+      is_primary_applicant: true
     )
   end
 
@@ -76,6 +77,8 @@ RSpec.describe Operations::IndividualMarket::People::CreateOrUpdate, type: :mode
   let(:family) {  FactoryBot.create(:family, :with_primary_family_member, person: primary_person) }
 
   before :each do
+    primary_applicant
+    secondary_applicant
     allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
   end
 
@@ -86,6 +89,25 @@ RSpec.describe Operations::IndividualMarket::People::CreateOrUpdate, type: :mode
         result = subject.call(applicant: secondary_applicant).value!
         expect(result.first_name).to eq(secondary_applicant.person_name.given_name)
         expect(result.no_ssn).to eq "1"
+      end
+    end
+
+    context "when: secondary applicant is dependent and address_same_as_primary is true" do
+      it "should create a person with the same address as the primary applicant" do
+        secondary_applicant.addresses.first.update!(address_1: '123 Main St')
+        secondary_applicant.address_same_as_primary = true
+        result = subject.call(applicant: secondary_applicant).value!
+        expect(result.first_name).to eq(secondary_applicant.person_name.given_name)
+        expect(result.addresses.first.address_1).to eq(primary_address_1)
+      end
+    end
+
+    context "when: secondary applicant is dependent and address_same_as_primary is false" do
+      it "should create a person with the same address as the secondary applicant" do
+        secondary_applicant.address_same_as_primary = false
+        result = subject.call(applicant: secondary_applicant).value!
+        expect(result.first_name).to eq(secondary_applicant.person_name.given_name)
+        expect(result.addresses.first.address_1).to eq(secondary_address.address_1)
       end
     end
   end
