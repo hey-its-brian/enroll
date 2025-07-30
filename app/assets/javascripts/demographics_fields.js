@@ -282,9 +282,6 @@ function applyListeners() {
   var immigrationDocType = $('#immigration_doc_type');
   if (immigrationDocType.length > 0 && immigrationDocType.is(':visible')) {
     var selected_doc_type = $('#immigration_doc_type').val();
-    $('#vlp_documents_container').show();
-    $('#naturalization_doc_type_select').show();
-    $('#immigration_doc_type_select').hide();
     showOnly(selected_doc_type);
   }
 }
