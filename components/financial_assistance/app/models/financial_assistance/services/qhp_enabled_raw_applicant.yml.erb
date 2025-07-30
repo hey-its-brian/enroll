@@ -126,7 +126,17 @@ addresses:
   title: <%= l10n('qhp_application.review.contact_info') %>
   rows:
     <% addresses = @applicant.addresses %>
-            <% if addresses.present? %>
+    <% if @applicant.is_primary_applicant || !@applicant.same_with_primary %>
+    is_homeless:
+      key: <%= l10n('qhp_application.review.state_resident_experiencing_homelessness') %>
+      value: "<%= @applicant.is_homeless? ? l10n("yes") : l10n("no") %>"
+   <% end %>
+   <% if @applicant.is_temporarily_out_of_state.present? %>
+    is_temporarily_out_of_state:
+      key: <%= l10n('is_temporarily_out_of_state') %>
+      value: "<%= @applicant.is_temporarily_out_of_state? ? l10n("yes") : l10n("no") %>"
+   <% end %>
+   <% if addresses.present? %>
     addresses:
                 <% addresses.each do |address| %>
       - title: "<%= address.kind.titleize %> <%= l10n('address') %>"
@@ -150,7 +160,7 @@ addresses:
             key: <%= l10n('county') %>
             value: "<%= address&.county %>"
                 <% end %>
-            <% end %>
+   <% end %>
 
 contact_preferences:
   title: <%= l10n('qhp_application.review.contact_preferences') %>
