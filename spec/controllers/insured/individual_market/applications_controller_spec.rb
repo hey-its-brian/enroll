@@ -431,6 +431,23 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
           expect(new_app.initial?).to be_truthy
           expect(new_app.predecessor_id).to eq(new_application.id)
           expect(new_app.family).to eq(new_family)
+          expect(new_app.assistance_year).to eq(new_application.assistance_year)
+        end
+      end
+
+      context "with assistance year param" do
+        before { get :copy, params: { id: new_application.id, assistance_year: 2024 }, session: { person_id: new_family.primary_person.id }}
+
+        it 'redirects to the applicants index page of the copied application with an assistance year param' do
+          expect(response).to redirect_to(insured_individual_market_application_applicants_path(application_id: new_app.id))
+        end
+
+        it 'creates a new application with copied attributes' do
+          expect(new_app).to be_persisted
+          expect(new_app.initial?).to be_truthy
+          expect(new_app.predecessor_id).to eq(new_application.id)
+          expect(new_app.family).to eq(new_family)
+          expect(new_app.assistance_year).to eq(2024)
         end
       end
 

@@ -269,16 +269,17 @@ module IndividualMarket
     #
     # @param [Symbol, nil] origin The source that created the copied application (must be one of ORIGIN_KINDS)
     # @param [Symbol, nil] generation_reason The reason why the application was copied (must be one of GENERATION_REASONS)
+    # @param [Integer, nil] copy_year The year for which the application is requesting assistance
     # @return [IndividualMarket::Application] A new application instance with copied applicants and relationships
     # @raise [ArgumentError] If origin or generation_reason are not included in their respective allowed values
     # @example Create a renewal application
     #   original_app.copy_application(origin: :system, generation_reason: :renewal)
-    def copy_application(origin: nil, generation_reason: nil)
+    def copy_application(origin: nil, generation_reason: nil, copy_year: nil)
       raise ArgumentError, 'Origin must be one of the defined ORIGIN_KINDS' if ORIGIN_KINDS.exclude?(origin)
       raise ArgumentError, 'Generation reason must be one of the defined GENERATION_REASONS' if GENERATION_REASONS.exclude?(generation_reason)
 
       new_app = self.class.new(
-        assistance_year: assistance_year,
+        assistance_year: copy_year || self.assistance_year,
         family_id: family_id,
         generation_reason: generation_reason,
         origin: origin,

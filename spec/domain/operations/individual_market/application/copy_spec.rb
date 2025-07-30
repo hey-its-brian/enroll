@@ -40,6 +40,7 @@ RSpec.describe Operations::IndividualMarket::Application::Copy, dbclean: :after_
 
     let(:origin) { :system }
     let(:generation_reason) { :manual }
+    let(:assistance_year) { nil }
 
     let(:result) do
       immigration_information
@@ -47,7 +48,8 @@ RSpec.describe Operations::IndividualMarket::Application::Copy, dbclean: :after_
       subject.call(
         application: applicant.application,
         origin: origin,
-        generation_reason: generation_reason
+        generation_reason: generation_reason,
+        assistance_year: assistance_year
       )
     end
 
@@ -106,6 +108,16 @@ RSpec.describe Operations::IndividualMarket::Application::Copy, dbclean: :after_
           expect(
             subject.call(application: application, origin: origin, generation_reason: generation_reason).failure
           ).to eq('Invalid generation reason: invalid_reason')
+        end
+      end
+
+      context 'when assistance year is invalid' do
+        let(:assistance_year) { 'invalid_year' }
+
+        it 'returns failure with error message' do
+          expect(
+            subject.call(application: application, origin: origin, generation_reason: generation_reason, assistance_year: assistance_year).failure
+          ).to eq('Invalid assistance year.')
         end
       end
 
@@ -429,6 +441,21 @@ RSpec.describe Operations::IndividualMarket::Application::Copy, dbclean: :after_
           expect(result_application.relationships.map(&:relative).map(&:family_member_id)).to contain_exactly(
             applicant.family_member_id, applicant.family_member_id
           )
+        end
+      end
+
+      context 'when assistance year is provided' do
+        let(:assistance_year) { 2024 }
+        it 'sets the assistance year on the copied application' do
+          expect(result.success?).to be_truthy
+          expect(result_application.assistance_year).to eq(assistance_year)
+        end
+      end
+
+      context 'when assistance year is not provided' do
+        it 'sets the assistance year on the copied application' do
+          expect(result.success?).to be_truthy
+          expect(result_application.assistance_year).to eq(application.assistance_year)
         end
       end
 
