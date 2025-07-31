@@ -4,6 +4,21 @@
 
   <%# Main Content (right) %>
   <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
+
+  <% if qhp_application_feature_enabled? && @eligibility_determination.blank? %>
+    <div class="container p-0">
+      <div class="alert alert-error d-flex align-items-start">
+        <div class="d-flex pl-1">
+          <div class="error-icon icon" alt="info">&nbsp;</div>
+        </div>
+        <div class="col mr-auto p-0 align-self-center">
+          <p class="mb-1"><%= l10n('insured.must_submit_application') %></p>
+          <%= link_to l10n('insured.families.go_to_applications'), current_applications_insured_sbm_applications_path, class: "text-dark text-underline" %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
   <div id="choose-coverag-page">
     <%= form_tag(:insured_group_selections, :id => "group-selection-form", data: genesys_feature_enabled ? {turbolinks: false} : {}) do %>
       <% effective_date_for_display = @effective_on_date || @new_effective_on %>
@@ -124,8 +139,9 @@
           <% qle = (@change_plan == 'change_by_qle' || @enrollment_kind == 'sep') %>
         <% end %>
       <% end %>
+      <% disable_link = qhp_application_feature_enabled? && @eligibility_determination.blank? ? true : false %>
       <div id="plan-shopping-page-navigation-buttons" class="d-flex flex-column flex-md-row mt-4" >
-        <%= render partial: "shared/progress_navigation_buttons", locals: { previous_style: "outline", button_type: "submit" } %>
+        <%= render partial: "shared/progress_navigation_buttons", locals: { previous_style: "outline", button_type: "submit", disable_link: disable_link } %>
       </div>
     <% end %>
   </div>

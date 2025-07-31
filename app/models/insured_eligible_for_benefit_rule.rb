@@ -94,6 +94,11 @@ class InsuredEligibleForBenefitRule
   # the method returns the original status unchanged. Otherwise, it sets the status
   # to false, adds an error message to the @errors array, and returns the updated status.
   def update_status_if_member_ineligible(status)
+    if @eligibility_determination.blank?
+      @errors << [l10n('insured.group_selection.no_application_submitted')]
+      return false
+    end
+
     shopping_eligible_member_ids = @eligibility_determination.shopping_eligible_member_ids
     return status if shopping_eligible_member_ids.include?(@family_member_id)
 

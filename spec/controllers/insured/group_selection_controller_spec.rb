@@ -726,6 +726,32 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
           expect(response).to have_http_status("200")
         end
       end
+
+      context 'family does not have eligibility determination' do
+        let(:family) do
+          FactoryBot.create(:family,
+                            :with_primary_family_member,
+                            person: person_2)
+        end
+
+        it "family member should no application submitted errors" do
+          sign_in user_2
+          get(
+            :new,
+            params: {
+              person_id: person_2.id,
+              consumer_role_id: person_2.consumer_role.id,
+              change_plan: "",
+              coverage_kind: hbx_enrollment.coverage_kind,
+              market_kind: "individual"
+            }
+          )
+          fm_hash = assigns(:fm_hash)
+          translation = l10n('insured.group_selection.no_application_submitted')
+          expect(fm_hash.values.flatten.any? { |err| err.to_s.include?(translation) }).to be_truthy
+          expect(response).to have_http_status("200")
+        end
+      end
     end
 
     context 'dual role household' do

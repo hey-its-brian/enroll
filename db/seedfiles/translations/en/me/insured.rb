@@ -1112,4 +1112,6 @@ now, your application will be saved as a draft and you can finish it later.',
   :'en.applications.how.previous.li2' => "Changes to your %{year} application do <u>not</u> carry over to %{year2} coverage. If you update your %{year} application, be sure to select \'<b>Copy Info to %{year2} Application</b>\' from the \'<b>Actions</b>\' drop-down and submit the updated %{year2} application.",
   :'en.error_header_text' => "You need to correct the following errors:",
   :'en.ssn_or_no_ssn_not_provided' => "Enter a valid social security number or select 'I don't have an SSN'",
+  :'en.insured.must_submit_application' => "You must submit an application before taking this action",
+  :'en.insured.group_selection.no_application_submitted' => "No application submitted",
 }.freeze
