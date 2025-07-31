@@ -92,6 +92,7 @@ FactoryBot.define do
 
     trait :determined do
       current_state { :determined }
+      submitted_at { DateTime.now - 1.hour }
 
       after(:create) do |app|
         app.state_histories.create(

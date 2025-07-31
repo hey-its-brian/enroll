@@ -93,6 +93,28 @@ RSpec.describe Eligibilities::V3::StateMachine do
       it 'raises an error for invalid transitions' do
         expect { instance.reject }.to raise_error("Invalid transition from initial to rejected for action reject")
       end
+
+      context 'when transitioning from :initial to another state' do
+        let(:evidence_instances) do
+          [
+            Eligibilities::V3::Evidences::SocialSecurityNumberEvidence.new,
+            Eligibilities::V3::Evidences::CitizenshipEvidence.new,
+            Eligibilities::V3::Evidences::ImmigrationEvidence.new,
+            Eligibilities::V3::Evidences::AmericanIndianEvidence.new,
+            Eligibilities::V3::Evidences::AliveEvidence.new,
+            FinancialAssistance::Evidences::IncomeEvidence.new,
+            FinancialAssistance::Evidences::EsiMecEvidence.new,
+            FinancialAssistance::Evidences::NonEsiMecEvidence.new,
+            FinancialAssistance::Evidences::LocalMecEvidence.new
+          ]
+        end
+
+        it "will not raise an error if the :from state is 'initial' and the :to state is 'unverified'" do
+          evidence_instances.each do |evidence_instance|
+            expect { evidence_instance.move_to_unverified }.to_not raise_error
+          end
+        end
+      end
     end
   end
 end

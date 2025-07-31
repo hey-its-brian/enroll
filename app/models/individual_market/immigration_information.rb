@@ -22,7 +22,7 @@ module IndividualMarket
     field :citizenship_number, type: String
     field :card_number, type: String
     field :country_of_citizenship, type: String
-    field :expiration_date, type: Date
+    field :expiration_date, type: DateTime
     field :issuing_country, type: String
     field :description, type: String
     field :immigration_doc_statuses, type: Array

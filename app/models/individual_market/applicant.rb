@@ -227,6 +227,16 @@ module IndividualMarket
       visitor.visit(self)
     end
 
+    # Method to build Individual Market Eligibility and evidences for the applicant.
+    #   It creates Individual Market Eligibility if it does not exist.
+    #   It calls the method to build evidences for Individual Market Eligibility if they do not exist.
+    #
+    # @return [void]
+    def build_ivl_eligibility_with_evidences
+      build_individual_market_eligibility unless individual_market_eligibility
+      build_individual_market_evidences
+    end
+
     # Builds a new Individual Market Eligibility for this applicant
     #
     # @return [Eligibilities::V3::IndividualMarketEligibility] The new Individual Market Eligibility
@@ -302,8 +312,9 @@ module IndividualMarket
       # We do not have residency evidence verification for any client we are currently supporting from this codebase
       # build_residency_evidence
 
-      # We only verify alive evidence as part of the bulk verification process and not during every application
-      # build_alive_evidence
+      # Previously, the AliveStatus VerificationType was added on a person
+      # during a person.save event, we are creating it here as well to mimic that logic
+      build_alive_evidence
     end
 
     # Builds citizenship evidence if the applicant is applying for coverage, does not have citizenship evidence, and consumer is a US citizen or naturalized citizen.
@@ -394,6 +405,28 @@ module IndividualMarket
       evidence.move_to_pending(
         comment: 'application_determination',
         reason: 'Social Security Number evidence is required for QHP eligibility'
+      )
+      evidence
+    end
+
+    # Builds alive evidence if the applicant does not have it and has an encrypted SSN.
+    # It creates an alive evidence and moves it to pending state.
+    #
+    # @return [void]
+    def build_alive_evidence
+      return individual_market_eligibility.alive_evidence if individual_market_eligibility&.alive_evidence
+      return if demographics.encrypted_ssn.blank?
+      return unless is_applying_coverage
+
+      evidence = individual_market_eligibility.evidences.build(
+        _type: 'Eligibilities::V3::Evidences::AliveEvidence',
+        title: 'Alive Evidence',
+        key: :alive_evidence
+      )
+
+      evidence.move_to_unverified(
+        comment: 'application_determination',
+        reason: 'Alive evidence can only be moved to :outstanding or :attested by the DMF call'
       )
       evidence
     end

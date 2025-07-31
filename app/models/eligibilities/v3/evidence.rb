@@ -27,7 +27,7 @@ module Eligibilities
 
       embeds_many :exhibits, class_name: 'Eligibilities::V3::Exhibit', cascade_callbacks: true
 
-      # Acccepeted states
+      # Accepted states
       STATUSES = %i[initial verification_succeeded verification_failed].freeze
 
       # key stores information about which type of evidence it is.

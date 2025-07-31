@@ -37,11 +37,11 @@ module Eligibilities
         action :move_to_attested, from: [:initial, :negative_response_received, :outstanding, :pending, :rejected, :review, :unverified, :verified], to: :attested
         action :move_to_rejected, from: [:attested, :negative_response_received, :outstanding, :pending, :review, :unverified, :verified], to: :rejected
         action :move_to_negative_response_received, from: [:attested, :outstanding, :pending, :rejected, :review, :unverified, :verified], to: :negative_response_received
-        action :move_to_unverified, from: [:attested, :negative_response_received, :outstanding, :pending, :rejected, :review, :verified], to: :unverified
         action :move_to_outstanding, from: [:attested, :negative_response_received, :pending, :rejected, :review, :unverified, :verified], to: :outstanding
         action :move_to_verified, from: [:attested, :negative_response_received, :outstanding, :pending, :rejected, :review, :unverified], to: :verified
         action :move_to_review, from: [:attested, :negative_response_received, :outstanding, :pending, :rejected, :unverified, :verified], to: :review
         action :move_to_pending, from: [:attested, :initial, :negative_response_received, :outstanding, :rejected, :review, :unverified, :verified], to: :pending
+        action :move_to_unverified, from: [:initial, :attested, :negative_response_received, :outstanding, :pending, :rejected, :review, :verified], to: :unverified
       end
 
       included do
@@ -103,6 +103,17 @@ module Eligibilities
           @latest_verification_history = verification_histories.newest.first
         end
 
+        # Creates a verification history on the evidence
+        #
+        # @option params [String] :action The action performed on the evidence
+        # @option params [String] :update_reason The reason for the update
+        # @option params [String] :updated_by The user or system that performed the update
+        #
+        # @return [VerificationHistory] The verification history record created
+        def add_verification_history(action, update_reason, updated_by)
+          verification_histories.build(action: action, update_reason: update_reason, updated_by: updated_by)
+        end
+
         def schedule_verification_due_on
           verification_document_due = EnrollRegistry[:verification_document_due_in_days].item
           TimeKeeper.date_of_record + verification_document_due.days
@@ -128,6 +139,13 @@ module Eligibilities
 
           assign_attributes(verification_outstanding: false, is_satisfied: true, due_on: nil)
           self.move_to_verified
+        end
+
+        def mark_as_attested
+          return unless self.can_move_to_attested?
+
+          assign_attributes(verification_outstanding: false, is_satisfied: true, due_on: nil)
+          self.move_to_attested
         end
 
         def mark_as_rejected

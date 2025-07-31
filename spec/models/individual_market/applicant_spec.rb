@@ -412,6 +412,89 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
         end
       end
     end
+
+    describe '#build_alive_evidence' do
+      let(:alive_evidence) { FactoryBot.create(:alive_evidence, eligibility: individual_market_eligibility) }
+      let(:result) { applicant.send(:build_alive_evidence) }
+
+      context 'when:
+        - alive evidence is present
+        - consumer is applying for coverage
+        - ssn evidence is present
+        ' do
+
+        before { alive_evidence }
+
+        it 'returns the existing evidence' do
+          expect(result).to eq(alive_evidence)
+        end
+      end
+
+      context 'when:
+        - alive evidence is present
+        - consumer is applying for coverage
+        - encrypted_ssn is not present
+        ' do
+        before { alive_evidence }
+
+        it 'returns the existing evidence' do
+          applicant.demographics.update_attributes(no_ssn: '1', encrypted_ssn: nil)
+          expect(result).to eq(alive_evidence)
+        end
+      end
+
+      context 'when:
+        - alive evidence is present
+        - consumer is not applying for coverage
+        - encrypted_ssn is present
+        ' do
+        before { alive_evidence }
+
+        it 'returns the existing evidence' do
+          applicant.demographics.update_attributes(no_ssn: '1', encrypted_ssn: nil)
+          expect(result).to eq(alive_evidence)
+        end
+      end
+
+      context 'when:
+        - alive evidence is present
+        - consumer is not applying for coverage
+        - encrypted_ssn is present
+        ' do
+        before { alive_evidence }
+
+        it 'returns the existing evidence' do
+          applicant.update_attributes(is_applying_coverage: false)
+          expect(result).to eq(alive_evidence)
+        end
+      end
+
+      context 'when:
+        - alive evidence is not present
+        - consumer is applying for coverage
+        - consumer has an encrypted_ssn
+        ' do
+
+        it 'builds a new alive_evidence' do
+          applicant.demographics.update_attributes(no_ssn: '1', encrypted_ssn: SymmetricEncryption.encrypt('123456789'))
+          expect(result).to be_a(::Eligibilities::V3::Evidences::AliveEvidence)
+          expect(result.eligibility).to eq(individual_market_eligibility)
+          expect(result.eligibility.eligible).to eq(applicant)
+        end
+      end
+
+      context 'when:
+        - alive evidence is not present
+        - consumer is applying for coverage
+        - encrypted_ssn is not present
+        ' do
+
+        it 'returns nil' do
+          applicant.demographics.update_attributes(encrypted_ssn: nil, no_ssn: '1')
+          expect(result).to be_nil
+        end
+      end
+    end
   end
 
   describe 'validations' do

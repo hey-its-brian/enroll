@@ -20,8 +20,21 @@ module Subscribers
           handle_failure_response(job_id, payload[:correlation_id])
           warn "family_hbx_id: #{payload[:correlation_id]} processed failure from fdsh_gateway"
         else
+          params = {
+            encrypted_family_payload: payload[:encrypted_payload],
+            job_id: job_id,
+            family_hbx_id: family_hbx_id
+          }
+
+          if EnrollRegistry.feature_enabled?(:qhp_application)
+            application_hbx_id = metadata[:headers]["application_hbx_id"]
+            application_type = metadata[:headers]["application_type"]
+
+            params.merge!(application_hbx_id: application_hbx_id, application_type: application_type)
+          end
+
           info "parsed_response: #{payload.inspect}"
-          result = Operations::Fdsh::Dmf::Pvc::AddFamilyDetermination.new.call({encrypted_family_payload: payload[:encrypted_payload], job_id: job_id, family_hbx_id: family_hbx_id})
+          result = Operations::Fdsh::Dmf::Pvc::AddFamilyDetermination.new.call(params)
 
           if result.success?
             info "success: #{result.success}"

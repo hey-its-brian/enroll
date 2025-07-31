@@ -229,6 +229,13 @@ module IndividualMarket
       save
     end
 
+    # Builds IVL eligibility with evidences for each applicant.
+    #
+    # @return [void]
+    def build_ivl_eligibility_with_evidences
+      applicants.each(&:build_ivl_eligibility_with_evidences)
+    end
+
     # Validates the person name of the primary applicant
     #
     # @param given_name [String] The given name of the person

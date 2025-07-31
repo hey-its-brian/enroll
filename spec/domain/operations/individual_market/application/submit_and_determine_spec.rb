@@ -74,7 +74,8 @@ RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, db
       end
 
       it 'has generated evidences for each applicant' do
-        expect(primary_applicant.individual_market_eligibility.evidences.count).to eq(3)
+        # AmericanIndianEvidence, SocialSecurityNumberEvidence, AliveEvidence, CitizenshipEvidence
+        expect(primary_applicant.individual_market_eligibility.evidences.count).to eq(4)
       end
     end
   end

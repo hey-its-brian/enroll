@@ -1777,6 +1777,28 @@ module FinancialAssistance
       ethnicity.select { |eth| ethnicity_values.include?(eth) }.uniq
     end
 
+    # Builds alive evidence if the applicant does not have it and has an encrypted SSN.
+    # It creates an alive evidence and moves it to pending state.
+    #
+    # @return [void]
+    def build_alive_evidence
+      return individual_market_eligibility.alive_evidence if individual_market_eligibility&.alive_evidence
+      return if encrypted_ssn.blank?
+      return unless is_applying_coverage
+
+      evidence = individual_market_eligibility.evidences.build(
+        _type: 'Eligibilities::V3::Evidences::AliveEvidence',
+        title: 'Alive Evidence',
+        key: :alive_evidence
+      )
+
+      evidence.move_to_unverified(
+        comment: 'application_determination',
+        reason: 'Alive evidence can only be moved to :outstanding or :attested by the DMF call'
+      )
+      evidence
+    end
+
     # Extends the due dates for income evidence based on the action and extend_by parameters.
     #
     # @return [void]
@@ -1814,8 +1836,9 @@ module FinancialAssistance
       # We do not have residency evidence verification for any client we are currently supporting from this codebase
       # build_residency_evidence
 
-      # We only verify alive evidence as part of the bulk verification process and not during every application
-      # build_alive_evidence
+      # Previously, the AliveStatus VerificationType was added on a person
+      # during a person.save event, we are creating it here as well to mimic that logic
+      build_alive_evidence
     end
 
     # Builds citizenship evidence if the applicant is applying for coverage, does not have citizenship evidence, and consumer is a US citizen or naturalized citizen.

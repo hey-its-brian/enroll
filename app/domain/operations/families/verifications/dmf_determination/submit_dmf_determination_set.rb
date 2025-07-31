@@ -36,7 +36,7 @@ module Operations
             {
               key: :dmf_determination,
               title: 'DMF Determination',
-              description: 'Bulk Call to determine dmf for eligibile families',
+              description: 'Bulk Call to determine dmf for eligible families',
               started_at: DateTime.now,
               publish_on: DateTime.now
             }

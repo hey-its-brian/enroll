@@ -9,20 +9,24 @@ RSpec.configure do |config|
   config.include RSpec::Benchmark::Matchers
 end
 
-
 RSpec.describe ::Operations::Transformers::FamilyTo::Cv3Family, dbclean: :around_each do
   let(:primary_applicant) { FactoryBot.create(:person, :with_consumer_role, hbx_id: "732020") }
-  let(:dependent1) { FactoryBot.create(:person, hbx_id: "732021") }
-  let(:dependent2) { FactoryBot.create(:person, hbx_id: "732022") }
+  let(:dependent1) { FactoryBot.create(:person, :with_consumer_role, hbx_id: "732021") }
+  let(:dependent2) { FactoryBot.create(:person, :with_consumer_role, hbx_id: "732022") }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: primary_applicant) }
-  let(:family_member2) { FactoryBot.create(:family_member, family: family, person: dependent1) }
-  let(:family_member3) { FactoryBot.create(:family_member, family: family, person: dependent2) }
+  let!(:family_member2) { FactoryBot.create(:family_member, family: family, person: dependent1) }
+  let!(:family_member3) { FactoryBot.create(:family_member, family: family, person: dependent2) }
   let!(:application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: 'determined', hbx_id: "830293", effective_date: TimeKeeper.date_of_record.beginning_of_year) }
   let!(:applicant1) do
-    FactoryBot.create(:financial_assistance_applicant, :male, dob: TimeKeeper.date_of_record - 30.years, application: application, family_member_id: primary_applicant.id, is_primary_applicant: true, person_hbx_id: primary_applicant.hbx_id)
+    FactoryBot.create(:financial_assistance_applicant, :male, dob: TimeKeeper.date_of_record - 30.years, application: application, family_member_id: family.primary_family_member.id, is_primary_applicant: true,
+                                                              person_hbx_id: primary_applicant.hbx_id, citizen_status: 'us_citizen')
   end
-  let!(:applicant2) { FactoryBot.create(:financial_assistance_applicant, :male, dob: TimeKeeper.date_of_record - 30.years, application: application, family_member_id: family_member2.id, person_hbx_id: dependent1.hbx_id) }
-  let!(:applicant3) { FactoryBot.create(:financial_assistance_applicant, :female, dob: TimeKeeper.date_of_record - 30.years, application: application, family_member_id: family_member3.id, person_hbx_id: dependent2.hbx_id) }
+  let!(:applicant2) do
+    FactoryBot.create(:financial_assistance_applicant, :male, dob: TimeKeeper.date_of_record - 30.years, application: application, family_member_id: family_member2.id, person_hbx_id: dependent1.hbx_id, citizen_status: 'us_citizen')
+  end
+  let!(:applicant3) do
+    FactoryBot.create(:financial_assistance_applicant, :female, dob: TimeKeeper.date_of_record - 30.years, application: application, family_member_id: family_member3.id, person_hbx_id: dependent2.hbx_id, citizen_status: 'us_citizen')
+  end
   let(:create_instate_addresses) do
     application.applicants.each do |appl|
       appl.addresses = [FactoryBot.build(:financial_assistance_address,
@@ -146,6 +150,9 @@ RSpec.describe ::Operations::Transformers::FamilyTo::Cv3Family, dbclean: :around
           from_state: 'submitted',
           to_state: 'determined'
         )
+
+        application.build_ivl_eligibility_with_evidences
+        application.save!
       end
     end
 
@@ -238,9 +245,9 @@ RSpec.describe ::Operations::Transformers::FamilyTo::Cv3Family, dbclean: :around
     end
   end
 
-  describe '#transform_applications' do
+  describe '#transform_faa_applications' do
 
-    subject { Operations::Transformers::FamilyTo::Cv3Family.new.transform_applications(family, false) }
+    subject { Operations::Transformers::FamilyTo::Cv3Family.new.transform_faa_applications(family, false) }
 
     context "when application is invalid" do
       before do
@@ -264,7 +271,7 @@ RSpec.describe ::Operations::Transformers::FamilyTo::Cv3Family, dbclean: :around
       end
 
       it "should return an empty array wrapped in Success when exclue applications true" do
-        result = Operations::Transformers::FamilyTo::Cv3Family.new.transform_applications(family, true)
+        result = Operations::Transformers::FamilyTo::Cv3Family.new.transform_faa_applications(family, true)
         expect(result).to be_a(Dry::Monads::Result::Success)
         expect(result.value!).to be_empty
       end
@@ -520,7 +527,17 @@ RSpec.describe ::Operations::Transformers::FamilyTo::Cv3Family, dbclean: :around
   context 'include family eligibility determination' do
     before do
       allow(family).to receive(:all_family_member_relations_defined).and_return(true)
+
+      if EnrollRegistry.feature_enabled?(:qhp_application)
+        application.build_aptc_eligibilities_evidences
+        application.build_ivl_eligibility_with_evidences
+        application.save!
+
+        family.assign_latest_application_gid
+      end
+
       Operations::Eligibilities::BuildFamilyDetermination.new.call({effective_date: Date.today, family: family})
+
       result = subject.call(family, true).value!
       @eligibility_determination = result[:eligibility_determination]
     end
@@ -542,6 +559,86 @@ RSpec.describe ::Operations::Transformers::FamilyTo::Cv3Family, dbclean: :around
       ivl_evidence_state = @eligibility_determination[:subjects].first.last[:eligibility_states][:aca_individual_market_eligibility][:evidence_states]
       expect(ivl_evidence_state).to be_present
       expect(ivl_evidence_state[:citizenship][:evidence_item_key]).to eq :citizenship
+    end
+  end
+
+  context 'family has an active individual market application' do
+    let(:individual_market_application) do
+      app = FactoryBot.create(:individual_market_application,
+                              :determined,
+                              family: family,
+                              applicants: [
+                                FactoryBot.build(:individual_market_applicant,
+                                                 :with_demographics,
+                                                 :with_eligibilities,
+                                                 :with_phone_number,
+                                                 :with_email,
+                                                 family_member_id: family.primary_family_member.id,
+                                                 is_primary_applicant: true,
+                                                 person_name: {
+                                                   given_name: primary_applicant.first_name,
+                                                   family_name: primary_applicant.last_name
+                                                 }),
+                                FactoryBot.build(:individual_market_applicant,
+                                                 :with_demographics,
+                                                 :with_eligibilities,
+                                                 :with_phone_number,
+                                                 :with_email,
+                                                 family_member_id: family_member2.id,
+                                                 is_primary_applicant: false,
+                                                 person_name: {
+                                                   given_name: dependent1.first_name,
+                                                   family_name: dependent1.last_name
+                                                 }),
+                                FactoryBot.build(:individual_market_applicant,
+                                                 :with_demographics,
+                                                 :with_eligibilities,
+                                                 :with_phone_number,
+                                                 :with_email,
+                                                 family_member_id: family_member2.id,
+                                                 is_primary_applicant: false,
+                                                 person_name: {
+                                                   given_name: dependent1.first_name,
+                                                   family_name: dependent1.last_name
+                                                 })
+                              ])
+      app.save!
+      app
+    end
+
+    before do
+      allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(true)
+
+      application.build_aptc_eligibilities_evidences
+      application.build_ivl_eligibility_with_evidences
+      application.save!
+
+      individual_market_application.build_ivl_eligibility_with_evidences
+      individual_market_application.save!
+      family.assign_latest_application_gid
+
+      Operations::Eligibilities::BuildFamilyDetermination.new.call({effective_date: Date.today, family: family})
+      @result = subject.call(family).value!
+    end
+
+    it 'should have individual market application field in the cv3 family' do
+      expect(@result).to have_key(:individual_market_applications)
+    end
+
+    it 'should contain both financial assistance and individual market applications' do
+      expect(@result[:magi_medicaid_applications]).to be_present
+      expect(@result[:magi_medicaid_applications].count).to eq 1
+
+      expect(@result[:individual_market_applications]).to be_present
+      expect(@result[:individual_market_applications].count).to eq 1
+    end
+
+    it 'should contain only determined individual market applications from the family' do
+      applications = @result[:individual_market_applications]
+      applications.each { |app| expect(app[:current_state]).to eq :determined }
+
+      expect(applications.first[:hbx_id]).to eq individual_market_application.hbx_id
+      expect(applications.first[:applicants].size).to eq individual_market_application.applicants.size
     end
   end
 end

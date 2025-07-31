@@ -23,7 +23,11 @@ module Operations
         def call(family, exclude_applications = false, *args)
           options = args.first || {}
           @transformed_family_members = yield transform_family_members(family.family_members)
-          @transformed_applications = yield transform_applications(family, exclude_applications)
+
+          @transformed_faa_applications = yield transform_faa_applications(family, exclude_applications)
+          # NOTE: transformed_im_apps = transformed individual_market (im) applications
+          @transformed_qhp_applications = yield transform_qhp_applications(family)
+
           @transformed_households = yield transform_households(family.households, options)
           request_payload = yield construct_payload(family, exclude_applications, args)
 
@@ -41,7 +45,8 @@ module Operations
             renewal_consent_through_year: family.renewal_consent_through_year,
             special_enrollment_periods: transform_special_enrollment_periods(family.special_enrollment_periods),
             payment_transactions: transform_payment_transactions(family.payment_transactions),
-            magi_medicaid_applications: @transformed_applications,
+            magi_medicaid_applications: @transformed_faa_applications,
+            individual_market_applications: @transformed_qhp_applications,
             documents: transform_documents(family.documents),
             timestamp: {created_at: family.created_at.to_datetime, modified_at: family.updated_at.to_datetime}
             # foreign_keys TO DO ??
@@ -67,7 +72,7 @@ module Operations
           eligibility_determination.serializable_cv_hash
         end
 
-        def transform_applications(family, exclude_applications)
+        def transform_faa_applications(family, exclude_applications)
           return Success(nil) unless EnrollRegistry.feature_enabled?(:financial_assistance)
           return Success([]) if exclude_applications
 
@@ -77,6 +82,20 @@ module Operations
             ::FinancialAssistance::Operations::Applications::Transformers::ApplicationTo::Cv3Application.new.call(application)
           end.compact
           return Failure("Could not transform applications for family with hbx_id #{family.hbx_assigned_id}: #{transformed_applications.select(&:failure?).map(&:failure)}") unless transformed_applications.all?(&:success?)
+
+          Success(transformed_applications.map(&:value!))
+        end
+
+        def transform_qhp_applications(family)
+          return Success([]) unless EnrollRegistry.feature_enabled?(:qhp_application)
+
+          applications = ::IndividualMarket::Application.for_determined_family(family.id)
+
+          transformed_applications = applications.collect do |application|
+            ::Operations::IndividualMarket::Transformers::ApplicationTo::Cv3Application.new.call(application)
+          end.compact
+          return Failure("Could not transform applications for family with hbx_id #{family.hbx_assigned_id}: #{transformed_applications.select(&:failure?).map(&:failure)}") unless transformed_applications.all?(&:success?)
+
           Success(transformed_applications.map(&:value!))
         end
 

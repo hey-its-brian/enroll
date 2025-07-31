@@ -20,7 +20,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
     )
   end
   let(:indian_tribe_member) { true }
-  let(:encrypted_ssn) { SymmetricEncryption.encrypt('999999999') }
+  let(:encrypted_ssn) { SymmetricEncryption.encrypt('413496479') }
   let(:no_ssn) { '0' }
   let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
   let(:individual_market_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
@@ -323,6 +323,74 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
 
       context 'when:
         - ssn evidence is not present
+        - encrypted_ssn is not present
+        ' do
+        let(:encrypted_ssn) { nil }
+        let(:no_ssn) { '1' }
+
+        it 'returns nil' do
+          expect(result).to be_nil
+        end
+      end
+    end
+
+    describe '#build_alive_evidence' do
+      let(:alive_evidence) { FactoryBot.create(:alive_evidence, eligibility: individual_market_eligibility) }
+      let(:result) { applicant.send(:build_alive_evidence) }
+
+      context 'when:
+        - alive evidence is present
+        - is applying_coverage
+        - encrypted_ssn is present
+        ' do
+        before { alive_evidence }
+
+        it 'returns the existing alive_evidence' do
+          expect(result).to eq(alive_evidence)
+        end
+      end
+
+      context 'when:
+        - alive evidence is present
+        - is applying_coverage
+        - encrypted_ssn is not present
+        ' do
+        let(:encrypted_ssn) { nil }
+        let(:no_ssn) { '1' }
+        before { alive_evidence }
+
+        it 'returns the existing alive_evidence' do
+          expect(result).to eq(alive_evidence)
+        end
+      end
+
+      context 'when:
+        - alive evidence is not present
+        - is applying_coverage
+        - encrypted_ssn is present
+        ' do
+
+        it 'builds a new alive_evidence' do
+          expect(result).to be_a(::Eligibilities::V3::Evidences::AliveEvidence)
+          expect(result.eligibility).to eq(individual_market_eligibility)
+          expect(result.eligibility.eligible).to eq(applicant)
+        end
+      end
+
+      context 'when:
+        - alive evidence is not present
+        - is not applying_coverage
+        - encrypted_ssn is present
+        ' do
+
+        it 'returns nil' do
+          applicant.update_attributes(is_applying_coverage: false)
+          expect(result).to be_nil
+        end
+      end
+
+      context 'when:
+        - alive evidence is not present
         - encrypted_ssn is not present
         ' do
         let(:encrypted_ssn) { nil }

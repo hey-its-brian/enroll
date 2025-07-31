@@ -42,6 +42,10 @@ module Sbm
     # @return [Mongoid::Criteria] The most recent Sbm::Application based on creation timestamp
     scope :newest, -> { order_by(created_at: :desc).limit(1) }
 
+    # @!scope class
+    # @return [Mongoid::Criteria] The most recent Sbm::Application based on hbx_id
+    scope :by_hbx_id, ->(hbx_id) { where(hbx_id: hbx_id) }
+
     # @!attribute current_state
     # @return [Symbol] The current state of the application. This is a replacement for aasm_state
     field :current_state, type: Symbol, default: :initial

@@ -24,7 +24,12 @@ module Operations
 
             @transmission = yield build_and_create_request_transmission(values)
             @transaction = yield build_and_create_request_transaction(values)
-            yield record_verification_history
+
+            # only record verification history if qhp_application is disabled
+            # verification histories for V3::Evidence should not be recorded unless an error occurs
+            yield record_verification_history unless EnrollRegistry.feature_enabled?(:qhp_application)
+            yield build_applicants_alive_evidences if EnrollRegistry.feature_enabled?(:qhp_application)
+
             payload = yield build_cv3_family_payload
             event = yield build_event(payload)
             result = yield publish(event)
@@ -89,20 +94,12 @@ module Operations
             create_request_transaction(values, @job)
           end
 
-          def build_cv3_family_payload
-            transmission_params = { job: @job, transmission: @transmission, transaction: @transaction }
-            BuildCv3FamilyPayloadForDmf.new.call(@family, transmission_params)
-          end
-
-          def build_event(payload)
-            event('events.families.verifications.dmf_determination.requested', attributes: payload)
-          end
-
           def record_verification_history
             active_family_members = @family.family_members.active
             active_family_members.each do |member|
               message = "DMF Determination submitted"
               person = member.person
+
               alive_status_type = person.verification_types.alive_status_type.first
               next unless alive_status_type
 
@@ -110,6 +107,34 @@ module Operations
             end
 
             Success(true)
+          end
+
+          def build_applicants_alive_evidences
+            return Failure("No latest application found for family") unless latest_application&.present?
+            latest_application.applicants.each(&:build_alive_evidence)
+
+            Success(true)
+          end
+
+          def latest_application
+            @family.latest_application
+          end
+
+          def build_cv3_family_payload
+            transmission_params = { job: @job, transmission: @transmission, transaction: @transaction }
+            application = EnrollRegistry.feature_enabled?(:qhp_application) ? latest_application : nil
+
+            BuildCv3FamilyPayloadForDmf.new.call(@family, transmission_params, application: application)
+          end
+
+          def build_event(payload)
+            headers = EnrollRegistry.feature_enabled?(:qhp_application) ? build_dmf_headers : {}
+
+            event('events.families.verifications.dmf_determination.requested', attributes: payload, headers: headers)
+          end
+
+          def build_dmf_headers
+            { application_hbx_id: latest_application&.hbx_id, application_type: @family.latest_application_type }
           end
 
           def publish(event)
