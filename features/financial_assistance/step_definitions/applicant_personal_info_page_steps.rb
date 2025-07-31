@@ -46,20 +46,38 @@ And(/the user enters applicant information with us citizen false$/) do
   end
 end
 
-And(/a consumer with immigration status exists$/) do
-  application = FinancialAssistance::Application.first
-  if application.present?
-    applicant = application.primary_applicant
-    applicant.update_attributes!(citizen_status: 'alien_lawfully_present', vlp_subject: 'Naturalization Certificate')
-  else
-    person = Person.all.first
-    person.consumer_role.lawful_presence_determination.update_attributes!(
-      vlp_document_type: 'Naturalization Certificate',
-      vlp_document_number: '123456789',
-      vlp_document_issue_date: Date.new(2010, 1, 1),
-      vlp_document_expiration_date: Date.new(2025, 1, 1),
-      citizen_status: 'alien_lawfully_present'
-    )
+And(/a consumer with (.*) status exists$/) do |status|
+  case status
+  when 'immigration'
+    application = FinancialAssistance::Application.first
+    if application.present?
+      applicant = application.primary_applicant
+      applicant.update_attributes!(citizen_status: 'alien_lawfully_present', vlp_subject: 'Naturalization Certificate')
+    else
+      person = Person.all.first
+      person.consumer_role.lawful_presence_determination.update_attributes!(
+        vlp_document_type: 'Naturalization Certificate',
+        vlp_document_number: '123456789',
+        vlp_document_issue_date: Date.new(2010, 1, 1),
+        vlp_document_expiration_date: Date.new(2025, 1, 1),
+        citizen_status: 'alien_lawfully_present'
+      )
+    end
+  when 'tribe'
+    application = FinancialAssistance::Application.first
+    if application.present?
+      applicant = application.primary_applicant
+      applicant.update_attributes!(citizen_status: 'us_citizen', indian_tribe_member: true, tribal_state: 'ME', tribe_codes: ['HM'])
+    else
+      person = Person.all.first
+      person.update_attributes!(
+        indian_tribe_member: true,
+        tribal_name: 'Test Tribe',
+        tribal_state: 'ME',
+        tribe_codes: ["HM"],
+        tribal_id: '123456789'
+      )
+    end
   end
 end
 
@@ -74,6 +92,10 @@ Then(/fields related to the (.*) vlp document should display$/) do |type|
   when 'applicant'
     expect(page).to have_selector("#immigration_naturalization_cert_container")
   end
+end
+
+Then(/fields related to the consumer tribal status should display$/) do
+  expect(page).to have_selector(".tribal-container")
 end
 
 And(/user selects no for applicant's coverage requirement$/) do

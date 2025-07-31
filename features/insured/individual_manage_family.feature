@@ -39,3 +39,11 @@ Feature: Individual ability to update family information
     When individual clicks on the Manage Family button
     And the individual edits the dependent
     Then fields related to the consumer vlp document should display
+  
+  Scenario: User wtih tribe status edits their information
+    Given bs4_consumer_flow feature is enabled
+    And EnrollRegistry people_tab feature is enabled
+    Given a consumer with tribe status exists
+    When individual clicks on the Manage Family button
+    And the individual edits the dependent
+    Then fields related to the consumer tribal status should display

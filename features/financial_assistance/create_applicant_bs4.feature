@@ -22,3 +22,8 @@ Scenario: User edits an existing applicant with Immigration status
   Given a consumer with immigration status exists
   And the user edits the primary applicant
   Then fields related to the applicant vlp document should display
+
+Scenario: User edits an existing applicant with tribal status
+  Given a consumer with tribe status exists
+  And the user edits the primary applicant
+  Then fields related to the consumer tribal status should display
