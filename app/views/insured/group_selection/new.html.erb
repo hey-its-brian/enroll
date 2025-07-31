@@ -5,7 +5,7 @@
   <%# Main Content (right) %>
   <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
 
-  <% if qhp_application_feature_enabled? && @eligibility_determination.blank? %>
+  <% if qhp_application_feature_enabled? && @family.eligibility_determination.blank? %>
     <div class="container p-0">
       <div class="alert alert-error d-flex align-items-start">
         <div class="d-flex pl-1">

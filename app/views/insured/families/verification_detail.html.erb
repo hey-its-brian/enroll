@@ -31,13 +31,13 @@
 
   <section class="mb-4">
     <h2><%= l10n('insured.families.verifications.detail.document_upload') %></h2>
-    <% query = verification_upload_query %>
+    <% query = verification_upload_query(@evidence, @family) %>
     <% attachable = false %>
     <%= form_tag query[:url], multipart: true, method: :post, :'data-controller' => ("file-manager" if attachable), :'data-action' => 'file-manager#submitForm' do %>
       <% query[:params].each do |name, value| %>
         <%= hidden_field_tag name, value %>
       <% end %>
-      
+
       <% accepted_file_types = ::FileUploadValidator::VERIFICATION_DOC_TYPES %>
       <% human_readable_file_types = ::FileUploadValidator.human_readable_file_types(content_types: accepted_file_types, formatter: :to_sentence, pluralize: true) %>
       <p><%= l10n("insured.families.verifications.detail.document_upload.disclaimer", file_types: human_readable_file_types, max_size: ::FileUploadValidator::MAX_FILE_SIZE_MB) %></p>
@@ -105,11 +105,11 @@
     <h2 class="admin-designation"><%= l10n('insured.families.verifications.detail.admin_tools') %></h2>
     <% if options.present? %>
       <section class="mb-3">
-        <% actions_hash = verification_admin_actions %>
+        <% actions_hash = verification_admin_actions(@evidence, @family) %>
         <label class="v-type-actions">
           <%= l10n('action') %>
           <div><%= select_tag :verification_actions, options_for_select(options), {id: "v-action-#{actions_hash[:id]}", class: 'col-4', prompt: l10n("insured.consumer_roles.upload_ridp_documents.select_action")} %></div>
-        </label>            
+        </label>
         <%= render actions_hash[:partial] %>
       </section>
     <% end %>

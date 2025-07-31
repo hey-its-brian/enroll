@@ -4,6 +4,7 @@ module VerificationHelper
   include DocumentsVerificationStatus
   include HtmlScrubberUtil
   include L10nHelper
+  include ResourceRegistryHelper
 
   def doc_status_label(doc)
     case doc.status
@@ -575,12 +576,12 @@ module VerificationHelper
     is_strong ? content_tag(:strong, &block) : yield
   end
 
-  def verification_upload_query
-    group = @evidence.evidence_group
+  def verification_upload_query(evidence, family)
+    group = evidence.evidence_group
     return if group == 'ridp'
 
-    person = @evidence.person
-    gid = GlobalID.parse(@evidence.evidence_gid).model_id
+    person = evidence.person
+    gid = GlobalID.parse(evidence.evidence_gid).model_id
     case group
     when 'aca_individual_market_eligibility'
       query = {
@@ -591,7 +592,8 @@ module VerificationHelper
         }
       }
     when 'aptc_csr_credit'
-      applicant = @evidence.locate_evidence&.evidenceable
+      located_evidence = evidence.locate_evidence
+      applicant = qhp_application_feature_enabled? ? located_evidence&.eligibility&.eligible : located_evidence&.evidenceable
       return nil unless applicant.present?
 
       query = {
@@ -599,25 +601,25 @@ module VerificationHelper
         params: {
           applicant_id: applicant.id,
           evidence: gid,
-          evidence_kind: @evidence.evidence_item_key
+          evidence_kind: evidence.evidence_item_key
         }
       }
     end
     query[:params][:person_id] = person.id
-    query[:params][:eligibility_kind] = @evidence.evidence_group
-    query[:params][:evidence_key] = @evidence.evidence_item_key
-    query[:params][:family] = @family.id
+    query[:params][:eligibility_kind] = evidence.evidence_group
+    query[:params][:evidence_key] = evidence.evidence_item_key
+    query[:params][:family] = family.id
     query
   end
 
-  def verification_admin_actions
-    return nil if @evidence.evidence_group == 'ridp'
+  def verification_admin_actions(evidence, family)
+    return nil if evidence.evidence_group == 'ridp'
 
-    person = @evidence.person
-    case @evidence.evidence_group
+    person = evidence.person
+    case evidence.evidence_group
     when 'aca_individual_market_eligibility'
-      type = @evidence.evidence_item_key.to_s
-      gid = GlobalID.parse(@evidence.evidence_gid).model_id
+      type = evidence.evidence_item_key.to_s
+      gid = GlobalID.parse(evidence.evidence_gid).model_id
       {
         id: "#{person.id}-#{type.split.join('-')}",
         partial: {
@@ -626,14 +628,15 @@ module VerificationHelper
             person: person,
             type_id: gid,
             v_type: type,
-            f_member: @family.find_family_member_by_person(person)
+            f_member: family.find_family_member_by_person(person)
           }
         }
       }
     when 'aptc_csr_credit'
-      applicant = @evidence.locate_evidence&.evidenceable
+      located_evidence = evidence.locate_evidence
+      applicant = qhp_application_feature_enabled? ? located_evidence&.eligibility&.eligible : located_evidence&.evidenceable
       application = applicant&.application
-      evidence_kind = @evidence.evidence_item_key.to_s.downcase
+      evidence_kind = evidence.evidence_item_key.to_s.downcase
       {
         id: "#{applicant.id}-#{evidence_kind.split.join('-')}",
         partial: {

@@ -973,3 +973,68 @@ describe '#display_upload_for_verification?' do
     end
   end
 end
+
+describe 'verification actions' do
+  let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+  let(:primary_applicant) { family.primary_applicant }
+
+  let(:aptc_csr_eligibility)  { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
+  let(:income_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories,  :verified, eligibility: aptc_csr_eligibility) }
+  let(:determination) { ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family) }
+  let(:ssn_evidence) { FactoryBot.create(:social_security_number_evidence, :with_verification_histories, :outstanding, eligibility: ivl_eligibility) }
+  let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+
+  let(:faa_application) do
+    FactoryBot.create(
+      :financial_assistance_application,
+      family_id: family.id,
+      aasm_state: 'determined',
+      submitted_at: Time.now,
+      assistance_year: TimeKeeper.date_of_record.year
+    )
+  end
+
+  let(:applicant) do
+    FactoryBot.create(
+      :financial_assistance_applicant,
+      family_member_id: primary_applicant.id,
+      person_hbx_id: person.hbx_id,
+      application: faa_application
+    )
+  end
+
+  before :each do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+    income_evidence
+    ssn_evidence
+    family.assign_latest_application_gid
+    family.save!
+  end
+
+  context '#verification_upload_query' do
+    it 'returns verification upload query for the person' do
+      subject = determination.success.subjects.first
+      evidence_adapter = subject.eligibility_states.by_type_uploadable.flat_map do |state|
+        state.evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
+      end.first
+      result = helper.send(:verification_upload_query, evidence_adapter, family)
+
+      expect(result[:params][:applicant_id]).to eq(applicant.id)
+      expect(result[:params][:eligibility_kind]).to eq("aptc_csr_credit")
+    end
+  end
+
+  context 'verification_admin_actions' do
+    it 'returns verification_admin_actions' do
+      subject = determination.success.subjects.first
+      evidence_adapter = subject.eligibility_states.by_type_uploadable.flat_map do |state|
+        state.evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
+      end.first
+      result = helper.send(:verification_admin_actions, evidence_adapter, family)
+
+      expect(result[:partial][:locals][:applicant].id).to eq(applicant.id)
+      expect(result[:partial][:locals][:evidence_kind]).to eq("income_evidence")
+    end
+  end
+end

@@ -2,6 +2,7 @@
 
 # Helper for constructing dropdown options for use in the `datatables/shared/_dropdown` partial
 module DropdownHelper
+  include ResourceRegistryHelper
   # The dropdown options for financial assistance applications.
   # This method is used to generate the dropdown options for the financial assistance applications index.
   #
@@ -158,7 +159,8 @@ module DropdownHelper
       return [] unless family_member.present?
 
       evidence_id = GlobalID.parse(verification.evidence_gid).model_id
-      applicant = verification.locate_evidence&.evidenceable
+      located_evidence = verification.locate_evidence
+      applicant = qhp_application_feature_enabled? ? located_evidence&.eligibility&.eligible : located_evidence&.evidenceable
       application = applicant.application
       return [] unless applicant.present?
 
