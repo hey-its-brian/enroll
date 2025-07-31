@@ -29,7 +29,8 @@
       <div class="d-flex align-items-center mt-1 justify-content-end">
         <a href="#" class="btn outline mr-2" data-dismiss="modal"><%= l10n('cancel') %></a>
         <%= link_to l10n('faa.remove_financial_assistance_application'),
-                    main_app.help_paying_coverage_response_insured_consumer_role_index_path(is_applying_for_assistance: false),
+                    main_app.help_paying_coverage_response_insured_consumer_role_index_path(is_applying_for_assistance: false,
+                                                                                            assistance_year: @application.assistance_year),
                     class: "btn btn-error mr-2",
                     data: { action: "remove-application-modal#redirectAndClose", turbolinks: false }
         %>

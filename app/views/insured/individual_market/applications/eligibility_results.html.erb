@@ -77,8 +77,10 @@
   <!-- TODO: Add link to view my applications when new page is built -->
   <%= h(link_to l10n("qhp_application.results.view_my_applications"), current_applications_insured_sbm_applications_path, class: "button secondary outline mr-2") %>
   <% if @in_application_flow %>
-    <% options = {shop_for_plan: 'shop_for_plan', person_id: @person.id} %>
-    <%= h(link_to l10n("qhp_application.results.continue_to_shop"), new_insured_group_selection_path(options), class: "button") %>
+    <% group_selection_url = new_insured_group_selection_path(person_id: @person.id, consumer_role_id: @person.consumer_role.id) %>
+    <% find_sep_url = find_sep_insured_families_path(consumer_role_id: @person.consumer_role.id) %>
+    <% next_url = @person.consumer_role.present? && is_under_open_enrollment? ? group_selection_url : find_sep_url %>
+    <%= h(link_to l10n("qhp_application.results.continue_to_shop"), next_url, class: "button") %>
   <% else %>
     <%= link_to l10n("qhp_application.results.return_to_account"), family_account_path, class: "button" %>
   <% end %>
