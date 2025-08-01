@@ -46,6 +46,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
   let(:benefit_coverage_period) { hbx_profile.benefit_sponsorship.benefit_coverage_periods.first }
 
   before do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
     allow(operation_instance.class).to receive(:new).and_return(operation_instance)
     allow(event.success).to receive(:publish).and_return(true)
     application.applicants.each do |appl|
@@ -234,6 +235,8 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
             is_renewal_authorized: true
           }
         )
+        family.latest_application_gid = application.to_global_id.uri.to_s
+        family.save!
         result = subject.call({ family_id: application.family_id, renewal_year: application.assistance_year.next })
         @renewal_draft_app = result.success
       end

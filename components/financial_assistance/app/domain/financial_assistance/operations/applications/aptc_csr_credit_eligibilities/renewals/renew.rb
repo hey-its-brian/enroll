@@ -25,9 +25,10 @@ module FinancialAssistance
             # @return [Dry::Monads::Result]
             def call(params)
               validated_params       = yield validate(params)
-              latest_application     = yield find_latest_application(validated_params)
+              family                 = yield find_family(validated_params[:family_id])
+              _eligible              = yield check_assistance_renewal_eligibility(family)
+              latest_application     = yield find_latest_application(family, validated_params)
               renewal_draft_app      = yield renew_application(latest_application, validated_params)
-              # result                 = yield generate_renewed_event(renewal_draft_app, validated_params[:renewal_year])
 
               Success(renewal_draft_app)
             end
@@ -42,12 +43,64 @@ module FinancialAssistance
               Success(params)
             end
 
-            def find_latest_application(validated_params)
-              applications_by_family = ::FinancialAssistance::Application.where(family_id: validated_params[:family_id])
+            # Method to find a family by its ID
+            #
+            # @param family_id [BSON::ObjectId] The ID of the family to find
+            #
+            # @return [Dry::Monads::Result] Success with family object or Failure with error message
+            def find_family(family_id)
+              family = ::Family.only(:_id, :latest_application_gid).where(id: family_id).first
+              if family
+                Success(family)
+              else
+                Failure("Could not find family with id: #{family_id}")
+              end
+            end
 
+            # Checks if the family is eligible for FAA renewal based on the latest application type OR qhp application feature flag
+            #
+            # @param family [Family] The family object to check
+            #
+            # @return [Dry::Monads::Result] Success if eligible, Failure with error message if not
+            def check_assistance_renewal_eligibility(family)
+              if !qhp_application_feature_enabled? || family.latest_application_type == 'faa'
+                Success("Family #{family.id} is eligible for FAA renewal.")
+              elsif family.latest_application.present?
+                Failure("Family #{family.id} is not eligible for FAA renewal. Latest application type: #{family.latest_application_type}")
+              else
+                Failure("Family #{family.id} does not have a latest application")
+              end
+            end
+
+            # Checks if the application is invalid based on the current year and its state
+            #
+            # @param application [FinancialAssistance::Application] The application to check
+            # @param current_year [Integer] The current year to compare against
+            #
+            # @return [Boolean] True if the application is invalid, false otherwise
+            def invalid_app?(application, current_year)
+              application.assistance_year != current_year || application.aasm_state != 'determined'
+            end
+
+            # Finds the latest application for the family based on the validated parameters
+            #
+            # @param family [Family] The family object to find the application for
+            # @param validated_params [Hash] The validated parameters containing family_id and renewal_year
+            #
+            # @return [Dry::Monads::Result] Success with the latest application or Failure with an error message
+            def find_latest_application(family, validated_params)
+              applications_by_family = ::FinancialAssistance::Application.where(family_id: validated_params[:family_id])
               return Failure("Renewal application already created for #{validated_params}") if applications_by_family.by_year(validated_params[:renewal_year]).present?
 
-              application = applications_by_family.by_year(validated_params[:renewal_year].pred).determined.created_asc.last
+              current_year = validated_params[:renewal_year].pred
+              application = if qhp_application_feature_enabled?
+                              app = family.latest_application
+                              return Failure("Family #{family.id} does not have a latest application for current year: #{current_year}") if invalid_app?(app, current_year)
+
+                              app
+                            else
+                              applications_by_family.by_year(current_year).determined.created_asc.last
+                            end
 
               if application&.eligible_for_renewal?
                 Success(application)
