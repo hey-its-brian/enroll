@@ -139,7 +139,7 @@
           <% qle = (@change_plan == 'change_by_qle' || @enrollment_kind == 'sep') %>
         <% end %>
       <% end %>
-      <% disable_link = qhp_application_feature_enabled? && @eligibility_determination.blank? ? true : false %>
+      <% disable_link = qhp_application_feature_enabled? && @family.eligibility_determination.blank? ? true : false %>
       <div id="plan-shopping-page-navigation-buttons" class="d-flex flex-column flex-md-row mt-4" >
         <%= render partial: "shared/progress_navigation_buttons", locals: { previous_style: "outline", button_type: "submit", disable_link: disable_link } %>
       </div>
