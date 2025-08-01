@@ -98,7 +98,7 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
     let(:determined_family) { FactoryBot.create(:family, :with_primary_family_member)}
 
     let(:determined_application) do
-      FactoryBot.create(:financial_assistance_application, hbx_id: '200000126', aasm_state: "determined", family_id: determined_family.id)
+      FactoryBot.create(:financial_assistance_application, aasm_state: "determined", family_id: determined_family.id)
     end
 
     let(:ed) do
@@ -198,7 +198,6 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
     end
   end
 end
-
 
 def update_benchmark_premiums(determined_application)
   applicant_hbx_ids = determined_application.applicants.pluck(:person_hbx_id)

@@ -3,9 +3,6 @@
 require 'rails_helper'
 
 RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbclean: :after_each do
-  let(:hbx_profile)   { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
-  let(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
-
   let(:person) { FactoryBot.create(:person, :with_consumer_role) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
   let(:primary_applicant) { family.primary_applicant }

@@ -4,7 +4,7 @@ module Operations
   module IndividualMarket
     module Applications
       module Renewals
-        # Operation to create anindividual market application for a given family and renewal year in initial state.
+        # Operation to create an individual market application for a given family and renewal year in initial state.
         class Create
           include Dry::Monads[:result, :do]
           include EventSource::Command

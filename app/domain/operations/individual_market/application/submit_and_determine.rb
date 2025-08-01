@@ -16,17 +16,17 @@ module Operations
         # sets the current state to determined, which triggers the on_determination callbacks
         # this will trigger the creation of a new tax household and update or create a family determination etc
         #
-        # @param application [FinancialAssistance::Application] the financial assistance application
+        # @param application [IndividualMarket::Application] the individual market application
         # @return [Dry::Monads::Result] Success with message
         def call(application:)
-          application = yield validate(application)
-          application = yield submit_application(application)
-          applicant_results = yield determine_applicants(application)
-          _applicants = yield create_evidences(applicant_results)
-          determined_application = yield determine_application(application)
-          _calls = yield call_hubs(application)
-          _family = yield update_family(application)
-          # _new_thhg = yield build_tax_household_group(application, family, family_members_result)
+          application             = yield validate(application)
+          application             = yield submit_application(application)
+          applicant_results       = yield determine_applicants(application)
+          _applicants             = yield build_evidences(applicant_results)
+          determined_application  = yield determine_application(application)
+          _calls                  = yield call_hubs(application)
+          _family                 = yield update_family(application)
+
           Success(determined_application)
         end
 
@@ -34,7 +34,7 @@ module Operations
 
         # validates the application
         #
-        # @param application [FinancialAssistance::Application] the financial assistance application
+        # @param application [IndividualMarket::Application] the individual market application
         # @return [Dry::Monads::Result] Success with message
         def validate(application)
           return Failure('Invalid application type. Expected IndividualMarket::Application.') unless application.is_a?(::IndividualMarket::Application)
@@ -46,7 +46,8 @@ module Operations
 
         # submits the application
         #
-        # @param application [FinancialAssistance::Application] the financial assistance application
+        # @param application [IndividualMarket::Application] the individual market application
+        #
         # @return [Dry::Monads::Result] Success with message
         def submit_application(application)
           application.submit
@@ -63,7 +64,7 @@ module Operations
 
         # determines each applicant
         #
-        # @param application [FinancialAssistance::Application] the financial assistance application
+        # @param application [IndividualMarket::Application] the individual market application
         # @return [Dry::Monads::Result] Success with message
         def determine_applicants(application)
           applicants_results = application.applicants.map do |applicant|
@@ -82,7 +83,7 @@ module Operations
         #
         # @param applicant_results [Array] array of applicant results
         # @return [Dry::Monads::Result] Success with message
-        def create_evidences(applicant_results)
+        def build_evidences(applicant_results)
           applicants = applicant_results.map do |applicant|
             Try do
               applicant.build_individual_market_evidences
@@ -97,7 +98,7 @@ module Operations
         # this will trigger the creation of a new tax household and update or create a family determination
         # it will also trigger the hub calls
         #
-        # @param application [FinancialAssistance::Application] the financial assistance application
+        # @param application [IndividualMarket::Application] the individual market application
         # @return [Dry::Monads::Result] Success with message
         def determine_application(application)
           application.determine
@@ -111,10 +112,26 @@ module Operations
           Failure("An error occurred while determining the application: #{application.errors.full_messages.join(', ')}")
         end
 
+        # Calls the hubs for verifying the evidences of eligibilities of applicants for the application
+        #
+        # @param application [IndividualMarket::Application] the individual market application
+        #
+        # @return [Dry::Monads::Result] Success with message or Failure with error message
+        #
+        # @note If the application is a renewal, it does not call the hubs as we are not supposed to call the hubs for system generated applications (renewals or expired_rop).
         def call_hubs(application)
-          Operations::Eligibilities::V3::IndividualMarket::VerificationRequests.new.call(application: application)
+          if application.is_renewal
+            Success('No hub calls for renewals.')
+          else
+            ::Operations::Eligibilities::V3::IndividualMarket::VerificationRequests.new.call(application: application)
+          end
         end
 
+        # Updates the family associated with the application
+        #
+        # @param application [IndividualMarket::Application] the individual market application
+        #
+        # @return [Dry::Monads::Result] Success with message or Failure with error message
         def update_family(application)
           Operations::IndividualMarket::Families::CreateOrUpdate.new.call(application: application)
         end

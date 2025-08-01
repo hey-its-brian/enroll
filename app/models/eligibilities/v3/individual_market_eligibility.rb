@@ -128,6 +128,20 @@ module Eligibilities
                                   })
       end
 
+      # Retains evidence information from another eligibility
+      #
+      # @param eligibility [Eligibilities::V3::IndividualMarketEligibility] The eligibility to retain information from
+      #
+      # @return [void]
+      def retain_evidence_information(eligibility)
+        immigration_evidence.retain_evidence_information(eligibility.immigration_evidence) if immigration_evidence.present?
+        citizenship_evidence.retain_evidence_information(eligibility.citizenship_evidence) if citizenship_evidence.present?
+        american_indian_evidence.retain_evidence_information(eligibility.american_indian_evidence) if american_indian_evidence.present?
+        social_security_number_evidence.retain_evidence_information(eligibility.social_security_number_evidence) if social_security_number_evidence.present?
+        residency_evidence.retain_evidence_information(eligibility.residency_evidence) if residency_evidence.present?
+        alive_evidence.retain_evidence_information(eligibility.alive_evidence) if alive_evidence.present?
+      end
+
       private
 
       # Adds to errors collection if duplicate evidence types are found

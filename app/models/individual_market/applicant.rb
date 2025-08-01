@@ -122,6 +122,15 @@ module IndividualMarket
       @family_member = FamilyMember.find(family_member_id)
     end
 
+    # Returns the person associated with this applicant
+    #
+    # @return [Person, nil] The person associated with the family member, or nil if no family member exists
+    def person
+      return @person if defined?(@person)
+
+      @person = family_member.present? ? family_member.person : nil
+    end
+
     # Returns the APTC/CSR eligibility for the applicant.
     def aptc_csr_eligibility
       eligibilities.where(_type: 'Eligibilities::V3::AptcCsrEligibility').first
@@ -246,6 +255,19 @@ module IndividualMarket
         _type: "Eligibilities::V3::IndividualMarketEligibility",
         title: 'Individual Market Eligibility',
         key: :individual_market_eligibility
+      )
+    end
+
+    # Builds a new APTC/CSR Eligibility for this applicant
+    #
+    # @return [Eligibilities::V3::AptcCsrEligibility] The new APTC/CSR Eligibility
+    def build_aptc_csr_eligibility
+      return if aptc_csr_eligibility.present?
+
+      eligibilities.build(
+        _type: 'Eligibilities::V3::AptcCsrEligibility',
+        title: 'APTC/CSR Eligibility',
+        key: :aptc_csr_eligibility
       )
     end
 
@@ -465,6 +487,15 @@ module IndividualMarket
         'csr_limited' => -1,
         'csr_0' => 0
       }[csr_type]
+    end
+
+    # Retains evidence information from another applicant for the individual market eligibility.
+    #
+    # @param applicant [IndividualMarket::Applicant, FinancialAssistance::Applicant] The applicant to retain evidence information from
+    #
+    # @return [void]
+    def retain_evidence_information(applicant)
+      individual_market_eligibility.retain_evidence_information(applicant.individual_market_eligibility)
     end
 
     private

@@ -18,7 +18,7 @@ module Operations
           people_result         = yield create_or_update_people(application)
           _relationships_result = yield create_or_update_primary_relationships(people_result, application)
           family_members_result = yield build_or_update_family_members(application, family, people_result)
-          _ch_members_result    = yield build_coverage_household_members(family)
+          _ch_members_result    = yield build_coverage_household_members(application, family)
           _result               = yield deactivate_tax_household_groups(application, family)
           _result               = yield build_tax_household_group(application, family, family_members_result)
           family                = yield assign_latest_application_gid(family)
@@ -38,8 +38,9 @@ module Operations
         # @return [Dry::Monads::Result] Success with application and family or Failure with error message
         def validate_application(application)
           if application.is_a?(::IndividualMarket::Application)
-            if application.family.is_a?(::Family)
-              Success([application, application.family])
+            family = application.family
+            if family.is_a?(::Family)
+              Success([application, family])
             else
               Failure("Invalid Family for given application with hbx_id: #{application.hbx_id}")
             end
@@ -55,7 +56,7 @@ module Operations
         def create_or_update_people(application)
           final_result_success = true
           results = application.applicants.inject({}) do |result_hash, applicant|
-            person_result = create_or_update_person_by(applicant)
+            person_result = create_or_update_person_by(application, applicant)
             final_result_success = false if person_result.failure?
             result_hash[applicant.id] = person_result.success
             result_hash
@@ -68,8 +69,12 @@ module Operations
         #
         # @param applicant [IndividualMarket::Applicant] the applicant to create or update a person for
         # @return [Dry::Monads::Result] Success with person or Failure with error message
-        def create_or_update_person_by(applicant)
-          ::Operations::IndividualMarket::People::CreateOrUpdate.new.call(applicant: applicant)
+        def create_or_update_person_by(application, applicant)
+          if application.is_renewal
+            Success(applicant.person)
+          else
+            ::Operations::IndividualMarket::People::CreateOrUpdate.new.call(applicant: applicant)
+          end
         end
 
         # Creates or updates relationships for the primary applicant
@@ -77,7 +82,11 @@ module Operations
         # @param people_result [Hash] hash of applicant_id => person
         # @param application [IndividualMarket::Application] the individual market application
         # @return [Dry::Monads::Result] Success with message or Failure with error message
+        #
+        # @note This method is skipped for system-generated applications (renewals or expired_rop).
         def create_or_update_primary_relationships(people_result, application)
+          return Success("Updates to Primary Relationships are not needed for System Generated Applications") if application.is_renewal
+
           return Failure('No primary applicant found') if application.primary_applicant.blank?
           return Success('No relationships to create') if application.relationships.blank?
           primary_applicant = application.primary_applicant
@@ -122,9 +131,11 @@ module Operations
           # Creates or Updates family members for each applicant
           results = application.applicants.inject({}) do |result_hash, applicant|
             person = people_result[applicant.id]
-            result_hash[applicant.id] = build_or_update_family_member_by(applicant, family, person)
+            result_hash[applicant.id] = build_or_update_family_member_by(application, applicant, family, person)
             result_hash
           end
+
+          return Success(results) if application.is_renewal
 
           # Deactivates all the family members that are not associated with the applicants.
           # We should not query the applicants to get the family member IDs as the applicants are updated with the family member IDs in the `update_application` step.
@@ -137,11 +148,14 @@ module Operations
 
         # Builds or updates a family member for a specific applicant and person
         #
+        # @param application [IndividualMarket::Application] the individual market application
         # @param applicant [FinancialAssistance::Applicant] the applicant
         # @param family [Family] the family to update
         # @param person [Person] the person associated with the applicant
         # @return [FamilyMember] the built or updated family member
-        def build_or_update_family_member_by(applicant, family, person)
+        def build_or_update_family_member_by(application, applicant, family, person)
+          return applicant.family_member if application.is_renewal
+
           member = family.family_members.where(person_id: person.id).first
           if member.present?
             member.is_active = true
@@ -157,9 +171,16 @@ module Operations
         end
 
         # Builds coverage household members for the family based on immediate and extended family relationships
+        #
+        # @param application [IndividualMarket::Application] the individual market application
         # @param family [Family] the family to build coverage household members for
+        #
         # @return [Dry::Monads::Result] Success with message or Failure with error message
-        def build_coverage_household_members(family)
+        #
+        # @note This method is skipped for system-generated applications (renewals or expired_rop).
+        def build_coverage_household_members(application, family)
+          return Success("Updates to Coverage Household Members are not needed for System Generated Applications") if application.is_renewal
+
           immediate_ch = family.active_household.immediate_family_coverage_household
           extended_ch = family.active_household.extended_family_coverage_household
           immediate_ch.coverage_household_members.clear
@@ -272,7 +293,12 @@ module Operations
         # @param people_result [Hash] hash of applicant_id => person
         #
         # @return [Dry::Monads::Result] Success with application or Failure with error message
+        #
+        # @note This method is skipped for system-generated applications (renewals or expired_rop).
         def update_application(application, family_members_result, _people_result)
+          # Updates to Applicants are not needed for System Generated Applications
+          return Success(application) if application.is_renewal
+
           application.applicants.each do |applicant|
             applicant.family_member_id = family_members_result[applicant.id].id
           end

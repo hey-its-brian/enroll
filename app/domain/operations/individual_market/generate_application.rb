@@ -160,6 +160,8 @@ module Operations
       # @param [IndividualMarket::Application] application
       #
       # @return [Dry::Monads::Result] Success message or Failure with error message
+      #
+      # @note Initial applications should not be cancelled for system generated applications (renewals or expired_rop).
       def cancel_previous_applications(application)
         if application.is_renewal
           Success('Applications should not be cancelled for renewal applications.')

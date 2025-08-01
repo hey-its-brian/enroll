@@ -1816,6 +1816,16 @@ class Family
     @latest_application = GlobalID::Locator.locate(latest_application_gid) if latest_application_gid.present?
   end
 
+  # Resets the instance variable @latest_application if it exists.
+  #
+  # This method is useful to clear the cached latest application when needed,
+  # such as after updating the family or when the latest application changes.
+  #
+  # @return [void]
+  def reset_latest_application
+    remove_instance_variable(:@latest_application) if defined?(@latest_application)
+  end
+
   # Updates the family with information about its latest determined application
   #
   # This method sets a field on the family:

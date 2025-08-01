@@ -13,7 +13,10 @@ module Subscribers
           payload = JSON.parse(response, symbolize_names: true)
           sub_logger.info "----- ocrd payload: #{payload}, delivery_info: #{delivery_info}"
 
-          result = ::Operations::IndividualMarket::Applications::Renewals::Create.new.call(payload)
+          result = ::Operations::IndividualMarket::Applications::Renewals::Create.new.call(
+            family_id: payload[:family_id],
+            renewal_year: payload[:renewal_year]
+          )
           if result.success?
             sub_logger.info "--------------- ocrd Success. Message: #{result.success}"
           else
@@ -33,13 +36,12 @@ module Subscribers
           # There is no PII in the payload, so it is safe to log.
           sub_logger.info "----- osad payload: #{payload}, delivery_info: #{delivery_info}"
 
-          # TODO: Implement the logic to submit and determine renewal applications
-          # result = ::Operations::IndividualMarket::Applications::Renewals::SubmitAndDetermine.new.call(payload)
-          # if result.success?
-          #   sub_logger.info "--------------- osad Success. Message: #{result.success}"
-          # else
-          #   sub_logger.error "--------------- osad Failed. Message: #{result.failure}"
-          # end
+          result = ::Operations::IndividualMarket::Applications::Renewals::SubmitAndDetermine.new.call(application_id: payload[:application_id])
+          if result.success?
+            sub_logger.info "--------------- osad Success. Message: #{result.success}"
+          else
+            sub_logger.error "--------------- osad Failed. Message: #{result.failure}"
+          end
 
           ack(delivery_info.delivery_tag)
         rescue StandardError => e
