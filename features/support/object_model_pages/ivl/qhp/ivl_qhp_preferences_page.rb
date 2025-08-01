@@ -10,4 +10,8 @@ class IvlQhpPreferencesPage
   def self.qhp_preferences_previous_step
     '.interaction-click-control-previous-step'
   end
+
+  def self.qhp_family_info_link
+    'a[class*="interaction-click-control-family-info-page"]'
+  end
 end

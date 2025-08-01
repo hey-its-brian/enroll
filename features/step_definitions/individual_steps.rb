@@ -573,19 +573,29 @@ When(/^Individual clicks on continue to next step on QHP Review page$/) do
   find_all(IvlQhpReviewPage.qhp_review_continue_to_next_step)[1].click
 end
 
+When(/^Individual clicks on Edit Section button for personal information$/) do
+  find(:xpath, '//div[@class="d-flex justify-content-between"]/a').click
+end
+
 When(/^Individual agrees and submits QHP application$/) do
   fill_in IvlQhpSubmitPage.qhp_submit_first_name, with: 'Patrick'
   fill_in IvlQhpSubmitPage.qhp_submit_last_name, with: 'Doe'
   find(IvlQhpSubmitPage.qhp_submit_i_agree).click
   sleep 2
-  find('input[class*="interaction-click-control-submit-application"]')
-  #find(:xpath, '//input[@value="Submit Application"]').click
-  #expect(page).to have_css('[data-cuke="eligibility_results"]')
-  #expect(page).to have_css('[data-cuke="more_details"]')
+  find('input[class*="interaction-click-control-submit-application"]').click
+  expect(page).to have_css(IvlQhpEligibilityResultsPage.qhp_continue_to_shop_for_plans)
 end
 
 Then(/^Individual is on the QHP Preferences page$/) do
   expect(page).to have_css('[data-cuke="preferences"]')
+end
+
+When(/^Individual clicks on famly info page link$/) do
+  find(IvlQhpPreferencesPage.qhp_family_info_link).click
+end
+
+Then(/^Individual should be on the QHP Family Information page$/) do
+  expect(page).to have_content(l10n('faa.nav.family_info'))
 end
 
 When(/^Individual clicks on continue to next step$/) do

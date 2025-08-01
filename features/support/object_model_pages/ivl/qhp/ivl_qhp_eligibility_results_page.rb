@@ -3,7 +3,7 @@
 #qhp determination results page
 class IvlQhpEligibilityResultsPage
 
-  def self.qhp_continue_to_next_steps
+  def self.qhp_continue_to_shop_for_plans
     '.interaction-click-control-continue-to-shop-for-plans'
   end
 

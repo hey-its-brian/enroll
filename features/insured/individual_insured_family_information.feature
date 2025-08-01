@@ -27,6 +27,18 @@ Feature: Insured QHP Family Information Page
     When Individual clicks on continue to next step
     Then Individual is on the QHP Preferences page
 
+  Scenario: New insured user navigates to family info page from preferences page
+    When Individual clicks on continue to next step
+    And Individual is on the QHP Preferences page
+    And Individual clicks on famly info page link
+    Then Individual should be on the QHP Family Information page
+
+  Scenario: New insured user navigates to family info page from review page
+    When Individual clicks on continue to next step on QHP Family Information page
+    And Individual clicks on continue to next step on QHP Preferences page
+    And Individual clicks on Edit Section button for personal information
+    Then Individual should be on the QHP Family Information page
+
   Scenario: New insured user submits QHP application
     When Individual clicks on continue to next step on QHP Family Information page
     And Individual clicks on continue to next step on QHP Preferences page
