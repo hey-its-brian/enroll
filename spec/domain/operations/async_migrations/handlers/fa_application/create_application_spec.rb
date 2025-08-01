@@ -197,10 +197,43 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                       effective_date: (TimeKeeper.date_of_record - 12.days),
                       origin: :user,
                       assistance_year: TimeKeeper.date_of_record.year,
-                      generation_reason: :manual)
+                      generation_reason: :manual,
+                      has_eligibility_response: true,
+                      transfer_requested: true,
+                      account_transferred: true,
+                      has_mec_check_response: true,
+                      applicant_kind: "user and/or family",
+                      request_kind: "placeholder",
+                      motivation_kind: "insurance_affordability",
+                      us_state: "ME",
+                      is_ridp_verified: true,
+                      renewal_base_year: TimeKeeper.date_of_record.year + 1)
   end
 
   let!(:eligibility_determination1) { FactoryBot.create(:financial_assistance_eligibility_determination, application: application) }
+
+  let(:override_rules) {::AcaEntities::MagiMedicaid::Types::EligibilityOverrideRule.values}
+  let(:member_determinations) do
+    [medicaid_and_chip_member_determination, medicaid_and_chip_member_determination]
+  end
+
+  let(:medicaid_and_chip_member_determination) do
+    {
+      kind: 'Medicaid/CHIP Determination',
+      criteria_met: false,
+      determination_reasons: ["test"],
+      eligibility_overrides: medicaid_chip_eligibility_overrides
+    }
+  end
+
+  let(:medicaid_chip_eligibility_overrides) do
+    override_rules.map do |rule|
+      {
+        override_rule: rule,
+        override_applied: false
+      }
+    end
+  end
 
   let!(:applicant) do
     FactoryBot.create(:applicant,
@@ -211,7 +244,28 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                       family_member_id: family.family_members[0].id,
                       person_hbx_id: person.hbx_id,
                       addresses: [FactoryBot.build(:financial_assistance_address)],
-                      eligibility_determination_id: eligibility_determination1.id)
+                      eligibility_determination_id: eligibility_determination1.id,
+                      is_eligible_for_non_magi_reasons: true,
+                      magi_medicaid_category: "medicaid",
+                      medicaid_household_size: 3,
+                      magi_medicaid_monthly_household_income: 1000,
+                      magi_medicaid_monthly_income_limit: 2000,
+                      magi_as_percentage_of_fpl: 150,
+                      csr_percent_as_integer: 87,
+                      csr_eligibility_kind: "csr_87",
+                      benchmark_premiums: {"health_only_slcsp_premiums" => [{"member_identifier" => "1281306", "monthly_premium" => 1060.57}],
+                                           "health_only_lcsp_premiums" => [{"member_identifier" => "1281306", "monthly_premium" => 1058.99}]},
+                      contact_method: "Paper and Electronic communications",
+                      language_preference: "test",
+                      is_ia_eligible: true,
+                      is_csr_eligible: true,
+                      is_medicaid_chip_eligible: true,
+                      is_non_magi_medicaid_eligible: true,
+                      is_totally_ineligible: true,
+                      is_without_assistance: true,
+                      is_magi_medicaid: true,
+                      is_gap_filling: true,
+                      member_determinations: member_determinations)
   end
 
   describe 'migrate evidences' do
@@ -289,11 +343,56 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           expect(draft_application.aasm_state).to eq("cancelled")
         end
 
-        it 'should migrate contact method, language preference and age off excluded' do
+        it 'should migrate contact method, language preference and age off excluded and others' do
           expect(@new_applicant.age_off_excluded).to eq(person.age_off_excluded)
           expect(@new_applicant.contact_method).to eq(consumer_role.contact_method)
           expect(@new_applicant.language_preference).to eq(consumer_role.language_preference)
           expect(@new_applicant.eligibility_determination_id).not_to eq(@old_applicant.eligibility_determination_id)
+          expect(@new_applicant.is_eligible_for_non_magi_reasons).to eq(@old_applicant.is_eligible_for_non_magi_reasons)
+          expect(@new_applicant.magi_medicaid_category).to eq(@old_applicant.magi_medicaid_category)
+          expect(@new_applicant.medicaid_household_size).to eq(@old_applicant.medicaid_household_size)
+          expect(@new_applicant.magi_medicaid_monthly_household_income).to eq(@old_applicant.magi_medicaid_monthly_household_income)
+          expect(@new_applicant.magi_medicaid_monthly_income_limit).to eq(@old_applicant.magi_medicaid_monthly_income_limit)
+          expect(@new_applicant.magi_as_percentage_of_fpl).to eq(@old_applicant.magi_as_percentage_of_fpl)
+          expect(@new_applicant.csr_percent_as_integer).to eq(@old_applicant.csr_percent_as_integer)
+          expect(@new_applicant.csr_eligibility_kind).to eq(@old_applicant.csr_eligibility_kind)
+          expect(@new_applicant.benchmark_premiums).to eq(@old_applicant.benchmark_premiums)
+          expect(@new_applicant.contact_method).to eq(consumer_role.contact_method)
+          expect(@new_applicant.language_preference).to eq(consumer_role.language_preference)
+          expect(@new_applicant.is_ia_eligible).to eq(@old_applicant.is_ia_eligible)
+          expect(@new_applicant.is_csr_eligible).to eq(@old_applicant.is_csr_eligible)
+          expect(@new_applicant.is_medicaid_chip_eligible).to eq(@old_applicant.is_medicaid_chip_eligible)
+          expect(@new_applicant.is_non_magi_medicaid_eligible).to eq(@old_applicant.is_non_magi_medicaid_eligible)
+          expect(@new_applicant.is_totally_ineligible).to eq(@old_applicant.is_totally_ineligible)
+          expect(@new_applicant.is_without_assistance).to eq(@old_applicant.is_without_assistance)
+          expect(@new_applicant.is_magi_medicaid).to eq(@old_applicant.is_magi_medicaid)
+        end
+
+        it 'should migrate applicant member determinations' do
+          expect(@new_applicant.member_determinations.count).to eq(@old_applicant.member_determinations.count)
+          @new_applicant.member_determinations.each_with_index do |new_member_determination, index|
+            old_member_determination = @old_applicant.member_determinations[index]
+            expect(new_member_determination.kind).to eq(old_member_determination.kind)
+            expect(new_member_determination.criteria_met).to eq(old_member_determination.criteria_met)
+            expect(new_member_determination.determination_reasons).to eq(old_member_determination.determination_reasons)
+            expect(new_member_determination.eligibility_overrides.map(&:override_rule)).to eq(old_member_determination.eligibility_overrides.map(&:override_rule))
+          end
+        end
+
+        it 'should migrate other fields' do
+          expect(@new_application.has_eligibility_response).to eq(application.has_eligibility_response)
+          expect(@new_application.transfer_requested).to eq(application.transfer_requested)
+          expect(@new_application.account_transferred).to eq(application.account_transferred)
+          expect(@new_application.has_mec_check_response).to eq(application.has_mec_check_response)
+          expect(@new_application.applicant_kind).to eq(application.applicant_kind)
+          expect(@new_application.request_kind).to eq(application.request_kind)
+          expect(@new_application.motivation_kind).to eq(application.motivation_kind)
+          expect(@new_application.us_state).to eq(application.us_state)
+          expect(@new_application.is_ridp_verified).to eq(application.is_ridp_verified)
+          expect(@new_application.effective_date).to eq(application.effective_date)
+          expect(@new_application.renewal_base_year).to eq(application.renewal_base_year)
+          expect(@new_application.predecessor_id).to eq(application.id)
+          expect(@new_application.integrated_case_id).to eq(@new_application.hbx_id)
         end
 
         it 'should not create application again when triggered the script again' do
@@ -744,7 +843,10 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                                                                      :health_service_through_referral, :health_service_eligible, :tribal_state, :tribal_name, :tribe_codes, :is_medicaid_cubcare_eligible,
                                                                      :has_eligible_medicaid_cubcare, :medicaid_cubcare_due_on, :has_eligibility_changed, :has_household_income_changed,
                                                                      :person_coverage_end_on, :has_dependent_with_coverage, :dependent_job_end_on, :transfer_referral_reason,
-                                                                     :five_year_bar_applies, :five_year_bar_met, :qualified_non_citizen])
+                                                                     :five_year_bar_applies, :five_year_bar_met, :qualified_non_citizen, :is_eligible_for_non_magi_reasons, :magi_medicaid_category, :medicaid_household_size,
+                                                                     :magi_medicaid_monthly_household_income, :magi_medicaid_monthly_income_limit, :magi_as_percentage_of_fpl, :csr_percent_as_integer, :csr_eligibility_kind,
+                                                                     :benchmark_premiums, :contact_method, :language_preference, :is_ia_eligible, :is_csr_eligible, :is_medicaid_chip_eligible,
+                                                                     :is_non_magi_medicaid_eligible, :is_totally_ineligible, :is_without_assistance, :is_magi_medicaid])
         end
       end
 

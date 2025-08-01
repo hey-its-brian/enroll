@@ -30,7 +30,7 @@ module Operations
                                                                     :is_resident_role, :same_with_primary, :is_applying_coverage, :is_tobacco_user, :vlp_document_id, :vlp_subject,
                                                                     :alien_number, :i94_number, :visa_number, :passport_number, :sevis_id, :naturalization_number, :receipt_number,
                                                                     :citizenship_number, :card_number, :country_of_citizenship, :vlp_description, :expiration_date, :issuing_country,
-                                                                    :is_consent_applicant, :is_tobacco_user, :assisted_income_validation, :assisted_mec_validation, :assisted_income_reason,
+                                                                    :is_consent_applicant, :assisted_income_validation, :assisted_mec_validation, :assisted_income_reason,
                                                                     :assisted_mec_reason, :aasm_state, :person_hbx_id, :ext_app_id, :family_member_id, :has_fixed_address, :is_living_in_state,
                                                                     :is_required_to_file_taxes, :is_filing_as_head_of_household, :tax_filer_kind, :is_joint_tax_filing, :is_claimed_as_tax_dependent,
                                                                     :is_physically_disabled, :has_income_verification_response, :has_mec_verification_response, :is_medicare_eligible, :is_student,
@@ -46,7 +46,11 @@ module Operations
                                                                     :health_service_through_referral, :health_service_eligible, :tribal_state, :tribal_name, :tribe_codes, :is_medicaid_cubcare_eligible,
                                                                     :has_eligible_medicaid_cubcare, :medicaid_cubcare_due_on, :has_eligibility_changed, :has_household_income_changed,
                                                                     :person_coverage_end_on, :has_dependent_with_coverage, :dependent_job_end_on, :transfer_referral_reason,
-                                                                    :five_year_bar_applies, :five_year_bar_met, :qualified_non_citizen, :age_off_excluded, :eligibility_determination_id, :emails, :phones, :addresses)
+                                                                    :five_year_bar_applies, :five_year_bar_met, :qualified_non_citizen, :age_off_excluded, :eligibility_determination_id,
+                                                                    :is_eligible_for_non_magi_reasons, :magi_medicaid_category, :medicaid_household_size, :magi_medicaid_monthly_household_income,
+                                                                    :magi_medicaid_monthly_income_limit, :magi_as_percentage_of_fpl, :csr_percent_as_integer, :csr_eligibility_kind,
+                                                                    :benchmark_premiums, :contact_method, :language_preference, :is_ia_eligible, :is_csr_eligible, :is_medicaid_chip_eligible,
+                                                                    :is_non_magi_medicaid_eligible, :is_totally_ineligible, :is_without_assistance, :is_magi_medicaid, :is_gap_filling, :emails, :phones, :addresses)
 
             source_appli_params.deep_symbolize_keys
           end
@@ -79,6 +83,17 @@ module Operations
             build_new_incomes(source_applicant, new_applicant)
             build_new_deductions(source_applicant, new_applicant)
             build_new_benefits(source_applicant, new_applicant)
+            build_member_determinations(source_applicant, new_applicant)
+          end
+
+          def build_member_determinations(source_applicant, new_applicant)
+            return if source_applicant.member_determinations.blank?
+            source_applicant.member_determinations.each do |old_member_determination|
+              md = new_applicant.member_determinations.build(old_member_determination.attributes.slice(:kind, :criteria_met, :determination_reasons))
+              md.eligibility_overrides = old_member_determination.eligibility_overrides.map do |override|
+                override.attributes.slice(:override_rule, :override_applied)
+              end
+            end
           end
 
           def build_application_embeded_documents(source_application, new_app, _active_fms_applicant_params)
@@ -134,6 +149,25 @@ module Operations
             simple_error_message = I18n.t('faa.errors.copy_application_error')
             detailed_error_message = simple_error_message + " Error message: #{e.message}"
             Failure(simple_error_message: simple_error_message, detailed_error_message: detailed_error_message)
+          end
+
+          def fetch_app_params(source_application)
+            source_app_params = source_application.attributes.deep_symbolize_keys.slice(:family_id, :is_renewal_authorized, :years_to_renew, :is_requesting_voter_registration_application_in_mail,
+                                                                                        :benchmark_product_id, :medicaid_terms, :medicaid_insurance_collection_terms, :report_change_terms,
+                                                                                        :parent_living_out_of_home_terms, :attestation_terms, :submission_terms, :request_full_determination, :has_eligibility_response,
+                                                                                        :transfer_requested, :account_transferred, :has_mec_check_response, :applicant_kind, :request_kind,
+                                                                                        :motivation_kind, :us_state, :is_ridp_verified, :effective_date,
+                                                                                        :renewal_base_year)
+
+            source_app_params[:origin] = @origin
+            source_app_params[:generation_reason] = @generation_reason
+            assistance_year = @assistance_year || source_application.family.application_applicable_year || TimeKeeper.date_of_record.year
+            source_app_params[:assistance_year] = assistance_year
+            source_app_params[:predecessor_id] = source_application.id
+            hbx_id = ::FinancialAssistance::HbxIdGenerator.generate_application_id
+            source_app_params[:integrated_case_id] = hbx_id
+            source_app_params.merge({ aasm_state: 'draft',
+                                      hbx_id: hbx_id })
           end
 
           # Overrides the method to avoid persisting the new draft applicants.
