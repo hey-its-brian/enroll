@@ -127,10 +127,11 @@ module FinancialAssistance
                 {
                   application_id: application_id,
                   origin: :system,
-                  generation_reason: :renewal
+                  generation_reason: :renewal,
+                  renewal: true
                 }
               else
-                { application_id: application_id }
+                { application_id: application_id, renewal: true }
               end
             end
 

@@ -42,6 +42,7 @@ module FinancialAssistance
           return Failure({ simple_error_message: I18n.t('faa.errors.invalid_generation_reason_error') }) if invalid_generation_reason?(params)
           return Failure({ simple_error_message: I18n.t('faa.errors.invalid_assistance_year_error') }) if invalid_assistance_year?(params)
 
+          @renewal = params[:renewal] || false
 
           Success(application)
         end
@@ -307,10 +308,12 @@ module FinancialAssistance
         # @return [Dry::Monads::Result::Success] Success monad with a message
         def cancel_previous_applications(draft_app)
           if qhp_application_feature_enabled?
-            ::Operations::Sbm::Applications::CancelPreviousApplications.new.call(
-              application: draft_app
-            )
-            Success('Previous applications cancelled successfully')
+            if @renewal
+              Success('Previous applications need not be cancelled for system generated renewals.')
+            else
+              ::Operations::Sbm::Applications::CancelPreviousApplications.new.call(application: draft_app)
+              Success('Previous applications cancelled successfully')
+            end
           else
             # Returns success as we don't want to modify the application creation result
             # when the feature flag is disabled

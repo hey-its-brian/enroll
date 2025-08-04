@@ -1569,13 +1569,18 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
         {
           application_id: application.id,
           generation_reason: :manual,
-          origin: :user
+          origin: :user,
+          renewal: renewal
         }
       )
     end
 
-    context 'when enabled' do
+    context 'when:
+      - QHP feature is enabled
+      - input application is a non-renewal application
+      ' do
       let(:enabled) { true }
+      let(:renewal) { false }
 
       it 'creates a new application' do
         expect(@result.success).to be_a(FinancialAssistance::Application)
@@ -1587,7 +1592,47 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
       end
     end
 
-    context 'when disabled' do
+    context 'when:
+      - QHP feature is enabled
+      - input application is a renewal application
+      ' do
+      let(:enabled) { true }
+      let(:renewal) { true }
+
+      it 'creates a new application' do
+        expect(@result.success).to be_a(FinancialAssistance::Application)
+      end
+
+      it 'does not cancel previous draft applications' do
+        expect(first_draft_app.reload.cancelled?).to be_falsey
+        expect(second_draft_app.reload.cancelled?).to be_falsey
+      end
+    end
+
+    context 'when:
+      - QHP feature is disabled
+      - input application is a renewal application
+      ' do
+      let(:enabled) { false }
+      let(:renewal) { true }
+
+      it 'creates a new application' do
+        expect(@result.success).to be_a(FinancialAssistance::Application)
+      end
+
+      it 'does not cancel previous draft applications' do
+        expect(first_draft_app.reload.cancelled?).to be_falsey
+        expect(second_draft_app.reload.cancelled?).to be_falsey
+      end
+    end
+
+    context 'when:
+      - QHP feature is disabled
+      - input application is not a renewal application
+      ' do
+      let(:enabled) { false }
+      let(:renewal) { false }
+
       it 'creates a new application' do
         expect(@result.success).to be_a(FinancialAssistance::Application)
       end
