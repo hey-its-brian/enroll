@@ -479,6 +479,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
             expect(@request_results.map(&:result).compact.flatten).to be_empty
             expect(@request_results.map(&:source)).to eq(["FDSH"])
             expect(@request_results.map(&:source_transaction_id).compact.flatten).to be_empty
+            expect(@request_results.map(&:updated_by).compact.flatten).to eq(type_history_elements.map(&:modifier))
             expect(@request_results.map(&:code)).to eq(["HS000000"])
             expect(@request_results.map(&:code_description)).to eq(["ResponseDescriptionText0"])
             expect(@request_results.map(&:raw_payload)).to eq(responses.map(&:body))
@@ -540,6 +541,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
             expect(@request_results.map(&:result).compact.flatten).to be_empty
             expect(@request_results.map(&:source)).to eq(["FDSH"])
             expect(@request_results.map(&:source_transaction_id).compact.flatten).to be_empty
+            expect(@request_results.map(&:updated_by).compact.flatten).to eq(type_history_elements.map(&:modifier))
             expect(@request_results.map(&:code)).to eq(["HS000000"])
             expect(@request_results.map(&:code_description)).to eq(["ResponseDescriptionText0"])
             expect(@request_results.map(&:raw_payload)).to eq(responses.map(&:body))
@@ -610,6 +612,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
             expect(@request_results.map(&:result).compact.flatten).to be_empty
             expect(@request_results.map(&:source)).to eq(["FDSH"])
             expect(@request_results.map(&:source_transaction_id).compact.flatten).to be_empty
+            expect(@request_results.map(&:updated_by).compact.flatten).to eq(type_history_elements.map(&:modifier))
             expect(@request_results.map(&:code)).to eq(["HS000000"])
             expect(@request_results.map(&:code_description)).to eq(["ResponseDescriptionText0"])
             expect(@request_results.map(&:raw_payload)).to eq(responses.map(&:body))
@@ -681,6 +684,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
             expect(@request_results.map(&:result).compact.flatten).to be_empty
             expect(@request_results.map(&:source)).to eq(["FDSH"])
             expect(@request_results.map(&:source_transaction_id).compact.flatten).to be_empty
+            expect(@request_results.map(&:updated_by).compact.flatten).to eq(type_history_elements.map(&:modifier))
             expect(@request_results.map(&:code)).to eq(["HS000000"])
             expect(@request_results.map(&:code_description)).to eq(["ResponseDescriptionText0"])
             expect(@request_results.map(&:raw_payload)).to eq(responses.map(&:body))

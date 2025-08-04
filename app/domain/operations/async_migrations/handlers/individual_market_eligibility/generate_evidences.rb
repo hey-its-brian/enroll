@@ -242,6 +242,7 @@ module Operations
                 result: nil,
                 source: "FDSH",
                 source_transaction_id: nil,
+                updated_by: type_history_element.modifier,
                 code: response_code,
                 code_description: code_description,
                 raw_payload: raw_response.body,
