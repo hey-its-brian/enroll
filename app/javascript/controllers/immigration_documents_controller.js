@@ -7,7 +7,8 @@ export default class extends Controller {
     "template",            // Templates for different document types
     "ImmigrationDocumentsContainer",
     "NewNaturalizedCitizenStatusTemplate",
-    "immigrationDocStatus"
+    "immigrationDocStatus",
+    "CheckboxControlledSelectContainer"
   ]
 
   connect() {
@@ -28,8 +29,8 @@ export default class extends Controller {
       if (template && this.ImmigrationDocumentsContainerTarget) {
         // For checkbox, append after the checkbox div
         if (isCheckbox) {
-          const checkboxContainer = event.target.closest('#immigration-checkbox')
-          checkboxContainer.insertAdjacentHTML('afterend', this.sanitize(template.innerHTML))
+          const checkboxContainer = this.CheckboxControlledSelectContainerTarget
+          checkboxContainer.innerHTML = this.sanitize(template.innerHTML)
         } else {
           // For radio buttons, replace the container content
           this.ImmigrationDocumentsContainerTarget.innerHTML = this.sanitize(template.innerHTML)
@@ -39,10 +40,9 @@ export default class extends Controller {
     } else {
       if (this.ImmigrationDocumentsContainerTarget) {
         if (isCheckbox) {
-          // For checkbox, remove only the generated content after the checkbox
-          const generatedFields = this.ImmigrationDocumentsContainerTarget.querySelector('.generated_fields')
-          if (generatedFields) {
-            generatedFields.remove()
+          const checkboxContainer = this.CheckboxControlledSelectContainerTarget
+          if (checkboxContainer) {
+            checkboxContainer.innerHTML = ''
           }
         } else {
           // For radio buttons, clear the entire container
@@ -73,7 +73,7 @@ export default class extends Controller {
           this.ImmigrationDocumentsContainerTarget.innerHTML = this.sanitize(template.innerHTML)
         }
         this.ImmigrationDocumentsContainerTarget.classList.remove('hidden')
-        
+
       }
     } else {
       if (this.ImmigrationDocumentsContainerTarget) {
