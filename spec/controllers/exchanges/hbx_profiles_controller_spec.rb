@@ -874,7 +874,7 @@ RSpec.describe Exchanges::HbxProfilesController, dbclean: :around_each do
     it "does not allow docx files to be uploaded" do
       file = fixture_file_upload("#{Rails.root}/test/sample.docx")
       profile_valid_params[:file] = file
-      get :create_send_secure_message, xhr:  true, params:  profile_valid_params
+      post :create_send_secure_message, xhr:  true, params:  profile_valid_params
 
       expect(flash[:error]).to include("Unable to upload file.")
     end

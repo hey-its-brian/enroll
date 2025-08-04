@@ -125,6 +125,11 @@ gem 'matrix'
 
 gem 'phonelib'
 
+# Upload and content-verification gems, used mostly by FileUploadValidator
+gem 'marcel'
+gem 'pdf-reader'
+gem 'exifr'
+
 group :development do
   gem "certified",              '~> 1'
   gem 'overcommit',             '~> 0.47'
