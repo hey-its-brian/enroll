@@ -53,6 +53,23 @@ describe FindOrCreateInsuredPerson, :dbclean => :after_each do
     end
   end
 
+  context "given a person with the same first name, last name, dob, but different ssn exists" do
+    let!(:found_person) { FactoryBot.create(:person, ssn: ssn, :first_name => first_name, :last_name => last_name, :dob => dob, :no_ssn => "0") }
+    let(:context_arguments) do
+      { :first_name => first_name,
+        :last_name => last_name,
+        :dob => dob,
+        :ssn => '123456789',
+        :no_ssn => "1"}
+    end
+
+    it "should not match with the existing person" do
+      expect(Person.all.count).to eq 1
+      expect(result.person.ssn).to_not eq ssn
+      expect(Person.all.count).to eq 2
+    end
+  end
+
   context "given a person who does not exist but SSN is already taken" do
     let!(:found_person) {  FactoryBot.create(:person, ssn: ssn) }
     let(:context_arguments) do
