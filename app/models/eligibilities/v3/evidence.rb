@@ -64,33 +64,6 @@ module Eligibilities
       # def latest_state_history
       #   state_histories.last
       # end
-
-      # Method is to retain current_state and due_on from the current evidence.
-      # This is used in the context of the system generated applications like renewals and expired_rop.
-      #
-      # @param current_evidence [Eligibilities::V3::Evidence] The evidence from the current application
-      #
-      # @return [void]
-      def retain_evidence_information(current_evidence)
-        pre_state = self.current_state
-        new_state = current_evidence.current_state
-
-        self.current_state = new_state
-        self.add_to_history(
-          'retain_evidence_info_on_renewal',
-          "Current state is retained from the previous application: #{pre_state} to #{new_state}",
-          'system'
-        )
-
-        return unless current_evidence.due_on.present?
-
-        self.due_on = current_evidence.due_on
-        self.add_to_history(
-          'retain_evidence_info_on_renewal',
-          "Due date is retained from the previous application: #{current_evidence.due_on}",
-          'system'
-        )
-      end
     end
   end
 end

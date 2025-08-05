@@ -1154,12 +1154,45 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
         context 'from renewal_draft to income_verification_extension_required' do
           before do
             allow(application).to receive(:is_application_valid?).and_return(true)
-            application.set_income_verification_extension_required!
+            application.set_income_verification_extension_required
           end
 
-          it 'should transition application to income_verification_extension_required' do
-            expect(application.reload.income_verification_extension_required?).to be_truthy
+          it 'transitions application to income_verification_extension_required' do
+            expect(application.income_verification_extension_required?).to be_truthy
           end
+
+          it 'records the transition' do
+            expect(application.workflow_state_transitions.last).to have_attributes(
+              event: 'set_income_verification_extension_required',
+              from_state: 'renewal_draft',
+              to_state: 'income_verification_extension_required'
+            )
+          end
+        end
+      end
+    end
+
+    context '#set_applicants_update_required' do
+      before do
+        application.update_attributes!(aasm_state: 'renewal_draft')
+      end
+
+      context 'from renewal_draft to applicants_update_required' do
+        before do
+          allow(application).to receive(:is_application_valid?).and_return(true)
+          application.set_applicants_update_required
+        end
+
+        it 'transitions application to applicants_update_required' do
+          expect(application.applicants_update_required?).to be_truthy
+        end
+
+        it 'records the transition' do
+          expect(application.workflow_state_transitions.last).to have_attributes(
+            event: 'set_applicants_update_required',
+            from_state: 'renewal_draft',
+            to_state: 'applicants_update_required'
+          )
         end
       end
     end

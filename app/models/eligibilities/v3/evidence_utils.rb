@@ -221,6 +221,43 @@ module Eligibilities
             raise 'due_date_extended_at is read-only and cannot be changed once set.'
           end
         end
+
+        # Method is to retain current_state and due_on from the current evidence.
+        # This is used in the context of the system generated applications like renewals and expired_rop.
+        #
+        # @param current_evidence [Eligibilities::V3::Evidence] The evidence from the current application
+        #
+        # @return [void]
+        def retain_evidence_information(current_evidence)
+          current_app = current_evidence.eligibility.eligible.application
+
+          app_hbx_id = current_app.hbx_id
+          app_type = case current_app.class
+                     when IndividualMarket::Application
+                       'qhp'
+                     when FinancialAssistance::Application
+                       'faa'
+                     end
+
+          pre_state = self.current_state
+          new_state = current_evidence.current_state
+
+          self.current_state = new_state
+          self.add_to_history(
+            'retain_evidence_info_on_renewal',
+            "State is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: #{app_type}, change from: #{pre_state} to: #{new_state}",
+            'system'
+          )
+
+          return unless current_evidence.due_on.present?
+
+          self.due_on = current_evidence.due_on
+          self.add_to_history(
+            'retain_evidence_info_on_renewal',
+            "Due date is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: #{app_type}, due_on: #{current_evidence.due_on}",
+            'system'
+          )
+        end
       end
     end
   end

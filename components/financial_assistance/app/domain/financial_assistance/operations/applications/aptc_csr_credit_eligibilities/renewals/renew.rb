@@ -156,20 +156,17 @@ module FinancialAssistance
                 @renewal_application = copied_result.success
                 calculated_renewal_base_year = calculate_renewal_base_year(application)
                 additional_attrs = {
-                  aasm_state: find_aasm_state(
-                    application,
-                    renewal_application_factory
-                  ),
+                  aasm_state: 'renewal_draft',
                   assistance_year: validated_params[:renewal_year],
                   years_to_renew: calculate_years_to_renew(application),
                   renewal_base_year: calculated_renewal_base_year,
                   predecessor_id: application.id,
                   effective_date: Date.new(validated_params[:renewal_year])
                 }
-                additional_attrs[:renewal_draft_blocker_reasons] = [@failure_reason] if @failure_reason
                 renewal_application.assign_attributes(additional_attrs)
                 renewal_application.full_medicaid_determination = application.full_medicaid_determination if full_medicaid_determination_feature_enabled?
-
+                update_aasm_state(application, renewal_application, renewal_application_factory)
+                renewal_application.renewal_draft_blocker_reasons = [@failure_reason] if @failure_reason
                 renewal_application.save
                 if renewal_application.renewal_draft?
                   Success(renewal_application)
@@ -187,6 +184,21 @@ module FinancialAssistance
             def full_medicaid_determination_feature_enabled?
               feature = FinancialAssistanceRegistry[:full_medicaid_determination_step]
               feature.enabled? && feature.settings(:annual_eligibility_redetermination).item
+            end
+
+            # Updates the AASM state of the renewal application based on the current application state.
+            # Calls the appropriate event to transition the state so that the transition is recorded.
+            #
+            # @param application [FinancialAssistance::Application] The original application
+            def update_aasm_state(application, renewal_application, renewal_application_factory)
+              new_state = find_aasm_state(application, renewal_application_factory)
+
+              case new_state
+              when 'income_verification_extension_required'
+                renewal_application.set_income_verification_extension_required
+              when 'applicants_update_required'
+                renewal_application.set_applicants_update_required
+              end
             end
 
             def find_aasm_state(application, renewal_application_factory)

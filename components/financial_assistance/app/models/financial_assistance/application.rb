@@ -886,9 +886,16 @@ module FinancialAssistance
         transitions from: [:draft], to: :cancelled
       end
 
-      # Currently, this event will be used during renewal generations
-      event :set_income_verification_extension_required, :after => :record_transition do
+      # This event is used to set the application to income_verification_extension_required state
+      # when the permission to extend income verification year is not granted.
+      event :set_income_verification_extension_required, after: :build_transition do
         transitions from: :renewal_draft, to: :income_verification_extension_required
+      end
+
+      # This event is used to set the application to applicants_update_required state
+      # when there is a difference between the main app (Family, Family Members, and People) and the current year's app.
+      event :set_applicants_update_required, after: :build_transition do
+        transitions from: :renewal_draft, to: :applicants_update_required
       end
 
       event :import, :after => [:record_transition] do
@@ -1563,6 +1570,17 @@ module FinancialAssistance
     end
 
     private
+
+    # Records the transition of the application state.
+    #
+    # @return [WorkflowStateTransition] the newly created transition object
+    def build_transition
+      workflow_state_transitions.build(
+        event: aasm.current_event,
+        from_state: aasm.from_state,
+        to_state: aasm.to_state
+      )
+    end
 
     # Validates that origin and generation_reason have permitted values
     #

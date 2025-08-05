@@ -91,6 +91,13 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
       it 'returns application in income_verification_extension_required state' do
         expect(@result.failure).to match(renewal_draft_blocker_reason)
         expect(subject.renewal_application.income_verification_extension_required?).to be_truthy
+        expect(
+          subject.renewal_application.workflow_state_transitions.last
+        ).to have_attributes(
+          event: 'set_income_verification_extension_required',
+          from_state: 'renewal_draft',
+          to_state: 'income_verification_extension_required'
+        )
       end
     end
 
@@ -329,6 +336,13 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
           expect(@result.failure?).to eq true
           expect(subject.renewal_application.renewal_draft_blocker_reasons).to include(renewal_draft_blocker_reason)
           expect(subject.renewal_application.aasm_state).to eq 'applicants_update_required'
+          expect(
+            subject.renewal_application.workflow_state_transitions.last
+          ).to have_attributes(
+            event: 'set_applicants_update_required',
+            from_state: 'renewal_draft',
+            to_state: 'applicants_update_required'
+          )
         end
       end
 
@@ -345,6 +359,13 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
           expect(@result.failure?).to eq true
           expect(subject.renewal_application.renewal_draft_blocker_reasons).to include(renewal_draft_blocker_reason)
           expect(subject.renewal_application.aasm_state).to eq 'applicants_update_required'
+          expect(
+            subject.renewal_application.workflow_state_transitions.last
+          ).to have_attributes(
+            event: 'set_applicants_update_required',
+            from_state: 'renewal_draft',
+            to_state: 'applicants_update_required'
+          )
         end
       end
 
@@ -361,6 +382,11 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
           expect(subject.renewal_application.aasm_state).to eq 'applicants_update_required'
           expect(subject.renewal_application.renewal_draft_blocker_reasons).to include(renewal_draft_blocker_reason)
           expect(@result.failure).to match(renewal_draft_blocker_reason)
+          expect(subject.renewal_application.workflow_state_transitions.last).to have_attributes(
+            event: 'set_applicants_update_required',
+            from_state: 'renewal_draft',
+            to_state: 'applicants_update_required'
+          )
         end
       end
 
@@ -394,6 +420,11 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
           expect(subject.renewal_application.aasm_state).to eq 'applicants_update_required'
           expect(subject.renewal_application.renewal_draft_blocker_reasons).to include(renewal_draft_blocker_reason)
           expect(@result.failure).to match(renewal_draft_blocker_reason)
+          expect(subject.renewal_application.workflow_state_transitions.last).to have_attributes(
+            event: 'set_applicants_update_required',
+            from_state: 'renewal_draft',
+            to_state: 'applicants_update_required'
+          )
         end
       end
     end
