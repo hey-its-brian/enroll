@@ -38,7 +38,7 @@ PLAN_TRANSLATIONS = {
   'en.plans.mending_phone_1' => '1-207-210-3434',
   'en.plans.mending_href_phone_1' => 'tel:+12072103434',
   'en.plans.mending_hours' => '9am to 6:30pm EST, Monday - Friday',
-  'en.plans.mending_contact_url' => 'www.tarohealth.com',
+  'en.plans.mending_contact_url' => 'www.mending.com',
 
   'en.plans.nedd' => 'Northeast Delta Dental',
   'en.plans.nedd_phone_1' => '1-800-832-5700',
