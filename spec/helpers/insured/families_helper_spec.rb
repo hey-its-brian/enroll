@@ -1100,14 +1100,14 @@ RSpec.describe Insured::FamiliesHelper, :type => :helper, dbclean: :after_each  
           link = helper.build_group_selection_link(sep, person, hbx_enrollments)
           expect(link).to be_present
           expect(link).to include('shop_for_plan')
-          expect(link).to include('change_plan')
+          expect(link).to include('change_by_qle')
           expect(link).to include(person.id.to_s)
         end
 
-        it 'returns a link without change_plan param if no hbx_enrollments are present' do
+        it 'returns a link with change_by_qle param if no hbx_enrollments are present' do
           link = helper.build_group_selection_link(sep, person, [])
           expect(link).to include('shop_for_plan')
-          expect(link).not_to include('change_plan')
+          expect(link).to include('change_by_qle')
         end
       end
     end

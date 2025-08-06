@@ -2,20 +2,40 @@
 <% if @bs4 %>
   <div id="qle-details-for-existing-sep" class="hbx-enrollment-panel home-widget p-2 my-4 hidden">
     <h2><%= l10n("insured.eligible_to_enroll").titleize %></h2>
-    <%= form_tag insured_family_members_path, method: :get, class: 'qle-detail-for-existing', id: 'qle_form', class: 'pr-2 pl-2 pb-2' do %>
-      <%= hidden_field_tag 'change_plan', qle.title %>
-      <%= hidden_field_tag 'qle_id', qle.id %>
-      <%= hidden_field_tag 'sep_id', @active_sep.id %>
-      <%= hidden_field_tag 'employee_role_id', @employee_role.try(:id) || @employee_role_id || "None" %>
-      <% if qle.date_options_available? && @active_sep.optional_effective_on.present? %>
-        <label class="required weight-n" for="effective_on_option"><%= l10n("insured.choose_the_date_you_want_your_plan_start") %></label>
-        <%= select_tag 'effective_on_option', options_for_select(@active_sep.optional_effective_on), include_blank: l10n("select_effective_date"), required: true, class: "col-3" %>
-      <% else %>
-        <%= hidden_field_tag 'effective_on_option', @active_sep.next_poss_effective_date %>
+    <% if qhp_application_feature_enabled? %>
+      <%= form_tag new_insured_group_selection_path, method: :get, class: 'qle-detail-for-existing', id: 'qle_form', class: 'pr-2 pl-2 pb-2' do %>
+        <%= hidden_field_tag 'change_plan', 'change_by_qle' %>
+        <%= hidden_field_tag 'person_id', @person.id %>
+        <%= hidden_field_tag 'qle_id', qle.id %>
+        <%= hidden_field_tag 'sep_id', @active_sep.id %>
+        <%= hidden_field_tag 'shop_for_plan', 'shop_for_plan' %>
+        <%= hidden_field_tag 'employee_role_id', @employee_role.try(:id) || @employee_role_id || "None" %>
+        <% if qle.date_options_available? && @active_sep.optional_effective_on.present? %>
+          <label class="required weight-n" for="effective_on_option_selected"><%= l10n("insured.choose_the_date_you_want_your_plan_start") %></label>
+          <%= select_tag 'effective_on_option_selected', options_for_select(@active_sep.optional_effective_on), include_blank: l10n("select_effective_date"), required: true, class: "col-3" %>
+        <% else %>
+          <%= hidden_field_tag 'effective_on_option_selected', @active_sep.next_poss_effective_date %>
+        <% end %>
+        <div class="mt-4">
+          <%= submit_tag l10n('continue_next'), id: 'existing-submit', class: 'btn btn-primary' %>
+        </div>
       <% end %>
-      <div class="mt-4">
-        <%= submit_tag l10n('continue_next'), id: 'existing-submit', class: 'btn btn-primary' %>
-      </div>
+    <% else %>
+      <%= form_tag insured_family_members_path, method: :get, class: 'qle-detail-for-existing', id: 'qle_form', class: 'pr-2 pl-2 pb-2' do %>
+        <%= hidden_field_tag 'change_plan', qle.title %>
+        <%= hidden_field_tag 'qle_id', qle.id %>
+        <%= hidden_field_tag 'sep_id', @active_sep.id %>
+        <%= hidden_field_tag 'employee_role_id', @employee_role.try(:id) || @employee_role_id || "None" %>
+        <% if qle.date_options_available? && @active_sep.optional_effective_on.present? %>
+          <label class="required weight-n" for="effective_on_option"><%= l10n("insured.choose_the_date_you_want_your_plan_start") %></label>
+          <%= select_tag 'effective_on_option', options_for_select(@active_sep.optional_effective_on), include_blank: l10n("select_effective_date"), required: true, class: "col-3" %>
+        <% else %>
+          <%= hidden_field_tag 'effective_on_option', @active_sep.next_poss_effective_date %>
+        <% end %>
+        <div class="mt-4">
+          <%= submit_tag l10n('continue_next'), id: 'existing-submit', class: 'btn btn-primary' %>
+        </div>
+      <% end %>
     <% end %>
   </div>
 <% else %>

@@ -357,7 +357,7 @@ module Insured::FamiliesHelper
     else
       options = { shop_for_plan: 'shop_for_plan' }
       options.merge!(person_id: person.id) if person.present?
-      options.merge!(change_plan: 'change_plan') if hbx_enrollments&.compact_blank&.any?
+      options.merge!(change_plan: 'change_by_qle')
 
       link_to l10n("insured.shop_for_plans"), new_insured_group_selection_path(options), data: {turbolinks: false}, class: link_class
     end

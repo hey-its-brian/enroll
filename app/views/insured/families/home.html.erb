@@ -19,7 +19,7 @@
 
     <h1><%= l10n("insured.my_coverme_header") %></h1>
 
-    <%= render partial: 'qle_detail_for_existing_sep' if @active_sep.present? && !qhp_application_feature_enabled? %>
+    <%= render partial: 'qle_detail_for_existing_sep' if @active_sep.present? %>
 
     <%= render 'right_column' %>
 

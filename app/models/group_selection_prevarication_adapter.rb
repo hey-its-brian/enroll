@@ -11,7 +11,7 @@ class GroupSelectionPrevaricationAdapter
     person = Person.find(person_id)
     family = person.primary_family
     coverage_household = family.active_household.immediate_family_coverage_household
-    change_plan = params[:change_plan].present? ? params[:change_plan] : ''
+    change_plan = determine_change_plan(params)
     shop_under_current = params[:shop_under_current] == "true"
     shop_under_future = params[:shop_under_future] == "true"
     coverage_kind = params[:coverage_kind].present? ? params[:coverage_kind] : 'health'
@@ -37,6 +37,14 @@ class GroupSelectionPrevaricationAdapter
     record.check_shopping_roles(params)
     record.latest_enrollment = family.active_household.hbx_enrollments.where(:aasm_state.nin => ['shopping']).order_by(:created_at.desc).first
     record
+  end
+
+  def self.determine_change_plan(params)
+    return '' unless params[:change_plan].present?
+    qhp_feature_enabled = EnrollRegistry.feature_enabled?(:qhp_application)
+    return 'change_by_qle' if qhp_feature_enabled && params[:change_plan].present? && !%w[change_by_qle change_plan].include?(params[:change_plan])
+
+    params[:change_plan]
   end
 
   def check_shopping_roles(params)
