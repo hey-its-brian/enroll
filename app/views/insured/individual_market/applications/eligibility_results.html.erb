@@ -72,16 +72,20 @@
 <% end%>
 
 <h2 data-cuke='next_steps' class="mt-4"><%= l10n("faa.results.next_steps") %></h2>
-<p data-cuke='next_steps_text'><%= l10n("faa.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+<% if @in_application_flow %>
+  <p data-cuke='next_steps_text'><%= l10n("qhp_application.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+<% else %>
+  <p data-cuke='next_steps_text'><%= l10n("faa.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+<% end %>
 <div data-cuke='return_to_account_home' class="my-4">
-  <!-- TODO: Add link to view my applications when new page is built -->
-  <%= h(link_to l10n("qhp_application.results.view_my_applications"), current_applications_insured_sbm_applications_path, class: "button secondary outline mr-2") %>
   <% if @in_application_flow %>
     <% group_selection_url = new_insured_group_selection_path(person_id: @person.id, consumer_role_id: @person.consumer_role.id) %>
     <% find_sep_url = find_sep_insured_families_path(consumer_role_id: @person.consumer_role.id) %>
     <% next_url = @person.consumer_role.present? && is_under_open_enrollment? ? group_selection_url : find_sep_url %>
     <%= h(link_to l10n("qhp_application.results.continue_to_shop"), next_url, class: "button") %>
+    <%= link_to l10n("qhp_application.results.return_to_account"), family_account_path, class: "button secondary outline ml-2" %>
   <% else %>
+    <%= h(link_to l10n("qhp_application.results.view_my_applications"), current_applications_insured_sbm_applications_path, class: "button secondary outline mr-2") %>
     <%= link_to l10n("qhp_application.results.return_to_account"), family_account_path, class: "button" %>
   <% end %>
 </div>
@@ -89,20 +93,22 @@
   <span class="secondary-semibold"><%= l10n("qhp_application.results.application_reference_id") %>:</span> <%= @application.hbx_id %>
 </p>
 <div id="other-accordion" data-cuke='other_actions'>
-  <div class="card">
-    <div id="otherActionsHeading">
+  <div class="card p-0">
+    <div id="otherActionsHeading" class="p-0">
       <button class="accordion-action" data-toggle="collapse" data-target="#otherActions" aria-controls="otherActions" aria-expanded="false">
         <%= l10n("other_actions") %>
       </button>
     </div>
 
     <div id="otherActions" class="collapse" aria-labelledby="otherActionsHeading" data-parent="#other-accordion">
-      <div class="card-body">
-        <div class="w-100 pb-2">
-          <p><%= l10n("faa.do_not_agree",
+      <div class="card-body px-2">
+        <hr class="mb-2">
+        <div class="w-100">
+          <p><%= l10n("faa.do_not_agree_with_phone",
             appeal_link: EnrollRegistry[:enroll_app].setting(:appeal_link).item,
+            phone_number: EnrollRegistry[:enroll_app].setting(:contact_center_short_number).item,
+            tty_number: EnrollRegistry[:enroll_app].setting(:contact_center_tty_number).item,
             find_expert_link: EnrollRegistry[:enroll_app].setting(:find_expert_link).item) %></p>
-          <%= h(link_to l10n("qhp_application.results.view_my_applications"), current_applications_insured_sbm_applications_path, class: "button secondary") %>
         </div>
       </div>
     </div>

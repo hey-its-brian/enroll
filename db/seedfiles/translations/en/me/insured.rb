@@ -1052,6 +1052,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.qhp_application.show.return' => "Return to Applications",
   :'en.qhp_application.show.member_details_description' => "Select 'Edit Section' to make updates to your information. Your changes won't be final until you submit your updated application.",
   :'en.qhp_application.results.eligibility_results' => 'Eligibility Results',
+  :'en.qhp_application.results.next_steps_text' => "Select 'Continue to Shop for Plans' to check if you're eligible to choose a new plan or make changes to your current one. You may qualify through a Special Enrollment Period or during Open Enrollment. If you're already enrolled in a %{short_name} plan, any updates you make will take effect starting next month.",
   :'en.qhp_application.results.uqhp_title' => 'Qualifies for a Plan',
   :'en.qhp_application.results.uqhp_description' => "These people are eligible to enroll in an insurance plan on %{short_name}.",
   :'en.qhp_application.results.ineligible_description' => 'These people are not eligible to enroll in an insurance plan on %{site_short_name}.</p>',

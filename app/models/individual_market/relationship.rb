@@ -31,8 +31,8 @@ module IndividualMarket
     # @return [Array<String>] List of valid relationship kinds
     RELATIONSHIP_KINDS = %w[
       spouse child parent sibling domestic_partner guardian ward sponsored_dependent
-      dependent stepparent stepchild grandparent grandchild
-    ].freeze
+      dependent stepparent stepchild grandparent grandchild unrelated aunt_or_uncle nephew_or_niece grandchild grandparent
+    ] + (EnrollRegistry.feature_enabled?(:mitc_relationships) ? %w[father_or_mother_in_law daughter_or_son_in_law brother_or_sister_in_law cousin domestic_partners_child parents_domestic_partner] : []).freeze
 
     # @!attribute [r] validations
     # @note The model validates that kind is present and included in RELATIONSHIP_KINDS

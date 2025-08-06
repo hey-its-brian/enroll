@@ -16,7 +16,7 @@
     <div class="d-flex">
       <div class="mr-3">
         <label for="first_name" class="required"><%= l10n("first_name") %></label>
-        <%= text_field_tag 'first_name', "", :placeholder => l10n("first_name"), data: {target: "attestation.FirstNameField", action: "attestation#canSubmitCheck"} %>
+        <%= text_field_tag 'first_name', "", :placeholder => l10n("first_name"), data: {target: "attestation.FirstNameField", action: "keyup->attestation#canSubmitCheck"} %>
       </div>
       <div class="mr-3">
         <label for="middle_name"><%= l10n("middle_name") %></label>
@@ -24,12 +24,12 @@
       </div>
       <div>
         <label for="last_name" class="required"><%= l10n("last_name") %></label>
-        <%= text_field_tag 'last_name', "", :placeholder => l10n("last_name"), data: {target: "attestation.LastNameField", action: "attestation#canSubmitCheck"} %>
+        <%= text_field_tag 'last_name', "", :placeholder => l10n("last_name"), data: {target: "attestation.LastNameField", action: "keyup->attestation#canSubmitCheck"} %>
       </div>
     </div>
     <% applicant = @application.primary_applicant %>
-    <%= hidden_field_tag 'subscriber_first_name', applicant.person_name.given_name.downcase, data: {target: "attestation.FirstName", action: "attestation#canSubmitCheck"} %>
-    <%= hidden_field_tag 'subscriber_last_name', applicant.person_name.family_name.downcase, data: {target: "attestation.LastName", action: "attestation#canSubmitCheck"} %>
+    <%= hidden_field_tag 'subscriber_first_name', applicant.person_name.given_name.downcase, data: {target: "attestation.FirstName"} %>
+    <%= hidden_field_tag 'subscriber_last_name', applicant.person_name.family_name.downcase, data: {target: "attestation.LastName"} %>
   </section>
 
   <%= content_for :submit_button do %>

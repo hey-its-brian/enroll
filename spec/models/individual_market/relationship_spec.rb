@@ -56,6 +56,34 @@ RSpec.describe IndividualMarket::Relationship, type: :model do
         expect(relationship).to be_valid
       end
     end
+
+    # Because the constants are frozen, we need to remove the model and reload the file
+    # after setting the FF in order to test what happens when the feature is enabled/disabled
+    context 'when mitc relationships are enabled' do
+      before do
+        Object.send(:remove_const, :Relationship) if Module.const_defined?(:Relationship)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:mitc_relationships).and_return(true)
+        load 'app/models/individual_market/relationship.rb'
+      end
+
+      it 'allows father_or_mother_in_law' do
+        relationship.kind = 'father_or_mother_in_law'
+        expect(relationship).to be_valid
+      end
+    end
+
+    context 'when mitc relationships are disabled' do
+      before do
+        Object.send(:remove_const, :Relationship) if Module.const_defined?(:Relationship)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:mitc_relationships).and_return(false)
+        load 'app/models/individual_market/relationship.rb'
+      end
+
+      it 'does not allow mitc relationship kinds' do
+        relationship.kind = 'father_or_mother_in_law'
+        expect(relationship).not_to be_valid
+      end
+    end
   end
 
   describe 'invalid relationship kinds' do
