@@ -28,9 +28,9 @@
 <% end %>
 
 <% if @application.is_determined? %>
-  <div id="help_me_sign_up" tabindex="0" class="btn btn-error outline close2" data-target="#remove_application_modal" data-toggle="modal">
+  <button id="remove_faa" type="button" class="btn btn-error outline close2" data-target="#remove_application_modal" data-toggle="modal" aria-haspopup="dialog" aria-expanded="false">
     <%= l10n("faa.remove_financial_assistance_application") %>
-  </div>
+  </button>
 
   <%= render "financial_assistance/shared/remove_financial_assistance_modal" %>
   <%= link_to l10n("qhp_application.show.eligibility_results"), eligibility_results_application_path(@application), class: "btn secondary outline ml-2" %>
