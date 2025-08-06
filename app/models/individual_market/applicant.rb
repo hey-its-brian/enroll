@@ -68,6 +68,8 @@ module IndividualMarket
     #   @return [Array<Locations::Email>] Collection of emails associated with this applicant
     embeds_many :emails, class_name: 'Locations::Email', as: :emailable, cascade_callbacks: true, validate: true
 
+    before_create :assign_hbx_id
+
     # @!attribute family_member_id
     #   @return [BSON::ObjectId] The ID of the family member associated with this applicant
     field :family_member_id, type: BSON::ObjectId
@@ -105,6 +107,10 @@ module IndividualMarket
                                     end
 
     field :language_preference, type: String, default: "English"
+
+    # @!attribute hbx_id
+    # @return [String] The HBX ID for the applicant
+    field :hbx_id, type: String
 
     validate :unique_eligibilities
 
@@ -505,6 +511,10 @@ module IndividualMarket
     def unique_eligibilities
       eligibility_types = eligibilities.pluck(:_type)
       errors.add(:eligibilities, 'cannot have duplicate eligibilities types') if eligibility_types.uniq.length != eligibility_types.length
+    end
+
+    def assign_hbx_id
+      self.hbx_id ||= ::HbxIdGenerator.generate_application_id
     end
   end
 end

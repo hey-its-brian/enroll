@@ -39,6 +39,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
       @application_hash[:applicants].each do |applicant|
         applicant[:eligibilities] = [eligibility_hash]
       end
+      @determinations = application.applicants.pluck(:person_hbx_id)
       application.applicants.each do |applicant|
         applicant.build_ivl_eligibility_with_evidences
         individual_market_eligibility = applicant.individual_market_eligibility
@@ -57,11 +58,15 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
         )
         applicant.save
       end
+
     end
 
     context 'with valid application' do
       before do
-        @result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id], response: @application_hash.to_json, app_type: 'faa'})
+
+        @result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
+                                response: @application_hash.to_json, app_type: 'faa',
+                                determinations: {ssa: @determinations, vlp: @determinations}})
       end
       it 'returns success with message' do
         expect(@result).to be_success
@@ -103,14 +108,18 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
 
     context 'with invalid job_id' do
       it 'returns failure when job not found' do
-        result = subject.call({job_id: 'invalid_job_id', application_hbx_id: @application_hash[:hbx_id], response: @application_hash.to_json, app_type: 'faa'})
+        result = subject.call({job_id: 'invalid_job_id', application_hbx_id: @application_hash[:hbx_id],
+                               response: @application_hash.to_json, app_type: 'faa',
+                               determinations: {ssa: @determinations, vlp: @determinations}})
         expect(result).to be_failure
       end
     end
 
     context 'with invalid application_hbx_id' do
       it 'returns failure when application not found' do
-        result = subject.call({job_id: job.job_id, application_hbx_id: 'invalid_hbx_id', response: @application_hash.to_json, app_type: 'faa'})
+        result = subject.call({job_id: job.job_id, application_hbx_id: 'invalid_hbx_id',
+                               response: @application_hash.to_json, app_type: 'faa',
+                               determinations: {ssa: @determinations, vlp: @determinations}})
         expect(result).to be_failure
         expect(result.failure).to include("Application not found")
       end
@@ -118,7 +127,9 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
 
     context 'with invalid response payload' do
       before do
-        @result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id], response: "invalid json", app_type: 'faa'})
+        @result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
+                                response: "invalid json", app_type: 'faa',
+                                determinations: {ssa: @determinations, vlp: @determinations}})
 
       end
       it 'returns failure with malformed JSON' do
@@ -133,7 +144,9 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
 
       it 'returns failure when payload validation fails' do
         invalid_payload = {"applicants" => []}.to_json
-        result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id], response: invalid_payload})
+        result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
+                               response: invalid_payload,
+                               determinations: {ssa: @determinations, vlp: @determinations}})
         expect(result).to be_failure
       end
     end
@@ -166,7 +179,8 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
                                 job_id: job.job_id,
                                 application_hbx_id: 'app-123',
                                 app_type: 'faa',
-                                response: '{}'
+                                response: '{}',
+                                determinations: {ssa: @determinations, vlp: @determinations}
                               })
         expect(result).to be_success
       end

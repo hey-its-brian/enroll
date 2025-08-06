@@ -26,6 +26,9 @@ module Operations
           include ::Operations::Transmittable::TransmittableUtils
           include EventSource::Command
 
+          # Evidences that are eligible for SSA VLP verification
+          EVIDENCE_KEYS = %w[social_security_number_evidence citizenship_evidence immigration_evidence].freeze
+
           # Processes an SSA VLP verification request for the given application
           #
           # @param params [Hash] Parameters for the operation
@@ -129,6 +132,7 @@ module Operations
               )
               status_result = update_status("Payload failed validation", :failed, { job: @job, transmission: @request_transmission, transaction: @request_transaction })
               return status_result if status_result.failure?
+              add_verification_histories(update_reason: 'Request failed due to invalid payload')
               Failure("Failed to build application entity")
             end
           rescue StandardError => e
@@ -160,7 +164,7 @@ module Operations
             event.publish
             status_result = update_status("published SSA VLP verification request", :transmitted, { job: @job, transmission: @request_transmission, transaction: @request_transaction })
             return status_result if status_result.failure?
-
+            add_verification_histories(update_reason: 'Hub Request')
             Success("SSA VLP verification request for Application with hbx_id #{@application.hbx_id} is submitted")
           rescue StandardError => e
             add_errors(
@@ -171,6 +175,23 @@ module Operations
             status_result = update_status("Error occurred while publishing SSA VLP verification request", :failed, { job: @job, transmission: @request_transmission, transaction: @request_transaction })
             return status_result if status_result.failure?
             Failure("Failed to publish SSA VLP verification request")
+          end
+
+          def add_verification_histories(update_reason: 'Hub Request')
+            @application.applicants.each do |applicant|
+              eligibility = applicant.eligibilities.detect {|eli| eli.key.to_s == 'individual_market_eligibility' }
+              next unless eligibility
+
+              evidences = eligibility.evidences.select {|e| EVIDENCE_KEYS.include?(e.key.to_s) }
+              evidences.each do |evidence|
+                evidence.verification_histories.build({
+                                                        action: "SSA VLP Hub Request",
+                                                        update_reason: update_reason,
+                                                        updated_by: "Enroll App"
+                                                      })
+              end
+              @application.save
+            end
           end
         end
       end

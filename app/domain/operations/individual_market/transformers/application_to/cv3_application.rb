@@ -90,7 +90,8 @@ module Operations
                 address_same_as_primary: applicant.address_same_as_primary,
                 is_applying_coverage: applicant.is_applying_coverage,
                 is_homeless: applicant.is_homeless,
-                addresses: addresses(applicant)
+                addresses: addresses(applicant),
+                hbx_id: applicant.hbx_id
               }
 
               applicant_hash.merge!(immigration_information: immigration_information(applicant)) if applicant.immigration_information.present?
@@ -125,9 +126,11 @@ module Operations
           # @return [Hash] The transformed demographics hash
           def demographics(applicant)
             demographics = applicant.demographics
-            demographics_hash = demographics.attributes.deep_symbolize_keys.slice(:no_ssn, :gender, :is_incarcerated, :is_physically_disabled,
-                                                                                  :indian_tribe_member, :tribal_id, :tribal_name, :tribal_state, :language_code, :ethnicity,
+            demographics_hash = demographics.attributes.deep_symbolize_keys.slice(:no_ssn, :is_incarcerated, :is_physically_disabled,
+                                                                                  :indian_tribe_member, :tribal_id, :tribal_name,
+                                                                                  :tribal_state, :language_code, :ethnicity,
                                                                                   :citizen_status, :race)
+            demographics_hash[:gender] = demographics.gender.capitalize
             demographics_hash[:encrypted_ssn] = encrypt(demographics.ssn) if demographics.encrypted_ssn.present?
             demographics_hash[:dob] = demographics.dob.to_date if demographics.dob.present?
 

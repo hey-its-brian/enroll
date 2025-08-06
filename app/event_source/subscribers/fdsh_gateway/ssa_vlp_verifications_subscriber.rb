@@ -12,15 +12,18 @@ module Subscribers
         job_id = metadata[:headers]["job_id"]
         correlation_id = metadata[:correlation_id]
         application_type = metadata[:headers]["application_type"]
+        determinations = metadata[:headers]["determined_applicants"]
         status = metadata[:headers]["status"]
 
         if status == "failure"
           handle_failure_response(job_id)
           logger.info "Ssa::SsaVlpverificationsSubscriber: on_determined acked and processed failure from fdsh_gateway"
         else
-          verification_payload = { application_hbx_id: correlation_id, job_id: job_id, response: response, app_type: application_type }
+          verification_payload = { application_hbx_id: correlation_id, job_id: job_id,
+                                   response: response, app_type: application_type, determinations: determinations }
           result = Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermined.new.call(verification_payload)
           if result.success?
+            trigger_close_case_request(job_id, determinations, correlation_id, application_type)
             logger.info "Ssa::SsaVlpverificationsSubscriber: on_determined acked with success: #{result.success}"
           elsif result.failure
             errors = result.failure
@@ -31,6 +34,14 @@ module Subscribers
       rescue StandardError => e
         ack(delivery_info.delivery_tag)
         logger.error "SsaVlpverificationsSubscriber: on_determined error_message: #{e.message}, backtrace: #{e.backtrace}"
+      end
+
+      def trigger_close_case_request(job_id, determinations, correlation_id, application_type)
+        return unless EnrollRegistry.feature_enabled?(:send_close_case_request)
+
+        headers = {job_id: job_id, application_hbx_id: correlation_id, application_type: application_type}
+        event = event('events.enroll.verifications.ssavlp.closecase.requested', attributes: determinations.slice(:vlp), headers: headers)
+        event.publish
       end
 
       def handle_failure_response(job_id)

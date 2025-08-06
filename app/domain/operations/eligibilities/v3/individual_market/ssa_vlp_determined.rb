@@ -61,6 +61,7 @@ module Operations
             return Failure("Missing application_hbx_id") unless params[:application_hbx_id]
             return Failure("Response cannot be empty") if params[:response].empty?
             return Failure("App type is required") unless params[:app_type]
+            return Failure("Determined applicants are required") unless params[:determinations]
 
             Success(params)
           end

@@ -12,10 +12,17 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerifica
   let(:subject) { described_class.new }
 
   describe '#call' do
+    before do
+      applicant.build_ivl_eligibility_with_evidences
+      applicant.save
+    end
+
     context 'with valid application' do
       it 'returns success with message' do
         result = subject.call({application: application})
         expect(result).to be_success
+        eligibility = application.applicants.first.eligibilities.first
+        expect(eligibility.evidences.first.verification_histories.first.action).to eq('SSA VLP Hub Request')
         expect(::Transmittable::Job.first.process_status.latest_state).to eq(:transmitted)
         expect(::Transmittable::Transmission.first.process_status.latest_state).to eq(:transmitted)
         expect(::Transmittable::Transaction.first.process_status.latest_state).to eq(:transmitted)
