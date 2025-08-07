@@ -374,6 +374,7 @@ export default class extends Controller {
     this.newAddressFieldsTarget.insertAdjacentHTML('beforeend', this.sanitize(this.NewMailingAddressFieldsTemplateTarget.innerHTML))
     document.getElementById('add_mail_address').classList.add('d-none')
     document.getElementById('remove_mail_address').classList.remove('d-none')
+    this.maskZip()
   }
 
   removeMailingAddress(event) {
@@ -529,21 +530,36 @@ export default class extends Controller {
   checkSsnValidation() {
     if (this.hasNoSsnCheckboxTarget && this.hasSsnInputTarget) {
       let input = this.SsnInputTarget.querySelector('input')
-      if (!input.classList.contains('hidden')) {
-        if (this.NoSsnCheckboxTarget.checked && input.value.length > 1) {
-          input.setCustomValidity("Cannot provide an SSN and claim you don't have a SSN")
-          input.reportValidity()
-          return false
-        } else if (!this.NoSsnCheckboxTarget.checked && input.value.length == 0) {
-          input.setCustomValidity("One of the following is required: SSN, or check the box that you don't have an SSN")
-          input.reportValidity()
-          return false
+      let facade = this.SsnInputTarget.querySelector('.ssn-facade')
+      let maskedSsn = facade && facade.innerHTML.length > 0
+      let noSsn = this.NoSsnCheckboxTarget
+      if (input && input.pattern && input.pattern.length > 0) {
+        let ssnPattern = input.pattern
+        let ssnType = input.type
+        if (input && input.classList.contains('hidden')) {
+          input.removeAttribute('pattern')
+          input.removeAttribute('type')
+          input.disabled = true
         } else {
-          input.setCustomValidity("")
-          input.reportValidity()
-          return true
+          input.setAttribute('pattern', ssnPattern)
+          input.setAttribute('type', ssnType)
+          input.disabled = false
         }
+      }
+      if (this.NoSsnCheckboxTarget.checked && (input.value.length > 1 || maskedSsn)) {
+        input.removeAttribute('disabled')
+        noSsn.setCustomValidity("Cannot provide an SSN and claim you don't have a SSN")
+        noSsn.reportValidity()
+        return false
+      } else if (!this.NoSsnCheckboxTarget.checked && (input.value.length == 0 || !maskedSsn)) {
+        input.removeAttribute('disabled')
+        noSsn.setCustomValidity("One of the following is required: SSN, or check the box that you don't have an SSN")
+        noSsn.reportValidity()
+        return false
       } else {
+        input.removeAttribute('disabled')
+        noSsn.setCustomValidity("")
+        noSsn.reportValidity()
         return true
       }
     } else {
