@@ -24,6 +24,7 @@ What kind of change does this PR introduce?:
 - [ ] Build related changes
 - [ ] CI related changes
 - [ ] Dependency updates (e.g., add a new gem or update to a version)
+- [ ] Release (Prepares code for a release, e.g., version bumps, changelog updates, tagging, deployment scripts)
 
 # What is the ticket # detailing the issue?
 
