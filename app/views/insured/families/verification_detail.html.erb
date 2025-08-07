@@ -87,7 +87,8 @@
               <td class='col-7'><%= document.title.titleize %></td>
               <td class='col-3'><%= document.created_at %></td>
               <td class='col-2'>
-                <%= render partial: 'datatables/shared/dropdown', locals: {dropdowns: verification_dropdowns(@evidence, document)} %>
+                <% dropdowns = qhp_application_feature_enabled? ? qhp_enabled_verification_dropdowns(@evidence, document) : verification_dropdowns(@evidence, document)  %>
+                <%= render partial: 'datatables/shared/dropdown', locals: {dropdowns: dropdowns} %>
               </td>
             </tr>
           <% end %>

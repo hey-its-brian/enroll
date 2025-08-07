@@ -240,6 +240,18 @@ Rails.application.routes.draw do
     # get 'hbx_profiles/insured_index'
   end
 
+  resources :eligibilities, only: [], module: :eligibilities do
+    resources :evidences,    only: [], module: :evidences do
+      resources :documents do
+        collection do
+          post :upload
+          get :download
+          delete :destroy
+        end
+      end
+    end
+  end
+
   namespace :insured do
     get 'verification_documents/upload', to: 'verification_documents#upload'
     post 'verification_documents/upload', to: 'verification_documents#upload'

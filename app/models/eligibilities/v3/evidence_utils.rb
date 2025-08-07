@@ -166,6 +166,14 @@ module Eligibilities
           self.move_to_verified if can_move_to_verified?
         end
 
+        def type_unverified?
+          !type_verified?
+        end
+
+        def type_verified?
+          %w[verified attested].include? current_state
+        end
+
         # Needs to be updated once we have the requirements for the rejected state
         def set_failed
           if self.reload.current_state == :rejected

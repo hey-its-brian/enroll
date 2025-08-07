@@ -764,4 +764,95 @@ RSpec.describe DropdownHelper, type: :helper do
       end
     end
   end
+
+  describe '#qhp_enabled_verification_dropdowns' do
+    let(:user) { FactoryBot.create(:user, person: person) }
+    let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+    let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+    let(:primary_applicant) { family.primary_applicant }
+
+    let(:faa_application) do
+      FactoryBot.create(
+        :financial_assistance_application,
+        family_id: family.id,
+        aasm_state: 'determined',
+        submitted_at: Time.now,
+        assistance_year: TimeKeeper.date_of_record.year
+      )
+    end
+
+    let(:applicant) do
+      FactoryBot.create(
+        :financial_assistance_applicant,
+        family_member_id: primary_applicant.id,
+        person_hbx_id: person.hbx_id,
+        application: faa_application
+      )
+    end
+
+    let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
+    let(:income_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories, :outstanding, eligibility: aptc_csr_eligibility) }
+    let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+    let(:ssn_evidence) { FactoryBot.create(:social_security_number_evidence, :with_verification_histories, :outstanding, eligibility: ivl_eligibility) }
+    let(:document) do
+      income_evidence.documents.create!(
+        identifier: "urn:openhbx:terms:v1:file_storage:s3:bucket:id-verification#sample-key",
+        title: "test-document.pdf",
+        subject: "test-document.pdf",
+        status: "downloaded"
+      )
+    end
+    let(:determination) { ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family) }
+
+    let(:verification) do
+      subject = determination.success.subjects.first
+      subject.eligibility_states.by_type_uploadable.flat_map do |state|
+        state.evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
+      end.first
+    end
+
+    before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      income_evidence
+      ssn_evidence
+      document
+      family.assign_latest_application_gid
+      family.save!
+    end
+
+    context 'when verification is active' do
+      it 'returns both download and remove options' do
+        result = helper.qhp_enabled_verification_dropdowns(verification, document)
+        expect(result.size).to eq(2)
+        expect(result.first[:title]).to eq('Download')
+        expect(result.last[:title]).to eq('Remove')
+      end
+
+      it 'sets correct link attributes' do
+        result = helper.qhp_enabled_verification_dropdowns(verification, document)
+
+        expect(result.first[:attributes]).to eq({target: '_blank'})
+        expect(result.last[:attributes]).to eq({data: {method: 'delete'}})
+      end
+    end
+
+    context 'when verification is inactive' do
+      before do
+        allow(verification).to receive(:inactive).and_return(true)
+      end
+
+      it 'returns only download option' do
+        result = helper.qhp_enabled_verification_dropdowns(verification, document)
+
+        expect(result.size).to eq(1)
+        expect(result.first[:title]).to eq('Download')
+      end
+
+      it 'does not include remove option' do
+        result = helper.qhp_enabled_verification_dropdowns(verification, document)
+
+        expect(result.map { |option| option[:title] }).not_to include('Remove')
+      end
+    end
+  end
 end

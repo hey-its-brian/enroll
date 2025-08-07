@@ -184,6 +184,36 @@ module DropdownHelper
     construct_options(option_args)
   end
 
+  def qhp_enabled_verification_dropdowns(verification, document)
+    doc_key = document.identifier.split('#').last
+    located_evidence = verification.locate_evidence
+    eligibility = located_evidence&.eligibility
+    applicant = eligibility&.eligible
+    application = applicant&.application
+    person = verification.person
+
+    option_args = [[l10n('download'),
+                    download_eligibility_evidence_documents_path(eligibility, located_evidence,
+                                                                 application_gid: application&.to_global_id&.uri&.to_s,
+                                                                 applicant_id: applicant&.id,
+                                                                 person_id: person.id,
+                                                                 eligibility_kind: verification.evidence_group,
+                                                                 evidence_key: verification.evidence_item_key,
+                                                                 key: doc_key), :blank_target]]
+
+    unless verification.inactive
+      option_args << [l10n('remove'),
+                      eligibility_evidence_documents_path(eligibility, located_evidence,
+                                                          application_gid: application&.to_global_id&.uri&.to_s,
+                                                          applicant_id: applicant&.id,
+                                                          person_id: person.id,
+                                                          eligibility_kind: verification.evidence_group,
+                                                          evidence_key: verification.evidence_item_key,
+                                                          doc_key: doc_key), :delete]
+    end
+    construct_options(option_args)
+  end
+
   def current_applications_dropdowns(application, year, draft_application, alt_year)
     if application.is_a?(::FinancialAssistance::Application)
       sbm_faa_dropdown(application, year, draft_application, alt_year)

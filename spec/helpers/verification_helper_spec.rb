@@ -933,11 +933,11 @@ describe '#display_upload_for_verification?' do
   let(:person) {FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role)}
   let(:verification_type) { person.verification_types.first }
 
-  context 'when using the old verifications view' do
-    before do
-      allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(false)
-    end
+  before do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(false)
+  end
 
+  context 'when using the old verifications view' do
     context 'when document upload is not required' do
       before do
         allow(verification_type).to receive(:no_document_upload_required?).and_return(true)

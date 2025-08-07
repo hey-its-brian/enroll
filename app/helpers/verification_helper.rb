@@ -584,32 +584,71 @@ module VerificationHelper
     gid = GlobalID.parse(evidence.evidence_gid).model_id
     case group
     when 'aca_individual_market_eligibility'
-      query = {
-        url: insured_verification_documents_upload_path,
-        params: {
-          :docs_owner => person.id,
-          :verification_type => gid
-        }
-      }
+      query = build_market_eligibility_query(evidence, person, gid)
     when 'aptc_csr_credit'
-      located_evidence = evidence.locate_evidence
-      applicant = qhp_application_feature_enabled? ? located_evidence&.eligibility&.eligible : located_evidence&.evidenceable
-      return nil unless applicant.present?
-
-      query = {
-        url: financial_assistance.application_applicant_verification_documents_upload_path(applicant.application, applicant),
-        params: {
-          applicant_id: applicant.id,
-          evidence: gid,
-          evidence_kind: evidence.evidence_item_key
-        }
-      }
+      query = build_aptc_csr_query(evidence, person, gid)
     end
     query[:params][:person_id] = person.id
     query[:params][:eligibility_kind] = evidence.evidence_group
     query[:params][:evidence_key] = evidence.evidence_item_key
     query[:params][:family] = family.id
     query
+  end
+
+  def build_market_eligibility_query(evidence, person, gid)
+    if qhp_application_feature_enabled?
+      build_qhp_application_query(evidence)
+    else
+      build_legacy_verification_query(person, gid)
+    end
+  end
+
+  def build_aptc_csr_query(evidence, person, gid)
+    if qhp_application_feature_enabled?
+      build_qhp_application_query(evidence)
+    else
+      build_legacy_verification_query(person, gid)
+    end
+  end
+
+  def build_qhp_application_query(evidence)
+    located_evidence = evidence.locate_evidence
+    eligibility = located_evidence&.eligibility
+    applicant = eligibility&.eligible
+    application = applicant&.application
+
+    {
+      url: upload_eligibility_evidence_documents_path(eligibility, located_evidence),
+      params: {
+        application_gid: application&.to_global_id&.uri&.to_s,
+        applicant_id: applicant&.id
+      }
+    }
+  end
+
+  def build_legacy_verification_query(person, gid)
+    {
+      url: insured_verification_documents_upload_path,
+      params: {
+        docs_owner: person.id,
+        verification_type: gid
+      }
+    }
+  end
+
+  def build_legacy_aptc_csr_query(evidence)
+    located_evidence = evidence.locate_evidence
+    applicant = qhp_application_feature_enabled? ? located_evidence&.eligibility&.eligible : located_evidence&.evidenceable
+    return nil unless applicant.present?
+
+    {
+      url: financial_assistance.application_applicant_verification_documents_upload_path(applicant.application, applicant),
+      params: {
+        applicant_id: applicant.id,
+        evidence: GlobalID.parse(evidence.evidence_gid).model_id,
+        evidence_kind: evidence.evidence_item_key
+      }
+    }
   end
 
   def verification_admin_actions(evidence, family)
