@@ -16,6 +16,7 @@ if ENV['SERVICE_POD_NAME'].present? || !Rails.env.production?
         arn.security do |s|
           s.access_key_id = ENV['ENROLL_APP_AWS_SNS_SMS_ACCESS_KEY_ID'] || "access_key"
           s.secret_access_key = ENV['ENROLL_APP_AWS_SNS_SMS_SECRET_ACCESS_KEY'] || "secret_access_key"
+          s.endpoint_url = ENV['ENROLL_LOCALSTACK_URL'] unless ENV['ENROLL_LOCALSTACK_URL'].blank?
         end
       end
 
