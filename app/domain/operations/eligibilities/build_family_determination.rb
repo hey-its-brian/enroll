@@ -43,7 +43,7 @@ module Operations
         if family.latest_application.present?
           Success('Application exists.')
         else
-          Failure('Family does not have any eligible applications.')
+          Failure(:no_eligible_applications)
         end
       end
 

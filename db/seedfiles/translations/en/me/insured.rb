@@ -421,6 +421,8 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.confirm_new_member' => "Confirm New Member",
   :'en.personal' => "Personal",
   :'en.insured.families.verifications' => "Verifications",
+  :'en.insured.families.verifications.must_submit_application' => "You must submit an application before taking this action.",
+  :'en.insured.families.verifications.must_submit_application_summary' => "Documents are used to verify your identity and status. We verify the information you give us using electronic data sources. If the data sources do not match the information you gave us, we need you to provide documents to prove what you told us. ",
   :'en.insured.families.verifications.summary_disclaimer_1' => "We verify the information you provide on your application using electronic data sources, like the Federal Data Services Hub and the IRS. A data matching inconsistency (DMI) occurs if the data sources do not match the information you provided. When this occurs your verification status will be 'Outstanding' and you will need to provide documents to prove what you told us.",
   :'en.insured.families.verifications.summary_disclaimer_2' => "We will send you reminder notices about which documents you must submit to verify the information. If you do not provide documentation or resolve your DMI by the due date, you could lose your coverage or access to financial assistance, such as APTC and CSR.",
   :'en.insured.families.verifications.summary_disclaimer_3_1' => "Click on the member's name below to view more details and upload documents. For a full list of documents we accept, see the ",

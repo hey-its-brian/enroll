@@ -1,47 +1,106 @@
 <% if @bs4 %>
   <%= render partial: 'shared/family_side_nav' %>
-  <h1><%= l10n("insured.families.verifications") %></h1>
-  <% if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) %>
-    <% if EnrollRegistry.feature_enabled?(:verifications_household_summary_text_update) %>
-      <p><%= l10n('insured.families.verifications.summary_disclaimer_1') %></p>
-      <p><%= l10n('insured.families.verifications.summary_disclaimer_2') %></p>
-      <p>
-        <%= l10n('insured.families.verifications.summary_disclaimer_3_1') %>
-        <a href=<%= ::EnrollRegistry[:enroll_app].setting(:submit_docs_url).item %> rel="noopener noreferrer" target="_blank"><%= l10n('insured.families.verifications.summary_disclaimer_3_redirect_text') %></a>
-        <%= l10n('insured.families.verifications.summary_disclaimer_3_2') %>
-      </p>
-    <% else %>
-      <p><%= l10n(EnrollRegistry.feature_enabled?(:show_new_documents_tab_text) ? 'insured.verification_information' : 'insured.verification_information_old') %></p>
-    <% end %>
+  <% if qhp_application_feature_enabled? && @family.eligibility_determination.blank? && @subjects.blank? %>
+    <div class="alert alert-error d-flex align-items-start">
+      <div class="d-flex pl-1">
+        <div class="error-icon icon" alt="info">&nbsp;</div>
+      </div>
+      <div class="col mr-auto p-0 align-self-center">
+        <%= l10n('insured.families.verifications.must_submit_application') %>
+        <br>
+        <%= link_to l10n('insured.families.go_to_applications'), current_applications_insured_sbm_applications_path, data: { no_turbolink: true } %>
+      </div>
+      <div class="d-flex pl-1">
+        <a class="close-icon icon icon-sm pr-1 interaction-click-control-close" data-dismiss="alert" alt="Close" href="#">&nbsp;<span class="sr-only"> <%= l10n('en.close') %> </span></a>
+      </div>
+    </div>
+    <h1><%= l10n("insured.families.verifications") %></h1>
 
-    <% if @person && @subjects.present? && individual_market_is_enabled? %>
-      
-      <% items = @action_items.select { |item| can_display_type?(item) } %>
-      <% item_count = items.count %>
-      <% if items.present? %>
-        <section data-cuke="action-items">
-          <div class="d-flex flex-row align-items-center">
-            <h2 class="mb-0"><%= l10n('insured.consumer_roles.upload_ridp_documents.action_items') %></h2>
-             <%= render partial: "action_items_banner", locals: {item_count: item_count} %>
-          </div>
+    <p><%= l10n('insured.families.verifications.must_submit_application_summary') %></p>
+  <% else %>
+    <h1><%= l10n("insured.families.verifications") %></h1>
+    <% if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) %>
+      <% if EnrollRegistry.feature_enabled?(:verifications_household_summary_text_update) %>
+        <p><%= l10n('insured.families.verifications.summary_disclaimer_1') %></p>
+        <p><%= l10n('insured.families.verifications.summary_disclaimer_2') %></p>
+        <p>
+          <%= l10n('insured.families.verifications.summary_disclaimer_3_1') %>
+          <a href=<%= ::EnrollRegistry[:enroll_app].setting(:submit_docs_url).item %> rel="noopener noreferrer" target="_blank"><%= l10n('insured.families.verifications.summary_disclaimer_3_redirect_text') %></a>
+          <%= l10n('insured.families.verifications.summary_disclaimer_3_2') %>
+        </p>
+      <% else %>. 
+        <p><%= l10n(EnrollRegistry.feature_enabled?(:show_new_documents_tab_text) ? 'insured.verification_information' : 'insured.verification_information_old') %></p>
+      <% end %>
 
-          <div class="table-responsive mb-4">
-          <table data-controller='navigateable-table' class="col-sm-12 col-md-8">
+      <% if @person && @subjects.present? && individual_market_is_enabled? %>
+        
+        <% items = @action_items.select { |item| can_display_type?(item) } %>
+        <% item_count = items.count %>
+        <% if items.present? %>
+          <section data-cuke="action-items">
+            <div class="d-flex flex-row align-items-center">
+              <h2 class="mb-0"><%= l10n('insured.consumer_roles.upload_ridp_documents.action_items') %></h2>
+              <%= render partial: "action_items_banner", locals: {item_count: item_count} %>
+            </div>
+
+            <div class="table-responsive mb-4">
+            <table data-controller='navigateable-table' class="col-sm-12 col-md-8">
+                <thead>
+                  <tr>
+                    <th><%= l10n('member') %></th>
+                    <th><%= l10n('type') %></th>
+                    <th><%= l10n('status') %></th>
+                    <th><%= l10n('due_date') %></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% items.each do |item| %>
+                    <tr data-href=<%= verification_detail_insured_families_path(item.detail_params) %>>
+                      <td><b><%= item.person.full_name %></b></td>
+                      <td><b><%= display_verification_type_name(item.evidence_item_key) %></b></td>
+                      <td><b><%= show_v_type(item) %></b></td>
+                      <td><b><%= item.due_on || l10n('not_applicable') %></b></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        <% end %>
+
+        <section data-cuke="household-members">
+          <h2 class="mb-0"><%= l10n('insured.consumer_roles.upload_ridp_documents.outstanding_header') %></h2>
+          <div class="table-responsive">
+            <table data-controller='navigateable-table' class="col-sm-12 col-md-8">
               <thead>
                 <tr>
-                  <th><%= l10n('member') %></th>
-                  <th><%= l10n('type') %></th>
+                  <th><%= l10n('name') %></th>
+                  <th><%= l10n('hbx_id') %></th>
                   <th><%= l10n('status') %></th>
-                  <th><%= l10n('due_date') %></th>
+                  <th><%= l10n('insured.families.verifications.members.earliest_due_date') %></th>
                 </tr>
               </thead>
               <tbody>
-                <% items.each do |item| %>
-                  <tr data-href=<%= verification_detail_insured_families_path(item.detail_params) %>>
-                    <td><b><%= item.person.full_name %></b></td>
-                    <td><b><%= display_verification_type_name(item.evidence_item_key) %></b></td>
-                    <td><b><%= show_v_type(item) %></b></td>
-                    <td><b><%= item.due_on || l10n('not_applicable') %></b></td>
+                <% @subjects.each do |subject| %>
+                  <% documents_action_needed = subject.documents_action_needed? %>
+                  <tr data-href=<%= verification_individual_insured_families_path(person_id: subject.person_id) %>>
+                    <td><%= strong_if(is_strong: documents_action_needed) do subject.person.full_name end %></td>
+                    <td><%= strong_if(is_strong: documents_action_needed) do subject.person.hbx_id end %></td>
+                    <td>
+                      <% if documents_action_needed %>
+                        <div class="d-flex align-items-center" data-cuke="unverified-member-icon">
+                          <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
+                          <div class="my-1 pl-0 pr-2">
+                            <strong><%= l10n('insured.families.verifications.members.unverified') %></strong>
+                          </div>
+                        </div>
+                      <% elsif subject.cumulative_grouped_status == :review %>
+                        <%= l10n('insured.families.verifications.members.in_review') %>
+                      <% else %>
+                        <%= l10n('insured.families.verifications.members.verified') %>
+                      <% end %>
+                    </td>
+                    <td><%= strong_if(is_strong: documents_action_needed) do subject.earliest_due_date&.to_s || l10n('not_applicable') end %></td>
                   </tr>
                 <% end %>
               </tbody>
@@ -49,64 +108,24 @@
           </div>
         </section>
       <% end %>
-
-      <section data-cuke="household-members">
-        <h2 class="mb-0"><%= l10n('insured.consumer_roles.upload_ridp_documents.outstanding_header') %></h2>
-        <div class="table-responsive">
-          <table data-controller='navigateable-table' class="col-sm-12 col-md-8">
-            <thead>
-              <tr>
-                <th><%= l10n('name') %></th>
-                <th><%= l10n('hbx_id') %></th>
-                <th><%= l10n('status') %></th>
-                <th><%= l10n('insured.families.verifications.members.earliest_due_date') %></th>
-              </tr>
-            </thead>
-            <tbody>
-              <% @subjects.each do |subject| %>
-                <% documents_action_needed = subject.documents_action_needed? %>
-                <tr data-href=<%= verification_individual_insured_families_path(person_id: subject.person_id) %>>
-                  <td><%= strong_if(is_strong: documents_action_needed) do subject.person.full_name end %></td>
-                  <td><%= strong_if(is_strong: documents_action_needed) do subject.person.hbx_id end %></td>
-                  <td>
-                    <% if documents_action_needed %>
-                      <div class="d-flex align-items-center" data-cuke="unverified-member-icon">
-                        <div class="warning-icon icon" alt="warning" aria-hidden="true">&nbsp;</div>
-                        <div class="my-1 pl-0 pr-2">
-                          <strong><%= l10n('insured.families.verifications.members.unverified') %></strong>
-                        </div>
-                      </div>
-                    <% elsif subject.cumulative_grouped_status == :review %>
-                      <%= l10n('insured.families.verifications.members.in_review') %>
-                    <% else %>
-                      <%= l10n('insured.families.verifications.members.verified') %>
-                    <% end %>
-                  </td>
-                  <td><%= strong_if(is_strong: documents_action_needed) do subject.earliest_due_date&.to_s || l10n('not_applicable') end %></td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
+    <% else %>
+      <p><%= l10n(EnrollRegistry.feature_enabled?(:show_new_documents_tab_text) ? 'insured.verification_information' : 'insured.verification_information_old') %></p>
+      <div class="mb-4">
+        <% disable_list_flag = EnrollRegistry.feature_enabled?(:disable_documents_we_accept_list) %>
+        <a aria-controls="docs-verification-faq" aria-expanded="false" data-toggle=<%= disable_list_flag ? "none" : "collapse" %>  href=<%= disable_list_flag ? ::EnrollRegistry[:enroll_app].setting(:submit_docs_url).item : "#docs-verification-faq" %> role="button" rel="noopener noreferrer" target=<%= "_blank" if disable_list_flag  %>>
+          <%= l10n("insured.families.verification.documents_FAQ") %>
+        </a>
+        <div class="mt-2 collapse" id="docs-verification-faq">
+          <%= render partial: "insured/families/verification/documents_verification_list" %>
         </div>
-      </section>
-    <% end %>
-  <% else %>
-    <p><%= l10n(EnrollRegistry.feature_enabled?(:show_new_documents_tab_text) ? 'insured.verification_information' : 'insured.verification_information_old') %></p>
-    <div class="mb-4">
-      <% disable_list_flag = EnrollRegistry.feature_enabled?(:disable_documents_we_accept_list) %>
-      <a aria-controls="docs-verification-faq" aria-expanded="false" data-toggle=<%= disable_list_flag ? "none" : "collapse" %>  href=<%= disable_list_flag ? ::EnrollRegistry[:enroll_app].setting(:submit_docs_url).item : "#docs-verification-faq" %> role="button" rel="noopener noreferrer" target=<%= "_blank" if disable_list_flag  %>>
-        <%= l10n("insured.families.verification.documents_FAQ") %>
-      </a>
-      <div class="mt-2 collapse" id="docs-verification-faq">
-        <%= render partial: "insured/families/verification/documents_verification_list" %>
       </div>
-    </div>
-    <% if @person && @family_members.present? && individual_market_is_enabled? %>
-      <%= render 'insured/families/verification/verification' %>
-    <% end %>
+      <% if @person && @family_members.present? && individual_market_is_enabled? %>
+        <%= render 'insured/families/verification/verification' %>
+      <% end %>
 
-    <% if EnrollRegistry.feature_enabled?(:financial_assistance) %>
-      <%= render partial: "financial_assistance/applications/verifications/verification", locals: {family_id: @family.id} %>
+      <% if EnrollRegistry.feature_enabled?(:financial_assistance) %>
+        <%= render partial: "financial_assistance/applications/verifications/verification", locals: {family_id: @family.id} %>
+      <% end %>
     <% end %>
   <% end %>
 <% else %>

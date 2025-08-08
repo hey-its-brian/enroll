@@ -249,7 +249,12 @@ class Insured::FamiliesController < FamiliesController
         @action_items = value[:action_items]
         @subjects = value[:subjects]
       else
-        redirect_back(fallback_location: home_insured_families_path, :flash => {error: result.failure})
+        case result.failure
+        when :no_eligible_applications
+          # render verifications html
+        else
+          redirect_back(fallback_location: home_insured_families_path, :flash => {error: result.failure})
+        end
       end
     else
       @family_members = @person.primary_family.has_active_consumer_family_members

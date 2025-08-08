@@ -61,7 +61,7 @@ RSpec.describe ::Operations::Eligibilities::BuildFamilyDetermination, type: :mod
     context 'when family has no applications' do
       it 'returns a failure' do
         expect(result.success?).to be_falsey
-        expect(result.failure).to eq('Family does not have any eligible applications.')
+        expect(result.failure).to eq(:no_eligible_applications)
       end
     end
 

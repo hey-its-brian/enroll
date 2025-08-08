@@ -35,7 +35,7 @@ RSpec.describe Operations::Families::Verifications::Summary::HouseholdQuery, dbc
     it 'returns an error when family has no eligible applications' do
       result = subject.call(family: family)
       expect(result.failure?).to be true
-      expect(result.failure).to eq('Family does not have any eligible applications.')
+      expect(result.failure).to eq(:no_eligible_applications)
     end
   end
 
