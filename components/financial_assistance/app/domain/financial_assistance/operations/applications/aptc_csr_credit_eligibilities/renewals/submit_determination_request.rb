@@ -13,7 +13,7 @@ module FinancialAssistance
           # ::FinancialAssistance::Operations::Applications::AptcCsrCreditEligibilities::Renewals::SubmitDeterminationRequest.new.call({application_id: "63443986b062de03014770cd"})
           class SubmitDeterminationRequest
             include Dry::Monads[:result, :do, :try]
-            include Acapi::Notifiers
+            include ResourceRegistryHelper
 
             # @param [Hash] opts The options to request eligibility determination from MedicaidGateway system
             # @option opts [BSON::ObjectId] :application_id id ofFinancialAssistance::Application
@@ -42,11 +42,32 @@ module FinancialAssistance
 
             def submit_application(application)
               application.submit
+              application = retain_rop_information(application)
 
               return Success(application) if application.save
               Failure("Unable to save the application for given application hbx_id: #{application.hbx_id}, base_errors: #{application.errors.to_h}")
             rescue StandardError => e
               Failure("Submission failed for the application id: #{application.id} | backtrace: #{e}")
+            end
+
+            # Retains ROP information from current application to renewal application
+            # This only applies when QHP Application feature is enabled.
+            # This is only needed for system generated applications (including renewals).
+            #
+            # @param [FinancialAssistance::Application] renewal_application - renewal application instance
+            #
+            # @return [FinancialAssistance::Application] renewal_application - renewal application instance with ROP information retained
+            def retain_rop_information(renewal_application)
+              return renewal_application unless qhp_application_feature_enabled?
+
+              current_application = renewal_application.predecessor
+
+              current_application.applicants.each do |applicant|
+                renewal_applicant = renewal_application.applicants.where(family_member_id: applicant.family_member_id).first
+                renewal_applicant.retain_evidence_information(applicant)
+              end
+
+              renewal_application
             end
 
             def validate(application)

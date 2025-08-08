@@ -1583,6 +1583,15 @@ module FinancialAssistance
       end
     end
 
+    # Returns the predecessor application based on the predecessor_id and family_id.
+    #
+    # @return [FinancialAssistance::Application, nil] the predecessor application or nil if not found
+    def predecessor
+      return nil if predecessor_id.blank?
+
+      self.class.where(family_id: family_id, id: predecessor_id).first
+    end
+
     private
 
     # Records the transition of the application state.

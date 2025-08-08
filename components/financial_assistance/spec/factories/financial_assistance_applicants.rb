@@ -89,6 +89,10 @@ FactoryBot.define do
       relationship { 'child' }
     end
 
+    trait :us_citizen do
+      citizen_status { 'us_citizen' }
+    end
+
     trait :with_five_year_bar do
       five_year_bar_applies { true }
       five_year_bar_met { true }
@@ -128,6 +132,15 @@ FactoryBot.define do
 
     trait :with_local_mec_evidence do
       local_mec_evidence { FactoryBot.build(:evidence, key: :local_mec, title: 'Local MEC') }
+    end
+
+    trait :with_benchmark_premiums do
+      benchmark_premiums do
+        {
+          health_only_lcsp_premiums: [{ member_identifier: person_hbx_id, monthly_premium: 90.0 }],
+          health_only_slcsp_premiums: [{ member_identifier: person_hbx_id, monthly_premium: 90.0 }]
+        }
+      end
     end
   end
 end

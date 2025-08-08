@@ -43,7 +43,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
     context 'when no eligibilities exist' do
       it 'raises an error' do
         expect { applicant.send(:build_aptc_csr_evidences) }.to raise_error(NoMethodError, /undefined method `esi_mec_evidence' for nil:NilClass/)
-        expect { applicant.send(:build_individual_market_evidences) }.to raise_error(NoMethodError, /undefined method `citizenship_evidence' for nil:NilClass/)
+        expect { applicant.send(:build_individual_market_evidences) }.to raise_error(NoMethodError, /undefined method `alive_evidence' for nil:NilClass/)
       end
     end
   end

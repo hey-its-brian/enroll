@@ -1782,7 +1782,7 @@ module FinancialAssistance
     #
     # @return [void]
     def build_alive_evidence
-      return individual_market_eligibility.alive_evidence if individual_market_eligibility&.alive_evidence
+      return individual_market_eligibility.alive_evidence if individual_market_eligibility.alive_evidence
       return if encrypted_ssn.blank?
       return unless is_applying_coverage
 
@@ -1821,6 +1821,19 @@ module FinancialAssistance
       tribal_name.present? ? tribal_name : tribal_names
     end
 
+    # Retains evidence information from another applicant.
+    #   1. Reasonable Opportunity Period (ROP) due date
+    #   2. Evidence's current state
+    #   3. Due date extended information (if applicable). This currently applies to income evidence only.
+    #
+    # @param applicant [FinancialAssistance::Applicant] The applicant from whom the evidence information is to be retained.
+    #
+    # @return [void]
+    def retain_evidence_information(applicant)
+      individual_market_eligibility.retain_evidence_information(applicant.individual_market_eligibility)
+      aptc_csr_eligibility.retain_evidence_information(applicant.aptc_csr_eligibility)
+    end
+
     def name_changed?(prev_applicant)
       !(first_name == prev_applicant.first_name ||
       last_name == prev_applicant.last_name)
@@ -1853,17 +1866,14 @@ module FinancialAssistance
     #
     # @return [void]
     def build_individual_market_evidences
+      build_alive_evidence
+      build_american_indian_evidence
       build_citizenship_evidence
       build_immigration_evidence
-      build_american_indian_evidence
       build_social_security_number_evidence
 
       # We do not have residency evidence verification for any client we are currently supporting from this codebase
       # build_residency_evidence
-
-      # Previously, the AliveStatus VerificationType was added on a person
-      # during a person.save event, we are creating it here as well to mimic that logic
-      build_alive_evidence
     end
 
     # Builds citizenship evidence if the applicant is applying for coverage, does not have citizenship evidence, and consumer is a US citizen or naturalized citizen.

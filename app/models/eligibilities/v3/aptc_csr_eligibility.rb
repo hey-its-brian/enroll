@@ -105,6 +105,18 @@ module Eligibilities
         income_evidence.extend_due_date(action, extend_by, modified_by) if income_evidence.present?
       end
 
+      # Retains reasonable opportunity information from another eligibility
+      #
+      # @param eligibility [Eligibilities::V3::AptcCsrEligibility] The eligibility to retain information from
+      #
+      # @return [void]
+      def retain_evidence_information(eligibility)
+        esi_mec_evidence.retain_evidence_information(eligibility.esi_mec_evidence) if esi_mec_evidence.present?
+        income_evidence.retain_evidence_information(eligibility.income_evidence) if income_evidence.present?
+        local_mec_evidence.retain_evidence_information(eligibility.local_mec_evidence) if local_mec_evidence.present?
+        non_esi_mec_evidence.retain_evidence_information(eligibility.non_esi_mec_evidence) if non_esi_mec_evidence.present?
+      end
+
       private
 
       # Adds to errors collection if duplicate evidence types are found

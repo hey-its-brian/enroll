@@ -5,9 +5,9 @@ require 'rails_helper'
 RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEligibilities::Renewals::SubmitDeterminationRequest, dbclean: :after_each do
   include Dry::Monads[:do, :result]
 
-  let!(:person) { FactoryBot.create(:person, :with_ssn, hbx_id: "732020")}
+  let(:person) { FactoryBot.create(:person, :with_ssn)}
   let!(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person)}
-  let!(:application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: 'draft', hbx_id: "830293", effective_date: TimeKeeper.date_of_record.beginning_of_year) }
+  let(:application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: 'draft', effective_date: TimeKeeper.date_of_record.beginning_of_year) }
   let!(:applicant) do
     FactoryBot.create(:applicant,
                       first_name: person.first_name,

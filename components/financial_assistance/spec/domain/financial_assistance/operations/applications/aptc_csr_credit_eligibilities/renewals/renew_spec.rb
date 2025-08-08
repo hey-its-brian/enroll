@@ -9,11 +9,10 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
     DatabaseCleaner.clean
   end
 
-  let!(:person) { FactoryBot.create(:person, :with_consumer_role, hbx_id: '100095')}
+  let!(:person) { FactoryBot.create(:person, :with_consumer_role)}
   let!(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person)}
   let!(:application) do
     FactoryBot.create(:financial_assistance_application,
-                      hbx_id: '111000222',
                       family_id: family.id,
                       is_renewal_authorized: false,
                       is_requesting_voter_registration_application_in_mail: true,
@@ -30,7 +29,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
 
   let!(:applicant) do
     FactoryBot.create(:financial_assistance_applicant,
-                      person_hbx_id: '100095',
+                      person_hbx_id: person.hbx_id,
                       is_primary_applicant: true,
                       family_member_id: family.primary_applicant.id,
                       first_name: 'Gerald',
@@ -261,6 +260,12 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
       it 'sets generation_reason for newly generated application' do
         expect(@renewal_draft_app.generation_reason).to eq(:renewal)
       end
+
+      it 'creates evidences for the applicant' do
+        returned_applicant = @renewal_draft_app.applicants.first
+        all_evidences = (returned_applicant.individual_market_eligibility.evidences.to_a + returned_applicant.aptc_csr_eligibility.evidences.to_a).flatten.compact
+        expect(all_evidences).not_to be_empty
+      end
     end
   end
 
@@ -295,7 +300,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
       end
       let!(:family_11) { FactoryBot.create(:family, :with_primary_family_member, person: person_11)}
       let!(:family_member_12) { FactoryBot.create(:family_member, person: person_12, family: family_11)}
-      let!(:application_11) { FactoryBot.create(:financial_assistance_application, family_id: family_11.id, aasm_state: 'determined', hbx_id: "111000", effective_date: TimeKeeper.date_of_record, years_to_renew: 2) }
+      let!(:application_11) { FactoryBot.create(:financial_assistance_application, family_id: family_11.id, aasm_state: 'determined', effective_date: TimeKeeper.date_of_record, years_to_renew: 2) }
       let!(:applicant_11) do
         FactoryBot.create(:applicant,
                           application: application_11,
@@ -532,11 +537,10 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
   end
 
   describe 'application renewal determination eligibility' do
-    let!(:person) { FactoryBot.create(:person, :with_consumer_role, hbx_id: '100095')}
+    let!(:person) { FactoryBot.create(:person, :with_consumer_role)}
     let!(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person)}
     let!(:application) do
       FactoryBot.create(:financial_assistance_application,
-                        hbx_id: '111000222',
                         family_id: family.id,
                         is_renewal_authorized: false,
                         is_requesting_voter_registration_application_in_mail: true,
@@ -553,7 +557,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
 
     let!(:applicant_1) do
       FactoryBot.create(:financial_assistance_applicant,
-                        person_hbx_id: '100095',
+                        person_hbx_id: person.hbx_id,
                         is_primary_applicant: true,
                         family_member_id: family.primary_applicant.id,
                         first_name: 'Gerald',
@@ -564,7 +568,6 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
 
     let!(:applicant_2) do
       FactoryBot.create(:financial_assistance_applicant,
-                        person_hbx_id: '100096',
                         is_primary_applicant: true,
                         family_member_id: family.primary_applicant.id,
                         first_name: 'Diana',

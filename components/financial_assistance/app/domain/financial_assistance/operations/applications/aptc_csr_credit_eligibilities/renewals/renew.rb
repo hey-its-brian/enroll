@@ -167,6 +167,12 @@ module FinancialAssistance
                 renewal_application.full_medicaid_determination = application.full_medicaid_determination if full_medicaid_determination_feature_enabled?
                 update_aasm_state(application, renewal_application, renewal_application_factory)
                 renewal_application.renewal_draft_blocker_reasons = [@failure_reason] if @failure_reason
+
+                if qhp_application_feature_enabled?
+                  renewal_application.build_ivl_eligibility_with_evidences
+                  renewal_application.build_aptc_eligibilities_evidences
+                end
+
                 renewal_application.save
                 if renewal_application.renewal_draft?
                   Success(renewal_application)
@@ -238,21 +244,6 @@ module FinancialAssistance
               return application.renewal_base_year if application.renewal_base_year.present?
               application.calculate_renewal_base_year
             end
-
-            def generate_renewed_event(application, renewal_year)
-              params = { payload: { application_id: application.id.to_s, renewal_year: renewal_year }, event_name: 'renewed' }
-
-              Try do
-                ::FinancialAssistance::Operations::Applications::AptcCsrCreditEligibilities::Renewals::PublishRenewalRequest.new.call(params)
-              end.bind do |result|
-                if result.success?
-                  Success("#{result.success} for application id: #{application.id}")
-                else
-                  Failure(result.failure)
-                end
-              end
-            end
-
           end
         end
       end

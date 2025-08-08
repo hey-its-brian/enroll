@@ -187,7 +187,7 @@ module Operations
           # @return [Array<Hash>] Collection of transformed evidence hashes
           def evidence(eligibility)
             eligibility.evidences.inject([]) do |result, evidence|
-              evidence_hash = evidence.attributes.deep_symbolize_keys.slice(:key, :title, :description, :is_satisfied, :determined_at, :current_state)
+              evidence_hash = evidence.attributes.deep_symbolize_keys.slice(:key, :title, :description, :is_satisfied, :determined_at, :current_state, :due_on)
               result << evidence_hash
               result
             end

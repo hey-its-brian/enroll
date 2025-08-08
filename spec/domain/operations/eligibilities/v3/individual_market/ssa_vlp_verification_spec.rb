@@ -22,7 +22,10 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerifica
         result = subject.call({application: application})
         expect(result).to be_success
         eligibility = application.applicants.first.eligibilities.first
-        expect(eligibility.evidences.first.verification_histories.first.action).to eq('SSA VLP Hub Request')
+        evidence = eligibility.evidences.where(
+          :key.in => Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerification::EVIDENCE_KEYS
+        ).first
+        expect(evidence.verification_histories.first.action).to eq('SSA VLP Hub Request')
         expect(::Transmittable::Job.first.process_status.latest_state).to eq(:transmitted)
         expect(::Transmittable::Transmission.first.process_status.latest_state).to eq(:transmitted)
         expect(::Transmittable::Transaction.first.process_status.latest_state).to eq(:transmitted)
