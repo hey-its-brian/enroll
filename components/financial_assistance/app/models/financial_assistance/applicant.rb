@@ -1821,6 +1821,31 @@ module FinancialAssistance
       tribal_name.present? ? tribal_name : tribal_names
     end
 
+    def name_changed?(prev_applicant)
+      !(first_name == prev_applicant.first_name ||
+      last_name == prev_applicant.last_name)
+    end
+
+    def identity_info_changed?(prev_applicant)
+      !(encrypted_ssn == prev_applicant.encrypted_ssn ||
+      dob == prev_applicant.dob)
+    end
+
+    def citizen_status_changed?(prev_applicant)
+      if citizen_status == prev_applicant.citizen_status
+        false
+      else
+        citizen_statuses = EnrollRegistry[:consumer_role_hub_call].setting(:citizen_statuses).item
+        citizen_statuses.include?(citizen_status)
+      end
+    end
+
+    def indian_tribe_changed?(prev_applicant)
+      !(tribal_state == prev_applicant.tribal_state ||
+      tribal_name == prev_applicant.tribal_name ||
+      tribal_id == prev_applicant.tribal_id)
+    end
+
     private
 
     # Builds evidences for the individual market eligibility.

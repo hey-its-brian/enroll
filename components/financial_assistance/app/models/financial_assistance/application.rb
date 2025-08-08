@@ -311,6 +311,16 @@ module FinancialAssistance
         .limit(1)
     }
 
+    scope :last_determined_by_family_id, lambda { |family_id, present_app_id|
+      renewal_eligible_by_family_id(family_id)
+        .where(:id.ne => present_app_id)
+        .order_by(assistance_year: -1, submitted_at: -1).limit(1)
+    }
+
+    scope :renewal_eligible_by_family_id, lambda { |family_id|
+      where(:aasm_state.in => STATES_FOR_VERIFICATIONS, family_id: family_id)
+    }
+
     scope :submitted, ->{ any_in(aasm_state: SUBMITTED_STATUS) }
     scope :determined, ->{ any_in(aasm_state: "determined") }
     scope :closed, ->{ any_in(aasm_state: CLOSED_STATUSES) }
@@ -338,6 +348,10 @@ module FinancialAssistance
                            'imported']
       )
     }
+
+    # @!scope class
+    # @return [Mongoid::Criteria] Applications with assistance year greater than or equal to the specified year
+    scope :from_year, ->(year) { where(:assistance_year.gte => year) }
 
     scope :renewal_eligible, -> { where(:aasm_state.in => RENEWAL_ELIGIBLE_STATES) }
 

@@ -28,6 +28,8 @@ module Eligibilities
         :rejected
       ].freeze
 
+      ROP_IN_PROGRESS_STATES = [:review, :outstanding, :rejected].freeze
+
       # Definition of all allowed state transitions
       # @return [Hash] Map of event names to transition rules
       # @example
@@ -192,6 +194,199 @@ module Eligibilities
           self.due_on_type = 'response_from_hub'
 
           true
+        end
+
+        # Determines the appropriate state for evidence based on previous evidence and demographics changes.
+        # For IVL evidences, if previous evidence is verified and demographics haven't changed,
+        # the evidence is copied as verified. Otherwise, it transitions to an eligible state.
+        #
+        # @param hub_call [Boolean] Whether this is being called from a hub verification process (defaults to false)
+        # @return [void]
+        def determine_outstanding_state(hub_call: false)
+          ivl_evidence_keys = ::Eligibilities::V3::IndividualMarketEligibility::EVIDENCES
+          prev_evidence = fetch_last_determined_evidence(hub_call: hub_call)
+
+          if ivl_evidence_keys.include?(key.to_s) &&
+             prev_evidence&.verified? &&
+             demographics_changed?
+            copied_verified
+          else
+            eligible_state(hub_call: hub_call)
+          end
+        end
+
+        # Checks if the applicant's demographics have changed compared to the previous application.
+        # Compares name, identity information, citizen status, and Indian tribe information.
+        #
+        # @return [Boolean] true if any demographics have changed, false otherwise
+        def demographics_changed?
+          prev_applicant = fetch_last_determined_applicant
+          return false unless prev_applicant
+          applicant = eligibility&.eligible
+          applicant.name_changed?(prev_applicant) ||
+            applicant.identity_info_changed?(prev_applicant) ||
+            applicant.citizen_status_changed?(prev_applicant) ||
+            applicant.indian_tribe_changed?(prev_applicant)
+        end
+
+        # Moves evidence to verified state when copying from previous application.
+        # Used when previous evidence was verified and no demographics changes occurred.
+        #
+        # @return [void]
+        def copied_verified
+          return unless can_move_to_verified?
+
+          move_to_verified
+          add_to_history(
+            'copied_verified',
+            "no demographics changes for the applicant",
+            'system'
+          )
+        end
+
+        # Determines the appropriate state transition based on whether ROP is in progress.
+        # Routes to either ROP-specific logic or non-ROP logic.
+        #
+        # @return [void]
+        def eligible_state(hub_call: false)
+          if rop_in_progress?(hub_call: hub_call)
+            rop_eligible_state(hub_call: hub_call)
+          else
+            non_rop_eligible_state
+          end
+        end
+
+        def rop_in_progress?(hub_call: false)
+          prev_evidence = fetch_last_determined_evidence(hub_call: hub_call)
+          return false unless prev_evidence
+
+          state = prev_evidence_state
+          return false unless state
+
+          ROP_IN_PROGRESS_STATES.include?(state.to_sym) &&
+            prev_evidence.due_on.present? &&
+            prev_evidence.due_on > TimeKeeper.date_of_record
+        end
+
+        def rop_eligible_state(hub_call: false)
+          prev_evidence = fetch_last_determined_evidence(hub_call: hub_call)
+          return unless prev_evidence
+
+          case prev_evidence.current_state.to_s
+          when 'review'
+            copied_review(prev_evidence)
+          when 'outstanding'
+            copied_outstanding(prev_evidence)
+          when 'rejected'
+            copied_rejected(prev_evidence)
+          else
+            Rails.logger.warn("Unexpected state in rop_eligible_state: #{prev_evidence.current_state}")
+          end
+        end
+
+        def non_rop_eligible_state
+          person = eligibility&.eligible&.find_person
+          return move_to_negative_response_received unless person
+
+          is_enrolled = person.families&.any? { |family| family.person_has_an_active_enrollment?(person) }
+          if is_enrolled
+            return unless can_move_to_outstanding?
+
+            move_to_outstanding
+            if EnrollRegistry.feature_enabled?(:set_due_date_upon_response_from_hub)
+              evidence_document_due = EnrollRegistry[:verification_document_due_in_days].item
+              self.due_on = TimeKeeper.date_of_record + evidence_document_due.days
+              self.due_on_type = 'response_from_hub'
+            end
+          else
+            return unless can_move_to_negative_response_received?
+
+            move_to_negative_response_received
+          end
+        end
+
+        def prev_evidence_state
+          family = fetch_family
+          prev_evidence = fetch_last_determined_evidence
+          return nil unless family && prev_evidence
+
+          prev_evidence.current_state
+        end
+
+        def copied_review(prev_evidence)
+          return unless can_move_to_review?
+
+          move_to_review
+          add_history_with_prev_due_on('copied_review', prev_evidence)
+        end
+
+        def copied_outstanding(prev_evidence)
+          return unless can_move_to_outstanding?
+
+          move_to_outstanding
+          add_history_with_prev_due_on('copied_outstanding', prev_evidence)
+        end
+
+        def copied_rejected(prev_evidence)
+          return unless can_move_to_rejected?
+
+          move_to_rejected
+          add_history_with_prev_due_on('copied_rejected', prev_evidence)
+        end
+
+        # Sets the due date from previous evidence and adds verification history.
+        #
+        # @param action [String] The action being performed
+        # @param prev_evidence [Evidence] The previous evidence to copy due date from
+        # @return [void]
+        def add_history_with_prev_due_on(action, prev_evidence)
+          self.due_on = prev_evidence.due_on
+          add_to_history(
+            action,
+            "copied state from previous application",
+            'system'
+          )
+        end
+
+        def fetch_family
+          @fetch_family ||= eligibility&.eligible&.application&.family
+        end
+
+        def current_app_id
+          @current_app_id ||= eligibility&.eligible&.application&.id
+        end
+
+        def fetch_last_determined_application(hub_call: false)
+          family = fetch_family
+          return nil unless family
+
+          @fetch_last_determined_application ||= if hub_call
+                                                   eligibility&.eligible&.application
+                                                 else
+                                                   family.fetch_last_determined_application_from(current_app_id, 2025)
+                                                 end
+        end
+
+        def fetch_last_determined_applicant(hub_call: false)
+          family_member_id = eligibility.eligible.family_member_id
+          return nil unless family_member_id
+
+          application = fetch_last_determined_application(hub_call: hub_call)
+          return nil unless application
+
+          @fetch_last_determined_applicant ||= application.applicants&.detect do |applicant|
+            applicant.family_member_id == family_member_id
+          end
+        end
+
+        def fetch_last_determined_evidence(hub_call: false)
+          applicant = fetch_last_determined_applicant(hub_call: hub_call)
+          return nil unless applicant
+
+          target_eligibility = applicant.individual_market_eligibility
+          return nil unless target_eligibility
+
+          @fetch_last_determined_evidence ||= target_eligibility.evidences&.where(key: key)&.first
         end
 
         # Adds a new verification history record to the evidence with the specified action, update reason, and updated by user.

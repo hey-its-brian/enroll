@@ -70,6 +70,8 @@ module IndividualMarket
     # @return [Array<String>] Collection of Application statuses that are reviewable
     REVIEWABLE_STATUSES = %w[submission_failed submitted determination_failed determined].freeze
 
+    STATES_FOR_VERIFICATIONS = %w[submitted determination_response_error determined].freeze
+
     # Validates the origin field to ensure it is a valid kind
     validates :origin, inclusion: { in: ORIGIN_KINDS }
 
@@ -135,6 +137,20 @@ module IndividualMarket
     # @return [Mongoid::Criteria] The most recent determined IndividualMarket::Application based on assistance year and submitted_at
     scope :for_determined_family, lambda { |family_id|
       where(current_state: :determined, family_id: family_id)
+    }
+
+    # @!scope class
+    # @return [Mongoid::Criteria] Applications with assistance year greater than or equal to the specified year
+    scope :from_year, ->(year) { where(:assistance_year.gte => year) }
+
+    scope :last_determined_by_family_id, lambda { |family_id, present_app_id|
+      renewal_eligible_by_family_id(family_id)
+        .where(:id.ne => present_app_id)
+        .order_by(assistance_year: -1, submitted_at: -1).limit(1)
+    }
+
+    scope :renewal_eligible_by_family_id, lambda { |family_id|
+      where(:current_state.in => STATES_FOR_VERIFICATIONS, family_id: family_id)
     }
 
     # All possible states for an application

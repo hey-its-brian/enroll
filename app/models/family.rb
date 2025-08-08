@@ -1879,6 +1879,14 @@ class Family
     result
   end
 
+  def fetch_last_determined_application_from(current_app_id, year)
+    qhp_app = ::IndividualMarket::Application.from_year(year).last_determined_by_family_id(id, current_app_id).first
+
+    faa_app = ::FinancialAssistance::Application.from_year(year).last_determined_by_family_id(id, current_app_id).first
+
+    @fetch_last_determined_application_from ||= most_recent_application(qhp_app, faa_app)
+  end
+
   private
 
   def find_best_application_for_year(applications)
@@ -2028,15 +2036,25 @@ class Family
       :aasm_state, :assistance_year, :family_id, :id, :submitted_at
     ).first
 
-    @fetch_latest_determined_application = if qhp_app && faa_app
-                                             if qhp_app.assistance_year == faa_app.assistance_year
-                                               qhp_app.submitted_at > faa_app.submitted_at ? qhp_app : faa_app
-                                             else
-                                               qhp_app.assistance_year > faa_app.assistance_year ? qhp_app : faa_app
-                                             end
-                                           else
-                                             qhp_app || faa_app
-                                           end
+    @fetch_latest_determined_application = most_recent_application(qhp_app, faa_app)
+  end
+
+  # Determines which application is more recent between QHP and FAA applications
+  # Compares by assistance year first, then by submission date if years are equal
+  #
+  # @param qhp_app [IndividualMarket::Application, nil] The QHP application
+  # @param faa_app [FinancialAssistance::Application, nil] The FAA application
+  # @return [IndividualMarket::Application, FinancialAssistance::Application, nil] The more recent application
+  def most_recent_application(qhp_app, faa_app)
+    if qhp_app && faa_app
+      if qhp_app.assistance_year == faa_app.assistance_year
+        qhp_app.submitted_at > faa_app.submitted_at ? qhp_app : faa_app
+      else
+        qhp_app.assistance_year > faa_app.assistance_year ? qhp_app : faa_app
+      end
+    else
+      qhp_app || faa_app
+    end
   end
 
   def build_household

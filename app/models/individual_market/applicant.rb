@@ -504,6 +504,36 @@ module IndividualMarket
       individual_market_eligibility.retain_evidence_information(applicant.individual_market_eligibility)
     end
 
+    def name_changed?(prev_applicant)
+      return false unless prev_applicant&.person_name && person_name
+
+      person_name.given_name != prev_applicant.person_name.given_name ||
+        person_name.family_name != prev_applicant.person_name.family_name
+    end
+
+    def identity_info_changed?(prev_applicant)
+      return false unless prev_applicant&.demographics && demographics
+
+      demographics.dob != prev_applicant.demographics.dob ||
+        demographics.encrypted_ssn != prev_applicant.demographics.encrypted_ssn
+    end
+
+    def citizen_status_changed?(prev_applicant)
+      return false unless prev_applicant&.demographics && demographics
+      return false if demographics.citizen_status == prev_applicant.demographics.citizen_status
+
+      citizen_statuses = EnrollRegistry[:consumer_role_hub_call].setting(:citizen_statuses).item
+      citizen_statuses.include?(demographics.citizen_status)
+    end
+
+    def indian_tribe_changed?(prev_applicant)
+      return false unless prev_applicant&.demographics && demographics
+
+      demographics.tribal_state != prev_applicant.demographics.tribal_state ||
+        demographics.tribal_name != prev_applicant.demographics.tribal_name ||
+        demographics.tribal_id != prev_applicant.demographics.tribal_id
+    end
+
     private
 
     # Adds to errors collection if duplicate eligibilities are found
