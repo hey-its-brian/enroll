@@ -8,6 +8,8 @@ module Eligibilities
       extend ActiveSupport::Concern
       include StateMachine
 
+      OUTSTANDING_STATUSES = %i[outstanding rejected review].freeze
+
       # All possible states for evidence verification
       # @return [Array<Symbol>] List of all possible states for the state machine
       STATES = [
@@ -441,7 +443,8 @@ module Eligibilities
             'system'
           )
 
-          return unless current_evidence.due_on.present?
+          return if current_evidence.due_on.blank?
+          return if OUTSTANDING_STATUSES.exclude?(new_state.to_sym)
 
           self.due_on = current_evidence.due_on
           self.build_verification_history(

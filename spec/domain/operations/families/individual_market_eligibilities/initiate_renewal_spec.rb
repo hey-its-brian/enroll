@@ -34,6 +34,7 @@ RSpec.describe Operations::Families::IndividualMarketEligibilities::InitiateRene
   let(:renewal_year) { TimeKeeper.date_of_record.year.next }
 
   let(:current_application) { FactoryBot.create(:individual_market_application, :determined, family_id: family.id) }
+  let(:renewal_qhp_application) { FactoryBot.create(:individual_market_application, :renewal, current_state: renewal_state, family_id: family.id) }
 
   let(:enabled) { true }
 
@@ -44,6 +45,48 @@ RSpec.describe Operations::Families::IndividualMarketEligibilities::InitiateRene
   end
 
   describe '#call' do
+    context 'with:
+      - a family with active enrollment
+      - no financial assistance renewal application
+      - a renewal application of QHP type in determined state
+      ' do
+
+      let(:renewal_state) { :determined }
+
+      before do
+        renewal_qhp_application
+        enrollment_member
+      end
+
+      it 'returns success without the family ID included' do
+        result = subject.call(renewal_year: renewal_year)
+
+        expect(result).to be_success
+        expect(result.value!).not_to include(family.id)
+      end
+    end
+
+    context 'with:
+      - a family with active enrollment
+      - no financial assistance renewal application
+      - a renewal application of QHP type in initial state
+      ' do
+
+      let(:renewal_state) { :initial }
+
+      before do
+        renewal_qhp_application
+        enrollment_member
+      end
+
+      it 'returns success with the family ID included' do
+        result = subject.call(renewal_year: renewal_year)
+
+        expect(result).to be_success
+        expect(result.value!).to include(family.id)
+      end
+    end
+
     context 'with:
       - a family with active enrollment
       - no financial assistance renewal application

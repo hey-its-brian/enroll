@@ -153,6 +153,11 @@ module IndividualMarket
       where(:current_state.in => STATES_FOR_VERIFICATIONS, family_id: family_id)
     }
 
+    # @return [Mongoid::Criteria] Applications for a specific assistance year and family
+    scope :for_year_and_family, lambda { |year, family_id|
+      only(:assistance_year, :current_state, :family_id).where(assistance_year: year, family_id: family_id)
+    }
+
     # All possible states for an application
     # @!attribute ALL_STATES
     # @return [Array<Symbol>] Collection of all possible states

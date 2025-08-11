@@ -17,8 +17,6 @@ module FinancialAssistance
     class IncomeEvidence < ::Eligibilities::V3::Evidence
       include ::Eligibilities::V3::EvidenceUtils
 
-      OUTSTANDING_STATUSES = %i[outstanding rejected].freeze
-
       # Determines if the income evidence verification is satisfied
       #
       # @return [Boolean] true if income verification is satisfied, false otherwise
@@ -116,30 +114,34 @@ module FinancialAssistance
                      'faa'
                    end
 
+        # Raises a RuntimeError if the application type is not 'faa'. Only FA applications are expected to have income_evidence.
+        raise "Unexpected application type: #{app_type}" unless app_type == 'faa'
+
         pre_state = self.current_state
         new_state = current_evidence.current_state
 
         self.current_state = new_state
         self.build_verification_history(
           'retain_evidence_info_on_renewal',
-          "State is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: #{app_type}, change from: #{pre_state} to: #{new_state}",
+          "State is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: faa, change from: #{pre_state} to: #{new_state}",
           'system'
         )
 
-        if current_evidence.due_on.present?
-          self.due_on = current_evidence.due_on
-          self.build_verification_history(
-            'retain_evidence_info_on_renewal',
-            "Due date is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: #{app_type}, due_on: #{current_evidence.due_on}",
-            'system'
-          )
-        end
+        return if current_evidence.due_on.blank?
+        return if OUTSTANDING_STATUSES.exclude?(new_state.to_sym)
 
-        return unless current_evidence.due_date_extended_at.present?
+        self.due_on = current_evidence.due_on
+        self.build_verification_history(
+          'retain_evidence_info_on_renewal',
+          "Due date is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: faa, due_on: #{current_evidence.due_on}",
+          'system'
+        )
+
+        return if current_evidence.due_date_extended_at.blank?
         self.due_date_extended_at = current_evidence.due_date_extended_at
         self.build_verification_history(
           'retain_evidence_info_on_renewal',
-          "Due date extension is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: #{app_type}, due_date_extended_at: #{current_evidence.due_date_extended_at}",
+          "Due date extension is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: faa, due_date_extended_at: #{current_evidence.due_date_extended_at}",
           'system'
         )
       end

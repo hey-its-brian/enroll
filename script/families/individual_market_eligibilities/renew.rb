@@ -3,7 +3,7 @@
 # This script triggers the operation to renew individual market eligibility determinations for all the families.
 #
 # Command to trigger the script:
-#   CLIENT=me bundle exec rails runner script/families/individual_market_eligibilities/renew.rb
+#   CLIENT=me bundle exec rails runner script/families/individual_market_eligibilities/renew.rb '2026'
 
 p '********** STARTING - Script to renew individual market eligibility determinations for all families. **********'
 

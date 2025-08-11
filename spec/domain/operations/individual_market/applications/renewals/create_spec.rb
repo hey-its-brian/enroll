@@ -8,6 +8,7 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
   let(:primary_applicant) { family.primary_applicant }
 
   let(:current_application) { FactoryBot.create(:individual_market_application, :initial, family_id: family.id) }
+  let(:renewal_qhp_application) { FactoryBot.create(:individual_market_application, :initial_renewal, family_id: family.id) }
 
   let(:enrollment) do
     FactoryBot.create(
@@ -39,7 +40,46 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
     context 'with:
       - with valid family
       - without a financial assistance application for the renewal year
-      - current application
+      - application with type of QHP exists for current year
+      - effectuated enrollment
+      ' do
+
+      before :each do
+        current_application
+        renewal_qhp_application
+        enrollment_member
+        result
+      end
+
+      let(:family_id) { family.id.to_s }
+      let(:renewal_year) { TimeKeeper.date_of_record.year.next }
+
+      it 'returns the renewal application' do
+        expect(result).to be_success
+        expect(result.success).to be_a(IndividualMarket::Application)
+        expect(result.success).to eq(renewal_qhp_application)
+      end
+
+      it 'does not create a new application' do
+        expect(result).to be_success
+        expect(
+          ::IndividualMarket::Application.where(
+            assistance_year: renewal_year,
+            family_id: family.id,
+            is_renewal: true
+          ).count
+        ).to eq(1)
+      end
+
+      it 'does not cancel the current application' do
+        expect(current_application.reload.current_state).to eq(:initial)
+      end
+    end
+
+    context 'with:
+      - with valid family
+      - with a QHP application for renewal year
+      - application with type of QHP exists for current year
       - effectuated enrollment
       ' do
 
@@ -73,7 +113,7 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
     context 'with:
       - with valid family
       - without a financial assistance application for the renewal year
-      - without current application
+      - without an application for current year
       - with an effectuated enrollment
       ' do
 
@@ -102,7 +142,7 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
     context 'with:
       - with valid family
       - with a financial assistance application for the renewal year in applicants_update_required state
-      - without current application
+      - without an application for current year
       - with an effectuated enrollment
       ' do
 
@@ -134,7 +174,7 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
     context 'with:
       - with valid family
       - with a financial assistance application for the renewal year in income_verification_extension_required state
-      - without current application
+      - without an application for current year
       - with an effectuated enrollment
       ' do
 
@@ -166,7 +206,7 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
     context 'with:
       - with valid family
       - with a financial assistance application for the renewal year in determined state
-      - without current application
+      - without an application for current year
       - with an effectuated enrollment
       ' do
 
@@ -192,7 +232,7 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
     context 'with:
       - with valid family
       - without a financial assistance application for the renewal year
-      - without current application
+      - without an application for current year
       - without effectuated enrollment
       ' do
 
@@ -212,7 +252,7 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
     context 'with:
       - without a valid family
       - without a financial assistance application for the renewal year
-      - without current application
+      - without an application for current year
       - without effectuated enrollment
       ' do
 
@@ -233,7 +273,7 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
       - with a valid family
       - with an invalid renewal year
       - without a financial assistance application for the renewal year
-      - without current application
+      - without an application for current year
       - without effectuated enrollment
       ' do
 

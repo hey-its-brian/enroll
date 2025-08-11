@@ -38,7 +38,9 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
       benefit_sponsorship
       current_applicant.build_aptc_eligibilities_evidences
       current_applicant.build_ivl_eligibility_with_evidences
-      current_applicant.eligibilities.flat_map(&:evidences).map(&:mark_as_verified)
+      current_applicant.eligibilities.flat_map(&:evidences).each_with_index do |evidence, index|
+        index.even? ? evidence.mark_as_outstanding : evidence.mark_as_verified
+      end
       current_applicant.save!
       family.latest_application_gid = current_application.to_global_id.uri.to_s
       family.save!
@@ -59,7 +61,8 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
       it 'retains the ROP information' do
         result
         renewal_application.reload.applicants.flat_map(&:eligibilities).flat_map(&:evidences).each do |evidence|
-          expect(evidence.verified?).to be_truthy
+          # Either the evidence is in verified state or in outstanding state with a due_on
+          expect(evidence.verified? || (evidence.outstanding? && evidence.due_on.present?)).to be_truthy
         end
       end
 

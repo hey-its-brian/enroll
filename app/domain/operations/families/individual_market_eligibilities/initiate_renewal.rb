@@ -81,6 +81,9 @@ module Operations
         #
         # @return [Boolean] true if eligible, false otherwise
         def eligible_for_ivl_eligibility_renewal(family, renewal_year)
+          renewal_draft_applications = family.qhp_applications_for_year(renewal_year)
+          return false if renewal_draft_applications.any? { |app| !app.is_initial? }
+
           return true if family.latest_application_type == 'qhp'
 
           fa_apps = ::FinancialAssistance::Application.only(:assistance_year, :family_id, :aasm_state).where(

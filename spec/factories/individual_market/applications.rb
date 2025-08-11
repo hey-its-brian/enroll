@@ -53,6 +53,23 @@ FactoryBot.define do
       current_state { :initial }
     end
 
+    trait :renewal do
+      is_renewal { true }
+      generation_reason { :renewal }
+      origin { :system }
+      assistance_year { TimeKeeper.date_of_record.year.next }
+      effective_on { TimeKeeper.date_of_record.next_year.beginning_of_year }
+    end
+
+    trait :initial_renewal do
+      current_state { :initial }
+      is_renewal { true }
+      generation_reason { :renewal }
+      origin { :system }
+      assistance_year { TimeKeeper.date_of_record.year.next }
+      effective_on { TimeKeeper.date_of_record.next_year.beginning_of_year }
+    end
+
     trait :submission_failed do
       current_state { :submission_failed }
 

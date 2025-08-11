@@ -1887,6 +1887,15 @@ class Family
     @fetch_last_determined_application_from ||= most_recent_application(qhp_app, faa_app)
   end
 
+  # Fetches all QHP applications for this family for a given year
+  #
+  # @param year [Integer] The assistance year to filter applications by
+  #
+  # @return [Array<IndividualMarket::Application>] Array of QHP applications for the specified year
+  def qhp_applications_for_year(year)
+    ::IndividualMarket::Application.for_year_and_family(year, id)
+  end
+
   private
 
   def find_best_application_for_year(applications)
