@@ -49,7 +49,7 @@ module Operations
                                                                     :five_year_bar_applies, :five_year_bar_met, :qualified_non_citizen, :age_off_excluded, :eligibility_determination_id,
                                                                     :is_eligible_for_non_magi_reasons, :magi_medicaid_category, :medicaid_household_size, :magi_medicaid_monthly_household_income,
                                                                     :magi_medicaid_monthly_income_limit, :magi_as_percentage_of_fpl, :csr_percent_as_integer, :csr_eligibility_kind,
-                                                                    :benchmark_premiums, :contact_method, :language_preference, :is_ia_eligible, :is_csr_eligible, :is_medicaid_chip_eligible,
+                                                                    :benchmark_premiums, :contact_method, :language_preference, :is_ia_eligible, :is_csr_eligible, :is_medicaid_chip_eligible, :is_primary_caregiver_for,
                                                                     :is_non_magi_medicaid_eligible, :is_totally_ineligible, :is_without_assistance, :is_magi_medicaid, :is_gap_filling, :emails, :phones, :addresses)
 
             source_appli_params.deep_symbolize_keys
