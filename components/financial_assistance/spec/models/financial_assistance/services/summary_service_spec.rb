@@ -70,6 +70,16 @@ describe ::FinancialAssistance::Services::SummaryService do
       subject { described_class.instance_for_action(action_name, cfl_service, application, application.active_applicants) }
 
       it_behaves_like 'a SummaryService instance', FinancialAssistance::Services::SummaryService::Summary::ApplicantSummary::ApplicantSummary::ConsumerApplicantSummary, true
+
+      context "when employer name has a colon" do
+
+        before do
+          income = FactoryBot.build(:financial_assistance_income, employer_name: 'Test: Employer.inc')
+          application.applicants.first.incomes << income
+          application.applicants.first.save!
+        end
+        it_behaves_like 'a SummaryService instance', FinancialAssistance::Services::SummaryService::Summary::ApplicantSummary::ApplicantSummary::ConsumerApplicantSummary, true
+      end
     end
   end
 

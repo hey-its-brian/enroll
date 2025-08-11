@@ -161,7 +161,7 @@ income:
         <% if jobs.present? %>
         jobs:
             <% jobs.each do |job| %>
-            -   title: <%= job.employer_name %>
+            -   title: "<%= job.employer_name %>"
                 has_address: <%= job.employer_address.present? %>
                 rows:
                     line_1:
