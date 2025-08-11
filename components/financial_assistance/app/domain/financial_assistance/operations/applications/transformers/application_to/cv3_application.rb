@@ -283,6 +283,7 @@ module FinancialAssistance
 
             def eligibilities(applicant)
               individual_market_eligibility = applicant.individual_market_eligibility
+              return [] unless individual_market_eligibility.present?
 
               [individual_market_eligibility].inject([]) do |result, eligibility|
                 eligibility_hash = {

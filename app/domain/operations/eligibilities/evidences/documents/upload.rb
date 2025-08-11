@@ -138,7 +138,7 @@ module Operations
             action = "Upload #{file.original_filename}"
             update_reason = "document uploaded"
 
-            evidence.add_to_history(action, update_reason, actor)
+            evidence.build_verification_history(action, update_reason, actor)
             Success(evidence)
           rescue StandardError => e
             Rails.logger.error("Document Upload - Error adding verification history: #{e.message}")

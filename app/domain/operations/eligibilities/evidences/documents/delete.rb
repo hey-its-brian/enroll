@@ -115,7 +115,7 @@ module Operations
             action = "Delete #{document.title}"
             update_reason = "document deleted"
 
-            evidence.add_to_history(action, update_reason, actor)
+            evidence.build_verification_history(action, update_reason, actor)
             Success(evidence)
           rescue StandardError => e
             Rails.logger.error("Document Delete - Error adding verification history: #{e.message}")

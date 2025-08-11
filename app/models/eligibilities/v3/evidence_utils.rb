@@ -38,12 +38,12 @@ module Eligibilities
       state_transitions do
         action :move_to_attested, from: [:initial, :negative_response_received, :outstanding, :pending, :rejected, :review, :unverified, :verified], to: :attested
         action :move_to_rejected, from: [:attested, :negative_response_received, :outstanding, :pending, :review, :unverified, :verified], to: :rejected
-        action :move_to_negative_response_received, from: [:attested, :outstanding, :pending, :rejected, :review, :unverified, :verified], to: :negative_response_received
-        action :move_to_outstanding, from: [:attested, :negative_response_received, :pending, :rejected, :review, :unverified, :verified], to: :outstanding
+        action :move_to_negative_response_received, from: [:initial, :attested, :outstanding, :pending, :rejected, :review, :unverified, :verified], to: :negative_response_received
+        action :move_to_unverified, from: [:initial, :attested, :negative_response_received, :outstanding, :pending, :rejected, :review, :verified], to: :unverified
+        action :move_to_outstanding, from: [:initial, :attested, :negative_response_received, :pending, :rejected, :review, :unverified, :verified], to: :outstanding
         action :move_to_verified, from: [:attested, :negative_response_received, :outstanding, :pending, :rejected, :review, :unverified], to: :verified
         action :move_to_review, from: [:attested, :negative_response_received, :outstanding, :pending, :rejected, :unverified, :verified], to: :review
-        action :move_to_pending, from: [:attested, :initial, :negative_response_received, :outstanding, :rejected, :review, :unverified, :verified], to: :pending
-        action :move_to_unverified, from: [:initial, :attested, :negative_response_received, :outstanding, :pending, :rejected, :review, :verified], to: :unverified
+        action :move_to_pending, from: [:initial, :attested, :negative_response_received, :outstanding, :rejected, :review, :unverified, :verified], to: :pending
       end
 
       included do
@@ -103,17 +103,6 @@ module Eligibilities
           return @latest_verification_history if defined?(@latest_verification_history)
 
           @latest_verification_history = verification_histories.newest.first
-        end
-
-        # Creates a verification history on the evidence
-        #
-        # @option params [String] :action The action performed on the evidence
-        # @option params [String] :update_reason The reason for the update
-        # @option params [String] :updated_by The user or system that performed the update
-        #
-        # @return [VerificationHistory] The verification history record created
-        def add_verification_history(action, update_reason, updated_by)
-          verification_histories.build(action: action, update_reason: update_reason, updated_by: updated_by)
         end
 
         def schedule_verification_due_on
@@ -237,7 +226,7 @@ module Eligibilities
           return unless can_move_to_verified?
 
           move_to_verified
-          add_to_history(
+          build_verification_history(
             'copied_verified',
             "no demographics changes for the applicant",
             'system'
@@ -341,7 +330,7 @@ module Eligibilities
         # @return [void]
         def add_history_with_prev_due_on(action, prev_evidence)
           self.due_on = prev_evidence.due_on
-          add_to_history(
+          build_verification_history(
             action,
             "copied state from previous application",
             'system'
@@ -389,12 +378,12 @@ module Eligibilities
           @fetch_last_determined_evidence ||= target_eligibility.evidences&.where(key: key)&.first
         end
 
-        # Adds a new verification history record to the evidence with the specified action, update reason, and updated by user.
+        # Adds a new verification history record to the evidence with the specified action, update reason, and updated by user. (not persisted)
         #
         # @param action [String] The action performed on the evidence
         # @param update_reason [String] The reason for the update
         # @param updated_by [String] The user who performed the update
-        def add_to_history(action, update_reason, updated_by)
+        def build_verification_history(action, update_reason, updated_by)
           verification_histories.build(
             action: action,
             update_reason: update_reason,
@@ -446,7 +435,7 @@ module Eligibilities
           new_state = current_evidence.current_state
 
           self.current_state = new_state
-          self.add_to_history(
+          self.build_verification_history(
             'retain_evidence_info_on_renewal',
             "State is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: #{app_type}, change from: #{pre_state} to: #{new_state}",
             'system'
@@ -455,7 +444,7 @@ module Eligibilities
           return unless current_evidence.due_on.present?
 
           self.due_on = current_evidence.due_on
-          self.add_to_history(
+          self.build_verification_history(
             'retain_evidence_info_on_renewal',
             "Due date is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: #{app_type}, due_on: #{current_evidence.due_on}",
             'system'

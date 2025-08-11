@@ -24,6 +24,10 @@ module FinancialAssistance
         # this is a command that will determine the evidence is satisfied or not.
         # fdsh_verification || document_verification || admin_verification || visitor_verification
       end
+
+      def call_hub(params)
+        ::FinancialAssistance::Operations::Evidences::EsiMec::CallHub.new.call(params)
+      end
     end
   end
 end

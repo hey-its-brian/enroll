@@ -292,7 +292,7 @@ RSpec.describe Operations::Eligibilities::Evidences::Documents::Delete, type: :o
 
       before do
         document
-        allow(income_evidence).to receive(:add_to_history).and_raise(StandardError.new("History failed"))
+        allow(income_evidence).to receive(:build_verification_history).and_raise(StandardError.new("History failed"))
       end
 
       it 'returns failure with history exception message' do

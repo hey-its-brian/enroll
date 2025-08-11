@@ -209,6 +209,12 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
     end
   end
 
+  describe "#build_verification_history" do
+    it "builds the verification history" do
+      expect(dummy_evidence.build_verification_history("test_action", "test_reason", "test_user")).to be_a(Eligibilities::V3::VerificationHistory)
+    end
+  end
+
   describe 'state transition criteria' do
     let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
     let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }

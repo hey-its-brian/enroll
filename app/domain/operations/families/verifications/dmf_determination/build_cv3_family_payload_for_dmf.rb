@@ -132,7 +132,7 @@ module Operations
               alive_evidence = applicant&.individual_market_eligibility&.alive_evidence
               return unless alive_evidence
 
-              alive_evidence.add_verification_history(action, update_reason, "System")
+              alive_evidence.build_verification_history(action, update_reason, "System")
             else
               person = family_member.person
               alive_status_verification = person.verification_types.alive_status_type.first
