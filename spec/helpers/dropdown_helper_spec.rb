@@ -285,6 +285,24 @@ RSpec.describe DropdownHelper, type: :helper do
       end
 
       context 'when:
+        - application is a reviewable
+        - logged in user is an HBX staff member
+        - QHP application feature is enabled
+        ' do
+        let(:app_state) { 'determined' }
+
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        end
+
+        it 'does not return the full application option' do
+          expect(
+            helper.application_dropdowns(application, []).collect { |dropdwn| dropdwn[:title] }
+          ).not_to include(l10n('insured.sbm.applications.actions.full_application'))
+        end
+      end
+
+      context 'when:
         - application is not reviewable
         - logged in user is an HBX staff member
         ' do

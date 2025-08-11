@@ -47,16 +47,11 @@ module DropdownHelper
         )
       end
 
-      if application.is_reviewable?
-        full_application_link = if qhp_application_feature_enabled?
-                                  financial_assistance.application_path(application)
-                                else
-                                  financial_assistance.raw_application_application_path(application)
-                                end
+      if application.is_reviewable? && !qhp_application_feature_enabled?
         option_args << (
           [
             l10n('insured.sbm.applications.actions.full_application'),
-            full_application_link,
+            financial_assistance.raw_application_application_path(application),
             :default
           ]
         )
