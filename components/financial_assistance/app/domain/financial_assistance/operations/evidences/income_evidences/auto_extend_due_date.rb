@@ -60,7 +60,7 @@ module FinancialAssistance
               families.inject({}) do |results, family|
                 application = family.latest_application
                 if family.latest_application_type == 'faa'
-                  application.extend_income_evidence_due_dates('auto_extend_due_date', extend_by, modified_by)
+                  application.auto_extend_income_evidence_due_date('auto_extend_due_date', extend_by, modified_by)
                   application.save!
 
                   results[family.id] = "Income evidence due date extended for family #{family.id}"

@@ -32,7 +32,7 @@ module FinancialAssistance
       # @param action [String] The action that triggered the due date extension
       # @param extend_by [Integer] Number of days to extend the due date by
       # @param modified_by [String] Identifier of the user or process that modified the due
-      def extend_due_date(action, extend_by, modified_by)
+      def auto_extend_due_date(action, extend_by, modified_by)
         return if self.due_date_extended_at.present?
         return if OUTSTANDING_STATUSES.exclude?(self.current_state)
 

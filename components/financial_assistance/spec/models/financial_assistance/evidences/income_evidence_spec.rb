@@ -77,7 +77,7 @@ RSpec.describe FinancialAssistance::Evidences::IncomeEvidence, type: :model do
       let(:income_due_date_extended_at) { nil }
 
       it 'does not extend the due date' do
-        evidence.extend_due_date('test_action', 5, 'test_user')
+        evidence.auto_extend_due_date('test_action', 5, 'test_user')
         expect(evidence.reload.due_on).to be_nil
         expect(evidence.due_date_extended_at).to be_nil
         expect(evidence.verification_histories.count).to eq(0)

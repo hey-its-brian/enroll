@@ -1802,8 +1802,8 @@ module FinancialAssistance
     # Extends the due dates for income evidence based on the action and extend_by parameters.
     #
     # @return [void]
-    def extend_income_evidence_due_dates(action, extend_by, modified_by)
-      aptc_csr_eligibility.extend_income_evidence_due_dates(action, extend_by, modified_by)
+    def auto_extend_income_evidence_due_date(action, extend_by, modified_by)
+      aptc_csr_eligibility.auto_extend_income_evidence_due_date(action, extend_by, modified_by)
     end
 
     def tribal_names

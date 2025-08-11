@@ -1034,7 +1034,52 @@ describe 'verification actions' do
       result = helper.send(:verification_admin_actions, evidence_adapter, family)
 
       expect(result[:partial][:locals][:applicant].id).to eq(applicant.id)
-      expect(result[:partial][:locals][:evidence_kind]).to eq("income_evidence")
+      expect(result[:partial][:locals][:evidence_key]).to eq("income_evidence")
+    end
+  end
+
+  describe "#evidences_v3_reject_reasons_list" do
+    shared_examples_for "reject reasons list for evidence type" do |evidence_key, expected_reasons|
+      it "returns correct reject reasons for #{evidence_key}" do
+        result = helper.evidences_v3_reject_reasons_list(evidence_key)
+        expect(result).to eq(expected_reasons)
+      end
+    end
+
+    context "citizenship and immigration evidence types" do
+      it_behaves_like "reject reasons list for evidence type", "citizenship_evidence", ::VlpDocument::CITIZEN_IMMIGR_TYPE_ADD_REASONS + ::VlpDocument::ALL_TYPES_REJECT_REASONS
+      it_behaves_like "reject reasons list for evidence type", "immigration_evidence", ::VlpDocument::CITIZEN_IMMIGR_TYPE_ADD_REASONS + ::VlpDocument::ALL_TYPES_REJECT_REASONS
+    end
+
+    context "other evidence types" do
+      it_behaves_like "reject reasons list for evidence type", "income_evidence", ::VlpDocument::ALL_TYPES_REJECT_REASONS
+      it_behaves_like "reject reasons list for evidence type", "social_security_number_evidence", ::VlpDocument::ALL_TYPES_REJECT_REASONS
+      it_behaves_like "reject reasons list for evidence type", "esi_evidence", ::VlpDocument::ALL_TYPES_REJECT_REASONS
+      it_behaves_like "reject reasons list for evidence type", "non_esi_evidence", ::VlpDocument::ALL_TYPES_REJECT_REASONS
+      it_behaves_like "reject reasons list for evidence type", "local_mec_evidence", ::VlpDocument::ALL_TYPES_REJECT_REASONS
+      it_behaves_like "reject reasons list for evidence type", "american_indian_status_evidence", ::VlpDocument::ALL_TYPES_REJECT_REASONS
+      it_behaves_like "reject reasons list for evidence type", "residency_evidence", ::VlpDocument::ALL_TYPES_REJECT_REASONS
+    end
+
+    context "with nil evidence key" do
+      it "returns general reject reasons" do
+        result = helper.evidences_v3_reject_reasons_list(nil)
+        expect(result).to eq(::VlpDocument::ALL_TYPES_REJECT_REASONS)
+      end
+    end
+
+    context "with empty string evidence key" do
+      it "returns general reject reasons" do
+        result = helper.evidences_v3_reject_reasons_list("")
+        expect(result).to eq(::VlpDocument::ALL_TYPES_REJECT_REASONS)
+      end
+    end
+
+    context "with unknown evidence key" do
+      it "returns general reject reasons" do
+        result = helper.evidences_v3_reject_reasons_list("unknown_evidence")
+        expect(result).to eq(::VlpDocument::ALL_TYPES_REJECT_REASONS)
+      end
     end
   end
 end

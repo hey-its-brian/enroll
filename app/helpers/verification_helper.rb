@@ -431,7 +431,20 @@ module VerificationHelper
   end
 
   def build_admin_actions_list(obj, f_member)
-    EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) ? build_evidence_admin_actions_list(obj, f_member) : build_v_type_admin_actions_list(obj, f_member)
+    if qhp_application_feature_enabled?
+      build_evidence_admin_actions_list_aptc_csr(obj)
+    else
+      EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) ? build_evidence_admin_actions_list(obj, f_member) : build_v_type_admin_actions_list(obj, f_member)
+    end
+  end
+
+  def evidences_v3_reject_reasons_list(evidence_key)
+    case evidence_key
+    when "citizenship_evidence", "immigration_evidence"
+      ::VlpDocument::CITIZEN_IMMIGR_TYPE_ADD_REASONS + ::VlpDocument::ALL_TYPES_REJECT_REASONS
+    else
+      ::VlpDocument::ALL_TYPES_REJECT_REASONS
+    end
   end
 
   def build_reject_reason_list(v_type)
@@ -651,8 +664,31 @@ module VerificationHelper
     }
   end
 
+  def qhp_enabled_evidence_admin_actions(evidence)
+    located_evidence = evidence.locate_evidence
+    eligibility = located_evidence&.eligibility
+    applicant = eligibility&.eligible
+    application = applicant&.application
+    evidence_key = evidence.evidence_item_key.to_s.downcase
+    person = evidence.person
+
+    {
+      id: "#{applicant.id}-#{evidence_key.split.join('-')}",
+      partial: {
+        :partial => "eligibilities/evidences/admin_actions",
+        locals: { application: application, applicant: applicant,
+                  person_id: person.id,
+                  eligibility_kind: evidence.evidence_group,
+                  eligibility: eligibility,
+                  evidence: located_evidence,
+                  evidence_key: evidence_key }
+      }
+    }
+  end
+
   def verification_admin_actions(evidence, family)
     return nil if evidence.evidence_group == 'ridp'
+    return qhp_enabled_evidence_admin_actions(evidence) if qhp_application_feature_enabled?
 
     person = evidence.person
     case evidence.evidence_group

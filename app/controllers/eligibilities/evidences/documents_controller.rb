@@ -2,12 +2,17 @@
 
 module Eligibilities
   module Evidences
-    # Controller for managing documents related to evidence in the eligibility process
+    # Controller for managing documents related to V3 evidence in the eligibility process
     class DocumentsController < ::ApplicationController
       before_action :fetch_evidence
       before_action :check_for_uneditable_application
       after_action :build_determination, only: [:upload, :destroy]
 
+      # Handles the upload of documents related to evidence
+      # This action authorizes the evidence and processes the file upload.
+      # If successful, it redirects to the appropriate page with a success message.
+      # If it fails, it redirects with an error message.
+      # @param file [ActionDispatch::Http::UploadedFile] The file to be uploaded
       def upload
         authorize @evidence, :upload?
 
@@ -25,6 +30,11 @@ module Eligibilities
         redirect_to redirect_location
       end
 
+      # Handles the download of documents related to evidence
+      # This action authorizes the evidence and retrieves the document by its key.
+      # If the document exists, it sends the file to the user for download.
+      # If the document does not exist or the user is not authorized, it redirects with an error message.
+      # @param key [String] The key of the document to be downloaded
       def download
         authorize @evidence, :download?
 
@@ -39,6 +49,11 @@ module Eligibilities
         end
       end
 
+      # Handles the deletion of documents related to evidence
+      # This action authorizes the evidence and attempts to delete the document by its key.
+      # If successful, it sets a success message and redirects to the appropriate page.
+      # If it fails, it sets an error message and redirects.
+      # @param doc_key [String] The key of the document to be deleted
       def destroy
         authorize @evidence, :destroy?
 

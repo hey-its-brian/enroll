@@ -101,8 +101,8 @@ module Eligibilities
       # @param modified_by [String] Identifier of the user or process that modified the due
       #
       # @return [void]
-      def extend_income_evidence_due_dates(action, extend_by, modified_by)
-        income_evidence.extend_due_date(action, extend_by, modified_by) if income_evidence.present?
+      def auto_extend_income_evidence_due_date(action, extend_by, modified_by)
+        income_evidence.auto_extend_due_date(action, extend_by, modified_by) if income_evidence.present?
       end
 
       # Retains reasonable opportunity information from another eligibility

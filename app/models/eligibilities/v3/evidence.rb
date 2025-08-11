@@ -64,6 +64,19 @@ module Eligibilities
       # def latest_state_history
       #   state_histories.last
       # end
+
+      # Extends due date and adds a record to the evidence history
+      # # @param action [String] The action that triggered the history record
+      # # @param reason [String] The reason for the history record
+      #  @param modified_by [String] Identifier of the user or process that modified the evidence
+      # @return [void]
+      def extend_due_date(action, extend_by, modified_by, reason)
+        return if self.current_state == :outstanding
+        return if self.due_on.blank?
+
+        self.due_on = extend_by
+        build_verification_history(action, reason, modified_by)
+      end
     end
   end
 end

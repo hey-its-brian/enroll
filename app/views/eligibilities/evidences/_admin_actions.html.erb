@@ -1,0 +1,69 @@
+<div class="verification-update-reason" id=<%="#{applicant.id}-#{evidence_key.split.join('-')}"%>>
+  <%= form_tag eligibility_evidence_path(eligibility.id, evidence.id), method: :patch do %>
+    <%= hidden_field_tag 'person_id', person_id  %>
+    <%= hidden_field_tag 'application_gid', application&.to_global_id&.uri&.to_s  %>
+    <%= hidden_field_tag 'applicant_id', applicant.id  %>
+    <%= hidden_field_tag 'eligibility_kind', eligibility_kind %>
+    <%= hidden_field_tag 'evidence_key', evidence_key %>
+    <%= hidden_field_tag 'admin_action', 'verify' %>
+    <div class='mb-2'>
+      <label>
+        <%= l10n('admin.verifications.verify_reason') %>
+        <% reasons = application.is_a?(FinancialAssistance::Application) ? ::Eligibilities::Evidence::VERIFY_REASONS : ::VlpDocument::VERIFICATION_REASONS %>
+        <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(reasons), {prompt: ' Select Reason', required: true, class: 'col'}%></div>
+      </label>
+    </div>
+    <div>
+      <%= submit_tag "Confirm", class: "button v-type-confirm-button" %>
+    </div>
+  <% end %>
+</div>
+
+<div class="verification-update-reason" id=<%="#{applicant.id}-#{evidence_key.split.join('-')}-return"%>>
+  <%= form_tag update_evidence_eligibility_evidence_path(eligibility.id, evidence.id), method: :put do %>
+    <%= hidden_field_tag 'person_id', person_id  %>
+    <%= hidden_field_tag 'application_gid', application&.to_global_id&.uri&.to_s  %>
+    <%= hidden_field_tag 'applicant_id', applicant.id  %>
+    <%= hidden_field_tag 'eligibility_kind', eligibility_kind %>
+    <%= hidden_field_tag 'evidence_key', evidence_key %>
+    <%= hidden_field_tag 'admin_action', 'return_for_deficiency' %>
+    <div class='mb-2'>
+      <label>
+        <%= l10n('admin.verifications.reject_reason') %>
+        <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(evidences_v3_reject_reasons_list(evidence_key)), {prompt: ' Select Reason', required: true, class: 'col'}%></div>
+      </label>
+    </div>
+    <div>
+      <%= submit_tag "Confirm", class: "button v-type-confirm-button" %>
+    </div>
+  <% end %>
+</div>
+
+<div class="extend-request" id=<%="#{applicant.id}-#{evidence_key.to_s.downcase.split.join('-')}-extend"%>>
+  <% unless EnrollRegistry.feature_enabled?(:verification_due_on_options) %>
+    <p><%= l10n('admin.verifications.extend.do_you_want_to_extend') %></p>
+  <% end %>
+  <%= form_tag extend_due_date_eligibility_evidence_path(eligibility.id, evidence.id), method: :put do %>
+    <%= hidden_field_tag 'person_id', person_id  %>
+    <%= hidden_field_tag 'application_gid', application&.to_global_id&.uri&.to_s  %>
+    <%= hidden_field_tag 'applicant_id', applicant.id  %>
+    <%= hidden_field_tag 'eligibility_kind', eligibility_kind %>
+    <%= hidden_field_tag 'evidence_key', evidence_key %>
+    <%= hidden_field_tag 'admin_action', 'extend' %>
+    <% if EnrollRegistry.feature_enabled?(:verification_due_on_options) %>
+      <label class="my-3" id="due-on-options">
+        <%= l10n('admin.verifications.extend.due_date_options') %>
+        <%= select_tag :extension_period, options_for_select(admin_evidence_due_on_options), prompt: l10n('admin.verifications.extend.due_date_options.select'), class: 'd-block col-5', required: true, allow_blank: false %>
+      </label>
+      <label id="manual-due-on" class="my-3 hidden">
+        <%= l10n('admin.verifications.extend.due_date_options.enter_manual_date') %>
+        <% due_on_value = date_field_value %>
+        <%= date_field_tag :due_on, due_on_value, min: due_on_value, required: true, disabled: true, class: 'd-block' %>
+      </label>
+    <% end %>
+    <div class='d-flex'>
+      <%= link_to l10n('cancel'), '#', class: "btn outline mr-2 v-type-confirm-button" %>
+      <%= submit_tag l10n('confirm_selection'), class: "btn btn-default v-type-confirm-button" %>
+    </div>
+  <% end %>
+</div>

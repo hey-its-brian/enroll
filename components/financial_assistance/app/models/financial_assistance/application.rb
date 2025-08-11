@@ -1577,9 +1577,9 @@ module FinancialAssistance
     # Extends the income evidence due dates for each applicant.
     #
     # @return [void]
-    def extend_income_evidence_due_dates(action, extend_by, modified_by)
+    def auto_extend_income_evidence_due_date(action, extend_by, modified_by)
       applicants.each do |applicant|
-        applicant.extend_income_evidence_due_dates(action, extend_by, modified_by)
+        applicant.auto_extend_income_evidence_due_date(action, extend_by, modified_by)
       end
     end
 
