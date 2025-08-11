@@ -16,6 +16,7 @@ module Operations
           # @param [ Hash ] params Applicant Attributes
           # @return [ BenefitMarkets::Entities::Applicant ] applicant Applicant
           def call(person)
+            _qhp_disabled = yield check_qhp_disabled
             if EnrollRegistry[:ssa_h3].setting(:use_transmittable).item
               values = yield build_transmittable_values(person)
               @job = yield create_job(values)
@@ -32,6 +33,12 @@ module Operations
           end
 
           private
+
+          def check_qhp_disabled
+            return Failure("QHP Application is enabled") if EnrollRegistry.feature_enabled?(:qhp_application)
+
+            Success(true)
+          end
 
           def build_transmittable_values(person)
             return Failure("Person is required to request ssa verification") if person&.hbx_id.blank?

@@ -12,6 +12,7 @@ module Subscribers
         job_id = metadata[:headers]["job_id"]
         correlation_id = metadata[:correlation_id]
         application_type = metadata[:headers]["application_type"]
+        call_type = metadata[:headers]["call_type"]
         determinations = metadata[:headers]["determined_applicants"]
         status = metadata[:headers]["status"]
 
@@ -20,7 +21,8 @@ module Subscribers
           logger.info "Ssa::SsaVlpverificationsSubscriber: on_determined acked and processed failure from fdsh_gateway"
         else
           verification_payload = { application_hbx_id: correlation_id, job_id: job_id,
-                                   response: response, app_type: application_type, determinations: determinations }
+                                   response: response, app_type: application_type, determinations: determinations,
+                                   call_type: call_type }
           result = Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermined.new.call(verification_payload)
           if result.success?
             trigger_close_case_request(job_id, determinations, correlation_id, application_type)

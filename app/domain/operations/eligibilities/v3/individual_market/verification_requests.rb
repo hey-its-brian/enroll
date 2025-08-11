@@ -75,7 +75,9 @@ module Operations
           # @param application [FinancialAssistance::Application] The application to verify
           # @return [Dry::Monads::Result::Success] Always returns success regardless of underlying operation result
           def call_ssa_vlp(application)
-            Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerification.new.call(entity_result: @application_entity, application: application)
+            Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerification.new.call(entity_result: @application_entity,
+                                                                                         application: application,
+                                                                                         call_type: 'application_determination')
             Success(nil)
           end
         end

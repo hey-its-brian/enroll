@@ -78,6 +78,8 @@ class LawfulPresenceDetermination
   end
 
   def start_ssa_process
+    return if EnrollRegistry.feature_enabled?(:qhp_application)
+
     if EnrollRegistry.feature_enabled?(:ssa_h3)
       result = Operations::Fdsh::Ssa::H3::RequestSsaVerification.new.call(ivl_role.person)
       ssa_verification_type = ivl_role.verification_types.ssn_type.first
@@ -96,6 +98,8 @@ class LawfulPresenceDetermination
   end
 
   def start_vlp_process(requested_start_date)
+    return if EnrollRegistry.feature_enabled?(:qhp_application)
+
     if EnrollRegistry.feature_enabled?(:vlp_h92)
       result = Operations::Fdsh::Vlp::H92::RequestInitialVerification.new.call(ivl_role.person)
       verification_type = ivl_role.verification_types.active.where(:type_name.in => ["Citizenship", "Immigration status"]).first

@@ -35,7 +35,9 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::VerificationRe
       end
 
       it 'calls the SsaVlpVerification operation' do
-        expect(ssa_verification_double).to receive(:call).with(entity_result: application_entity_result, application: application).and_return(ssa_vlp_result)
+        expect(ssa_verification_double).to receive(:call).with(entity_result: application_entity_result,
+                                                               application: application,
+                                                               call_type: 'application_determination').and_return(ssa_vlp_result)
         subject.call(application: application)
       end
     end

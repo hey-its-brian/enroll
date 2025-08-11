@@ -19,7 +19,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerifica
 
     context 'with valid application' do
       it 'returns success with message' do
-        result = subject.call({application: application})
+        result = subject.call({call_type: 'application_determination', application: application})
         expect(result).to be_success
         eligibility = application.applicants.first.eligibilities.first
         evidence = eligibility.evidences.where(
@@ -32,11 +32,26 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerifica
       end
     end
 
+    context 'with valid application for hub call' do
+      it 'returns success with message' do
+        result = subject.call({call_type: 'application_determination',
+                               application: application,
+                               updated_by: 'hub_call',
+                               request_hbx_ids: [application.applicants.first.person_hbx_id]})
+        expect(result).to be_success
+        eligibility = application.applicants.first.eligibilities.first
+        evidence = eligibility.evidences.where(key: :social_security_number_evidence).first
+        expect(evidence.verification_histories.first.action).to eq('SSA VLP Hub Request')
+        expect(evidence.verification_histories.first.updated_by).to eq('hub_call')
+        expect(::Transmittable::Job.first.process_status.latest_state).to eq(:transmitted)
+      end
+    end
+
     context 'with app_entity provided' do
       let(:entity_response) { Operations::Fdsh::BuildAndValidateApplicationPayload.new.call(application) }
 
       it 'returns success with app_entity' do
-        result = subject.call({application: application, application_entity: entity_response})
+        result = subject.call({call_type: 'application_determination', application: application, application_entity: entity_response})
         expect(result).to be_success
         expect(::Transmittable::Job.first.process_status.latest_state).to eq(:transmitted)
         expect(::Transmittable::Transmission.first.process_status.latest_state).to eq(:transmitted)
@@ -48,7 +63,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerifica
       let(:invalid_app) { double('InvalidApp', class: 'SomeClass') }
 
       it 'returns failure with error message' do
-        result = subject.call(application: invalid_app)
+        result = subject.call({call_type: 'application_determination', application: invalid_app})
         expect(result).to be_failure
         expect(result.failure).to include("Invalid application type")
       end
@@ -60,7 +75,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerifica
       end
 
       it 'returns the failure' do
-        result = subject.call(application: application)
+        result = subject.call({call_type: 'application_determination', application: application})
         expect(result).to be_failure
         expect(result.failure).to eq("Failed to build entity")
       end
@@ -74,7 +89,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerifica
       end
 
       it 'returns failure with error message' do
-        result = subject.call({application: application})
+        result = subject.call({call_type: 'application_determination', application: application})
         expect(result).to be_failure
         expect(result.failure).to include("Failed to publish")
       end

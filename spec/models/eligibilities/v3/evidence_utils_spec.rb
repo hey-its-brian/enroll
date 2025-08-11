@@ -353,7 +353,7 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
         end
 
         it "calls copied_verified" do
-          citizenship_evidence1.determine_outstanding_state
+          citizenship_evidence1.determine_outstanding_state('application_determination')
           expect(citizenship_evidence1.current_state).to eq(:verified)
           expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_verified')
         end
@@ -366,14 +366,14 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
         let(:esi_evidence1) { FactoryBot.create(:esi_mec_evidence, :pending, eligibility: aptc_csr_eligibility1) }
 
         it "calls eligible_state" do
-          esi_evidence1.determine_outstanding_state
+          esi_evidence1.determine_outstanding_state('application_determination')
           expect(esi_evidence1.current_state).to eq(:negative_response_received)
         end
       end
 
       context "when previous evidence is not verified" do
         it "calls eligible_state" do
-          citizenship_evidence1.determine_outstanding_state
+          citizenship_evidence1.determine_outstanding_state('application_determination')
           expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
         end
       end

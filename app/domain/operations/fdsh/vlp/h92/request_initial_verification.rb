@@ -15,6 +15,7 @@ module Operations
           include EventSource::Command
 
           def call(person)
+            _qhp_disabled = yield check_qhp_disabled
             payload_entity = yield build_and_validate_payload_entity(person)
             event  = yield build_event(payload_entity.to_h)
             result = yield publish(event)
@@ -23,6 +24,12 @@ module Operations
           end
 
           private
+
+          def check_qhp_disabled
+            return Failure("QHP Application is enabled") if EnrollRegistry.feature_enabled?(:qhp_application)
+
+            Success(true)
+          end
 
           def build_and_validate_payload_entity(person)
             Operations::Fdsh::BuildAndValidatePersonPayload.new.call(person, :dhs)

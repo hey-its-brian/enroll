@@ -38,13 +38,13 @@ module Operations
           # @return [Dry::Monads::Result::Success] On successful submission with confirmation message
           # @return [Dry::Monads::Result::Failure] On failure with error message
           def call(params)
-            @application = yield validate(params[:application])
+            @application = yield validate(params)
             transmittable_params = yield build_transmittable_params
             @job = yield create_job(transmittable_params)
             @request_transmission = yield build_and_create_request_transmission(transmittable_params)
             @request_transaction = yield build_and_create_request_transaction(transmittable_params)
             @app_entity = yield build_app_entity(params)
-            publish
+            publish(params)
           end
 
           private
@@ -52,7 +52,12 @@ module Operations
           # Validates that the provided application is of the correct type.
           # @param application [FinancialAssistance::Application] The application to validate.
           # @return [Dry::Monads::Result] Returns a Success with the application if valid, or a Failure with an error message.
-          def validate(application)
+          def validate(params)
+            return Failure('call type not specified') unless params[:call_type]
+
+            @call_type = params[:call_type]
+            @updated_by = params[:updated_by] || 'System'
+            application = params[:application]
             if application.is_a?(::FinancialAssistance::Application) || application.is_a?(::IndividualMarket::Application)
               Success(application)
             else
@@ -152,19 +157,22 @@ module Operations
           # @return [Dry::Monads::Result::Failure] On publication failure with error message
           #
           # @raise [StandardError] On unexpected errors during event publication
-          def publish
+          def publish(params)
             headers = {
               job_id: @job&.job_id,
               application_type: @application.is_a?(::FinancialAssistance::Application) ? 'faa' : 'uqhp',
               key: :ssa_vlp_verification_request,
-              correlation_id: @application.hbx_id
+              correlation_id: @application.hbx_id,
+              call_type: @call_type
             }
+            # for admin call hub requests, we need to pass the requested ids
+            headers.merge!(request_hbx_ids: params[:request_hbx_ids]) if params[:request_hbx_ids].present?
 
             event = event('events.enroll.verifications.ssa_vlp.requested', attributes: @app_entity.to_h, headers: headers).success
             event.publish
             status_result = update_status("published SSA VLP verification request", :transmitted, { job: @job, transmission: @request_transmission, transaction: @request_transaction })
             return status_result if status_result.failure?
-            add_verification_histories(update_reason: 'Hub Request')
+            add_verification_histories(update_reason: 'Hub Request was made due to demographics created/update')
             Success("SSA VLP verification request for Application with hbx_id #{@application.hbx_id} is submitted")
           rescue StandardError => e
             add_errors(
@@ -177,17 +185,18 @@ module Operations
             Failure("Failed to publish SSA VLP verification request")
           end
 
-          def add_verification_histories(update_reason: 'Hub Request')
+          def add_verification_histories(update_reason)
+            # matching current behavior
+            update_reason = @call_type == 'application determination' ? update_reason : nil
             @application.applicants.each do |applicant|
               eligibility = applicant.eligibilities.detect {|eli| eli.key.to_s == 'individual_market_eligibility' }
               next unless eligibility
-
               evidences = eligibility.evidences.select {|e| EVIDENCE_KEYS.include?(e.key.to_s) }
               evidences.each do |evidence|
                 evidence.verification_histories.build({
                                                         action: "SSA VLP Hub Request",
                                                         update_reason: update_reason,
-                                                        updated_by: "Enroll App"
+                                                        updated_by: @updated_by
                                                       })
               end
               @application.save

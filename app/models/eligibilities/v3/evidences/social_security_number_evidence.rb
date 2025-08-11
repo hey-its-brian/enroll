@@ -20,6 +20,16 @@ module Eligibilities
       # @see Eligibilities::Evidence Parent class for common evidence functionality
       class SocialSecurityNumberEvidence < ::Eligibilities::V3::Evidence
         include ::Eligibilities::V3::EvidenceUtils
+
+        def call_hub(params)
+          applicant = eligibility.eligible
+          Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerification.new.call(
+            {application: applicant.application,
+             requested_ids: [fetch_applicant_hbx_id(applicant)],
+             call_type: 'hub_call',
+             updated_by: params[:updated_by]}
+          )
+        end
       end
     end
   end

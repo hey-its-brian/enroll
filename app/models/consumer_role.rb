@@ -1183,10 +1183,14 @@ class ConsumerRole
   end
 
   def invoke_ssa
+    return true if EnrollRegistry.feature_enabled?(:qhp_application)
+
     lawful_presence_determination.start_ssa_process
   end
 
   def invoke_dhs
+    return true if EnrollRegistry.feature_enabled?(:qhp_application)
+
     lawful_presence_determination.start_vlp_process(requested_coverage_start_date)
   end
 

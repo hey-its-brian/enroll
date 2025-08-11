@@ -64,7 +64,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
     context 'with valid application' do
       before do
 
-        @result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
+        @result = subject.call({call_type: 'application_determination', job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
                                 response: @application_hash.to_json, app_type: 'faa',
                                 determinations: {ssa: @determinations, vlp: @determinations}})
       end
@@ -108,7 +108,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
 
     context 'with invalid job_id' do
       it 'returns failure when job not found' do
-        result = subject.call({job_id: 'invalid_job_id', application_hbx_id: @application_hash[:hbx_id],
+        result = subject.call({call_type: 'application_determination', job_id: 'invalid_job_id', application_hbx_id: @application_hash[:hbx_id],
                                response: @application_hash.to_json, app_type: 'faa',
                                determinations: {ssa: @determinations, vlp: @determinations}})
         expect(result).to be_failure
@@ -117,7 +117,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
 
     context 'with invalid application_hbx_id' do
       it 'returns failure when application not found' do
-        result = subject.call({job_id: job.job_id, application_hbx_id: 'invalid_hbx_id',
+        result = subject.call({call_type: 'application_determination', job_id: job.job_id, application_hbx_id: 'invalid_hbx_id',
                                response: @application_hash.to_json, app_type: 'faa',
                                determinations: {ssa: @determinations, vlp: @determinations}})
         expect(result).to be_failure
@@ -127,7 +127,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
 
     context 'with invalid response payload' do
       before do
-        @result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
+        @result = subject.call({call_type: 'application_determination', job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
                                 response: "invalid json", app_type: 'faa',
                                 determinations: {ssa: @determinations, vlp: @determinations}})
 
@@ -144,7 +144,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
 
       it 'returns failure when payload validation fails' do
         invalid_payload = {"applicants" => []}.to_json
-        result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
+        result = subject.call({call_type: 'application_determination', job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
                                response: invalid_payload,
                                determinations: {ssa: @determinations, vlp: @determinations}})
         expect(result).to be_failure
@@ -153,19 +153,19 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
 
     context 'with missing parameters' do
       it 'returns failure when job_id is missing' do
-        result = subject.call({application_hbx_id: @application_hash[:hbx_id], response: @application_hash.to_json})
+        result = subject.call({call_type: 'application_determination', application_hbx_id: @application_hash[:hbx_id], response: @application_hash.to_json})
         expect(result).to be_failure
         expect(result.failure).to eq("Missing job_id")
       end
 
       it 'returns failure when application_hbx_id is missing' do
-        result = subject.call({job_id: job.job_id, response: @application_hash.to_json})
+        result = subject.call({call_type: 'application_determination', job_id: job.job_id, response: @application_hash.to_json})
         expect(result).to be_failure
         expect(result.failure).to eq("Missing application_hbx_id")
       end
 
       it 'returns failure when response is missing or empty' do
-        result = subject.call({job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id], response: ""})
+        result = subject.call({call_type: 'application_determination', job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id], response: ""})
         expect(result).to be_failure
         expect(result.failure).to eq("Response cannot be empty")
       end
@@ -180,7 +180,8 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
                                 application_hbx_id: 'app-123',
                                 app_type: 'faa',
                                 response: '{}',
-                                determinations: {ssa: @determinations, vlp: @determinations}
+                                determinations: {ssa: @determinations, vlp: @determinations},
+                                call_type: 'application_determination'
                               })
         expect(result).to be_success
       end

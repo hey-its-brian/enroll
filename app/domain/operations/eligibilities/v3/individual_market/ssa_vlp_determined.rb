@@ -62,6 +62,8 @@ module Operations
             return Failure("Response cannot be empty") if params[:response].empty?
             return Failure("App type is required") unless params[:app_type]
             return Failure("Determined applicants are required") unless params[:determinations]
+            return Failure('type of call not specified') unless params[:call_type]
+            @call_type = params[:call_type]
 
             Success(params)
           end
@@ -241,7 +243,7 @@ module Operations
             if evidence_entity.current_state == :attested
               evidence.set_verified
             else
-              evidence.set_failed
+              evidence.determine_outstanding_state(@call_type)
             end
           end
 

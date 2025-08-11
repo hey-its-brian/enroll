@@ -165,33 +165,14 @@ module Eligibilities
           %w[verified attested].include? current_state
         end
 
-        # Needs to be updated once we have the requirements for the rejected state
-        def set_failed
-          if self.reload.current_state == :rejected
-            move_to_rejected
-          else
-            person = eligibility&.eligible&.find_person
-            return move_to_negative_response_received unless person
-
-            is_enrolled = person.families&.any? { |family| family.person_has_an_active_enrollment?(person) }
-            (is_enrolled ? move_to_outstanding : move_to_negative_response_received)
-          end
-          return unless EnrollRegistry.feature_enabled?(:set_due_date_upon_response_from_hub)
-
-          evidence_document_due = EnrollRegistry[:verification_document_due_in_days].item
-          self.due_on = TimeKeeper.date_of_record + evidence_document_due.days
-          self.due_on_type = 'response_from_hub'
-
-          true
-        end
-
         # Determines the appropriate state for evidence based on previous evidence and demographics changes.
         # For IVL evidences, if previous evidence is verified and demographics haven't changed,
         # the evidence is copied as verified. Otherwise, it transitions to an eligible state.
         #
         # @param hub_call [Boolean] Whether this is being called from a hub verification process (defaults to false)
         # @return [void]
-        def determine_outstanding_state(hub_call: false)
+        def determine_outstanding_state(call_type)
+          hub_call = call_type != 'application_determination'
           ivl_evidence_keys = ::Eligibilities::V3::IndividualMarketEligibility::EVIDENCES
           prev_evidence = fetch_last_determined_evidence(hub_call: hub_call)
 
@@ -335,6 +316,25 @@ module Eligibilities
             "copied state from previous application",
             'system'
           )
+        end
+
+        def application_type(application)
+          app_class = application.class
+          if app_class == IndividualMarket::Application
+            'qhp'
+          elsif app_class == FinancialAssistance::Application
+            'faa'
+          else
+            raise "Unknown application type: #{app_class}"
+          end
+        end
+
+        def fetch_applicant_hbx_id(applicant)
+          if application_type(applicant.application) == 'qhp'
+            applicant.hbx_id
+          else
+            applicant.person_hbx_id
+          end
         end
 
         def fetch_family
