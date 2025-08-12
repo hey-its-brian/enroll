@@ -208,7 +208,7 @@ module Eligibilities
         def copied_verified
           return unless can_move_to_verified?
 
-          move_to_verified
+          mark_as_verified
           build_verification_history(
             'copied_verified',
             "no demographics changes for the applicant",
@@ -256,24 +256,32 @@ module Eligibilities
           end
         end
 
+        # Non-ROP eligible state logic
+        #  When evidence is in outstanding/review/rejected and due date is not in future
+        #  # if enrolled, evidence should be in outstanding and new due date is assigned
+        #  # if not enrolled, evidence should be in NRR and no due date
+        #  When evidence is in NRR
+        #  # if enrolled, evidence should be in outstanding and new due date is assigned
+        #  # if not enrolled, evidence should be in NRR and no due date
         def non_rop_eligible_state
-          person = eligibility&.eligible&.find_person
-          return move_to_negative_response_received unless person
+          eligible = eligibility&.eligible
+          person = eligible&.find_person
+          return mark_as_negative_response_received unless person
 
-          is_enrolled = person.families&.any? { |family| family.person_has_an_active_enrollment?(person) }
+          is_enrolled = if Eligibilities::V3::AptcCsrEligibility::EVIDENCES.include?(key)
+                          family = fetch_family
+                          enrollments = HbxEnrollment.where(:aasm_state.in => HbxEnrollment::ENROLLED_STATUSES, family_id: family.id)
+                          eligible.enrolled_in_any_aptc_csr_enrollments?(enrollments)
+                        else
+                          person.families&.any? { |f| f.person_has_an_active_enrollment?(person) }
+                        end
+
           if is_enrolled
-            return unless can_move_to_outstanding?
-
-            move_to_outstanding
-            if EnrollRegistry.feature_enabled?(:set_due_date_upon_response_from_hub)
-              evidence_document_due = EnrollRegistry[:verification_document_due_in_days].item
-              self.due_on = TimeKeeper.date_of_record + evidence_document_due.days
-              self.due_on_type = 'response_from_hub'
-            end
+            assign_attributes(verification_outstanding: true, is_satisfied: false)
+            self.due_on = schedule_verification_due_on
+            move_to_outstanding if can_move_to_outstanding?
           else
-            return unless can_move_to_negative_response_received?
-
-            move_to_negative_response_received
+            mark_as_negative_response_received
           end
         end
 
@@ -295,6 +303,7 @@ module Eligibilities
         def copied_outstanding(prev_evidence)
           return unless can_move_to_outstanding?
 
+          assign_attributes(verification_outstanding: true, is_satisfied: false)
           move_to_outstanding
           add_history_with_prev_due_on('copied_outstanding', prev_evidence)
         end
@@ -302,6 +311,7 @@ module Eligibilities
         def copied_rejected(prev_evidence)
           return unless can_move_to_rejected?
 
+          assign_attributes(verification_outstanding: true, is_satisfied: false)
           move_to_rejected
           add_history_with_prev_due_on('copied_rejected', prev_evidence)
         end
@@ -374,8 +384,8 @@ module Eligibilities
           applicant = fetch_last_determined_applicant(hub_call: hub_call)
           return nil unless applicant
 
-          target_eligibility = applicant.individual_market_eligibility
-          return nil unless target_eligibility
+          target_eligibility = applicant.eligibilities.detect {|eli| eli.key == eligibility.key }
+          return nil unless target_eligibility.present?
 
           @fetch_last_determined_evidence ||= target_eligibility.evidences&.where(key: key)&.first
         end

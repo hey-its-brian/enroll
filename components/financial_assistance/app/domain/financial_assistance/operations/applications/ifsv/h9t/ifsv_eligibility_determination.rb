@@ -47,7 +47,7 @@ module FinancialAssistance
                 applicant = find_matching_applicant(application, response_applicant_entity)
 
                 if qhp_application_feature_enabled?
-                  update_aptc_csr_eligibility_evidence(applicant, status, response_applicant_entity, enrollments)
+                  update_aptc_csr_eligibility_evidence(applicant, status, response_applicant_entity)
 
                   return Failed("Failed to save application with hbx_id: #{application.hbx_id} after updating aptc_csr_eligibility evidence") unless application.save!
                 else
@@ -72,13 +72,16 @@ module FinancialAssistance
               end
             end
 
-            def update_aptc_csr_eligibility_evidence(applicant, status, response_applicant_entity, enrollments)
+            def update_aptc_csr_eligibility_evidence(applicant, status, response_applicant_entity)
               response_income_evidence = response_applicant_entity.income_evidence
               aptc_csr_eligibility = applicant.aptc_csr_eligibility
               return unless aptc_csr_eligibility
               income_evidence = aptc_csr_eligibility.income_evidence
-
-              update_income_evidence(applicant, income_evidence, status, enrollments)
+              if income_evidence.blank?
+                Rails.logger.error("#{income_evidence.key} Evidence Not Found for applicant with person_hbx_id: #{applicant.person_hbx_id} in application with hbx_id: #{applicant.application.hbx_id}")
+                return
+              end
+              update_income_evidence(income_evidence, status)
 
               response_income_evidence.request_results&.each do |request_result|
                 income_evidence.request_results.build(request_result.to_h)
@@ -89,24 +92,12 @@ module FinancialAssistance
               aptc_csr_eligibility.is_satisfied = aptc_csr_eligibility.evidences.all?(&:is_satisfied)
             end
 
-            def update_income_evidence(applicant, income_evidence, status, enrollments)
+            def update_income_evidence(income_evidence, status)
               case status
               when "verified"
                 income_evidence.mark_as_verified
               when "outstanding"
-                if applicant.enrolled_in_any_aptc_csr_enrollments?(enrollments)
-                  current_state = income_evidence.current_state
-                  case current_state
-                  when :review
-                    income_evidence.mark_as_review
-                  when :rejected
-                    income_evidence.mark_as_rejected
-                  else
-                    income_evidence.mark_as_outstanding
-                  end
-                else
-                  income_evidence.mark_as_negative_response_received
-                end
+                income_evidence.determine_outstanding_state(call_type: "hub_call")
               end
             end
 
