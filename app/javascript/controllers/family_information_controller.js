@@ -496,13 +496,42 @@ export default class extends Controller {
   }
 
   toggleNoSsn(event) {
+    let input = this.SsnInputTarget.querySelector('input')
+    let container = this.SsnInputTarget.querySelector('#ssn-input-container')
+    let facade = this.SsnInputTarget.querySelector('.ssn-facade')
+    let closeEye = this.SsnInputTarget.querySelector('img[class^=ssn-eye-off-]')
+    let openEye = this.SsnInputTarget.querySelector('img[class^=ssn-eye-on-]')
     if (event.target.checked) {
-      let input = this.SsnInputTarget.querySelector('input')
-      let eye = this.SsnInputTarget.querySelector('img[class^=ssn-eye-off-]')
-      if (eye) {
-        eye.click()
+      if (facade) {
+        facade.classList.add('hidden')
+        facade.innerHTML = ''
       }
-      input.value = ''
+      if (closeEye) {
+        closeEye.classList.add('hidden')
+      }
+      if (container) {
+        container.classList.add('div-disabled')
+      }
+      if (input) {
+        input.classList.add('hidden')
+        input.value = ''
+      }
+      if (openEye) {
+        openEye.classList.add('hidden')
+      }
+    } else {
+      if (facade) {
+        facade.classList.remove('hidden')
+      }
+      if (closeEye) {
+        closeEye.classList.remove('hidden')
+      }
+      if (container) {
+        container.classList.remove('div-disabled')
+      }
+      if (input) {
+        input.classList.remove('hidden')
+      }
     }
   }
 
@@ -551,7 +580,7 @@ export default class extends Controller {
         noSsn.setCustomValidity("Cannot provide an SSN and claim you don't have a SSN")
         noSsn.reportValidity()
         return false
-      } else if (!this.NoSsnCheckboxTarget.checked && (input.value.length == 0 || !maskedSsn)) {
+      } else if (!this.NoSsnCheckboxTarget.checked && (input.value.length == 0 && !maskedSsn)) {
         input.removeAttribute('disabled')
         noSsn.setCustomValidity("One of the following is required: SSN, or check the box that you don't have an SSN")
         noSsn.reportValidity()

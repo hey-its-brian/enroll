@@ -7,7 +7,7 @@
   <%= render partial: '/financial_assistance/shared/faa_progress_options', locals: {step: step_number} %>
   <div class="<%= 'container mt-4' if !@in_application_flow %>">
     <h1 data-cuke='eligibility_results'><%= l10n("faa.results.eligibility_results") %></h1>
-  
+
     <% @application.eligibility_determinations.each_with_index do |ed, i| %>
       <% if ed.applicants.applying_coverage.present? %>
         <h2 data-cuke='tax_household' class='mt-3'><%= l10n("faa.results.tax_household", thh_number: i.next) %></h2>
@@ -177,7 +177,7 @@
     <% end %>
 
     <p data-cuke='more_details'><%= l10n("faa.results.more_details_text") %></p>
-    
+
     <div class="my-4">
       <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
         previous_link: qhp_enabled ? main_app.current_applications_insured_sbm_applications_path : applications_path,
@@ -229,12 +229,12 @@
             <% end %>
 
             <div class="w-100 pb-2">
-              <p><%= l10n("faa.do_not_agree",
-                appeal_link: EnrollRegistry[:enroll_app].setting(:appeal_link).item,
-                find_expert_link: EnrollRegistry[:enroll_app].setting(:find_expert_link).item) %></p>
               <% if qhp_enabled %>
-                <%= h(link_to l10n("faa.results.view_my_applications"), main_app.current_applications_insured_sbm_applications_path, class: "button secondary") %>
+                <p class="mb-0 mt-3"><%= l10n("faa.do_not_agree_with_phone", phone_number: EnrollRegistry[:enroll_app].setting(:contact_center_short_number).item, tty_number: EnrollRegistry[:enroll_app].setting(:contact_center_tty_number).item) %></p>
               <% else %>
+                <p><%= l10n("faa.do_not_agree",
+                  appeal_link: EnrollRegistry[:enroll_app].setting(:appeal_link).item,
+                  find_expert_link: EnrollRegistry[:enroll_app].setting(:find_expert_link).item) %></p>
                 <%= h(link_to l10n("faa.results.view_my_applications"), applications_path, class: "button secondary") %>
               <% end %>
             </div>

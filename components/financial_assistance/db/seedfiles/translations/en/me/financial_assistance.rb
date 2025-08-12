@@ -169,7 +169,7 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   "en.faa.private_health_insurance_text" => "These people qualify to enroll in a private health insurance plan.",
   "en.faa.qualified_to_enroll" => "These people <span> qualify to enroll </span> in a private health insurance plan:",
   "en.faa.do_not_agree" => "If you do not agree with the determination, you have the right to appeal. Find out more about the appeal process or get assistance by contacting us directly.",
-  "en.faa.do_not_agree_with_phone" => "If you do not agree with the determination, you have the right to appeal. <a href= %{appeal_link} target='_blank' rel='noopener noreferrer'>Find out more about the appeal process</a> or <a href= %{find_expert_link}  target='_blank' rel='noopener noreferrer'>get help</a> by contacting us directly at %{phone_number} TTY: %{tty_number}.",
+  "en.faa.do_not_agree_with_phone" => "If you do not agree with the determination, you have the right to appeal. Find out more about the appeal process or get assistance by contacting us directly at %{phone_number} TTY: %{tty_number}.",
   "en.faa.your_application_reference" => "Your application reference number is ",
   "en.faa.next_step_without_aggregate" => "<b>NEXT STEP:</b> Pick a health insurance plan.",
   "en.faa.next_step_with_aggregate_1" => "<b>NEXT STEP:</b><ul><li><b>If you’re already enrolled in a plan</b>, we’ve automatically changed your premium. You don’t have to do anything else.</li>",

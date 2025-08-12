@@ -108,12 +108,14 @@ module Forms
       end
 
       def build_ssn_attributes
-        self.ssn = if self.no_ssn&.to_i == 1
+        self.ssn = if self.no_ssn&.to_i == 1 || ssn.present?
                      ssn
+                   elsif encrypted_ssn.present?
+                     SymmetricEncryption.decrypt(encrypted_ssn)
                    else
-                     (ssn.present? ? ssn : existing_ssn)
+                     existing_ssn
                    end
-        self.encrypted_ssn = SymmetricEncryption.encrypt(ssn) if ssn.present?
+        self.encrypted_ssn = SymmetricEncryption.encrypt(ssn)
       end
 
       # Sets the US citizen status
