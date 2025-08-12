@@ -16,7 +16,7 @@ module FinancialAssistance
             entity_monad = build_application_payload_entity(application)
 
             if entity_monad.failure?
-              failure_reason = "Application validity: Income Evidence verification request failed due to #{entity_monad.failure}"
+              failure_reason = "Application validity: Income Evidence verification request failed due to #{entity_monad.failure.errors.to_h}"
               result = handle_validation_failure(application, evidence, failure_reason)
               return result
             end

@@ -63,6 +63,41 @@ module Eligibilities
         redirect_back(fallback_location: determine_redirect_location)
       end
 
+      # Requests a hub call for the V3 evidence verification
+      # @return [void] Responds with success or error message based on operation result
+      def fed_hub_request
+        authorize HbxProfile, :can_call_hub?
+
+        if @eligibility.key.to_s == 'individual_market_eligibility'
+          ivl_hub_call_keys = ::Eligibilities::V3::IndividualMarketEligibility::HUB_CALL_EVIDENCES
+          raise "Call hub feature is not available for #{@evidence.type_name}" unless ivl_hub_call_keys.include?(@evidence.key)
+        end
+
+        permitted_params = {
+          action_name: params[:admin_action],
+          update_reason: "Requested Hub for verification",
+          updated_by: current_user.oim_id
+        }
+        result = @evidence.call_hub(permitted_params)
+
+        if result.success?
+          key = :success
+          message = "request submitted successfully"
+          @success = true
+        else
+          key = :error
+          message = "unable to submit request"
+        end
+
+        respond_to do |format|
+          format.html do
+            flash[key] = message
+            redirect_back(fallback_location: determine_redirect_location)
+          end
+          format.js
+        end
+      end
+
       private
 
       def fetch_reasons_list

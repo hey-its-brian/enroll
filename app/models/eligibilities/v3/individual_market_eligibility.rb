@@ -27,6 +27,8 @@ module Eligibilities
       # A defined list of evidence types for this eligibility
       EVIDENCES = ['alive_evidence', 'american_indian_evidence', 'citizenship_evidence', 'immigration_evidence', 'social_security_number_evidence'].freeze
 
+      HUB_CALL_EVIDENCES = ['social_security_number_evidence', 'citizenship_evidence', 'immigration_evidence'].freeze
+
       validate :unique_evidences
 
       # Returns the most recent state history record

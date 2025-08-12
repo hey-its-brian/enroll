@@ -101,4 +101,5 @@ ADMIN_ACTIONS_TRANSLATIONS = {
   'en.admin.verifications.extend.history_description.static' => "Set %{day_offset} day ROP. New due date is %{date}.",
   'en.admin.verifications.reject_reason' => "Reject reason:",
   'en.admin.verifications.verify_reason' => "Provide verification reason:",
+  'en.admin.verifications.fed_hub_request' => "New request to the FDSH will be sent."
 }

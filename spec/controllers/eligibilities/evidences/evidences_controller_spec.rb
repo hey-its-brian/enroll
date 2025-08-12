@@ -33,12 +33,17 @@ RSpec.describe Eligibilities::Evidences::EvidencesController, type: :controller 
   end
 
   let(:applicant) do
-    FactoryBot.create(
-      :financial_assistance_applicant,
-      family_member_id: primary_applicant.id,
-      person_hbx_id: person.hbx_id,
-      application: faa_application
-    )
+    FactoryBot.create(:applicant,
+                      application: faa_application,
+                      dob: TimeKeeper.date_of_record - 40.years,
+                      is_primary_applicant: true,
+                      family_member_id: primary_applicant.id,
+                      person_hbx_id: person.hbx_id,
+                      first_name: person.first_name,
+                      last_name: person.last_name,
+                      gender: person.gender,
+                      ssn: person.ssn,
+                      addresses: [FactoryBot.build(:financial_assistance_address)])
   end
 
   context 'admin' do
@@ -301,6 +306,139 @@ RSpec.describe Eligibilities::Evidences::EvidencesController, type: :controller 
 
         it 'handles application not found' do
           put :extend_due_date, params: invalid_params
+          expect(flash[:error]).to eq("Application not found")
+        end
+      end
+    end
+
+    context 'put #fed_hub_request' do
+      let!(:params) do
+        {
+          eligibility_id: aptc_csr_eligibility.id,
+          id: income_evidence.id,
+          application_gid: faa_application&.to_global_id&.uri&.to_s,
+          applicant_id: applicant&.id,
+          person_id: primary_applicant.person.id,
+          eligibility_kind: 'aptc_csr_eligibility',
+          evidence_key: :income_evidence,
+          admin_action: 'hub_request'
+        }
+      end
+
+      context 'with income evidence valid params and successful operation' do
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(true)
+        end
+
+        it 'updates evidence verification status' do
+          put :fed_hub_request, params: params
+          expect(flash[:success]).to eq("request submitted successfully")
+        end
+
+        it 'redirects to verification detail path' do
+          put :fed_hub_request, params: params
+          expect(response).to redirect_to(verification_detail_insured_families_path(
+                                            person_id: params[:person_id],
+                                            eligibility_kind: params[:eligibility_kind],
+                                            evidence_key: params[:evidence_key]
+                                          ))
+        end
+
+        it 'calls build determination after successful update' do
+          expect(Operations::Eligibilities::BuildFamilyDetermination).to receive_message_chain(:new, :call).with(family: family)
+          put :fed_hub_request, params: params
+        end
+      end
+
+      context 'with ssn evidence valid params and successful operation' do
+        before do
+          params.merge!(eligibility_id: ivl_eligibility.id, id: ssn_evidence.id, eligibility_kind: 'individual_market_eligibility', evidence_key: :social_security_number_evidence)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(true)
+        end
+
+        it 'updates evidence verification status' do
+          put :fed_hub_request, params: params
+          expect(flash[:success]).to eq("request submitted successfully")
+        end
+
+        it 'redirects to verification detail path' do
+          put :fed_hub_request, params: params
+          expect(response).to redirect_to(verification_detail_insured_families_path(
+                                            person_id: params[:person_id],
+                                            eligibility_kind: params[:eligibility_kind],
+                                            evidence_key: params[:evidence_key]
+                                          ))
+        end
+
+        it 'calls build determination after successful update' do
+          expect(Operations::Eligibilities::BuildFamilyDetermination).to receive_message_chain(:new, :call).with(family: family)
+          put :fed_hub_request, params: params
+        end
+      end
+
+      context 'with valid params but failed operation' do
+        before do
+          allow_any_instance_of(FinancialAssistance::Evidences::IncomeEvidence).to receive(:call_hub).and_return(double(success?: false, failure: "Hub call failed"))
+        end
+
+        it 'displays error message when operation fails' do
+          put :fed_hub_request, params: params
+          expect(flash[:error]).to eq("unable to submit request")
+        end
+      end
+
+      context 'with uneditable application state' do
+        before do
+          faa_application.update_attributes!(aasm_state: 'cancelled')
+        end
+
+        it 'redirects to applications path with alert message' do
+          put :fed_hub_request, params: params
+          expect(flash[:alert]).to be_present
+          expect(response).to redirect_to(current_applications_insured_sbm_applications_path)
+        end
+      end
+
+      context 'with missing evidence' do
+        let!(:invalid_params) do
+          params.merge(id: 'invalid_id')
+        end
+
+        it 'handles evidence not found' do
+          put :fed_hub_request, params: invalid_params
+          expect(flash[:error]).to eq("Evidence not found")
+        end
+      end
+
+      context 'with missing eligibility' do
+        let!(:invalid_params) do
+          params.merge(eligibility_id: 'invalid_id')
+        end
+
+        it 'handles eligibility not found' do
+          put :fed_hub_request, params: invalid_params
+          expect(flash[:error]).to eq("Eligibility not found")
+        end
+      end
+
+      context 'with missing applicant' do
+        let!(:invalid_params) do
+          params.merge(applicant_id: 'invalid_id')
+        end
+
+        it 'handles applicant not found' do
+          put :fed_hub_request, params: invalid_params
+          expect(flash[:error]).to eq("Applicant not found")
+        end
+      end
+
+      context 'with missing application' do
+        let!(:invalid_params) do
+          params.merge(application_gid: 'invalid_gid')
+        end
+
+        it 'handles application not found' do
+          put :fed_hub_request, params: invalid_params
           expect(flash[:error]).to eq("Application not found")
         end
       end

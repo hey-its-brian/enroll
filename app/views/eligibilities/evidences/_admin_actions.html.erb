@@ -20,7 +20,7 @@
 </div>
 
 <div class="verification-update-reason" id=<%="#{applicant.id}-#{evidence_key.split.join('-')}-return"%>>
-  <%= form_tag update_evidence_eligibility_evidence_path(eligibility.id, evidence.id), method: :put do %>
+  <%= form_tag eligibility_evidence_path(eligibility.id, evidence.id), method: :put do %>
     <%= hidden_field_tag 'person_id', person_id  %>
     <%= hidden_field_tag 'application_gid', application&.to_global_id&.uri&.to_s  %>
     <%= hidden_field_tag 'applicant_id', applicant.id  %>
@@ -36,6 +36,19 @@
     <div>
       <%= submit_tag "Confirm", class: "button v-type-confirm-button" %>
     </div>
+  <% end %>
+</div>
+
+<div class="fedhub-request" id=<%="#{applicant.id}-#{evidence_key.split.join('-')}-hub"%>>
+  <p><%= l10n('admin.verifications.fed_hub_request') %></p>
+  <%= form_tag fed_hub_request_eligibility_evidence_path(eligibility.id, evidence.id), method: :post do %>
+    <%= hidden_field_tag 'person_id', person_id  %>
+    <%= hidden_field_tag 'application_gid', application&.to_global_id&.uri&.to_s  %>
+    <%= hidden_field_tag 'applicant_id', applicant.id  %>
+    <%= hidden_field_tag 'eligibility_kind', eligibility_kind %>
+    <%= hidden_field_tag 'evidence_key', evidence_key %>
+    <%= hidden_field_tag 'admin_action', 'hub_request' %>
+    <%= submit_tag "Confirm", class: "btn btn-default v-type-confirm-button" %>
   <% end %>
 </div>
 

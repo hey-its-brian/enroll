@@ -26,7 +26,7 @@ module FinancialAssistance
       end
 
       def call_hub(params)
-        ::FinancialAssistance::Operations::Evidences::LocalMec::CallHub.new.call(params)
+        ::FinancialAssistance::Operations::Evidences::LocalMec::CallHub.new.call(params.merge(evidence: self))
       end
     end
   end
