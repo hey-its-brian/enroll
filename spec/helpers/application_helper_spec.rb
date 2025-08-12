@@ -694,6 +694,24 @@ RSpec.describe ApplicationHelper, :type => :helper do
         expect(helper.home_page_path).to eq exchanges_hbx_profiles_root_path
       end
     end
+
+    context "when user has broker role or broker agency staff role" do
+      let(:broker_role) { FactoryBot.create(:broker_role, person: person) }
+      let(:broker_agency_profile) { FactoryBot.create(:broker_agency_profile, legal_name: "Test Agency") }
+
+      before do
+        allow(user).to receive(:has_broker_role?).and_return(true)
+        allow(user).to receive(:person).and_return(person)
+        allow(user).to receive(:has_broker_agency_staff_role?).and_return(false)
+        allow(person).to receive(:broker_role).and_return(broker_role)
+        allow(broker_role).to receive(:broker_agency_profile).and_return(broker_agency_profile)
+        allow(helper).to receive(:current_user).and_return(user)
+      end
+
+      it "returns the broker agency profile path" do
+        expect(helper.home_page_path).to eq benefit_sponsors.profiles_broker_agencies_broker_agency_profile_path(broker_agency_profile.id)
+      end
+    end
   end
 
   describe "show_default_ga?", dbclean: :after_each do

@@ -61,6 +61,8 @@ module ApplicationHelper
     return unless current_user
     if current_user.has_hbx_staff_role?
       main_app.exchanges_hbx_profiles_root_path
+    elsif current_user.has_broker_role? || current_user.has_broker_agency_staff_role?
+      benefit_sponsors.profiles_broker_agencies_broker_agency_profile_path(current_user.person.broker_role.broker_agency_profile.id)
     elsif current_user.identity_verified? || (current_user.has_consumer_role? && current_user.person.consumer_role.identity_verified?)
       main_app.family_account_path
     end
