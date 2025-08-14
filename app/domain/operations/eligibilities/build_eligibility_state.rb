@@ -9,6 +9,7 @@ module Operations
     class BuildEligibilityState
       include Dry::Monads[:do, :result]
       include ::ResourceRegistryHelper
+      include LoggingHelper
 
       # @param [Hash] opts Options to build eligibility state
       # @option opts [GlobalID] :subject required
@@ -16,6 +17,7 @@ module Operations
       # @option opts [Array<Symbol>] :evidence_item_keys optional
       # @return [Dry::Monad] result
       def call(params)
+        @logger = yield initialize_logger
         values = yield validate(params)
         eligibility_state = yield build_eligibility_state(values)
 
@@ -23,6 +25,18 @@ module Operations
       end
 
       private
+
+       # Initializes the daily log file
+      def initialize_logger
+        Success(
+          Logger.new(
+            "#{Rails.root}/log/build_eligibility_state_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.log"
+          )
+        )
+      rescue StandardError => e
+        Failure("Error initializing logger: #{e.message}")
+      end
+
 
       def validate(params)
         errors = []
@@ -47,8 +61,12 @@ module Operations
           .collect do |evidence_item|
             attrs = values.slice(:subject, :eligibility_item).merge(evidence_item: evidence_item)
             attrs.merge!(family: @family)
-            evidence_state = Operations::Eligibilities::BuildEvidenceState.new.call(attrs)
-            evidence_state.success? ? evidence_state.success : {}
+
+            @logger.info("Calling BuildEvidenceState for Evidence Key: #{evidence_item.key}")
+            result = Operations::Eligibilities::BuildEvidenceState.new.call(attrs)
+            @logger.info("BuildEvidenceState result for #{evidence_item.key}: #{result.success? ? 'SUCCESS' : "FAILURE - #{result.failure}"}")
+
+            result.success? ? result.success : {}
           end
           .compact
           .reduce(:merge)
