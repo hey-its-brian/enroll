@@ -8,6 +8,11 @@ class HbxIdGenerator
     @provider = AmqpSource
   end
 
+  # Generates the next unique ID for the applicant
+  def generate_applicant_id
+    provider.generate_applicant_id
+  end
+
   def generate_member_id
     provider.generate_member_id
   end
@@ -48,6 +53,11 @@ class HbxIdGenerator
     self.instance.generate_payment_transaction_id
   end
 
+  # Generates the next unique ID for the applicant
+  def self.generate_applicant_id
+    self.instance.generate_applicant_id
+  end
+
   def self.generate_member_id
     self.instance.generate_member_id
   end
@@ -77,6 +87,12 @@ class HbxIdGenerator
         retry_attempt += 1
       end
       JSON.load(request_result.stringify_keys["body"]).first.to_s
+    end
+
+    # Generates the next unique ID for the sequence 'applicant_id'
+    # The sequence is expected to start at 20000000
+    def self.generate_applicant_id
+      generate_id_from_sequence('applicant_id')
     end
 
     def self.generate_member_id
@@ -109,6 +125,11 @@ class HbxIdGenerator
   end
 
   class SlugSource
+    # Generates a random unique applicant ID for non-production environments
+    def self.generate_applicant_id
+      random_uuid
+    end
+
     def self.generate_organization_id
       random_uuid
     end
@@ -149,4 +170,3 @@ end
 
 # Fix slug setting on request reload
 HbxIdGenerator.slug! unless Rails.env.production?
-

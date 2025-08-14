@@ -543,8 +543,12 @@ module IndividualMarket
       errors.add(:eligibilities, 'cannot have duplicate eligibilities types') if eligibility_types.uniq.length != eligibility_types.length
     end
 
+    # Assigns an HBX ID to the applicant if not already present
+    # @return [void]
     def assign_hbx_id
-      self.hbx_id ||= ::HbxIdGenerator.generate_application_id
+      return if self.hbx_id.present?
+
+      self.hbx_id = ::HbxIdGenerator.generate_applicant_id
     end
   end
 end
