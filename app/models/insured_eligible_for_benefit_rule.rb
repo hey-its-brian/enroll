@@ -49,13 +49,7 @@ class InsuredEligibleForBenefitRule
       @errors = []
       return [false, ["coverage not available"]] if @benefit_package.blank?
       benefit_eligibility_elements = @benefit_package.benefit_eligibility_element_group.class.fields.keys.reject{|k| k == "_id"}
-      elements = if qhp_application_feature_enabled?
-                   rejected_elements = %w[applying_coverage incarceration_status residency_status citizenship_status]
-                   benefit_eligibility_elements.reject { |element| rejected_elements.include?(element) }
-                 else
-                   benefit_eligibility_elements
-                 end
-      status = elements.reduce(true) do |eligible, element|
+      status = benefit_eligibility_elements.reduce(true) do |eligible, element|
         if @market_kind == "shop" && !("#{element}" == "active_consumer")
           if self.public_send("is_#{element}_satisfied?")
             true && eligible
@@ -98,13 +92,18 @@ class InsuredEligibleForBenefitRule
       @errors << [l10n('insured.group_selection.no_application_submitted')]
       return false
     end
-
     shopping_eligible_member_ids = @eligibility_determination.shopping_eligible_member_ids
     return status if shopping_eligible_member_ids.include?(@family_member_id)
-
-    status = false
+    # if the member is over 26 and has age_off_excluded set to true, the state residency criteria can be overridden, allowing them to shop
+    # this logic is fragile, and should be refactored when FAA has basis implemented.
+    return status if state_residency_overridden?
     @errors << ["Ineligible for Plan shopping"] #TODO: Error message changes based on business input
     status
+  end
+
+  def state_residency_overridden?
+    return false unless relation_ship_with_primary_applicant == 'child'
+    @role.person.age_off_excluded || @role.person.age_on(TimeKeeper.date_of_record) < 26
   end
 
   def eligibility_errors(element)
@@ -181,7 +180,7 @@ class InsuredEligibleForBenefitRule
 
   def is_family_relationships_satisfied?
     return true unless relation_ship_with_primary_applicant == 'child'
-    is_child_age_satisfied?
+    qhp_application_feature_enabled? ? state_residency_overridden? : is_child_age_satisfied?
   end
 
   def is_child_age_satisfied?
@@ -222,15 +221,17 @@ class InsuredEligibleForBenefitRule
   def is_residency_status_satisfied?
     return false if @benefit_package.blank?
     return true if @benefit_package.residency_status.include?("any")
-
     if @benefit_package.residency_status.include?("state_resident") && @role.present?
       person = @role.person
       return true if person.is_dc_resident?
 
-      #TODO person can have more than one families
-      @family.family_members.active.each do |family_member|
-        if age_on_next_effective_date(family_member.dob) >= 19 && family_member.is_dc_resident?
-          return true
+      if qhp_application_feature_enabled?
+        return false unless relation_ship_with_primary_applicant == 'child'
+        return state_residency_overridden?
+      else
+        #TODO: person can have more than one families
+        @family.family_members.active.each do |family_member|
+          return true if age_on_next_effective_date(family_member.dob) >= 19 && family_member.is_dc_resident?
         end
       end
     end

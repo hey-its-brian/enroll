@@ -223,7 +223,7 @@ module IndividualMarket
     end
 
     def is_state_resident?
-      return true if is_homeless?
+      return true if is_homeless? || is_temporarily_out_of_state?
 
       address_to_use = addresses.collect(&:kind).include?('home') ? 'home' : 'mailing'
       addresses.each{|address| return true if address.kind == address_to_use && address.state == aca_state_abbreviation}

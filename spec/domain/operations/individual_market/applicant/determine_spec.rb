@@ -97,7 +97,7 @@ RSpec.describe Operations::IndividualMarket::Applicant::Determine, dbclean: :aft
       expect(applying_coverage_basis.is_satisfied).to eq false
     end
 
-    it 'when applicant does not have an address they should not be eligible' do
+    it 'when primary applicant does not have an address they should not be eligible' do
       primary_applicant.addresses = []
       result = subject.call(params)
       qhp_determination = result.success.individual_market_eligibility.qhp_determination
@@ -106,30 +106,9 @@ RSpec.describe Operations::IndividualMarket::Applicant::Determine, dbclean: :aft
       expect(applying_coverage_basis.is_satisfied).to eq false
     end
 
-    it 'when applicant is not a state resident they should not be eligible' do
+    it 'when primary applicant is not a state resident they should not be eligible' do
       primary_applicant.addresses.destroy_all
       primary_applicant.addresses << FactoryBot.create(:location_address, addressable: primary_applicant, kind: 'home', state: 'NA')
-      result = subject.call(params)
-      qhp_determination = result.success.individual_market_eligibility.qhp_determination
-      state_resident_basis = qhp_determination.bases.where(basis_kind: 'state_resident').first
-      expect(qhp_determination.is_eligible).to eq false
-      expect(state_resident_basis.is_satisfied).to eq false
-    end
-
-    it 'when applicant is not a state resident but has an adult family member that is they should be eligible' do
-      primary_applicant.addresses.destroy_all
-      dependent_applicant.addresses << FactoryBot.create(:location_address, addressable: primary_applicant, kind: 'home', state: Settings.aca.state_abbreviation)
-      result = subject.call(params)
-      qhp_determination = result.success.individual_market_eligibility.qhp_determination
-      state_resident_basis = qhp_determination.bases.where(basis_kind: 'state_resident').first
-      expect(qhp_determination.is_eligible).to eq true
-      expect(state_resident_basis.is_satisfied).to eq true
-    end
-
-    it 'when applicant is not a state resident but has a child family member that is they should not be eligible' do
-      primary_applicant.addresses = []
-      dependent_applicant.demographics.dob = 17.years.ago
-      dependent_applicant.addresses << FactoryBot.create(:location_address, addressable: dependent_applicant, kind: 'home', state: Settings.aca.state_abbreviation)
       result = subject.call(params)
       qhp_determination = result.success.individual_market_eligibility.qhp_determination
       state_resident_basis = qhp_determination.bases.where(basis_kind: 'state_resident').first
@@ -144,6 +123,39 @@ RSpec.describe Operations::IndividualMarket::Applicant::Determine, dbclean: :aft
       lawfully_present_basis = qhp_determination.bases.where(basis_kind: 'lawfully_present_in_us').first
       expect(qhp_determination.is_eligible).to eq false
       expect(lawfully_present_basis.is_satisfied).to eq false
+    end
+  end
+
+  describe 'state residency for dependent applicants' do
+    let(:params) { { application: application, applicant: dependent_applicant } }
+
+    it 'when dependent applicant lives with the primary applicant who lives in the same state they should be eligible' do
+      primary_applicant.addresses << FactoryBot.create(:location_address, addressable: dependent_applicant, kind: 'home', state: Settings.aca.state_abbreviation)
+      result = subject.call(params)
+      qhp_determination = result.success.individual_market_eligibility.qhp_determination
+      state_resident_basis = qhp_determination.bases.where(basis_kind: 'state_resident').first
+      expect(qhp_determination.is_eligible).to eq true
+      expect(state_resident_basis.is_satisfied).to eq true
+    end
+
+    it 'when dependent applicant lives with the primary applicant who lives in a different state they should not be eligible' do
+      primary_applicant.addresses << FactoryBot.create(:location_address, addressable: dependent_applicant, kind: 'home', state: 'NA')
+      result = subject.call(params)
+      qhp_determination = result.success.individual_market_eligibility.qhp_determination
+      state_resident_basis = qhp_determination.bases.where(basis_kind: 'state_resident').first
+      expect(qhp_determination.is_eligible).to eq false
+      expect(state_resident_basis.is_satisfied).to eq false
+    end
+
+    it 'when dependent applicant is not a state resident and they do not live with the primary applicant they should not be eligible' do
+      primary_applicant.addresses << FactoryBot.create(:location_address, addressable: dependent_applicant, kind: 'home', state: 'AL')
+      dependent_applicant.addresses << FactoryBot.create(:location_address, addressable: dependent_applicant, kind: 'home', state: 'NA')
+      dependent_applicant.update_attributes(address_same_as_primary: false)
+      result = subject.call(params)
+      qhp_determination = result.success.individual_market_eligibility.qhp_determination
+      state_resident_basis = qhp_determination.bases.where(basis_kind: 'state_resident').first
+      expect(qhp_determination.is_eligible).to eq false
+      expect(state_resident_basis.is_satisfied).to eq false
     end
   end
 

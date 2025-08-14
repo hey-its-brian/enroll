@@ -87,26 +87,12 @@ module Operations
         # @param [IndividualMarket::Application] application
         # @return [Dry::Monads::Result]
         def generate_state_resident_basis(applicant, application)
-          state_resident = applicant.is_state_resident? || adult_family_member_is_state_resident?(application.applicants)
+          state_resident = applicant.is_state_resident? || lives_with_state_resident?(applicant, application.primary_applicant)
           @qhp_determination.bases.build({basis_kind: 'state_resident', is_satisfied: state_resident})
         end
 
-        # Determines if an adult family member is a state resident
-        # @param [Array<IndividualMarket::Applicant>] applicants
-        # @return [Boolean]
-        def adult_family_member_is_state_resident?(applicants)
-          applicants.any? do |applicant|
-            applicant.is_state_resident? && age_on_next_effective_date(applicant.demographics.dob) >= 19
-          end
-        end
-
-        # Calculates the age on the next effective date
-        # @param [Date] dob
-        # @return [Integer]
-        def age_on_next_effective_date(dob)
-          today = TimeKeeper.date_of_record
-          age_on = today.day <= 15 ? today.end_of_month + 1.day : (today + 1.month).end_of_month + 1.day
-          age_on.year - dob.year - ((age_on.month > dob.month || (age_on.month == dob.month && age_on.day >= dob.day)) ? 0 : 1)
+        def lives_with_state_resident?(applicant, primary_applicant)
+          applicant.address_same_as_primary && primary_applicant.is_state_resident?
         end
 
         # Generates the lawfully present in US basis

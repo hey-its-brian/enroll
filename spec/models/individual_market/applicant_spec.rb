@@ -497,6 +497,38 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
     end
   end
 
+  describe 'is_state_resident?' do
+    before do
+      applicant.addresses.destroy_all
+    end
+
+    it 'returns true when the applicant is homeless' do
+      applicant.is_homeless = true
+      expect(applicant.is_state_resident?).to eq(true)
+    end
+
+    it 'returns true when the applicant is temporarily out of state' do
+      applicant.is_temporarily_out_of_state = true
+      expect(applicant.is_state_resident?).to eq(true)
+    end
+
+    context 'when the applicant is not homeless or temporarily out of state' do
+      it 'returns false if they have no addresses' do
+        expect(applicant.is_state_resident?).to eq(false)
+      end
+
+      it 'returns false if they have an address in a different state' do
+        applicant.addresses << FactoryBot.build(:location_address, state: 'CA')
+        expect(applicant.is_state_resident?).to eq(false)
+      end
+
+      it 'returns true if they have an address in the same state' do
+        applicant.addresses << FactoryBot.build(:location_address, state: Settings.aca.state_abbreviation)
+        expect(applicant.is_state_resident?).to eq(true)
+      end
+    end
+  end
+
   describe 'validations' do
     context 'when eligibilities have duplicate types' do
       it 'returns error message' do

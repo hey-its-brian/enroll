@@ -727,6 +727,144 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
         end
       end
 
+      context 'state residency override' do
+        let(:family) do
+          FactoryBot.create(:family,
+                            :with_primary_family_member_and_dependent,
+                            :with_eligibility_determination_and_subjects,
+                            person: person_2,
+                            outstanding_verification_status: 'not_enrolled',
+                            eligibility_item_keys: ['aca_individual_market_eligibility'],
+                            assistance_year: TimeKeeper.date_of_record.year,
+                            use_family_member_ids: true,
+                            grants_config: grants_config)
+        end
+
+        let(:grants_config) do
+          {
+            'aca_individual_market_eligibility' => [
+              { key: 'QhpGrant' }
+            ]
+          }
+        end
+        let(:dependent) { family.family_members.last.person }
+        let(:consumer_role) { FactoryBot.create(:consumer_role, person: dependent) }
+        let(:dependent_fm_id) { family.family_members.last.id }
+
+        context 'person is a child of the primary applicant under 26' do
+          before do
+            dependent.addresses.each do |address|
+              address.update_attributes!(state: 'NA')
+            end
+            dependent.update_attributes!(dob: TimeKeeper.date_of_record - 25.years)
+          end
+
+          it 'should not have any errors' do
+            sign_in user_2
+            sign_in user_2
+            get(
+              :new,
+              params: {
+                person_id: dependent.id,
+                consumer_role_id: dependent.consumer_role.id,
+                change_plan: "",
+                coverage_kind: hbx_enrollment.coverage_kind,
+                market_kind: "individual"
+              }
+            )
+            fm_hash = assigns(:fm_hash)
+            expect(response).to have_http_status("200")
+            expect(fm_hash[dependent_fm_id].first).to be_truthy
+            expect(fm_hash[dependent_fm_id].third).to be_empty
+          end
+        end
+
+        context 'dependent is over 26 and has age_off_excluded set to true' do
+          before do
+            dependent.addresses.each do |address|
+              address.update_attributes!(state: 'NA')
+            end
+            dependent.update_attributes!(dob: TimeKeeper.date_of_record - 30.years, age_off_excluded: true)
+          end
+
+          it 'should not have any errors' do
+            sign_in user_2
+            sign_in user_2
+            get(
+              :new,
+              params: {
+                person_id: dependent.id,
+                consumer_role_id: dependent.consumer_role.id,
+                change_plan: "",
+                coverage_kind: hbx_enrollment.coverage_kind,
+                market_kind: "individual"
+              }
+            )
+            fm_hash = assigns(:fm_hash)
+            expect(response).to have_http_status("200")
+            expect(fm_hash[dependent_fm_id].first).to be_truthy
+            expect(fm_hash[dependent_fm_id].third).to be_empty
+          end
+        end
+
+        context 'dependent is over 26 and has age_off_excluded set to true and not in shopping_eligible_member_ids' do
+          before do
+            allow(family.eligibility_determination).to receive(:shopping_eligible_member_ids).and_return([])
+            dependent.addresses.each do |address|
+              address.update_attributes!(state: 'NA')
+            end
+            dependent.update_attributes!(dob: TimeKeeper.date_of_record - 30.years, age_off_excluded: true)
+          end
+
+          it 'should not have any errors' do
+            sign_in user_2
+            sign_in user_2
+            get(
+              :new,
+              params: {
+                person_id: dependent.id,
+                consumer_role_id: dependent.consumer_role.id,
+                change_plan: "",
+                coverage_kind: hbx_enrollment.coverage_kind,
+                market_kind: "individual"
+              }
+            )
+            fm_hash = assigns(:fm_hash)
+            expect(response).to have_http_status("200")
+            expect(fm_hash[dependent_fm_id].first).to be_truthy
+            expect(fm_hash[dependent_fm_id].third).to be_empty
+          end
+        end
+
+        context 'dependent is over 26 and has age_off_excluded set to false' do
+          before do
+            dependent.addresses.each do |address|
+              address.update_attributes!(state: 'NA')
+            end
+            dependent.update_attributes!(dob: TimeKeeper.date_of_record - 30.years, age_off_excluded: false)
+          end
+
+          it 'should not have any errors' do
+            sign_in user_2
+            sign_in user_2
+            get(
+              :new,
+              params: {
+                person_id: dependent.id,
+                consumer_role_id: dependent.consumer_role.id,
+                change_plan: "",
+                coverage_kind: hbx_enrollment.coverage_kind,
+                market_kind: "individual"
+              }
+            )
+            fm_hash = assigns(:fm_hash)
+            expect(response).to have_http_status("200")
+            expect(fm_hash[dependent_fm_id].first).to be_falsey
+            expect(fm_hash[dependent_fm_id].third).not_to be_empty
+          end
+        end
+      end
+
       context 'family does not have eligibility determination' do
         let(:family) do
           FactoryBot.create(:family,
