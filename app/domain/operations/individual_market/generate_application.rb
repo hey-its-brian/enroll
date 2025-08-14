@@ -110,7 +110,7 @@ module Operations
         result = ::Operations::IndividualMarket::Application::Build.new.call(params: application_params)
 
         if result.success?
-          Success(result.success)
+          result.success.valid? ? result : Failure(result.success.errors)
         else
           Failure(result.failure)
         end

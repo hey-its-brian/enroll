@@ -10,6 +10,11 @@ module Operations
     class ParseApplicant
       include Dry::Monads[:do, :result, :try]
 
+      # Ethnicity collection for the applicant, separated into two collections for the UI
+      ETHNICITY_COLLECTION = ["Mexican", "Mexican American", "Chicano/a", "Puerto Rican", "Cuban", "Other"].freeze
+      RACE_COLLECTION = ["White", "Black or African American", "Asian Indian", "Chinese", "Filipino", "Japanese", "Korean", "Vietnamese", "Other Asian", "Native Hawaiian", "Samoan", "Guamanian or Chamorro", "Other Pacific Islander",
+                         "American Indian/Alaska Native", "Other"].freeze
+
       # Parses a family member into an applicant params hash
       # @param [ Hash ] params containing family_member
       # @return [ Result<Hash> ] Success with applicant params or Failure with error message
@@ -79,8 +84,8 @@ module Operations
           no_ssn: ActiveModel::Type::Boolean.new.cast(person.no_ssn),
           dob: person.dob,
           gender: person.gender,
-          ethnicity: person.ethnicity,
-          race: [person.race]&.compact_blank,
+          ethnicity: parse_ethnicity(person),
+          race: parse_race(person),
           is_incarcerated: person.is_incarcerated,
           is_physically_disabled: person.is_disabled,
           indian_tribe_member: person.indian_tribe_member,
@@ -91,6 +96,14 @@ module Operations
           citizen_status: person.citizen_status,
           language_code: person.language_code
         }
+      end
+
+      def parse_race(person)
+        person.ethnicity.select { |ethnicity| ethnicity.in?(RACE_COLLECTION) }
+      end
+
+      def parse_ethnicity(person)
+        person.ethnicity.select { |ethnicity| ethnicity.in?(ETHNICITY_COLLECTION) }
       end
 
       def immigration_information_attributes(consumer_role, doc_statuses)

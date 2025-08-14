@@ -69,7 +69,7 @@ RSpec.describe Operations::IndividualMarket::GenerateApplication, dbclean: :afte
 
     context 'with valid params' do
       let!(:hbx_profile)   { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
-      let(:person) { FactoryBot.create(:person, :with_consumer_role, no_ssn: true) }
+      let(:person) { FactoryBot.create(:person, :with_consumer_role, no_ssn: true, ethnicity: ['Mexican', 'White']) }
       let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
       let(:params) do
         {
@@ -106,6 +106,12 @@ RSpec.describe Operations::IndividualMarket::GenerateApplication, dbclean: :afte
         expect(@result.success).to be_a(IndividualMarket::Application)
         expect(@result.success.family_id).to eq(family.id)
         expect(@result.success.persisted?).to be_falsey
+      end
+
+      it 'builds an applicant' do
+        expect(@result.success.applicants.first).to be_a(IndividualMarket::Applicant)
+        expect(@result.success.applicants.first.person_name).to be_a(::PersonName)
+        expect(@result.success.applicants.first.demographics).to be_a(IndividualMarket::Demographics)
       end
 
       it 'cancels previous applications' do

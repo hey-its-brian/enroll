@@ -35,7 +35,7 @@ RSpec.describe Operations::IndividualMarket::ParseApplicant, dbclean: :after_eac
     end
 
     context 'with valid params' do
-      let!(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+      let!(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, ethnicity: ['Mexican', 'White']) }
       let!(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
       let!(:family_member) { family.family_members[0] }
       let!(:person2) do
@@ -105,6 +105,11 @@ RSpec.describe Operations::IndividualMarket::ParseApplicant, dbclean: :after_eac
         expect(result.success[:emails].count).to eq person.emails.count
         expect(result.success[:emails].first[:kind]).to eq person.emails.first.kind
         expect(result.success[:emails].first[:address]).to eq person.emails.first.address
+      end
+
+      it 'splits race and ethnicity' do
+        expect(result.success[:demographics][:race]).to eq ['White']
+        expect(result.success[:demographics][:ethnicity]).to eq ['Mexican']
       end
 
       context 'when family member is not primary applicant' do

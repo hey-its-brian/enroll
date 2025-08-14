@@ -348,36 +348,50 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
     let(:application) { FactoryBot.create(:financial_assistance_application, family_id: new_family.id) }
 
     before :each do
+      allow(controller).to receive(:qhp_application_feature_enabled?).and_return(qhp_enabled)
       sign_in(logged_user)
       primary_person.consumer_role.move_identity_documents_to_verified
       session[:person_id] = primary_person.id
       get :show, params: { id: application.id }
     end
 
-    context 'when the logged in user is same as the consumer' do
+    context 'when the qhp_application feature is disabled' do
       let(:logged_user) { FactoryBot.create(:user, person: primary_person) }
+      let(:qhp_enabled) { false }
 
-      it 'returns success' do
-        expect(response).to have_http_status(:success)
-      end
-
-      it 'does not set raise unauthorized error flash message' do
-        expect(flash[:error]).to be_nil
+      it 'redirects to the review application path' do
+        expect(response).to redirect_to(review_application_path(application))
       end
     end
 
-    context 'when the logged in user is Hbx Admin' do
-      let(:hbx_person) { FactoryBot.create(:person) }
-      let(:permission) { FactoryBot.create(:permission, :super_admin) }
-      let(:hbx_staff) { FactoryBot.create(:hbx_staff_role, person: hbx_person, permission_id: permission.id) }
-      let(:logged_user) { FactoryBot.create(:user, person: hbx_staff.person) }
+    context 'when the qhp_application feature is enabled' do
+      let(:qhp_enabled) { true }
 
-      it 'returns success' do
-        expect(response).to have_http_status(:success)
+      context 'when the logged in user is same as the consumer' do
+        let(:logged_user) { FactoryBot.create(:user, person: primary_person) }
+
+        it 'returns success' do
+          expect(response).to have_http_status(:success)
+        end
+
+        it 'does not set raise unauthorized error flash message' do
+          expect(flash[:error]).to be_nil
+        end
       end
 
-      it 'does not set raise unauthorized error flash message' do
-        expect(flash[:error]).to be_nil
+      context 'when the logged in user is Hbx Admin' do
+        let(:hbx_person) { FactoryBot.create(:person) }
+        let(:permission) { FactoryBot.create(:permission, :super_admin) }
+        let(:hbx_staff) { FactoryBot.create(:hbx_staff_role, person: hbx_person, permission_id: permission.id) }
+        let(:logged_user) { FactoryBot.create(:user, person: hbx_staff.person) }
+
+        it 'returns success' do
+          expect(response).to have_http_status(:success)
+        end
+
+        it 'does not set raise unauthorized error flash message' do
+          expect(flash[:error]).to be_nil
+        end
       end
     end
   end

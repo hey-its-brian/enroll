@@ -256,9 +256,10 @@ module FinancialAssistance
 
     # This action is used to show the application details in a read-only format.
     # It is authorized by the application policy's show? method.
-    #
+    # It should not be used unless the qhp_application feature is enabled.
     # @return [void]
     def show
+      return redirect_to review_application_path(@application) unless qhp_application_feature_enabled?
       authorize @application, :show?
       respond_to :html
     end

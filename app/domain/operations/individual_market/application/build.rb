@@ -60,13 +60,15 @@ module Operations
               applicant = application.applicants.build
               applicant.assign_attributes(applicant_params.except(:eligibilities))
               build_eligibilities(applicant, applicant_params[:eligibilities])
+              applicant.valid? ? Success(applicant) : Failure(applicant.errors)
             else
               result.failure
             end
           end
 
-          build_relationships(application)
+          return Failure("Failed to build applicants") if applicants_results.any?(&:failure?)
 
+          build_relationships(application)
           if application.valid?
             Success(application)
           else
