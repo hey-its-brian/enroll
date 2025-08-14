@@ -71,7 +71,7 @@
           <p class="mb-0 bold">
             <%= @applicable_year %>
           </p>
-          <p><%= l10n("applications.how.current", year: @current_year) %> <%= link_to l10n("applications.how.sep_link"), "https://www.coverme.gov/learn-more/special-enrollment-periods", target: "_blank" %></p>
+          <p><%= l10n("applications.how.current", year: @applicable_year) %> <%= link_to l10n("applications.how.sep_link"), "https://www.coverme.gov/learn-more/special-enrollment-periods", target: "_blank" %></p>
 
           <p class="mb-0 bold">
             <%= @previous_year %>
@@ -79,7 +79,7 @@
           <p class="mb-0"><%= l10n("applications.how.previous") %></p>
           <ul class="mb-0">
             <li><%= l10n("applications.how.previous.li1", year: @previous_year) %></li>
-            <li><%= l10n("applications.how.previous.li2", year: @previous_year, year2: @current_year) %></li>
+            <li><%= l10n("applications.how.previous.li2", year: @previous_year, year2: @applicable_year) %></li>
           </ul>
         </div>
       </div>

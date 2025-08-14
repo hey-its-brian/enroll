@@ -1258,4 +1258,39 @@ describe "Enabled/Disabled IVL market" do
       end
     end
   end
+
+  describe '#format_response_payload' do
+    it "returns nil if the payload is nil" do
+      payload = nil
+      expect(helper.format_response_payload(payload)).to eq(nil)
+    end
+
+    it 'returns the payload exactly if the payload is not a valid json' do
+      payload = 'test</xml>'
+      expect(helper.format_response_payload(payload)).to eq(payload)
+    end
+
+    it 'returns the payload if it is an non-string object' do
+      payload = 1
+      expect(helper.format_response_payload(payload)).to eq(payload)
+    end
+
+    it 'returns the formatted json if the payload is a valid json' do
+      payload = { test: 'test', nested: { test2: 'test2' } }.to_json
+      expect(helper.format_response_payload(payload)).to eq(JSON.pretty_generate(JSON.parse(payload)))
+      expect(helper.format_response_payload(payload)).to include("\n")
+    end
+
+    it "does not add extra newlines if the payload is already formatted" do
+      payload = JSON.pretty_generate(JSON.parse('{ "test": "test", "nested": { "test2": "test2" } }'))
+      expect(helper.format_response_payload(payload)).to eq(payload)
+      expect(helper.format_response_payload(payload)).not_to include("\n\n")
+    end
+
+    it 'returns the formatted xml if the payload is a valid xml' do
+      payload = '<xml xmlns="http://www.w3.org/1999/xhtml">test</xml>'
+      expect(helper.format_response_payload(payload)).to eq(helper.pretty_xml(payload))
+      expect(helper.format_response_payload(payload)).to include("encoding")
+    end
+  end
 end

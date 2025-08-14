@@ -4,7 +4,7 @@
 <%# Main Content (right) %>
 <%= render partial: 'verification_header', locals: {
   title: l10n('insured.families.verifications.history.type_header', verification_type: display_verification_type_name(@evidence.evidence_item_key)),
-  summary_rows: [:member, :member_status, :status, :update_reason, :due_on], 
+  summary_rows: [:member, :member_status, :status, :update_reason, :due_on],
   is_back_nav_primary: true
   } %>
 
@@ -30,7 +30,7 @@
         <tr data-target="expandable-table.details">
           <td colspan="4">
             <h3><%= l10n('insured.families.verifications.history.payload') %></h3>
-            <pre><%= record.payload %> </pre>
+            <pre><%= qhp_application_feature_enabled? ? format_response_payload(record.payload) : record.payload %> </pre>
           </td>
         </tr>
       <% end %>

@@ -1300,4 +1300,35 @@ module ApplicationHelper
       l10n('insured.marketplace_plan')
     end
   end
+
+  def format_response_payload(payload)
+    return if payload.blank?
+    return pretty_xml(payload) if xml_string?(payload)
+    JSON.pretty_generate(JSON.parse(payload))
+  rescue JSON::ParserError, TypeError => _e
+    payload
+  end
+
+  def xml_string?(possible_xml)
+    possible_xml.to_s.include?("xmlns")
+  end
+
+  def pretty_xml(xml_text)
+    xsl = <<XSL
+    <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+    <xsl:output method="xml" encoding="UTF-8" indent="yes"/>
+    <xsl:strip-space elements="*"/>
+    <xsl:template match="/">
+    <xsl:copy-of select="."/>
+    </xsl:template>
+    </xsl:stylesheet>
+XSL
+
+    doc = Nokogiri::XML(xml_text)
+    return xml_text unless doc.errors.blank?
+    xslt = Nokogiri::XSLT(xsl)
+    out = xslt.transform(doc)
+
+    out.to_xml
+  end
 end
