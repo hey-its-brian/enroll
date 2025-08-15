@@ -15,9 +15,13 @@ module Operations
             yield check_if_family_is_eligible_for_migration(family)
             application = yield transform_family(family)
             draft_application = yield build_application(application)
-            result = yield persist(draft_application)
-            yield regenerate_family_determination(result)
-            comparison_result = yield compare_migrated_values(result)
+            result = yield submit_application(draft_application)
+            applicants_result = yield determine_applicants(result)
+            application_result = yield determine_application(applicants_result)
+            yield deactivate_tax_household_groups(application_result)
+            yield build_tax_household_group(application_result)
+            yield regenerate_family_determination(application_result)
+            comparison_result = yield compare_migrated_values(application_result)
             yield publish(comparison_result)
 
             Success(["completed request for family #{family_id}, check report for the status of the application creation", draft_application.hbx_id])
@@ -75,7 +79,7 @@ module Operations
               origin: :migration,
               generation_reason: :manual,
               submitted_at: DateTime.current,
-              current_state: :determined
+              current_state: :initial
             }
 
             application_attrs.merge!({applicants: applicants_attributes(family)})
@@ -147,22 +151,104 @@ module Operations
             end
           end
 
-          def persist(draft_application)
-            if draft_application.valid?
-              draft_application.state_histories.build(
-                event: 'determine',
-                from_state: :initial,
-                to_state: :determined,
-                transition_at: Time.now,
-                effective_on: Time.now,
-                reason: "created first QHP application for individual_market eligibility"
-              )
-              draft_application.save!
+          def submit_application(application)
+            application.attestation = ::IndividualMarket::Attestation.new(signer_role: "system", signer_id: nil, signed_at: nil)
+            application.submit
+            application.set_submit
 
-              Success([draft_application, true, "Application created successfully"])
+            if application.valid?
+              Success([application, true, "Application transitioned to submitted successfully but not persisted"])
             else
-              Success([draft_application.family_id, false, draft_application.errors.full_messages.join(", ")])
+              Success([application.family_id, false, application.errors.full_messages.join(', ')])
             end
+          rescue StandardError => e
+            Failure("An error occurred while submitting the application for family_id: #{application.family_id} errors: #{e.message}")
+          end
+
+          def determine_applicants(result)
+            return Success(result) unless result[1]
+            application = result[0]
+
+            applicants_results = application.applicants.map do |applicant|
+              Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::DetermineApplicant.new.call({applicant: applicant})
+            end
+            failed_applicants = applicants_results.select(&:failure?)
+            if failed_applicants.any?
+              Success([application.family_id, false, failed_applicants.map(&:failure).join(', ')])
+            else
+              Success([application, true, "Applicants determined successfully but not persisted"])
+            end
+          end
+
+          def determine_application(result)
+            return Success(result) unless result[1]
+            application = result[0]
+
+            application.determine(reason: "created first QHP application for individual_market eligibility")
+            if application.valid?
+              application.save!
+              Success([application, true, "Application created successfully"])
+            else
+              Success([application.family_id, false, application.errors.full_messages.join(", ")])
+            end
+          rescue StandardError => e
+            Failure("An error occurred while determining the application for family #{application.family_id}, error: #{e.message}")
+          end
+
+          # Deactivates all existing tax household groups for the application's assistance year
+          #
+          # @param application [IndividualMarket::Application] the individual market application
+          # @param family [Family] the family associated with the application
+          # @return [Dry::Monads::Result] Success with message
+          def deactivate_tax_household_groups(result)
+            return Success(true) unless result[1] #false indicates failure in application creation
+            application = result[0]
+            family = application.family
+
+            family.tax_household_groups.by_year(application.assistance_year).each do |thhg|
+              thhg.end_on = application.effective_on > thhg.start_on ? (application.effective_on - 1.day) : thhg.start_on
+
+              thhg.tax_households.each do |thh|
+                thh.effective_ending_on = application.effective_on > thh.effective_starting_on ? (application.effective_on - 1.day) : thh.effective_starting_on
+              end
+            end
+
+            Success('Deactivated old Tax Household Groups')
+          end
+
+          # Builds a new tax household group and tax household for the application
+          #
+          # @param application [IndividualMarket::Application] the individual market application
+          # @param family [Family] the family associated with the application
+          # @param family_members_result [Hash] hash of applicant_id => family_member
+          #
+          # @return [Dry::Monads::Result] Success with tax household group or Failure with error message
+          def build_tax_household_group(result)
+            return Success(true) unless result[1] #false indicates failure in application creation
+            application = result[0]
+            family = application.family
+
+            thhg = family.tax_household_groups.build(
+              source: 'qhp',
+              application_gid: application.to_global_id.to_s,
+              start_on: application.effective_on,
+              end_on: nil,
+              assistance_year: application.assistance_year
+            )
+
+            thh = thhg.tax_households.build(effective_starting_on: application.effective_on)
+
+            application.applicants.each do |applicant|
+              thh.tax_household_members.build(
+                applicant_id: applicant.family_member_id,
+                is_without_assistance: applicant.is_qhp_eligible,
+                is_totally_ineligible: !applicant.is_qhp_eligible,
+                is_csr_eligible: applicant.is_csr_eligible,
+                csr_percent_as_integer: applicant.csr_percent
+              )
+            end
+
+            Success('Successfully built tax household group and tax household.')
           end
 
           def regenerate_family_determination(result)
