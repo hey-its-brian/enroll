@@ -148,7 +148,7 @@ module Operations
       end
 
       def fetch_document_status(evidence_states)
-        evidence_statuses = evidence_states.values.collect { |evidence_state| evidence_state[:status] }
+        evidence_statuses = evidence_states.values.collect { |evidence_state| evidence_state[:status].to_s }
         non_verified_states = evidence_statuses.reject {|status| ['verified', 'attested', 'determined'].include?(status)}
 
         return 'NA' if non_verified_states.blank?

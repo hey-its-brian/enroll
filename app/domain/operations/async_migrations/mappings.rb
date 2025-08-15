@@ -10,6 +10,7 @@ module Operations
       # @return [Hash] The mapping of model or query names to their corresponding classes.
       QUERY_MAP = {
         'families_with_id' => ::Family.only(:_id),
+        'fetch_family_ids' => Operations::AsyncMigrations::Handlers::Families::Eligibility::FetchFamiliesWithEligibilityDetermination.new,
         'applications_with_aasm_state_and_hbx_ids' => Operations::AsyncMigrations::Handlers::FAApplication::FetchApplicationsWithoutV3Evidences.new,
         'latest_determined_fa_application_with_ids' => ::Operations::AsyncMigrations::Handlers::Families::FetchLatestDeterminedFAApplicationHbxIds.new,
         'families_without_determined_fa_applications_for_current_year' => ::Operations::AsyncMigrations::Handlers::Families::FetchFamiliesWithoutDeterminedFAApplication.new,
@@ -22,6 +23,7 @@ module Operations
       EVENT_HANDLER_MAP = {
         '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility,
         '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally,
+        'remove_family_eligibility' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::Remove,
         'migrate_fa_evidences' => ::Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvidence,
         'create_financial_assistance_application' => ::Operations::AsyncMigrations::Handlers::FAApplication::CreateApplication,
         'create_qhp_application' => ::Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::CreateApplication,
