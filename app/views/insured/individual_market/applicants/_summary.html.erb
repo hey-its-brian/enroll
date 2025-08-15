@@ -121,7 +121,7 @@
     <hr class="my-1">
     <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("insured.shared.race_ethicity_label") %></dt>
-      <dd class="text-right"><%= applicant.demographics.race&.compact_blank&.any? ? applicant.demographics.race.join(", ") : l10n("qhp_application.not_answered") %></dd>
+      <dd class="text-right"><%= applicant.demographics.race&.compact_blank&.any? ? applicant.demographics.race&.uniq&.join(", ") : l10n("qhp_application.not_answered") %></dd>
     </div>
     <div class="d-flex justify-content-between align-items-start">
       <dt class="col-8 px-0"><%= l10n("insured.shared.hispanic_label") %></dt>

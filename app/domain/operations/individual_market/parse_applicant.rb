@@ -99,11 +99,11 @@ module Operations
       end
 
       def parse_race(person)
-        person.ethnicity.select { |ethnicity| ethnicity.in?(RACE_COLLECTION) }
+        person.ethnicity.select { |ethnicity| ethnicity.in?(RACE_COLLECTION) }&.uniq
       end
 
       def parse_ethnicity(person)
-        person.ethnicity.select { |ethnicity| ethnicity.in?(ETHNICITY_COLLECTION) }
+        person.ethnicity.select { |ethnicity| ethnicity.in?(ETHNICITY_COLLECTION) }&.uniq
       end
 
       def immigration_information_attributes(consumer_role, doc_statuses)

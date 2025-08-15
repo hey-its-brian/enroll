@@ -29,18 +29,18 @@ export default class extends Controller {
   ]
 
   connect() {
-    this.initializeTribalFields()
     this.initializeApplyingCoverage()
     this.initializeCitizenshipFields()
     this.maskSSN()
     this.maskZip()
     this.initializeRequiredFields()
+    this.initializeTribalFields()
     // using existing init_glossary function for now to be consistent
     init_glossary();
   }
 
   initializeTribalFields() {
-    const indianTribeMemberYes = document.querySelector('#indian_tribe_member_yes')
+    const indianTribeMemberYes = document.getElementById('indian_tribe_member_yes')
     if (indianTribeMemberYes?.checked) {
       this.showTribalFields()
       this.setTribalFieldsRequired(true)
@@ -71,9 +71,15 @@ export default class extends Controller {
     const selectedState = this.TribalStateTarget?.value
     if (isFeaturedTribesEnabled && selectedState === enrollStateAbbr) {
       this.TribalNameContainerTarget.classList.remove('hide')
+      if (this.hasFeaturedTribeContainerTarget) {
+        this.FeaturedTribeContainerTarget.classList.remove('hide')
+      }
       this.toggleOtherTribeName()
     } else {
       this.TribalNameContainerTarget.classList.remove('hide')
+      if (this.hasFeaturedTribeContainerTarget) {
+        this.FeaturedTribeContainerTarget.classList.add('hide')
+      }
       this.setTribalNameRequired(true)
     }
   }
@@ -505,6 +511,15 @@ export default class extends Controller {
       if (facade) {
         facade.classList.add('hidden')
         facade.innerHTML = ''
+        if (input) {
+          input.classList.add('hidden')
+          input.value = ''
+        }
+      } else {
+        if (input) {
+          input.disabled = 'disabled'
+          input.value = ''
+        }
       }
       if (closeEye) {
         closeEye.classList.add('hidden')
@@ -512,16 +527,21 @@ export default class extends Controller {
       if (container) {
         container.classList.add('div-disabled')
       }
-      if (input) {
-        input.classList.add('hidden')
-        input.value = ''
-      }
+
       if (openEye) {
         openEye.classList.add('hidden')
       }
     } else {
       if (facade) {
         facade.classList.remove('hidden')
+        if (input) {
+          input.classList.remove('hidden')
+          input.removeAttribute('disabled')
+        }
+      } else {
+        if (input) {
+          input.removeAttribute('disabled')
+        }
       }
       if (closeEye) {
         closeEye.classList.remove('hidden')

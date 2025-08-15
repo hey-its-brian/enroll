@@ -40,24 +40,6 @@ module IndividualMarket
       indian_tribe_member
     ].freeze
 
-    CITIZEN_STATUS_KINDS = %w[
-      us_citizen
-      naturalized_citizen
-      alien_lawfully_present
-      lawful_permanent_resident
-      undocumented_immigrant
-      not_lawfully_present_in_us
-      non_native_not_lawfully_present_in_us
-      ssn_pass_citizenship_fails_with_SSA
-      non_native_citizen
-    ].freeze
-
-    ACA_ELIGIBLE_CITIZEN_STATUS_KINDS = %w[
-      us_citizen
-      naturalized_citizen
-      indian_tribe_member
-    ].freeze
-
     # @!attribute applicant
     #   @return [IndividualMarket::Applicant] The applicant this demographics belongs to
     embedded_in :applicant, class_name: 'IndividualMarket::Applicant'

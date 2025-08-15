@@ -202,6 +202,23 @@ RSpec.describe ::Forms::IndividualMarket::DemographicsForm, type: :model, dbclea
         end
       end
     end
+
+    describe "citizen_status" do
+      it "should be valid when us_citizen is true" do
+        params[:us_citizen] = true
+        form = described_class.new(params)
+        expect(form.valid?).to be_truthy
+        expect(form.to_h[:citizen_status]).to eq("us_citizen")
+      end
+
+      it "should set citizen status to not_lawfully_present_in_us when us_citizen is false and eligible_immigration_status is not present" do
+        params[:us_citizen] = false
+        params[:eligible_immigration_status] = nil
+        form = described_class.new(params)
+        expect(form.valid?).to be_truthy
+        expect(form.to_h[:citizen_status]).to eq("not_lawfully_present_in_us")
+      end
+    end
   end
 
 end

@@ -196,7 +196,7 @@ module Forms
                             ::ConsumerRole::US_CITIZEN_STATUS
                           elsif eligible_immigration_status
                             ::ConsumerRole::ALIEN_LAWFULLY_PRESENT_STATUS
-                          elsif !eligible_immigration_status.nil?
+                          elsif !eligible_immigration_status
                             ::ConsumerRole::NOT_LAWFULLY_PRESENT_STATUS
                           end
       end
