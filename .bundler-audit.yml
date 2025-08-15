@@ -15,3 +15,7 @@ ignore:
   # as it does not impact this particular application.
   # Further information available in the SECURITY.md file.
   - GHSA-r95h-9x8f-r3f7
+  # Mitigated via initializer backports in PR <https://github.com/ideacrew/enroll/pull/5567>, pending Rails upgrade to 7.1.5.2+
+  # should be removed when we upgrade rails version to ~> 7.1.5.2', '~> 7.2.2.2', '>= 8.0.2.1'
+  - GHSA-76r7-hhxj-r776  # CVE-2025-55193 – Active Record logging ANSI escape injection
+  - GHSA-r4mg-4433-c7g3  # CVE-2025-24293 – Active Storage unsafe transforms

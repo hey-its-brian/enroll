@@ -162,3 +162,50 @@ this a low severity issue as it only affects the rarely used --htmlout option of
 #### Actions Taken
 
 Given that Enroll is not considered vulnerable against either underlying CVE, this specific security advisory has been added to the bundler audit ignore file.
+
+#### CVE-2025-55193
+
+Source: https://github.com/rails/rails/security/advisories/GHSA-76r7-hhxj-r776
+
+**Description:**
+
+```
+A possible ANSI escape injection in Active Record logging could allow crafted values to inject control sequences into logs/terminals (e.g., colored output, cursor movement).
+```
+
+**Mitigation:**
+We backported the upstream fix by ensuring ActiveRecord::RecordNotFound messages render identifiers via .inspect, neutralizing control characters. We also reduced exposure by disabling verbose/colorized SQL logs.
+
+**Actions Taken**
+
+1. Added initializer backport: config/initializers/security_backports/activerecord_record_not_found_escape.rb (from Rails upstream behavior).
+2. Set conservative logging defaults (disable verbose query logs/colorized logs).
+3. Documented the issue and added GHSA-76r7-hhxj-r776 to .bundler-audit.yml temporarily, pending framework upgrade.
+
+**TODO - Future Actions**
+1. When we upgrade Rails Version to ~> 7.1.5.2', '~> 7.2.2.2', '>= 8.0.2.1', we need to remove 
+config/initializers/security_backports/activerecord_record_not_found_escape.rb
+
+
+#### CVE-2025-24293
+
+Source: https://github.com/rails/rails/security/advisories/GHSA-r4mg-4433-c7g3
+
+**Description:**
+
+```
+Active Storage allowed transformation methods that were potentially unsafe (e.g., passing through options that could be abused when user-controlled).
+```
+
+**Mitigation:**
+We backported the upstream restriction that disallows the dangerous transformation keys (:apply, :loader, :saver) so they cannot be used in variants.
+
+**Actions Taken**
+
+1. Added initializer backport: config/initializers/security_backports/active_storage_disallow_dangerous_transformations.rb (blocks :apply, :loader, :saver).
+2. Verified our code serves only whitelisted server-side variants and does not accept user-supplied transform options.
+3. Documented the issue and added GHSA-r4mg-4433-c7g3 to .bundler-audit.yml temporarily, pending framework upgrade.
+
+**TODO - Future Actions**
+1. When we upgrade Rails Version to ~> 7.1.5.2', '~> 7.2.2.2', '>= 8.0.2.1', we need to remove 
+config/initializers/security_backports/active_storage_disallow_dangerous_transformations.rb
