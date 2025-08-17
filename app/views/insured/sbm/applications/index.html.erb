@@ -4,9 +4,10 @@
   <li><%= l10n("insured.sbm.applications.eligibility_history") %></li>
 </ul>
 <h1><%= l10n('insured.sbm.applications.eligibility_history') %></h1>
-<p><b><%= l10n('insured.sbm.applications.eligibility_history.header',
+<p><%= l10n('insured.sbm.applications.eligibility_history.header1') %></p>
+<p><%= l10n('insured.sbm.applications.eligibility_history.header',
                previous_year: TimeKeeper.date_of_record.year - 1,
-               current_year: TimeKeeper.date_of_record.year) %></b></p>
+               current_year: TimeKeeper.date_of_record.year) %></p>
 
 <div class="d-flex align-items-center">
   <% if @applications.present? %>

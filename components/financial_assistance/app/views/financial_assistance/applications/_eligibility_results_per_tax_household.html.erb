@@ -178,14 +178,16 @@
 
     <p data-cuke='more_details'><%= l10n("faa.results.more_details_text") %></p>
 
-    <div class="my-4">
-      <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
-        previous_link: qhp_enabled ? main_app.current_applications_insured_sbm_applications_path : applications_path,
-        previous_button_text: qhp_enabled ? l10n('faa.results.view_my_applications').titleize : nil,
-        next_link: @person.consumer_role.present? && is_under_open_enrollment? ? group_selection_url : find_sep_url,
-        next_button_text: qhp_enabled ? l10n('faa.results.shop_for_plans') : nil
-      } %>
-    </div>
+    <% unless qhp_application_feature_enabled? %>
+      <div class="my-4">
+        <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
+          previous_link: qhp_enabled ? main_app.current_applications_insured_sbm_applications_path : applications_path,
+          previous_button_text: qhp_enabled ? l10n('faa.results.view_my_applications').titleize : nil,
+          next_link: @person.consumer_role.present? && is_under_open_enrollment? ? group_selection_url : find_sep_url,
+          next_button_text: qhp_enabled ? l10n('faa.results.shop_for_plans') : nil
+        } %>
+      </div>
+    <% end %>
 
     <h2 data-cuke='next_steps' class="mt-4"><%= l10n("faa.results.next_steps") %></h2>
 
@@ -193,21 +195,41 @@
       <p data-cuke='all_medicaid_next_steps_continue_text'><%= l10n("faa.results.all_medicaid_next_steps_continue_text",
                                                                     short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
     <% else %>
-      <p data-cuke='next_steps_text'><%= l10n("faa.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+      <% if qhp_application_feature_enabled? %>
+        <p data-cuke='next_steps_text'><%= l10n("qhp_application.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+        <div data-cuke='return_to_account_home' class="my-4">
+            <% group_selection_url = main_app.new_insured_group_selection_path(person_id: @person.id, consumer_role_id: @person.consumer_role.id) %>
+            <% find_sep_url = main_app.find_sep_insured_families_path(consumer_role_id: @person.consumer_role.id) %>
+            <% next_url = @person.consumer_role.present? && is_under_open_enrollment? ? main_app.new_insured_group_selection_path(person_id: @person.id, consumer_role_id: @person.consumer_role.id) : main_app.find_sep_insured_families_path(consumer_role_id: @person.consumer_role.id) %>
+            <%= h(link_to l10n("qhp_application.results.continue_to_shop"), next_url, class: "button") %>
+            <%= link_to l10n("qhp_application.results.return_to_account"), main_app.family_account_path, class: "button secondary outline ml-2" %>
+        </div>
+      <% else %>
+        <p data-cuke='next_steps_text'><%= l10n("faa.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+      <% end %>
     <% end %>
 
-    <!-- Start: Return to Account Home -->
-    <div data-cuke='return_to_account_home' class="my-4">
-      <%= h(link_to l10n('faa.results.return_to_account_home'), main_app.family_account_path, class: "button secondary") %>
-    </div>
-    <!-- End: Return to Account Home -->
+    <% unless qhp_application_feature_enabled? %>
+      <!-- Start: Return to Account Home -->
+      <div data-cuke='return_to_account_home' class="my-4">
+        <%= h(link_to l10n('faa.results.return_to_account_home'), main_app.family_account_path, class: "button secondary") %>
+      </div>
+      <!-- End: Return to Account Home -->
+    <% end %>
 
     <% unless (action_name == "eligibility_results" || action_name == "review") && (params.keys.exclude?"cur") %>
       <% continue_text = qhp_enabled ? l10n("faa.results.shop_for_plans") : l10n("continue_next") %>
       <p data-cuke='continue_text'><%= l10n("faa.results.continue_text", continue_text: continue_text) %></p>
     <% end %>
 
-    <p data-cuke='your_application_reference_2' class="mt-4"><%= l10n("faa.results.your_application_reference_2", application_hbx_id: @application.hbx_id)%></p>
+    <% if qhp_application_feature_enabled? %>
+      <div class="my-4">
+        <p data-cuke='your_application_reference_2' class="mt-4"><span class="secondary-semibold"><%= l10n("qhp_application.results.application_reference_id") %>:</span> <%= @application.hbx_id %></p>
+        <%= h(link_to l10n("qhp_application.results.view_my_applications"), main_app.current_applications_insured_sbm_applications_path, class: "button outline my-3") %>
+      </div>
+    <% else %>
+      <p data-cuke='your_application_reference_2' class="mt-4"><%= l10n("faa.results.your_application_reference_2", application_hbx_id: @application.hbx_id)%></p>
+    <% end %>
 
     <div id="other-accordion" data-cuke='other_actions'>
       <div class="card">
@@ -219,6 +241,9 @@
 
         <div id="otherActions" class="collapse" aria-labelledby="otherActionsHeading" data-parent="#other-accordion">
           <div class="card-body">
+            <% if qhp_application_feature_enabled? %>
+              <hr class="mb-2">
+            <% end %>
             <% if FinancialAssistanceRegistry.feature_enabled?(:fa_send_to_external_verification) && !@application.is_transferrable? %>
               <div class="w-100 pb-4">
                 <p><%= l10n("faa.full_long_name_determination",

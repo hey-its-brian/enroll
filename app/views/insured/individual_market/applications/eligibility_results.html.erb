@@ -90,9 +90,12 @@
     <%= link_to l10n("qhp_application.results.return_to_account"), family_account_path, class: "button" %>
   <% end %>
 </div>
-<p class="my-3">
-  <span class="secondary-semibold"><%= l10n("qhp_application.results.application_reference_id") %>:</span> <%= @application.hbx_id %>
-</p>
+<div class="my-4">
+  <p class="my-3">
+    <span class="secondary-semibold"><%= l10n("qhp_application.results.application_reference_id") %>:</span> <%= @application.hbx_id %>
+  </p>
+  <%= h(link_to l10n("qhp_application.results.view_my_applications"), main_app.current_applications_insured_sbm_applications_path, class: "button outline my-3") %>
+</div>
 <div id="other-accordion" data-cuke='other_actions'>
   <div class="card p-0">
     <div id="otherActionsHeading" class="p-0">

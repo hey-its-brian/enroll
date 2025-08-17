@@ -471,6 +471,7 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   "en.faa.results.not_applying_coverage_text" => "These people indicated on the application that they did not want coverage.",
   "en.faa.results.next_steps" => 'Next Steps',
   "en.faa.results.all_medicaid_next_steps_continue_text" => "MaineCare coverage is free. If you would like to enroll and pay full price for an insurance plan through %{short_name}, select 'Return to Account Home' to see if you are eligible to select a plan or make changes to your current plan.",
+  "en.faa.results.qhp_all_medicaid_next_steps_continue_text" => "MaineCare coverage is free. If you enroll in a plan through %{short_name} while OFI is still reviewing your MaineCare eligibility, you’ll need to pay the full price for that plan. Select 'Continue to Shop for Plans' to check if you're eligible to choose a new plan or make changes to your current one. You may qualify through a Special Enrollment Period or during Open Enrollment. If you're already enrolled in a %{short_name} plan, any updates you make will take effect starting next month.",
   "en.faa.results.next_steps_text" => "If you’re already enrolled in a %{short_name} plan, you’re finished! You’ll see any updates applied to your plan in a minute or two. Select \'Return to Account Home\'.",
   "en.faa.results.more_details_text" => "To see more details about this decision, please check your Messages and review the Eligibility Results letter.",
   "en.faa.results.return_to_account_home" => 'Return to Account Home',

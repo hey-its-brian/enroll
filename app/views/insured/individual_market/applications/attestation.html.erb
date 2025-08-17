@@ -5,7 +5,7 @@
 <%= form_for @application, {url: submit_insured_individual_market_application_path(@application), method: :post} do |f| %>
   <section>
     <h2><%= l10n("insured.individual_agreement.agreement.title") %></h2>
-    <p><%= l10n("insured.individual_agreement.agreement.report_changes", contact_center_name: contact_center_name, contact_center_phone_number: contact_center_phone_number) %></p>
+    <p><%= l10n("insured.individual_agreement.agreement.report_changes", contact_center_name: contact_center_name, contact_center_phone_number: contact_center_phone_number, tty_number: EnrollRegistry[:enroll_app].setting(:contact_center_tty_number).item) %></p>
     <p><%= l10n("insured.individual_agreement.agreement.i_am_signature") %></p>
     <p><%= l10n("insured.individual_agreement.agreement.reviewed_info") %></p>
     <label class="agree weight-n d-flex align-items-center" for="terms_check"><%= check_box_tag 'terms_check', true, false, class: 'mr-2', data: {target: "attestation.Check", action: "attestation#canSubmitCheck"} %><%= l10n("insured.individual_agreement.agreement.i_agree") %></label>
