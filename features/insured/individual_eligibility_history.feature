@@ -1,4 +1,4 @@
-Feature: Eligibility History Page
+Feature: SBM Application History Page
 
   Background:
     Given Individual has not signed up as an HBX user
@@ -6,11 +6,12 @@ Feature: Eligibility History Page
     Given bs4_consumer_flow feature is enabled
     Given qhp_application feature is enabled
 
-    Scenario: Consumer visits the eligibility history page
+    Scenario: Consumer visits the application history page
     Given a consumer exists
     Given the consumer is logged in
     And consumer has successful ridp
     And consumer visits home page
     When consumer clicks on Applications link
     And consumer clicks on View Application History
-    Then consumer should see the Eligibility History page
+    Then consumer should see the Application History page
+    Then consumer should see breadcrumbs with Applications

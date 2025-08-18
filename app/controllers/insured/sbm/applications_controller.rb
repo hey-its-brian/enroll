@@ -56,7 +56,7 @@ module Insured
         prospective_application = @family.application_for_year(@prospective_year)
         @prospective_application = prospective_application if prospective_application.present? && prospective_application.determined?
         oe_start_date = ::Operations::Individual::OpenEnrollmentStartOn.new.call({date: TimeKeeper.date_of_record})
-        @oe_start_date = oe_start_date.success? ? oe_start_date.value! : nil
+        @oe_start_date = oe_start_date.success? ? oe_start_date.value!&.to_formatted_s(:long) : nil
       end
 
       def set_family

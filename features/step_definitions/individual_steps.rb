@@ -1464,8 +1464,13 @@ When(/^.+ clicks on View Application History$/) do
   find(IvlApplications.view_applications_history).click
 end
 
-Then(/^.+ should see the Eligibility History page$/) do
-  expect(page).to have_content(l10n("insured.sbm.applications.eligibility_history"))
+Then(/^.+ should see the Application History page$/) do
+  expect(page).to have_content(l10n("insured.sbm.applications.application_history"))
+end
+
+Then(/^.+ should see breadcrumbs with Applications$/) do
+  breadcrumbs = find('.breadcrumbs')
+  expect(breadcrumbs).to have_content("Applications")
 end
 
 When(/^Individual select a future qle date$/) do
