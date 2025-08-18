@@ -19,14 +19,21 @@ module FinancialAssistance
             # @option opts [Hash] :application_response_payload ::AcaEntities::MagiMedicaid::Application params
             # @return [Dry::Monads::Result]
             def call(params)
-              application_entity = yield initialize_application_entity(params[:payload])
+              payload, call_type = yield validate(params)
+              application_entity = yield initialize_application_entity(payload)
               application = yield find_application(application_entity)
-              result = yield update_applicant(application_entity, application)
+              result = yield update_applicant(application_entity, application, call_type)
 
               Success(result)
             end
 
             private
+
+            def validate(params)
+              return Failure('Payload is missing') unless params[:payload].present?
+
+              Success([params[:payload], params[:call_type]])
+            end
 
             def initialize_application_entity(params)
               ::AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(params)
@@ -37,7 +44,7 @@ module FinancialAssistance
               application.present? ? Success(application) : Failure("Could not find application with given hbx_id: #{application_entity.hbx_id}")
             end
 
-            def update_applicant(response_app_entity, application)
+            def update_applicant(response_app_entity, application, call_type)
               enrollments = HbxEnrollment.where(:aasm_state.in => HbxEnrollment::ENROLLED_STATUSES, family_id: application.family_id)
               is_ifsv_eligible = response_app_entity.tax_households.first.is_ifsv_eligible
 
@@ -47,7 +54,7 @@ module FinancialAssistance
                 applicant = find_matching_applicant(application, response_applicant_entity)
 
                 if qhp_application_feature_enabled?
-                  update_aptc_csr_eligibility_evidence(applicant, status, response_applicant_entity)
+                  update_aptc_csr_eligibility_evidence(applicant, status, response_applicant_entity, call_type)
 
                   return Failed("Failed to save application with hbx_id: #{application.hbx_id} after updating aptc_csr_eligibility evidence") unless application.save!
                 else
@@ -72,7 +79,7 @@ module FinancialAssistance
               end
             end
 
-            def update_aptc_csr_eligibility_evidence(applicant, status, response_applicant_entity)
+            def update_aptc_csr_eligibility_evidence(applicant, status, response_applicant_entity, call_type)
               response_income_evidence = response_applicant_entity.income_evidence
               aptc_csr_eligibility = applicant.aptc_csr_eligibility
               return unless aptc_csr_eligibility
@@ -81,7 +88,7 @@ module FinancialAssistance
                 Rails.logger.error("#{income_evidence.key} Evidence Not Found for applicant with person_hbx_id: #{applicant.person_hbx_id} in application with hbx_id: #{applicant.application.hbx_id}")
                 return
               end
-              update_income_evidence(income_evidence, status)
+              update_income_evidence(income_evidence, status, call_type)
 
               response_income_evidence.request_results&.each do |request_result|
                 income_evidence.request_results.build(request_result.to_h)
@@ -92,12 +99,12 @@ module FinancialAssistance
               aptc_csr_eligibility.is_satisfied = aptc_csr_eligibility.evidences.all?(&:is_satisfied)
             end
 
-            def update_income_evidence(income_evidence, status)
+            def update_income_evidence(income_evidence, status, call_type)
               case status
               when "verified"
                 income_evidence.mark_as_verified
               when "outstanding"
-                income_evidence.determine_outstanding_state(call_type: "hub_call")
+                income_evidence.determine_outstanding_state(call_type: call_type)
               end
             end
 

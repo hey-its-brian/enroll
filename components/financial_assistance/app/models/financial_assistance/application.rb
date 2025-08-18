@@ -1030,6 +1030,7 @@ module FinancialAssistance
     end
 
     def publish_application_determined
+      return if qhp_application_feature_enabled?
       return unless can_trigger_fdsh_calls? || is_local_mec_checkable?
       return if previously_renewal_draft? && FinancialAssistanceRegistry.feature_enabled?(:renewal_eligibility_verification_using_rrv)
 

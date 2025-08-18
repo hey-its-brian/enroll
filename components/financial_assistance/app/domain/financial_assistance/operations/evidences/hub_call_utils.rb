@@ -54,7 +54,7 @@ module FinancialAssistance
         #   # Updates eligibility state based on current evidence state
         def determine_eligibility_state(evidence)
           eligibility = evidence.eligibility
-          reason = "Hub response received for income evidence with state: #{evidence.current_state}, updated eligibility based on four evidences"
+          reason = "Hub request made for #{evidence.key.to_s.titleize} with state: #{evidence.current_state}, updated eligibility based on four evidences"
           eligibility.determine_eligibility_state(reason)
         end
 

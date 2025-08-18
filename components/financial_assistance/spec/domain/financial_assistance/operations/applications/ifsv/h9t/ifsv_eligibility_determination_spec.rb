@@ -58,7 +58,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
         before do
           enrollment
           @applicant = application.applicants.first
-          @result = subject.call(payload: payload)
+          @result = subject.call({payload: payload, call_type: nil})
 
           @application = ::FinancialAssistance::Application.by_hbx_id(payload[:hbx_id]).first.reload
           @app_entity = ::AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(payload).success
@@ -129,7 +129,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
               let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_aptc_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
 
               it 'returns outstanding' do
-                subject.call(payload: response_payload)
+                subject.call({payload: response_payload, call_type: nil})
 
                 @applicant.reload
                 income_evidence = @applicant.income_evidence
@@ -139,7 +139,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
 
               it 'returns review when current status is review' do
                 @applicant.income_evidence.update_attributes(aasm_state: 'review')
-                subject.call(payload: response_payload)
+                subject.call({payload: response_payload, call_type: nil})
 
                 @applicant.reload
                 income_evidence = @applicant.income_evidence
@@ -149,7 +149,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
 
               it 'returns rejected when current status is rejected' do
                 @applicant.income_evidence.update_attributes(aasm_state: 'rejected')
-                subject.call(payload: response_payload)
+                subject.call({payload: response_payload, call_type: nil})
 
                 @applicant.reload
                 income_evidence = @applicant.income_evidence
@@ -164,7 +164,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
               it 'returns negative_response_received' do
                 enrollment.product.update(csr_variant_id: '01')
                 enrollment.reload
-                subject.call(payload: response_payload)
+                subject.call({payload: response_payload, call_type: nil})
 
                 @applicant.reload
                 income_evidence = @applicant.income_evidence
@@ -192,7 +192,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
               end
 
               it 'returns outstanding' do
-                subject.call(payload: response_payload)
+                subject.call({payload: response_payload, call_type: nil})
 
                 @applicant.reload
                 income_evidence = @applicant.income_evidence
@@ -208,14 +208,14 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
         it 'should log an error if no income evidence present for an applicant' do
           log_message = "Income Evidence Not Found for applicant with person_hbx_id: 1629165429385939 in application with hbx_id: 200000126"
           expect(Rails.logger).to receive(:error).at_least(:once).with(log_message)
-          subject.call(payload: response_payload)
+          subject.call({payload: response_payload, call_type: nil})
         end
       end
 
       context 'FTI Ifsv ineligible response' do
         before do
           @applicant = application.applicants.first
-          @result = subject.call(payload: response_payload_2)
+          @result = subject.call({payload: response_payload_2, call_type: nil})
 
           @application = ::FinancialAssistance::Application.by_hbx_id(response_payload_2[:hbx_id]).first.reload
           @app_entity = ::AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(response_payload_2).success
@@ -243,7 +243,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
         before do
           income_evidence.verification_histories.create(action: "retry")
           income_evidence.save
-          subject.call(payload: response_payload_2)
+          subject.call({payload: response_payload_2, call_type: nil})
           income_evidence.reload
         end
 
@@ -355,7 +355,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
           @applicant = application.applicants.first
           application.applicants[0].update_attributes(person_hbx_id: family.primary_person.hbx_id)
           application.applicants[1].update_attributes(person_hbx_id: dependent_person.hbx_id)
-          @result = subject.call(payload: payload)
+          @result = subject.call({payload: payload, call_type: "hub_call"})
 
           @application = ::FinancialAssistance::Application.by_hbx_id(payload[:hbx_id]).first
           @app_entity = ::AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(payload).success
@@ -417,7 +417,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
             end
 
             it 'returns outstanding' do
-              subject.call(payload: response_payload)
+              subject.call({payload: response_payload, call_type: "hub_call"})
               @applicant.reload
               income_evidence = @applicant.aptc_csr_eligibility.income_evidence
               expect(income_evidence.current_state).to eq :outstanding
@@ -430,7 +430,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
             it 'returns outstanding' do
               enrollment.product.update(csr_variant_id: '01')
               enrollment.reload
-              subject.call(payload: response_payload)
+              subject.call({payload: response_payload, call_type: "hub_call"})
 
               @applicant.reload
               income_evidence = @applicant.aptc_csr_eligibility.income_evidence
@@ -444,7 +444,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
             it 'returns outstanding' do
               enrollment.product.update(csr_variant_id: '02')
               enrollment.reload
-              subject.call(payload: response_payload)
+              subject.call({payload: response_payload, call_type: "hub_call"})
 
               @applicant.reload
               income_evidence = @applicant.aptc_csr_eligibility.income_evidence

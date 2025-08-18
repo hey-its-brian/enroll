@@ -25,6 +25,8 @@ module FinancialAssistance
             _evidences_result  = yield create_aptc_eligibilities_evidences(application)
             _family_result     = yield create_or_update_family(application)
             _done              = yield cache_determination_token(application)
+            payload_entity     = yield rebuild_payload_entity(application)
+            _verification_result = yield request_evidences_verification(payload_entity, application)
 
             Success(result)
           end
@@ -177,6 +179,61 @@ module FinancialAssistance
             elig_det.applicants.detect do |applicant|
               applicant.person_hbx_id.to_s == applicant_ref.to_s
             end
+          end
+
+          def rebuild_payload_entity(application)
+            return Success(true) unless qhp_application_feature_enabled?
+            result = ::Operations::Fdsh::BuildAndValidateApplicationPayload.new.call(application)
+
+            if result.failure?
+              Rails.logger.error("Unable to rebuild payload entity for application with hbx_id: #{application.hbx_id} with errors: #{result.failure}")
+              return Failure("Unable to rebuild payload entity for application with hbx_id: #{application.hbx_id} with errors: #{result.failure}")
+            end
+
+            result
+          end
+
+          # Requests verification for all evidences associated with the application when specific conditions are met.
+          #
+          # The method is designed to be fault-tolerant and will return success even if evidence verification fails, as individual evidence
+          # statuses are handled within their respective operations.
+          #
+          # @param payload_entity [::AcaEntities::MagiMedicaid::Application] The payload entity containing application
+          #   data to be sent to the verification hub
+          # @param application [FinancialAssistance::Application] The financial assistance application for which
+          #   verification is being requested
+          #
+          # @return [Dry::Monads::Result::Success] Returns success in the following cases:
+          #   - When QHP application feature is disabled
+          #   - When all hub calls are turned off via feature flags
+          #   - When application is a renewal and RRV feature is enabled
+          #   - When evidence verification completes successfully
+          #   - When evidence verification fails (individual evidence statuses are updated separately)
+          # @return [Dry::Monads::Result::Failure] Only returns failure when there is a critical system error
+          #   that prevents the operation from completing
+          #
+          # @example When system error occurs
+          #   result = request_evidences_verification(payload, application)
+          #   # => Failure("FAA trigger_hub_calls error for application with hbx_id: 12345...")
+          #
+          # @note Individual evidence verification failures are handled gracefully within the
+          #   RequestVerification operation and do not cause this method to fail
+          def request_evidences_verification(payload_entity, application)
+            return Success(true) unless qhp_application_feature_enabled?
+            return Success(true) if all_hub_calls_turned_off?
+            return Success(true) if application.workflow_state_transitions.any? { |wst| wst.from_state == 'renewal_draft' } && FinancialAssistanceRegistry.feature_enabled?(:renewal_eligibility_verification_using_rrv)
+
+            ::FinancialAssistance::Operations::Application::Evidences::RequestVerification.new.call({application: application, payload_entity: payload_entity})
+          rescue StandardError => e
+            Rails.logger.error { "FAA trigger_hub_calls error for application with hbx_id: #{application.hbx_id} message: #{e.message}, backtrace: #{e.backtrace.join('\n')}" }
+            Failure("FAA trigger_hub_calls error for application with hbx_id: #{application.hbx_id} message: #{e.message}")
+          end
+
+          def all_hub_calls_turned_off?
+            FinancialAssistanceRegistry[:esi_mec_determination].disabled? &&
+              FinancialAssistanceRegistry[:non_esi_mec_determination].disabled? &&
+              FinancialAssistanceRegistry[:ifsv_determination].disabled? &&
+              FinancialAssistanceRegistry[:mec_check].disabled?
           end
         end
       end
