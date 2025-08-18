@@ -393,13 +393,17 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
 
   describe 'GET #copy' do
     let(:new_user)          { FactoryBot.create(:user, person: new_person) }
-    let(:new_person)        { FactoryBot.create(:person) }
+    let(:new_person)        { FactoryBot.create(:person, :with_ssn) }
     let(:new_consumer_role) { FactoryBot.create(:consumer_role, person: new_person, identity_validation: 'valid') }
     let(:new_family)        { FactoryBot.create(:family, :with_primary_family_member, person: new_consumer_role.person) }
     let(:new_application)   { FactoryBot.create(:individual_market_application, current_state: current_state, family: new_family) }
     let(:current_state)     { :determined }
 
+    let(:hbx_profile) { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
+    let(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
+
     before :each do
+      benefit_sponsorship
       allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
     end
 

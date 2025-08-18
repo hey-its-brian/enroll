@@ -282,45 +282,6 @@ module IndividualMarket
       individual_market_eligibility&.qhp_determination&.is_eligible == true ? l10n("applications.program.qhp_plan", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) : l10n("applications.program.not_eligible")
     end
 
-    # Creates a copy of this applicant in a new application
-    #
-    # @param [IndividualMarket::Application] new_application The application where the copied applicant will be created
-    # @return [IndividualMarket::Applicant] The newly created applicant with copied attributes and embedded documents
-    # @example Copy an applicant to a new application
-    #   original_applicant.copy_applicant(new_application)
-    def copy_applicant(new_application)
-      new_applicant = new_application.applicants.build(
-        family_member_id: family_member_id,
-        is_primary_applicant: is_primary_applicant,
-        address_same_as_primary: address_same_as_primary,
-        is_applying_coverage: is_applying_coverage,
-        is_homeless: is_homeless,
-        age_off_excluded: age_off_excluded,
-        contact_method: contact_method,
-        language_preference: language_preference
-      )
-
-      person_name.copy_person_name(new_applicant) if person_name.present?
-      demographics.copy_demographics(new_applicant) if demographics.present?
-      immigration_information.copy_immigration_information(new_applicant) if immigration_information.present?
-
-      new_applicant.build_individual_market_eligibility
-
-      addresses.each do |address|
-        address.copy_address(new_applicant)
-      end
-
-      phones.each do |phone|
-        phone.copy_phone(new_applicant)
-      end
-
-      emails.each do |email|
-        email.copy_email(new_applicant)
-      end
-
-      new_applicant
-    end
-
     # this attribute is used to identify the applicant in the application
     # so it works with the qhp application javascript controller to properly identify the applicant
     # to open the correct applicant edit form.

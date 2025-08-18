@@ -31,32 +31,6 @@ module IndividualMarket
       attributes.except("_id", "created_at", "updated_at", "subject").select { |_key, value| value.present? }.collect { |key, value| {label: key.titleize, display_value: standardize_display(value)} }
     end
 
-    # Creates a copy of this immigration information for a new applicant
-    #
-    # @param [IndividualMarket::Applicant] new_applicant The applicant to associate the copied immigration information with
-    # @return [IndividualMarket::ImmigrationInformation] The newly created immigration information with identical attributes
-    # @example Copy immigration information to a new applicant
-    #   immigration_info.copy_immigration_information(new_applicant)
-    def copy_immigration_information(new_applicant)
-      new_applicant.build_immigration_information(
-        subject: subject,
-        alien_number: alien_number,
-        i94_number: i94_number,
-        visa_number: visa_number,
-        passport_number: passport_number,
-        sevis_id: sevis_id,
-        naturalization_number: naturalization_number,
-        receipt_number: receipt_number,
-        citizenship_number: citizenship_number,
-        card_number: card_number,
-        country_of_citizenship: country_of_citizenship,
-        expiration_date: expiration_date,
-        issuing_country: issuing_country,
-        description: description,
-        immigration_doc_statuses: immigration_doc_statuses
-      )
-    end
-
     private
 
     def standardize_display(value)

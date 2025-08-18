@@ -796,6 +796,11 @@ class Person
     addresses.detect { |adr| adr.kind == "home" }
   end
 
+  # Returns the person's work address, if it exists.
+  def work_address
+    addresses.where(kind: 'work').first
+  end
+
   def zip
     home_address.zip
   end

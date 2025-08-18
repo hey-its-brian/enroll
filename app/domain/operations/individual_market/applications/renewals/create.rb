@@ -20,7 +20,8 @@ module Operations
           def call(family_id:, renewal_year:)
             family, renewal_year  = yield validate_inputs(family_id, renewal_year)
             _eligible             = yield check_eligibility(family, renewal_year)
-            application           = yield create(family, renewal_year)
+            application           = yield build(family, renewal_year)
+            application           = yield persist(application)
             event                 = yield build_event(application, family)
             _published            = yield publish_event(event)
 
@@ -69,10 +70,10 @@ module Operations
           # @param renewal_year [Integer] the year for which the renewal application is created
           #
           # @return [Dry::Monads::Result] Success with the created application or Failure with an error message
-          def create(family, renewal_year)
-            renewal_draft_application = family.qhp_applications_for_year(renewal_year).first
-            if renewal_draft_application
-              return Success(renewal_draft_application) if renewal_draft_application.is_initial?
+          def build(family, renewal_year)
+            @renewal_draft_application = family.qhp_applications_for_year(renewal_year).first
+            if @renewal_draft_application
+              return Success(@renewal_draft_application) if @renewal_draft_application.is_initial?
               return Failure("Family with #{family.id} already has a non-initial QHP application for the renewal year #{renewal_year}")
             end
 
@@ -83,6 +84,24 @@ module Operations
               generation_reason: :renewal,
               renewal: true
             )
+          end
+
+          # Persists the generated application in the Database
+          #
+          # @param application [IndividualMarketApplication] the application to persist
+          #
+          # @return [Dry::Monads::Result] Success with the persisted application or Failure with an error message
+          def persist(application)
+            return Success(application) if @renewal_draft_application
+
+            if application.valid?
+              application.save!
+              Success(application)
+            else
+              Failure("Failed to persist application: #{application.errors.full_messages.join(', ')}")
+            end
+          rescue StandardError => e
+            Failure("Failed to persist application: #{e.message}, backtrace: #{e.backtrace.join(', ')}")
           end
 
           # Builds an event for the created application

@@ -105,6 +105,12 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
         )
       end
 
+      it 'returns a persisted application' do
+        expect(result).to be_success
+        expect(result.success).to be_a(IndividualMarket::Application)
+        expect(result.success).to be_persisted
+      end
+
       it 'does not cancel the current application' do
         expect(current_application.reload.current_state).to eq(:initial)
       end
@@ -136,6 +142,12 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
           generation_reason: :renewal,
           origin: :system
         )
+      end
+
+      it 'returns a persisted application' do
+        expect(result).to be_success
+        expect(result.success).to be_a(IndividualMarket::Application)
+        expect(result.success).to be_persisted
       end
     end
 
@@ -169,6 +181,12 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
           origin: :system
         )
       end
+
+      it 'returns a persisted application' do
+        expect(result).to be_success
+        expect(result.success).to be_a(IndividualMarket::Application)
+        expect(result.success).to be_persisted
+      end
     end
 
     context 'with:
@@ -200,6 +218,12 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
           generation_reason: :renewal,
           origin: :system
         )
+      end
+
+      it 'returns a persisted application' do
+        expect(result).to be_success
+        expect(result.success).to be_a(IndividualMarket::Application)
+        expect(result.success).to be_persisted
       end
     end
 

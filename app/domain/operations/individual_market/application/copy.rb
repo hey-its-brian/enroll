@@ -10,14 +10,15 @@ module Operations
         # @param application [::IndividualMarket::Application] The application to copy
         # @param origin [String] The origin of the application, must be one of IndividualMarket::Application::ORIGIN_KINDS
         # @param generation_reason [String] The reason for generating the application, must be one of IndividualMarket::Application::GENERATION_REASONS
+        # @param assistance_year [String, nil] The assistance year, optional
         #
         # @return [Dry::Monads::Result] Returns a Success with the copied application or a Failure with an error message
         def call(application:, origin:, generation_reason:, assistance_year: nil)
           application, origin, generation_reason, _assistance_year = yield validate_application(application, origin, generation_reason, assistance_year)
-          copied_application                      = yield copy_application(application, origin, generation_reason)
-          _cancelled                              = yield cancel_previous_applications(copied_application)
+          new_application = yield generate_application(application.family_id, origin, generation_reason, assistance_year)
+          new_application = yield persist(application, new_application)
 
-          Success(copied_application)
+          Success(new_application)
         end
 
         private
@@ -27,61 +28,54 @@ module Operations
         # @param application [::IndividualMarket::Application] The application to validate
         # @param origin [String] The origin of the application
         # @param generation_reason [String] The reason for generating the application
+        # @param assistance_year [String, nil] The assistance year, optional
         #
         # @return [Dry::Monads::Result] Returns a Success with the validated parameters or a Failure with an error message
         def validate_application(application, origin, generation_reason, assistance_year)
           return Failure("Invalid application type: #{application.class.name}") unless application.is_a?(::IndividualMarket::Application)
-          return Failure("Application cannot be copied as it is not in one of the #{::IndividualMarket::Application::COPYABLE_STATES.join(', ')} states") unless ::IndividualMarket::Application::COPYABLE_STATES.include?(application.current_state)
-          return Failure(I18n.t('faa.errors.invalid_assistance_year_error')) if invalid_assistance_year?(assistance_year)
-          return Failure("Invalid origin: #{origin}") if ::IndividualMarket::Application::ORIGIN_KINDS.exclude?(origin)
-          return Failure("Invalid generation reason: #{generation_reason}") if ::IndividualMarket::Application::GENERATION_REASONS.exclude?(generation_reason)
+          copyable_states = ::IndividualMarket::Application::COPYABLE_STATES
+          return Failure("Application cannot be copied as it is not in one of the #{copyable_states.join(', ')} states") if copyable_states.exclude?(application.current_state)
 
           Success([application, origin, generation_reason])
         end
 
-        # Validates the assistance year.
+        # Builds the new application based on the Family's latest composition.
         #
-        # @param assistance_year [String] The assistance year to validate
-        #
-        # @return [Boolean] Returns true if the assistance year is valid, false otherwise
-        def invalid_assistance_year?(assistance_year)
-          return false unless assistance_year.present?
-
-          @assistance_year = assistance_year.to_i
-          !assistance_year.to_s.match?(/\A\d+\z/)
-        end
-
-        # Copies the application and saves it.
-        #
-        # @param application [::IndividualMarket::Application] The application to copy
+        # @param family_id [String] The ID of the family from which the new application is being built
         # @param origin [String] The origin of the application
         # @param generation_reason [String] The reason for generating the application
-        # @return [Dry::Monads::Result] Returns a Success with the copied application or a Failure with an error message
-        def copy_application(application, origin, generation_reason)
-          copy_params = {origin: origin, generation_reason: generation_reason}
-          copy_params[:copy_year] = @assistance_year if @assistance_year.present?
-
-          new_application = application.copy_application(**copy_params)
-
-          if new_application.valid?
-            begin
-              new_application.save!
-              Success(new_application)
-            rescue StandardError => e
-              Rails.logger.error("QHP Application - Copy of application with hbx_id: #{application.hbx_id} failed: #{e.message}")
-              Failure("Unable to copy application: #{e.message}")
-            end
-          else
-            Rails.logger.error("QHP Application - Copy failed validation: #{new_application.errors.full_messages.join(', ')}")
-            Failure("Application copy failed validation: #{new_application.errors.full_messages.join(', ')}")
-          end
-        rescue StandardError => e
-          Rails.logger.error("QHP Application - Copy operation failed for application with hbx_id: #{application.hbx_id} - Error: #{e.message}, Backtrace: #{e.backtrace.join("\n")}")
-          Failure("Copy operation failed for application with hbx_id: #{application.hbx_id} - Error: #{e.message}")
+        # @param assistance_year [String, nil] The assistance year, optional
+        #
+        # @return [Dry::Monads::Result] Returns a Success with the new application or a Failure with an error message
+        def generate_application(family_id, origin, generation_reason, assistance_year)
+          ::Operations::IndividualMarket::GenerateApplication.new.call(
+            {
+              assistance_year: assistance_year,
+              family_id: family_id,
+              generation_reason: generation_reason,
+              origin: origin,
+              renewal: false
+            }
+          )
         end
 
-        def cancel_previous_applications(application)
-          ::Operations::Sbm::Applications::CancelPreviousApplications.new.call(application: application)
+        # Persists the new application to the database.
+        #
+        # @param application [::IndividualMarket::Application] The original application
+        # @param new_application [::IndividualMarket::Application] The new application to persist
+        #
+        # @return [Dry::Monads::Result] Returns a Success with the persisted application or a Failure with an error message
+        def persist(application, new_application)
+          new_application.predecessor_id = application.id
+
+          if new_application.valid?
+            new_application.save!
+            Success(new_application)
+          else
+            Failure("Failed to persist new application: #{new_application.errors.full_messages.join(', ')}")
+          end
+        rescue StandardError => e
+          Failure("Failed to persist new application: #{e.message}")
         end
       end
     end

@@ -16,6 +16,9 @@ module Operations
       # @param [ FamilyId ] family_id bson_id of a family
       # @param [ Origin ] origin
       # @param [ GenerationReason ] generation_reason
+      # @param [ AssistanceYear ] assistance_year optional
+      # @param [ Boolean ] renewal optional
+      #
       # @return [ IndividualMarket::Application ] application
       def call(params)
         validated_params             = yield validate(params)
@@ -68,7 +71,7 @@ module Operations
       end
 
       def invalid_assistance_year?(params)
-        return false unless params[:assistance_year].present?
+        return false if params[:assistance_year].blank?
 
         @assistance_year = params[:assistance_year].to_i
         !params[:assistance_year].to_s.match?(/\A\d+\z/)

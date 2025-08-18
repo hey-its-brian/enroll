@@ -68,7 +68,7 @@ RSpec.describe Operations::IndividualMarket::Transformers::ApplicationTo::Cv3App
         primary_applicant = @payload[:applicants].find { |a| a[:is_primary_applicant] }
         demographics = primary_applicant[:demographics]
 
-        expect(demographics[:gender]).to eq(applicant1.demographics.gender)
+        expect(demographics[:gender]).to eq(applicant1.demographics.gender.capitalize)
         expect(demographics[:dob]).to eq(applicant1.demographics.dob)
       end
 

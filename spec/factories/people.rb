@@ -29,12 +29,18 @@ FactoryBot.define do
       tribe_codes { ["HM", "AM"] }
     end
 
-    trait :with_bad_mailing_address do 
+    trait :with_bad_mailing_address do
       addresses { [FactoryBot.build(:address, :mailing_kind, :without_address_1, :without_city, :without_state, :without_zip)] }
+    end
+
+    trait :no_ssn do
+      encrypted_ssn { nil }
+      no_ssn { '1' }
     end
 
     trait :with_ssn do
       sequence(:ssn) { |n| 222222220 + n }
+      no_ssn { '0' }
     end
 
     trait :with_work_email do
