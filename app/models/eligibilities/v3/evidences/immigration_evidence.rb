@@ -25,7 +25,7 @@ module Eligibilities
           applicant = eligibility.eligible
           Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerification.new.call(
             {application: applicant.application,
-             requested_ids: [fetch_applicant_hbx_id(applicant)],
+             request_hbx_ids: [fetch_applicant_hbx_id(applicant)],
              call_type: 'hub_call',
              updated_by: params[:updated_by]}
           )

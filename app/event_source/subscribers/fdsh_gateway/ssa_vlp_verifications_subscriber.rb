@@ -17,7 +17,7 @@ module Subscribers
         status = metadata[:headers]["status"]
 
         if status == "failure"
-          handle_failure_response(job_id)
+          handle_failure_response(job_id, "Failed to process SSA VLP verification response due to failure status")
           logger.info "Ssa::SsaVlpverificationsSubscriber: on_determined acked and processed failure from fdsh_gateway"
         else
           verification_payload = { application_hbx_id: correlation_id, job_id: job_id,
@@ -40,17 +40,25 @@ module Subscribers
 
       def trigger_close_case_request(job_id, determinations, correlation_id, application_type)
         return unless EnrollRegistry.feature_enabled?(:send_close_case_request)
+        return unless determinations.key?("vlp") && determinations["vlp"].present?
 
-        headers = {job_id: job_id, application_hbx_id: correlation_id, application_type: application_type}
-        event = event('events.enroll.verifications.ssavlp.closecase.requested', attributes: determinations.slice(:vlp), headers: headers)
-        event.publish
+        result = Operations::Eligibilities::V3::IndividualMarket::RequestVlpCloseCase.new.call(
+          job_id: job_id,
+          correlation_id: correlation_id,
+          application_type: application_type,
+          determinations: determinations
+        )
+        handle_failure_response(job_id, "Failed to publish close case request") unless result.success?
+        logger.info "SsaVlpverificationsSubscriber: trigger_close_case_request result: #{result.inspect}"
+      rescue StandardError => e
+        logger.error "SsaVlpverificationsSubscriber: trigger_close_case_request error_message: #{e.message}, backtrace: #{e.backtrace}"
+        handle_failure_response(job_id, "Failed to trigger close case request: #{e.message}")
       end
 
-      def handle_failure_response(job_id)
+      def handle_failure_response(job_id, message)
         return unless job_id
         job = Transmittable::Job.where(job_id: job_id)&.last
         return unless job
-        message = "Job failed in FDSH Gateway"
         Operations::Transmittable::UpdateProcessStatus.new.call({ transmittable_objects: { job: job }, state: :failed, message: message })
         Operations::Transmittable::AddError.new.call({ transmittable_objects: { job: job }, key: :fdsh_gateway, message: message })
       end
