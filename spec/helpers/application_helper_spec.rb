@@ -695,14 +695,13 @@ RSpec.describe ApplicationHelper, :type => :helper do
       end
     end
 
-    context "when user has broker role or broker agency staff role" do
+    context "when user has broker role" do
       let(:broker_role) { FactoryBot.create(:broker_role, person: person) }
       let(:broker_agency_profile) { FactoryBot.create(:broker_agency_profile, legal_name: "Test Agency") }
 
       before do
         allow(user).to receive(:has_broker_role?).and_return(true)
         allow(user).to receive(:person).and_return(person)
-        allow(user).to receive(:has_broker_agency_staff_role?).and_return(false)
         allow(person).to receive(:broker_role).and_return(broker_role)
         allow(broker_role).to receive(:broker_agency_profile).and_return(broker_agency_profile)
         allow(helper).to receive(:current_user).and_return(user)
