@@ -16,7 +16,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
     consumer.save!
     consumer
   end
-  let!(:immigration_type) do
+  let!(:first_immigration_type) do
     immigration = FactoryBot.build(:verification_type, type_name: 'Immigration status',
                                                        validation_status: 'rejected',
                                                        applied_roles: ['consumer_role'],
@@ -29,6 +29,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
                                                        inactive: true)
     person.verification_types << immigration
     person.save!
+    immigration
   end
 
   let(:response_payload) do
@@ -718,6 +719,109 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
           expect_attributes_to_match(@immigration_evidence.documents.first, @immigration_verification_type.vlp_documents.first, [:title, :creator, :subject, :publisher, :type, :identifier, :source, :language])
         end
       end
+    end
+  end
+
+  context '#when person have duplicate verification types
+  - one is active and the other is inactive' do
+    let!(:duplicate_immigration_type) do
+      immigration = FactoryBot.build(:verification_type, type_name: 'Immigration status',
+                                                         validation_status: 'verified',
+                                                         applied_roles: ['consumer_role'],
+                                                         update_reason: 'duplicate',
+                                                         rejected: false,
+                                                         external_service: 'some_service',
+                                                         due_date: Date.today,
+                                                         due_date_type: 'admin',
+                                                         updated_by: 'admin',
+                                                         inactive: false)
+      person.verification_types << immigration
+      person.save!
+      person.verification_types.by_name('Immigration status').active.first
+    end
+
+    before do
+      allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      consumer_role.save!
+      person.verification_types.where(type_name: "DC Residency").delete_all
+      person.verification_types.alive_status_type.each do |verification_type|
+        verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
+                                                   modifier: "external Hub",
+                                                   update_reason: "Hub response",
+                                                   event_response_record_id: response3.id,
+                                                   to_validation_status: "verified",
+                                                   from_validation_status: "unverified",
+                                                   created_at: DateTime.now)
+
+        verification_type.add_type_history_element(action: "call hub",
+                                                   modifier: "admin",
+                                                   update_reason: "Hub request",
+                                                   event_response_record_id: nil,
+                                                   created_at: DateTime.now - 5.minutes)
+        verification_type.save!
+      end
+    end
+
+    it 'should fetch active immigration evidence' do
+      subject.call({document_id: family.id.to_s})
+      family.assign_latest_application_gid
+      immigration_evidence = family.latest_application.applicants.first.individual_market_eligibility.immigration_evidence
+      expect(immigration_evidence).to be_present
+      expect(immigration_evidence.is_active).to eq(true)
+      expect(immigration_evidence.current_state.to_s).to eq(duplicate_immigration_type.validation_status.to_s)
+    end
+  end
+
+  context '#when person have duplicate verification types
+  - both are inactive' do
+    let!(:duplicate_immigration_type) do
+      immigration = FactoryBot.build(:verification_type, type_name: 'Immigration status',
+                                                         validation_status: 'verified',
+                                                         applied_roles: ['consumer_role'],
+                                                         update_reason: 'duplicate',
+                                                         rejected: false,
+                                                         external_service: 'some_service',
+                                                         due_date: Date.today,
+                                                         due_date_type: 'admin',
+                                                         updated_by: 'admin',
+                                                         inactive: true,
+                                                         updated_at: DateTime.now - 1.day)
+      person.verification_types << immigration
+      person.save!
+      immigration
+    end
+
+    before do
+      allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      consumer_role.save!
+      person.verification_types.where(type_name: "DC Residency").delete_all
+      person.verification_types.alive_status_type.each do |verification_type|
+        verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
+                                                   modifier: "external Hub",
+                                                   update_reason: "Hub response",
+                                                   event_response_record_id: response3.id,
+                                                   to_validation_status: "verified",
+                                                   from_validation_status: "unverified",
+                                                   created_at: DateTime.now)
+
+        verification_type.add_type_history_element(action: "call hub",
+                                                   modifier: "admin",
+                                                   update_reason: "Hub request",
+                                                   event_response_record_id: nil,
+                                                   created_at: DateTime.now - 5.minutes)
+        verification_type.save!
+      end
+    end
+
+    it 'should fetch latest updated immigration evidence' do
+      subject.call({document_id: family.id.to_s})
+      family.assign_latest_application_gid
+      immigration_evidence = family.latest_application.applicants.first.individual_market_eligibility.immigration_evidence
+      expect(immigration_evidence).to be_present
+      expect(immigration_evidence.is_active).to eq(false)
+      expect(immigration_evidence.current_state.to_s).to eq(first_immigration_type.validation_status.to_s)
     end
   end
 end

@@ -34,12 +34,21 @@ module Operations
               individual_market_eligibility = applicant.individual_market_eligibility
               person_hbx_id = applicant.instance_of?(::IndividualMarket::Applicant) ? applicant.family_member.person.hbx_id : applicant.person_hbx_id
               person = Person.where(hbx_id: person_hbx_id).first
+              verification_types = person.verification_types
+              ssn_verification_types = verification_types.by_name(VerificationType::SOCIAL_SECURITY_NUMBER)
 
-              ssn_verification_type = person.verification_types.ssn_type.first
-              citizenship_verification_type = person.verification_types.citizenship_type.first
-              alive_status_verification_type = person.verification_types.alive_status_type.first
-              american_indian_status_verification_type = person.verification_types.american_indian_status_type.first
-              immigration_verification_type = person.verification_types.where(type_name: "Immigration status").first
+              ssn_verification_type = fetch_a_verification_type(ssn_verification_types)
+              citizenship_verification_types = verification_types.by_name(VerificationType::CITIZENSHIP)
+              citizenship_verification_type = fetch_a_verification_type(citizenship_verification_types)
+
+              alive_status_verification_types = verification_types.by_name(VerificationType::ALIVE_STATUS)
+              alive_status_verification_type = fetch_a_verification_type(alive_status_verification_types)
+
+              american_indian_status_verification_types = verification_types.by_name(VerificationType::AMERICAN_INDIAN_STATUS)
+              american_indian_status_verification_type = fetch_a_verification_type(american_indian_status_verification_types)
+
+              immigration_verification_types = verification_types.by_name(VerificationType::IMMIGRATION_STATUS)
+              immigration_verification_type = fetch_a_verification_type(immigration_verification_types)
 
               immigration_evidence = individual_market_eligibility.immigration_evidence
               social_security_number_evidence = individual_market_eligibility.social_security_number_evidence
@@ -61,6 +70,14 @@ module Operations
               end
             end
             Success(application_result)
+          end
+
+          def fetch_a_verification_type(v_types)
+            if v_types.count > 1
+              v_types.active.present? ? v_types.active.first : v_types.order_by("updated_at DESC").first
+            else
+              v_types.first
+            end
           end
 
           def fetch_responses(person)
@@ -151,12 +168,16 @@ module Operations
             type_history_elements_without_response = type_history_elements.where(:event_response_record_id.eq => nil).order_by("created_at DESC").first
             old_type_verification_outstanding = [:outstanding, :rejected].include?(old_evidence.validation_status.to_sym)
             old_type_is_satisfied = [:outstanding, :rejected].include?(old_evidence.validation_status.to_sym) ? false : true
-
             latest_new_verification_history = new_evidence.verification_histories.order_by(:date_of_action.desc).first
 
             return true if type_history_elements_without_response.nil? && latest_new_verification_history.nil?
 
-            type_history_elements_without_response.action == latest_new_verification_history.action &&
+            history_matches?(old_evidence, type_history_elements_without_response,latest_new_verification_history, old_type_is_satisfied, old_type_verification_outstanding)
+          end
+
+          def history_matches?(old_evidence, type_history_elements_without_response,latest_new_verification_history, old_type_is_satisfied, old_type_verification_outstanding)
+            type_history_elements_without_response.present? && latest_new_verification_history.present? &&
+              type_history_elements_without_response.action == latest_new_verification_history.action &&
               type_history_elements_without_response.modifier == latest_new_verification_history.updated_by &&
               type_history_elements_without_response.update_reason == latest_new_verification_history.update_reason &&
               old_type_is_satisfied == latest_new_verification_history.is_satisfied &&

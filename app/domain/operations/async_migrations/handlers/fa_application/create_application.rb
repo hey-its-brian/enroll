@@ -157,7 +157,89 @@ module Operations
           def regenerate_family_determination(determined_application)
             family = determined_application.family
             family.assign_latest_application_gid
+            deactivate_tax_household_groups(determined_application)
+            create_new_thhg(determined_application)
+            family.save!
             ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
+          end
+
+          # Deactivates all existing tax household groups for the application's assistance year
+          #
+          # @param application [IndividualMarket::Application] the individual market application
+          # @param family [Family] the family associated with the application
+          # @return [Dry::Monads::Result] Success with message
+          def deactivate_tax_household_groups(application)
+            family = application.family
+            new_effective_date = application.eligibility_determinations.pluck(:effective_starting_on).compact.first
+
+            family.tax_household_groups.by_year(application.assistance_year).each do |thhg|
+              thhg.end_on = new_effective_date > thhg.start_on ? (new_effective_date - 1.day) : thhg.start_on
+
+              thhg.tax_households.each do |thh|
+                thh.effective_ending_on = new_effective_date > thh.effective_starting_on ? (new_effective_date - 1.day) : thh.effective_starting_on
+              end
+            end
+          end
+
+          def create_new_thhg(application)
+            family = application.family
+
+            thhg_params = fetch_tax_hh_group_params(application)
+            thhg = family.tax_household_groups.build(thhg_params)
+
+            application.eligibility_determinations.each do |elig_deter|
+              thh_params = fetch_tax_hh_params(elig_deter, application)
+              thh = thhg.tax_households.build(thh_params)
+
+              elig_deter.applicants.each do |applicant|
+                thhm_params = fetch_thhm_params(applicant)
+                thh.tax_household_members.build(thhm_params)
+              end
+            end
+          end
+
+          def fetch_tax_hh_group_params(application)
+            { source: 'Faa',
+              application_hbx_id: application.hbx_id,
+              start_on: application.eligibility_determinations.first.effective_starting_on,
+              end_on: nil,
+              assistance_year: application.assistance_year }
+          end
+
+          def fetch_tax_hh_params(elig_deter, application)
+            { eligibility_determination_hbx_id: elig_deter.hbx_assigned_id,
+              yearly_expected_contribution: elig_deter.yearly_expected_contribution,
+              effective_starting_on: elig_deter.effective_starting_on || application.effective_date,
+              max_aptc: elig_deter.max_aptc }
+          end
+
+          def fetch_thhm_params(applicant)
+            { applicant_id: applicant.family_member_id,
+              medicaid_household_size: applicant.medicaid_household_size,
+              magi_medicaid_category: applicant.magi_medicaid_category,
+              magi_as_percentage_of_fpl: applicant.magi_as_percentage_of_fpl,
+              magi_medicaid_monthly_income_limit: applicant.magi_medicaid_monthly_income_limit,
+              magi_medicaid_monthly_household_income: applicant.magi_medicaid_monthly_household_income,
+              is_without_assistance: applicant.is_without_assistance,
+              is_ia_eligible: applicant.is_ia_eligible,
+              is_medicaid_chip_eligible: applicant.is_medicaid_chip_eligible,
+              is_non_magi_medicaid_eligible: applicant.is_non_magi_medicaid_eligible,
+              is_totally_ineligible: applicant.is_totally_ineligible,
+              is_csr_eligible: applicant.is_csr_eligible,
+              csr_percent_as_integer: applicant.csr_percent_as_integer,
+              member_determinations: member_determinations(applicant)}
+          end
+
+          def member_determinations(applicant)
+            applicant.member_determinations&.map do |member_determination|
+              md_attributes = member_determination.attributes
+              md_attributes.except!('_id', 'created_at', 'updated_at')
+              eo_attributes = member_determination.eligibility_overrides&.map do |eo|
+                eo.attributes.except!('_id', 'created_at', 'updated_at')
+              end
+              md_attributes['eligibility_overrides'] = eo_attributes
+              md_attributes
+            end
           end
 
           # Cancels previous draft applications when a new one is created
@@ -178,6 +260,7 @@ module Operations
 
           def compare_migrated_values(application, old_application)
             application_result = []
+            application_compact_result = [application.family_id, application.hbx_id, application.primary_applicant.person_hbx_id, "migrated"]
             application.applicants.each do |applicant|
               old_aptc_csr_eligibility = old_application.applicants.where(person_hbx_id: applicant.person_hbx_id).first.aptc_csr_eligibility
               old_income_evidence = old_aptc_csr_eligibility.income_evidence
@@ -205,10 +288,24 @@ module Operations
               individual_market_evidences_result.value!.each do |result|
                 application_result.push(result)
               end
-              Success(application_result)
+
+              Success(fetch_compact_result(application_result, application_compact_result))
             else
               Failure("Failed to compare migrated values")
             end
+          end
+
+          def fetch_compact_result(application_result, application_compact_result)
+            result = application_result.collect do |matched|
+              matched[6] == true && matched[8] == true && matched[10] == true && matched[12] == true && matched[14] == true
+            end
+
+            if result.all? { |value| value == true }
+              application_compact_result.push("All evidences matched successfully")
+            else
+              application_compact_result.push("Some evidences did not match")
+            end
+            application_compact_result
           end
 
           def compare_aptc_csr_eligibility_evidences(old_evidence, new_evidence, status)
@@ -263,33 +360,26 @@ module Operations
             obj1.as_json(only: attributes) == obj2.as_json(only: attributes)
           end
 
-          def publish(rows)
-            csv_headers = ["Application HBX ID",
+          def publish(row)
+            csv_headers = [
+                           "Family ID",
+                           "Application HBX ID",
+                           "Primary Applicant HBX ID",
                            "Migration Result",
-                           "Errors",
-                           "Applicant HBX ID",
-                           "evidence_type",
-                           "evidence_values_matched?",
-                           "evidence_verification_history",
-                           "evidence_verification_histories_matched?",
-                           "evidence_request_result",
-                           "evidence_request_results_matched?",
-                           "evidence_state_transition",
-                           "evidence_state_transitions_matched?",
-                           "evidence_document_type",
-                           "evidence_document_matched?"]
+                           "Errors"
+                          ]
 
-            result = rows.collect do |row|
-              event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "new_fa_application_report", csv_headers: csv_headers, csv_row: row})
+            # result = rows.collect do |row|
+            event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "new_fa_application_report", csv_headers: csv_headers, csv_row: row})
 
-              if event.success?
-                event.success.publish
-              else
-                false
-              end
-            end
+            result = if event.success?
+                       event.success.publish
+                       true
+                     else
+                       false
+                     end
 
-            result.all?(true) ? Success("All evidence migration events published successfully") : Failure("Some evidence migration events failed to publish")
+            result ? Success("New FA Application created successfully and published to migration results") : Failure("New FA Application created successfully and publish failed")
           end
         end
       end

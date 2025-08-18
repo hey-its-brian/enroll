@@ -93,17 +93,20 @@ module Operations
             end
           end
 
-          def generate_evidences(applicant)
-            @migrator = ::Migrations::DataModelMigrator.new
-            # Build individual_market_eligibility evidences
-            individual_market_eligibility = applicant.build_individual_market_eligibility
-            person_hbx_id = applicant.instance_of?(::IndividualMarket::Applicant) ? applicant.family_member.person.hbx_id : applicant.person_hbx_id
-            person = Person.where(hbx_id: person_hbx_id).first
-            lawful_presence_determination = person.consumer_role.lawful_presence_determination
-            alive_status_responses = person.consumer_role.alive_status_responses
-            responses = lawful_presence_determination.ssa_responses + lawful_presence_determination.vlp_responses + alive_status_responses
+          def fetch_a_verification_type(v_types)
+            if v_types.count > 1
+              v_types.active.present? ? v_types.active.first : v_types.order_by("updated_at DESC").first
+            else
+              v_types.first
+            end
+          end
 
-            evidences_result = person.verification_types.where(:type_name.in => VerificationType::ALL_VERIFICATION_TYPES).collect do |verification_type|
+          def process_verification_type(individual_market_eligibility, person, responses)
+            VerificationType::ALL_VERIFICATION_TYPES.collect do |type_name|
+              v_types = person.verification_types.by_name(type_name)
+              next if v_types.blank?
+
+              verification_type = fetch_a_verification_type(v_types)
               # build new evidence
               new_evidence = build_new_evidence(individual_market_eligibility, verification_type)
               type_history_elements = verification_type.type_history_elements
@@ -123,6 +126,19 @@ module Operations
 
               [new_evidence.current_state, new_evidence.is_satisfied] if new_evidence.is_active
             end.compact
+          end
+
+          def generate_evidences(applicant)
+            @migrator = ::Migrations::DataModelMigrator.new
+            # Build individual_market_eligibility evidences
+            individual_market_eligibility = applicant.build_individual_market_eligibility
+            person_hbx_id = applicant.instance_of?(::IndividualMarket::Applicant) ? applicant.family_member.person.hbx_id : applicant.person_hbx_id
+            person = Person.where(hbx_id: person_hbx_id).first
+            lawful_presence_determination = person.consumer_role.lawful_presence_determination
+            alive_status_responses = person.consumer_role.alive_status_responses
+            responses = lawful_presence_determination.ssa_responses + lawful_presence_determination.vlp_responses + alive_status_responses
+
+            evidences_result = process_verification_type(individual_market_eligibility, person, responses)
 
             assign_individual_market_eligibility_attributes(individual_market_eligibility, evidences_result, applicant)
 

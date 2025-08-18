@@ -1010,6 +1010,55 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                                                                      :is_non_magi_medicaid_eligible, :is_totally_ineligible, :is_without_assistance, :is_magi_medicaid])
         end
       end
+
+      context "when there are tax household groups" do
+        let(:retro_tax_household_group) { FactoryBot.create(:tax_household_group, :active_previous_year, family: family) }
+        let(:current_tax_household_group) { FactoryBot.create(:tax_household_group, :active_current_year, family: family) }
+
+        let(:tax_household_current) do
+          current_tax_household_group.tax_households = [
+              FactoryBot.build(:tax_household, household: family.active_household, effective_starting_on: current_tax_household_group.start_on.beginning_of_year, effective_ending_on: current_tax_household_group.start_on.end_of_year,
+                                               max_aptc: 1000.00)
+            ]
+        end
+
+        let(:tax_household_previous) do
+          retro_tax_household_group.tax_households = [
+            FactoryBot.build(:tax_household, household: family.active_household, effective_starting_on: retro_tax_household_group.start_on.beginning_of_year, effective_ending_on: retro_tax_household_group.start_on.end_of_year, max_aptc: 1000.00)
+          ]
+        end
+
+        let(:current_tax_household_member) { tax_household_current.first.tax_household_members.create(applicant_id: family.family_members[0].id, csr_percent_as_integer: 87, csr_eligibility_kind: "csr_87") }
+
+        before do
+          tax_household_previous
+          current_tax_household_member
+          @result = subject.call({document_id: application.id.to_s})
+          new_application_hbx_id = @result.value![1]
+          @new_application = FinancialAssistance::Application.where(hbx_id: new_application_hbx_id).first
+        end
+
+        it 'should create family_determination' do
+          family = @new_application.family
+          expect(family.tax_household_groups.count).to eq(3)
+          effective_on = @new_application.eligibility_determinations.first.effective_starting_on
+          expect(family.active_thhg(effective_on.year)).to be_present
+          active_thhg = family.active_thhg(effective_on.year)
+          expect(active_thhg.tax_households.count).to eq(1)
+          expect(active_thhg.tax_households.first.effective_starting_on).to eq(effective_on)
+          expect(active_thhg.tax_households.first.effective_ending_on).to eq(nil)
+          expect(active_thhg.tax_households.first.max_aptc.to_s).to eq("225.13")
+          tax_household = active_thhg.tax_households.first
+          expect(tax_household.tax_household_members.count).to eq(1)
+
+          expect(family.eligibility_determination.subjects.count).to eq(1)
+          subject = family.eligibility_determination.subjects.first
+          expect(subject.eligibility_states[0].eligibility_item_key).to eq("aptc_csr_credit")
+          expect(subject.eligibility_states[0].evidence_states.count).to eq(1)
+          expect(subject.eligibility_states[1].eligibility_item_key).to eq("aca_individual_market_eligibility")
+          expect(subject.eligibility_states[1].evidence_states.count).to eq(4)
+        end
+      end
     end
 
     context 'failed case' do

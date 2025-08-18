@@ -264,7 +264,7 @@ module Operations
             if result[1]
               Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::CompareMigratedEvidenceValues.new.call(application: result[0])
             else
-              Success([[result[0], '', false, result[2]]])
+              Success([[result[0], '', "Migration Failed", result[2]]])
             end
           end
 
