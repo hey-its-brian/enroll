@@ -536,6 +536,92 @@ RSpec.describe VerificationHelper, :type => :helper do
 
   end
 
+  context '#build_evidence_admin_actions_list_aptc_csr' do
+    let(:evidence_double) do
+      instance_double(
+        'EvidenceState',
+        evidence_group: evidence_group,
+        inactive: inactive,
+        status: status,
+        is_action_needed?: is_action_needed
+      )
+    end
+
+    let(:evidence_group) { 'aptc_csr_credit' }
+    let(:inactive) { false }
+    let(:status) { :verified }
+    let(:is_action_needed) { false }
+
+    before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).and_call_original
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:verification_due_on_options).and_return(feature_enabled)
+      allow(helper).to receive(:pundit_allow).with(HbxProfile, :can_extend_due_date?).and_return(pundit_auth)
+    end
+
+    let(:feature_enabled) { false }
+    let(:pundit_auth) { false }
+
+    subject(:actions) { helper.build_evidence_admin_actions_list_aptc_csr(evidence_double) }
+
+    context "when evidence group is ridp" do
+      let(:evidence_group) { 'ridp' }
+      it { expect(actions).to eq([]) }
+    end
+
+    context "when evidence is inactive" do
+      let(:inactive) { true }
+      it { expect(actions).to eq(['View History']) }
+    end
+
+    context "when no rejections (feature disabled, status not outstanding)" do
+      it { expect(actions).to match_array(['Call HUB', 'Verify', 'Reject', 'View History', 'Extend']) }
+    end
+
+    context "when status is :outstanding" do
+      let(:status) { :outstanding }
+      it "removes Reject" do
+        expect(actions).to match_array(['Call HUB', 'Verify', 'View History', 'Extend'])
+        expect(actions).not_to include('Reject')
+      end
+    end
+
+    context "when feature enabled and NOT action needed (remove Extend)" do
+      let(:feature_enabled) { true }
+      let(:is_action_needed) { false }
+      it "removes Extend only" do
+        expect(actions).to match_array(['Call HUB', 'Verify', 'Reject', 'View History'])
+        expect(actions).not_to include('Extend')
+      end
+    end
+
+    context "when feature enabled and action needed but NOT authorized (remove Extend)" do
+      let(:feature_enabled) { true }
+      let(:is_action_needed) { true }
+      let(:pundit_auth) { false }
+      it "removes Extend" do
+        expect(actions).to match_array(['Call HUB', 'Verify', 'Reject', 'View History'])
+      end
+    end
+
+    context "when feature enabled, action needed, and authorized (keep Extend)" do
+      let(:feature_enabled) { true }
+      let(:is_action_needed) { true }
+      let(:pundit_auth) { true }
+      it "keeps Extend" do
+        expect(actions).to match_array(['Call HUB', 'Verify', 'Reject', 'View History', 'Extend'])
+      end
+    end
+
+    context "when both status :outstanding and Extend removal condition met" do
+      let(:status) { :outstanding }
+      let(:feature_enabled) { true }
+      let(:is_action_needed) { false }
+      it "removes Reject and Extend" do
+        expect(actions).to match_array(['Call HUB', 'Verify', 'View History'])
+      end
+    end
+  end
+
   describe "#documents_list" do
     shared_examples_for "documents uploaded for one verification type" do |v_type, docs, result|
       context "#{v_type}" do

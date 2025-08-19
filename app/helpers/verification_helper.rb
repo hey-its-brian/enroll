@@ -421,6 +421,7 @@ module VerificationHelper
   end
 
   def build_evidence_admin_actions_list_aptc_csr(evidence)
+    return [] if evidence.evidence_group == 'ridp'
     return [Eligibilities::Evidence::VIEW_HISTORY] if evidence.inactive
 
     rejections = []
