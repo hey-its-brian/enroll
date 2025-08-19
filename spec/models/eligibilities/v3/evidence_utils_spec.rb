@@ -16,6 +16,7 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
   let(:dummy_evidence) { DummyEvidence.new current_state: :pending }
   let(:today) { Date.today }
   let(:now) { Time.now }
+  let(:call_type) { 'application_determination' }
 
   before do
     allow(Date).to receive(:today).and_return(today)
@@ -219,416 +220,504 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
     let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
     let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
     let(:primary_applicant) { family.primary_applicant }
-    let(:faa_application) do
-      FactoryBot.create(
-        :financial_assistance_application,
-        family_id: family.id,
-        aasm_state: 'determined',
-        submitted_at: Time.now,
-        assistance_year: TimeKeeper.date_of_record.year
-      )
-    end
 
-    let(:applicant) do
-      FactoryBot.create(
-        :financial_assistance_applicant,
-        family_member_id: primary_applicant.id,
-        person_hbx_id: person.hbx_id,
-        application: faa_application
-      )
-    end
-
-    let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
-    let(:citizenship_evidence) { FactoryBot.create(:citizenship_evidence, :rejected, eligibility: ivl_eligibility) }
-
-    let(:faa_application1) do
-      FactoryBot.create(
-        :financial_assistance_application,
-        family_id: family.id,
-        aasm_state: 'determined',
-        submitted_at: Time.now,
-        assistance_year: TimeKeeper.date_of_record.year + 1,
-        predecessor_id: faa_application.id
-      )
-    end
-
-    let(:applicant1) do
-      FactoryBot.create(
-        :financial_assistance_applicant,
-        family_member_id: primary_applicant.id,
-        person_hbx_id: person.hbx_id,
-        application: faa_application1
-      )
-    end
-    let(:ivl_eligibility1) { FactoryBot.create(:individual_market_eligibility, eligible: applicant1) }
-    let(:citizenship_evidence1) { FactoryBot.create(:citizenship_evidence, :rejected, eligibility: ivl_eligibility1) }
-
-
-    before do
-      citizenship_evidence
-      citizenship_evidence1
-    end
-
-    describe "#fetch_family" do
-      it "returns and memoizes the family" do
-        expect(citizenship_evidence.fetch_family).to eq(family)
-        expect(citizenship_evidence.fetch_family).to eq(family) # memoized
-      end
-
-      context "when eligibility chain is broken" do
-        before { allow(citizenship_evidence).to receive(:eligibility).and_return(nil) }
-
-        it "returns nil" do
-          expect(citizenship_evidence.fetch_family).to be_nil
-        end
-      end
-    end
-
-    describe "#fetch_last_determined_application" do
-      it "returns the last determined application" do
-        expect(citizenship_evidence1.fetch_last_determined_application).to eq(faa_application)
-      end
-
-      context "when family is nil" do
-        before { allow(citizenship_evidence1).to receive(:fetch_family).and_return(nil) }
-
-        it "returns nil" do
-          expect(citizenship_evidence1.fetch_last_determined_application).to be_nil
-        end
-      end
-    end
-
-    describe "#fetch_last_determined_applicant" do
-      it "returns the matching applicant" do
-        expect(citizenship_evidence1.fetch_last_determined_applicant).to eq(applicant)
-      end
-
-      context "when no family_member_id is available" do
-        before do
-          allow(applicant1).to receive(:family_member_id).and_return(nil)
-        end
-
-        it "returns nil" do
-          expect(citizenship_evidence1.fetch_last_determined_applicant).to be_nil
-        end
-      end
-
-      context "when application is nil" do
-        before { allow(citizenship_evidence1).to receive(:fetch_last_determined_application).and_return(nil) }
-
-        it "returns nil" do
-          expect(citizenship_evidence1.fetch_last_determined_applicant).to be_nil
-        end
-      end
-    end
-
-    describe "#fetch_last_determined_evidence" do
-      it "returns the matching evidence" do
-        expect(citizenship_evidence1.fetch_last_determined_evidence).to eq(citizenship_evidence)
-      end
-
-      context "when applicant is nil" do
-        before { allow(citizenship_evidence1).to receive(:fetch_last_determined_applicant).and_return(nil) }
-
-        it "returns nil" do
-          expect(citizenship_evidence1.fetch_last_determined_evidence).to be_nil
-        end
-      end
-
-      context "when target_eligibility is nil" do
-        before { applicant.eligibilities.delete_all }
-
-        it "returns nil" do
-          expect(citizenship_evidence1.fetch_last_determined_evidence).to be_nil
-        end
-      end
-    end
-
-    describe "#determine_outstanding_state" do
-      context "when evidence is IVL, previous evidence is verified, and demographics changed" do
-        before do
-          citizenship_evidence.current_state = :verified
-          citizenship_evidence.save
-          allow(citizenship_evidence1).to receive(:demographics_changed?).and_return(true)
-        end
-
-        it "calls copied_verified" do
-          citizenship_evidence1.determine_outstanding_state('application_determination')
-          expect(citizenship_evidence1.current_state).to eq(:verified)
-          expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_verified')
-        end
-      end
-
-      context "when evidence is not IVL" do
-        let(:aptc_csr_eligibility)  { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
-        let(:esi_evidence) { FactoryBot.create(:esi_mec_evidence, :pending, eligibility: aptc_csr_eligibility) }
-        let(:aptc_csr_eligibility1)  { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant1) }
-        let(:esi_evidence1) { FactoryBot.create(:esi_mec_evidence, :pending, eligibility: aptc_csr_eligibility1) }
-
-        it "calls eligible_state" do
-          esi_evidence1.determine_outstanding_state('application_determination')
-          expect(esi_evidence1.current_state).to eq(:negative_response_received)
-        end
-      end
-
-      context "when previous evidence is not verified" do
-        it "calls eligible_state" do
-          citizenship_evidence1.determine_outstanding_state('application_determination')
-          expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
-        end
-      end
-    end
-
-    describe "#demographics_changed?" do
-      context "when previous applicant exists" do
-        before do
-          allow(applicant1).to receive(:name_changed?).with(applicant).and_return(false)
-          allow(applicant1).to receive(:identity_info_changed?).with(applicant).and_return(false)
-          allow(applicant1).to receive(:citizen_status_changed?).with(applicant).and_return(false)
-          allow(applicant1).to receive(:indian_tribe_changed?).with(applicant).and_return(false)
-        end
-
-        it "returns false when no demographics changed" do
-          expect(citizenship_evidence1.demographics_changed?).to be false
-        end
-
-        it "returns true when name changed" do
-          allow(applicant1).to receive(:name_changed?).with(applicant).and_return(true)
-          expect(citizenship_evidence1.demographics_changed?).to be true
-        end
-
-        it "returns true when identity info changed" do
-          allow(applicant1).to receive(:identity_info_changed?).with(applicant).and_return(true)
-          expect(citizenship_evidence1.demographics_changed?).to be true
-        end
-
-        it "returns true when citizen status changed" do
-          allow(applicant1).to receive(:citizen_status_changed?).with(applicant).and_return(true)
-          expect(citizenship_evidence1.demographics_changed?).to be true
-        end
-
-        it "returns true when indian tribe changed" do
-          allow(applicant1).to receive(:indian_tribe_changed?).with(applicant).and_return(true)
-          expect(citizenship_evidence1.demographics_changed?).to be true
-        end
-      end
-
-      context "when previous applicant does not exist" do
-        before { allow(citizenship_evidence1).to receive(:fetch_last_determined_applicant).and_return(nil) }
-
-        it "returns false" do
-          expect(citizenship_evidence1.demographics_changed?).to be false
-        end
-      end
-    end
-
-    describe "#copied_verified" do
-      context "when can move to verified" do
-        it "moves to verified and adds history" do
-          citizenship_evidence1.copied_verified
-          expect(citizenship_evidence1.current_state).to eq(:verified)
-        end
-      end
-
-      context "when cannot move to verified" do
-        before { allow(citizenship_evidence1).to receive(:can_move_to_verified?).and_return(false) }
-
-        it "does not move to verified" do
-          present_state = citizenship_evidence1.current_state
-          citizenship_evidence1.copied_verified
-          expect(citizenship_evidence1.current_state).to eq(present_state)
-        end
-      end
-    end
-
-    describe "#eligible_state" do
+    shared_examples 'evidence state transitions' do
       before do
-        citizenship_evidence1.current_state = :outstanding
-        citizenship_evidence1.save
+        citizenship_evidence
+        citizenship_evidence1
       end
 
-      context "when ROP is in progress" do
+      describe "#fetch_family" do
+        it "returns and memoizes the family" do
+          expect(citizenship_evidence.fetch_family).to eq(family)
+          expect(citizenship_evidence.fetch_family).to eq(family) # memoized
+        end
+
+        context "when eligibility chain is broken" do
+          before { allow(citizenship_evidence).to receive(:eligibility).and_return(nil) }
+
+          it "returns nil" do
+            expect(citizenship_evidence.fetch_family).to be_nil
+          end
+        end
+      end
+
+      describe "#fetch_last_determined_application" do
+        it "returns the last determined application" do
+          expect(citizenship_evidence1.fetch_last_determined_application(call_type)).to eq(previous_application)
+        end
+
+        context "when family is nil" do
+          before { allow(citizenship_evidence1).to receive(:fetch_family).and_return(nil) }
+
+          it "returns nil" do
+            expect(citizenship_evidence1.fetch_last_determined_application(call_type)).to be_nil
+          end
+        end
+      end
+
+      describe "#fetch_last_determined_applicant" do
+        it "returns the matching applicant" do
+          expect(citizenship_evidence1.fetch_last_determined_applicant(call_type)).to eq(previous_applicant)
+        end
+
+        context "when no family_member_id is available" do
+          before do
+            allow(current_applicant).to receive(:family_member_id).and_return(nil)
+          end
+
+          it "returns nil" do
+            expect(citizenship_evidence1.fetch_last_determined_applicant(call_type)).to be_nil
+          end
+        end
+
+        context "when application is nil" do
+          before { allow(citizenship_evidence1).to receive(:fetch_last_determined_application).and_return(nil) }
+
+          it "returns nil" do
+            expect(citizenship_evidence1.fetch_last_determined_applicant(call_type)).to be_nil
+          end
+        end
+      end
+
+      describe "#fetch_last_determined_evidence" do
+        it "returns the matching evidence" do
+          expect(citizenship_evidence1.fetch_last_determined_evidence(call_type)).to eq(citizenship_evidence)
+        end
+
+        context "when applicant is nil" do
+          before { allow(citizenship_evidence1).to receive(:fetch_last_determined_applicant).and_return(nil) }
+
+          it "returns nil" do
+            expect(citizenship_evidence1.fetch_last_determined_evidence(call_type)).to be_nil
+          end
+        end
+
+        context "when target_eligibility is nil" do
+          before { previous_applicant.eligibilities.delete_all }
+
+          it "returns nil" do
+            expect(citizenship_evidence1.fetch_last_determined_evidence(call_type)).to be_nil
+          end
+        end
+      end
+
+      describe "#determine_outstanding_state" do
+        context "when evidence is IVL, previous evidence is verified, and demographics changed" do
+          before do
+            citizenship_evidence.current_state = :verified
+            citizenship_evidence.save
+            allow(citizenship_evidence1).to receive(:demographics_changed?).and_return(true)
+          end
+
+          it "calls copied_verified" do
+            citizenship_evidence1.determine_outstanding_state('application_determination')
+            expect(citizenship_evidence1.current_state).to eq(:verified)
+            expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_verified')
+          end
+        end
+
+        context "when evidence is not IVL" do
+          let(:aptc_csr_eligibility)  { FactoryBot.create(:aptc_csr_eligibility, eligible: previous_applicant) }
+          let(:esi_evidence) { FactoryBot.create(:esi_mec_evidence, :pending, eligibility: aptc_csr_eligibility) }
+          let(:aptc_csr_eligibility1)  { FactoryBot.create(:aptc_csr_eligibility, eligible: current_applicant) }
+          let(:esi_evidence1) { FactoryBot.create(:esi_mec_evidence, :pending, eligibility: aptc_csr_eligibility1) }
+
+          it "calls eligible_state" do
+            esi_evidence1.determine_outstanding_state('application_determination')
+            expect(esi_evidence1.current_state).to eq(:negative_response_received)
+          end
+        end
+
+        context "when previous evidence is not verified" do
+          it "calls eligible_state" do
+            citizenship_evidence1.determine_outstanding_state('application_determination')
+            expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
+          end
+        end
+      end
+
+      describe "#demographics_changed?" do
+        context "when previous applicant exists" do
+          before do
+            allow(current_applicant).to receive(:name_changed?).with(previous_applicant).and_return(false)
+            allow(current_applicant).to receive(:identity_info_changed?).with(previous_applicant).and_return(false)
+            allow(current_applicant).to receive(:citizen_status_changed?).with(previous_applicant).and_return(false)
+            allow(current_applicant).to receive(:indian_tribe_changed?).with(previous_applicant).and_return(false)
+          end
+
+          it "returns false when no demographics changed" do
+            expect(citizenship_evidence1.demographics_changed?(call_type)).to be false
+          end
+
+          it "returns true when name changed" do
+            allow(current_applicant).to receive(:name_changed?).with(previous_applicant).and_return(true)
+            expect(citizenship_evidence1.demographics_changed?(call_type)).to be true
+          end
+
+          it "returns true when identity info changed" do
+            allow(current_applicant).to receive(:identity_info_changed?).with(previous_applicant).and_return(true)
+            expect(citizenship_evidence1.demographics_changed?(call_type)).to be true
+          end
+
+          it "returns true when citizen status changed" do
+            allow(current_applicant).to receive(:citizen_status_changed?).with(previous_applicant).and_return(true)
+            expect(citizenship_evidence1.demographics_changed?(call_type)).to be true
+          end
+
+          it "returns true when indian tribe changed" do
+            allow(current_applicant).to receive(:indian_tribe_changed?).with(previous_applicant).and_return(true)
+            expect(citizenship_evidence1.demographics_changed?(call_type)).to be true
+          end
+        end
+
+        context "when previous applicant does not exist" do
+          before { allow(citizenship_evidence1).to receive(:fetch_last_determined_applicant).and_return(nil) }
+
+          it "returns false" do
+            expect(citizenship_evidence1.demographics_changed?(call_type)).to be false
+          end
+        end
+      end
+
+      describe "#copied_verified" do
+        context "when can move to verified" do
+          it "moves to verified and adds history" do
+            citizenship_evidence1.copied_verified
+            expect(citizenship_evidence1.current_state).to eq(:verified)
+          end
+        end
+
+        context "when cannot move to verified" do
+          before { allow(citizenship_evidence1).to receive(:can_move_to_verified?).and_return(false) }
+
+          it "does not move to verified" do
+            present_state = citizenship_evidence1.current_state
+            citizenship_evidence1.copied_verified
+            expect(citizenship_evidence1.current_state).to eq(present_state)
+          end
+        end
+      end
+
+      describe "#eligible_state" do
         before do
-          allow(citizenship_evidence1).to receive(:rop_in_progress?).and_return(true)
-          allow(citizenship_evidence1).to receive(:can_move_to_rejected?).and_return(true)
+          citizenship_evidence1.current_state = :outstanding
+          citizenship_evidence1.save
         end
 
-        it "calls rop_eligible_state" do
-          citizenship_evidence1.eligible_state
-          citizenship_evidence1.save
-          expect(citizenship_evidence1.current_state).to eq(citizenship_evidence.current_state)
-          expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_rejected')
+        context "when ROP is in progress" do
+          before do
+            allow(citizenship_evidence1).to receive(:rop_in_progress?).and_return(true)
+            allow(citizenship_evidence1).to receive(:can_move_to_rejected?).and_return(true)
+          end
+
+          it "calls rop_eligible_state" do
+            citizenship_evidence1.eligible_state(call_type)
+            citizenship_evidence1.save
+            expect(citizenship_evidence1.current_state).to eq(citizenship_evidence.current_state)
+            expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_rejected')
+          end
+        end
+
+        context "when ROP is not in progress" do
+          before { allow(citizenship_evidence1).to receive(:rop_in_progress?).and_return(false) }
+
+          it "calls non_rop_eligible_state" do
+            citizenship_evidence1.eligible_state(call_type)
+            citizenship_evidence1.save
+            expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
+          end
         end
       end
 
-      context "when ROP is not in progress" do
-        before { allow(citizenship_evidence1).to receive(:rop_in_progress?).and_return(false) }
+      describe "#rop_in_progress?" do
+        context "when previous evidence exists with valid ROP state and future due date" do
+          before do
+            citizenship_evidence.current_state = :review
+            citizenship_evidence.due_on = today + 10.days
+            citizenship_evidence.save
+          end
 
-        it "calls non_rop_eligible_state" do
-          citizenship_evidence1.eligible_state
-          citizenship_evidence1.save
-          expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
+          it "returns true" do
+            expect(citizenship_evidence1.rop_in_progress?(call_type)).to be true
+          end
+        end
+
+        context "when previous evidence does not exist" do
+          before { allow(citizenship_evidence1).to receive(:fetch_last_determined_evidence).and_return(nil) }
+
+          it "returns false" do
+            expect(citizenship_evidence1.rop_in_progress?(call_type)).to be false
+          end
+        end
+
+        context "when state is not ROP in progress" do
+          before do
+            citizenship_evidence.current_state = :verified
+            citizenship_evidence.save
+          end
+
+          it "returns false" do
+            expect(citizenship_evidence1.rop_in_progress?(call_type)).to be false
+          end
+        end
+
+        context "when due date is in the past" do
+          before do
+            citizenship_evidence.current_state = :review
+            citizenship_evidence.due_on = today - 5.days
+            citizenship_evidence.save
+          end
+
+          it "returns false" do
+            expect(citizenship_evidence1.rop_in_progress?(call_type)).to be false
+          end
+        end
+
+        context "when due_on is nil" do
+          before do
+            citizenship_evidence.current_state = :review
+            citizenship_evidence.due_on = nil
+            citizenship_evidence.save
+          end
+
+          it "returns false" do
+            expect(citizenship_evidence1.rop_in_progress?(call_type)).to be false
+          end
+        end
+
+        context "when state is nil" do
+          before { allow(citizenship_evidence1).to receive(:prev_evidence_state).and_return(nil) }
+
+          it "returns false" do
+            expect(citizenship_evidence1.rop_in_progress?(call_type)).to be false
+          end
+        end
+      end
+
+      describe "#rop_eligible_state" do
+        context "when previous evidence is in review state" do
+          before do
+            citizenship_evidence.current_state = :review
+            citizenship_evidence.due_on = today + 5.days
+            citizenship_evidence.save
+          end
+
+          it "calls copied_review" do
+            citizenship_evidence1.rop_eligible_state(call_type)
+            citizenship_evidence1.save
+            expect(citizenship_evidence1.current_state).to eq(:review)
+            expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_review')
+          end
+        end
+
+        context "when previous evidence is in outstanding state" do
+          before do
+            citizenship_evidence.current_state = :outstanding
+            citizenship_evidence.due_on = today + 5.days
+            citizenship_evidence.save
+          end
+
+          it "calls copied_outstanding" do
+            citizenship_evidence1.rop_eligible_state(call_type)
+            citizenship_evidence1.save
+            expect(citizenship_evidence1.current_state).to eq(:outstanding)
+            expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_outstanding')
+          end
+        end
+
+        context "when previous evidence is in rejected state" do
+          before do
+            citizenship_evidence.due_on = today + 5.days
+            citizenship_evidence.save
+            citizenship_evidence1.update_attributes(current_state: :pending)
+            allow(citizenship_evidence1).to receive(:can_move_to_rejected?).and_return(true)
+          end
+
+          it "calls copied_rejected" do
+            citizenship_evidence1.rop_eligible_state(call_type)
+            citizenship_evidence1.save
+            expect(citizenship_evidence1.current_state).to eq(:rejected)
+            expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_rejected')
+          end
+        end
+
+        context "when previous evidence is in unexpected state" do
+          before do
+            citizenship_evidence.current_state = :verified
+            citizenship_evidence.save
+          end
+
+          it "logs a warning" do
+            expect(Rails.logger).to receive(:warn).with("Unexpected state in rop_eligible_state: verified")
+            citizenship_evidence1.rop_eligible_state(call_type)
+          end
+        end
+
+        context "when previous evidence does not exist" do
+          before { allow(citizenship_evidence1).to receive(:fetch_last_determined_evidence).and_return(nil) }
+
+          it "returns without action" do
+            present_state = citizenship_evidence1.current_state
+            citizenship_evidence1.rop_eligible_state(call_type)
+            expect(citizenship_evidence1.current_state).to eq(present_state)
+          end
+        end
+      end
+
+      describe "#non_rop_eligible_state" do
+        context "when person is not found" do
+          before { allow(citizenship_evidence1.eligibility.eligible).to receive(:find_person).and_return(nil) }
+
+          it "moves to negative_response_received" do
+            citizenship_evidence1.non_rop_eligible_state(call_type)
+            expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
+          end
+        end
+
+        context 'when person has active enrollment' do
+          before do
+            allow(EnrollRegistry).to receive(:feature_enabled?)
+              .with(:set_due_date_upon_response_from_hub).and_return(true)
+            allow(ivl_eligibility1.eligible).to receive(:find_person).and_return(person)
+            allow(family).to receive(:person_has_an_active_enrollment?).and_return(true)
+            allow(person).to receive(:families).and_return([family])
+          end
+
+          it "moves current_state to 'outstanding'" do
+            citizenship_evidence1.non_rop_eligible_state(call_type)
+            expect(citizenship_evidence1.current_state).to eq(:outstanding)
+          end
+
+          context 'outstanding state with due date' do
+            it 'updates to the correct date if not a bulk call' do
+              expected_due_date = (today + EnrollRegistry[:verification_document_due_in_days].item)
+
+              citizenship_evidence1.non_rop_eligible_state(call_type)
+              expect(citizenship_evidence1.due_on).to eq(expected_due_date)
+            end
+
+            it 'updates the due_date_type and due_on to the correct date if it is a bulk call' do
+              expected_due_date = (today + EnrollRegistry[:bulk_call_verification_due_in_days].item)
+
+              citizenship_evidence1.non_rop_eligible_state('bulk_call')
+              expect(citizenship_evidence1.due_on).to eq(expected_due_date)
+              expect(citizenship_evidence1.due_on_type).to eq('bulk_response_from_hub')
+            end
+          end
+        end
+
+        context "when person has no active enrollment" do
+          before do
+            allow(EnrollRegistry).to receive(:feature_enabled?)
+              .with(:set_due_date_upon_response_from_hub).and_return(false)
+            allow(ivl_eligibility1.eligible).to receive(:find_person).and_return(person)
+          end
+
+          it "moves to negative_response_received" do
+            citizenship_evidence1.non_rop_eligible_state(call_type)
+            expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
+          end
         end
       end
     end
 
-    describe "#rop_in_progress?" do
-      context "when previous evidence exists with valid ROP state and future due date" do
-        before do
-          citizenship_evidence.current_state = :review
-          citizenship_evidence.due_on = today + 10.days
-          citizenship_evidence.save
-        end
-
-        it "returns true" do
-          expect(citizenship_evidence1.rop_in_progress?).to be true
-        end
+    context 'when evidence is in an faa application' do
+      let(:previous_application) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          aasm_state: 'determined',
+          submitted_at: Time.now,
+          assistance_year: TimeKeeper.date_of_record.year
+        )
       end
 
-      context "when previous evidence does not exist" do
-        before { allow(citizenship_evidence1).to receive(:fetch_last_determined_evidence).and_return(nil) }
-
-        it "returns false" do
-          expect(citizenship_evidence1.rop_in_progress?).to be false
-        end
+      let(:previous_applicant) do
+        FactoryBot.create(
+          :financial_assistance_applicant,
+          family_member_id: primary_applicant.id,
+          person_hbx_id: person.hbx_id,
+          application: previous_application
+        )
       end
 
-      context "when state is not ROP in progress" do
-        before do
-          citizenship_evidence.current_state = :verified
-          citizenship_evidence.save
-        end
+      let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: previous_applicant) }
+      let(:citizenship_evidence) { FactoryBot.create(:citizenship_evidence, :rejected, eligibility: ivl_eligibility) }
 
-        it "returns false" do
-          expect(citizenship_evidence1.rop_in_progress?).to be false
-        end
+      let(:current_application) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          aasm_state: 'determined',
+          submitted_at: Time.now,
+          assistance_year: TimeKeeper.date_of_record.year + 1,
+          predecessor_id: previous_application.id
+        )
       end
 
-      context "when due date is in the past" do
-        before do
-          citizenship_evidence.current_state = :review
-          citizenship_evidence.due_on = today - 5.days
-          citizenship_evidence.save
-        end
-
-        it "returns false" do
-          expect(citizenship_evidence1.rop_in_progress?).to be false
-        end
+      let(:current_applicant) do
+        FactoryBot.create(
+          :financial_assistance_applicant,
+          family_member_id: primary_applicant.id,
+          person_hbx_id: person.hbx_id,
+          application: current_application
+        )
       end
+      let(:ivl_eligibility1) { FactoryBot.create(:individual_market_eligibility, eligible: current_applicant) }
+      let(:citizenship_evidence1) { FactoryBot.create(:citizenship_evidence, :rejected, eligibility: ivl_eligibility1) }
 
-      context "when due_on is nil" do
-        before do
-          citizenship_evidence.current_state = :review
-          citizenship_evidence.due_on = nil
-          citizenship_evidence.save
-        end
-
-        it "returns false" do
-          expect(citizenship_evidence1.rop_in_progress?).to be false
-        end
-      end
-
-      context "when state is nil" do
-        before { allow(citizenship_evidence1).to receive(:prev_evidence_state).and_return(nil) }
-
-        it "returns false" do
-          expect(citizenship_evidence1.rop_in_progress?).to be false
-        end
-      end
+      include_examples 'evidence state transitions'
     end
 
-    describe "#rop_eligible_state" do
-      context "when previous evidence is in review state" do
-        before do
-          citizenship_evidence.current_state = :review
-          citizenship_evidence.due_on = today + 5.days
-          citizenship_evidence.save
-        end
-
-        it "calls copied_review" do
-          citizenship_evidence1.rop_eligible_state
-          citizenship_evidence1.save
-          expect(citizenship_evidence1.current_state).to eq(:review)
-          expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_review')
-        end
+    context 'when evidence is embedded in a qhp application' do
+      let(:previous_application) do
+        FactoryBot.create(
+          :individual_market_application,
+          :determined,
+          family: family,
+          submitted_at: Time.now,
+          assistance_year: TimeKeeper.date_of_record.year
+        )
       end
 
-      context "when previous evidence is in outstanding state" do
-        before do
-          citizenship_evidence.current_state = :outstanding
-          citizenship_evidence.due_on = today + 5.days
-          citizenship_evidence.save
-        end
-
-        it "calls copied_outstanding" do
-          citizenship_evidence1.rop_eligible_state
-          citizenship_evidence1.save
-          expect(citizenship_evidence1.current_state).to eq(:outstanding)
-          expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_outstanding')
-        end
+      let(:previous_applicant) do
+        FactoryBot.create(
+          :individual_market_applicant,
+          :with_demographics,
+          application: previous_application,
+          family_member_id: primary_applicant.id,
+          person_name: { given_name: primary_applicant.first_name, family_name: primary_applicant.last_name }
+        )
       end
 
-      context "when previous evidence is in rejected state" do
-        before do
-          citizenship_evidence.due_on = today + 5.days
-          citizenship_evidence.save
-          citizenship_evidence1.update_attributes(current_state: :pending)
-          allow(citizenship_evidence1).to receive(:can_move_to_rejected?).and_return(true)
-        end
+      let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: previous_applicant) }
+      let(:citizenship_evidence) { FactoryBot.create(:citizenship_evidence, :rejected, eligibility: ivl_eligibility) }
 
-        it "calls copied_rejected" do
-          citizenship_evidence1.rop_eligible_state
-          citizenship_evidence1.save
-          expect(citizenship_evidence1.current_state).to eq(:rejected)
-          expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_rejected')
-        end
+      let(:current_application) do
+        FactoryBot.create(
+          :individual_market_application,
+          :determined,
+          family: family,
+          submitted_at: Time.now,
+          assistance_year: TimeKeeper.date_of_record.year + 1,
+          predecessor_id: previous_application.id
+        )
       end
 
-      context "when previous evidence is in unexpected state" do
-        before do
-          citizenship_evidence.current_state = :verified
-          citizenship_evidence.save
-        end
-
-        it "logs a warning" do
-          expect(Rails.logger).to receive(:warn).with("Unexpected state in rop_eligible_state: verified")
-          citizenship_evidence1.rop_eligible_state
-        end
+      let(:current_applicant) do
+        FactoryBot.create(
+          :individual_market_applicant,
+          :with_demographics,
+          application: current_application,
+          family_member_id: primary_applicant.id,
+          person_name: { given_name: primary_applicant.first_name, family_name: primary_applicant.last_name }
+        )
       end
+      let(:ivl_eligibility1) { FactoryBot.create(:individual_market_eligibility, eligible: current_applicant) }
+      let(:citizenship_evidence1) { FactoryBot.create(:citizenship_evidence, :rejected, eligibility: ivl_eligibility1) }
 
-      context "when previous evidence does not exist" do
-        before { allow(citizenship_evidence1).to receive(:fetch_last_determined_evidence).and_return(nil) }
-
-        it "returns without action" do
-          present_state = citizenship_evidence1.current_state
-          citizenship_evidence1.rop_eligible_state
-          expect(citizenship_evidence1.current_state).to eq(present_state)
-        end
-      end
-    end
-
-    describe "#non_rop_eligible_state" do
-      context "when person is not found" do
-        before { allow(citizenship_evidence1.eligibility.eligible).to receive(:find_person).and_return(nil) }
-
-        it "moves to negative_response_received" do
-          citizenship_evidence1.non_rop_eligible_state
-          expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
-        end
-      end
-
-      context "when person has no active enrollment" do
-        before do
-          allow(EnrollRegistry).to receive(:feature_enabled?)
-            .with(:set_due_date_upon_response_from_hub).and_return(false)
-          allow(ivl_eligibility1.eligible).to receive(:find_person).and_return(person)
-        end
-
-        it "moves to negative_response_received" do
-          citizenship_evidence1.non_rop_eligible_state
-          expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
-        end
-      end
+      include_examples 'evidence state transitions'
     end
   end
 end

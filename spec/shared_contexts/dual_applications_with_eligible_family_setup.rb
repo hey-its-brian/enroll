@@ -2,16 +2,18 @@
 
 # shared context for setting up both DMF application types
 RSpec.shared_context 'dual applications with eligible family setup' do
-  let(:encrypted_ssn) { SymmetricEncryption.encrypt(221_021_014) }
-  let(:encrypted_ssn2) { SymmetricEncryption.encrypt(221_031_015) }
   let!(:hbx_profile) { FactoryBot.create(:hbx_profile) }
   let!(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
-  let(:dob) { Date.today - 55.years }
+  let(:dob1) { Date.today - 55.years }
+  let(:dob2) { Date.today - 54.years }
 
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: primary_person) }
-  let(:primary_person) { FactoryBot.create(:person, :with_consumer_role, dob: dob, ssn: 221_021_014) }
-  let(:non_primary_person) { FactoryBot.create(:person, :with_consumer_role, dob: dob, ssn: 221_031_015) }
+  let(:primary_person) { FactoryBot.create(:person, :with_consumer_role, :with_ssn, dob: dob1) }
+  let(:non_primary_person) { FactoryBot.create(:person, :with_consumer_role, :with_ssn, dob: dob2) }
   let!(:non_primary_family_member) { FactoryBot.create(:family_member, person: non_primary_person, family: family) }
+
+  let(:encrypted_ssn) { SymmetricEncryption.encrypt(primary_person.ssn) }
+  let(:encrypted_ssn2) { SymmetricEncryption.encrypt(non_primary_family_member.ssn) }
 
   before do
     allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(true)
@@ -91,8 +93,10 @@ RSpec.shared_context 'dual applications with eligible family setup' do
                                                  family_name: non_primary_person.last_name
                                                })
                             ])
-    app.applicants.first.demographics.update!(encrypted_ssn: encrypted_ssn, no_ssn: false)
-    app.applicants.last.demographics.update!(encrypted_ssn: encrypted_ssn2, no_ssn: false)
+    app.applicants.first.demographics.update!(encrypted_ssn: encrypted_ssn, no_ssn: false, dob: primary_person.dob)
+    app.applicants.last.demographics.update!(encrypted_ssn: encrypted_ssn2, no_ssn: false, dob: non_primary_person.dob)
+    primary_person.update!(encrypted_ssn: encrypted_ssn)
+    non_primary_person.update!(encrypted_ssn: encrypted_ssn2)
     FactoryBot.create(:individual_market_immigration_information, applicant: app.applicants.first)
     FactoryBot.create(:individual_market_immigration_information, applicant: app.applicants.last)
     app.save!

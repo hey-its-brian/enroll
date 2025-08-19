@@ -148,10 +148,11 @@ module IndividualMarket
     end
 
     def find_person
+      ssn = SymmetricEncryption.decrypt(demographics.encrypted_ssn)
       match_criteria, records = ::Operations::People::Match.new.call({:dob => demographics.dob,
                                                                       :last_name => person_name.family_name,
                                                                       :first_name => person_name.given_name,
-                                                                      :ssn => demographics.encrypted_ssn})
+                                                                      :ssn => ssn})
       return unless records.present?
       return unless [:ssn_present, :dob_present].include?(match_criteria)
       return if match_criteria == :dob_present && demographics.encrypted_ssn.present? && records.first.ssn != demographics.encrypted_ssn

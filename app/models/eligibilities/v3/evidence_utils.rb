@@ -107,8 +107,22 @@ module Eligibilities
           @latest_verification_history = verification_histories.newest.first
         end
 
+        def determine_outstanding_due_on_date(call_type)
+          if call_type == 'bulk_call'
+            schedule_verification_due_on_for_bulk_call
+          else
+            schedule_verification_due_on
+          end
+        end
+
         def schedule_verification_due_on
           verification_document_due = EnrollRegistry[:verification_document_due_in_days].item
+          TimeKeeper.date_of_record + verification_document_due.days
+        end
+
+        def schedule_verification_due_on_for_bulk_call
+          verification_document_due = EnrollRegistry[:bulk_call_verification_due_in_days].item
+          self.due_on_type = 'bulk_response_from_hub'
           TimeKeeper.date_of_record + verification_document_due.days
         end
 
@@ -174,16 +188,15 @@ module Eligibilities
         # @param hub_call [Boolean] Whether this is being called from a hub verification process (defaults to false)
         # @return [void]
         def determine_outstanding_state(call_type)
-          hub_call = call_type != 'application_determination'
           ivl_evidence_keys = ::Eligibilities::V3::IndividualMarketEligibility::EVIDENCES
-          prev_evidence = fetch_last_determined_evidence(hub_call: hub_call)
+          prev_evidence = fetch_last_determined_evidence(call_type)
 
           if ivl_evidence_keys.include?(key.to_s) &&
              prev_evidence&.verified? &&
-             demographics_changed?
+             demographics_changed?(call_type)
             copied_verified
           else
-            eligible_state(hub_call: hub_call)
+            eligible_state(call_type)
           end
         end
 
@@ -191,8 +204,8 @@ module Eligibilities
         # Compares name, identity information, citizen status, and Indian tribe information.
         #
         # @return [Boolean] true if any demographics have changed, false otherwise
-        def demographics_changed?
-          prev_applicant = fetch_last_determined_applicant
+        def demographics_changed?(call_type)
+          prev_applicant = fetch_last_determined_applicant(call_type)
           return false unless prev_applicant
           applicant = eligibility&.eligible
           applicant.name_changed?(prev_applicant) ||
@@ -220,19 +233,19 @@ module Eligibilities
         # Routes to either ROP-specific logic or non-ROP logic.
         #
         # @return [void]
-        def eligible_state(hub_call: false)
-          if rop_in_progress?(hub_call: hub_call)
-            rop_eligible_state(hub_call: hub_call)
+        def eligible_state(call_type)
+          if rop_in_progress?(call_type)
+            rop_eligible_state(call_type)
           else
-            non_rop_eligible_state
+            non_rop_eligible_state(call_type)
           end
         end
 
-        def rop_in_progress?(hub_call: false)
-          prev_evidence = fetch_last_determined_evidence(hub_call: hub_call)
+        def rop_in_progress?(call_type)
+          prev_evidence = fetch_last_determined_evidence(call_type)
           return false unless prev_evidence
 
-          state = prev_evidence_state
+          state = prev_evidence_state(call_type)
           return false unless state
 
           ROP_IN_PROGRESS_STATES.include?(state.to_sym) &&
@@ -240,8 +253,8 @@ module Eligibilities
             prev_evidence.due_on > TimeKeeper.date_of_record
         end
 
-        def rop_eligible_state(hub_call: false)
-          prev_evidence = fetch_last_determined_evidence(hub_call: hub_call)
+        def rop_eligible_state(call_type)
+          prev_evidence = fetch_last_determined_evidence(call_type)
           return unless prev_evidence
 
           case prev_evidence.current_state.to_s
@@ -263,31 +276,39 @@ module Eligibilities
         #  When evidence is in NRR
         #  # if enrolled, evidence should be in outstanding and new due date is assigned
         #  # if not enrolled, evidence should be in NRR and no due date
-        def non_rop_eligible_state
+        def non_rop_eligible_state(call_type)
           eligible = eligibility&.eligible
           person = eligible&.find_person
           return mark_as_negative_response_received unless person
 
-          is_enrolled = if Eligibilities::V3::AptcCsrEligibility::EVIDENCES.include?(key)
-                          family = fetch_family
-                          enrollments = HbxEnrollment.where(:aasm_state.in => HbxEnrollment::ENROLLED_STATUSES, family_id: family.id)
-                          eligible.enrolled_in_any_aptc_csr_enrollments?(enrollments)
-                        else
-                          person.families&.any? { |f| f.person_has_an_active_enrollment?(person) }
-                        end
+          is_enrolled = enrolled_for_non_rop?(eligible, person)
 
           if is_enrolled
+            self.due_on = determine_outstanding_due_on_date(call_type)
             assign_attributes(verification_outstanding: true, is_satisfied: false)
-            self.due_on = schedule_verification_due_on
+
+            # do not update state if evidence is alive_evidence and current_state is rejected
+            return if self.key == :alive_evidence && self.current_state == 'rejected'
+
             move_to_outstanding if can_move_to_outstanding?
           else
             mark_as_negative_response_received
           end
         end
 
-        def prev_evidence_state
+        def enrolled_for_non_rop?(eligible, person)
+          if Eligibilities::V3::AptcCsrEligibility::EVIDENCES.include?(key)
+            family = fetch_family
+            enrollments = HbxEnrollment.where(:aasm_state.in => HbxEnrollment::ENROLLED_STATUSES, family_id: family.id)
+            eligible.enrolled_in_any_aptc_csr_enrollments?(enrollments)
+          else
+            person.families&.any? { |f| f.person_has_an_active_enrollment?(person) }
+          end
+        end
+
+        def prev_evidence_state(call_type)
           family = fetch_family
-          prev_evidence = fetch_last_determined_evidence
+          prev_evidence = fetch_last_determined_evidence(call_type)
           return nil unless family && prev_evidence
 
           prev_evidence.current_state
@@ -357,22 +378,22 @@ module Eligibilities
           @current_app_id ||= eligibility&.eligible&.application&.id
         end
 
-        def fetch_last_determined_application(hub_call: false)
+        def fetch_last_determined_application(call_type)
           family = fetch_family
           return nil unless family
 
-          @fetch_last_determined_application ||= if hub_call
+          @fetch_last_determined_application ||= if ['hub_call', 'bulk_call'].include?(call_type)
                                                    eligibility&.eligible&.application
                                                  else
                                                    family.fetch_last_determined_application_from(current_app_id, 2025)
                                                  end
         end
 
-        def fetch_last_determined_applicant(hub_call: false)
+        def fetch_last_determined_applicant(call_type)
           family_member_id = eligibility.eligible.family_member_id
           return nil unless family_member_id
 
-          application = fetch_last_determined_application(hub_call: hub_call)
+          application = fetch_last_determined_application(call_type)
           return nil unless application
 
           @fetch_last_determined_applicant ||= application.applicants&.detect do |applicant|
@@ -380,8 +401,8 @@ module Eligibilities
           end
         end
 
-        def fetch_last_determined_evidence(hub_call: false)
-          applicant = fetch_last_determined_applicant(hub_call: hub_call)
+        def fetch_last_determined_evidence(call_type)
+          applicant = fetch_last_determined_applicant(call_type)
           return nil unless applicant
 
           target_eligibility = applicant.eligibilities.detect {|eli| eli.key == eligibility.key }

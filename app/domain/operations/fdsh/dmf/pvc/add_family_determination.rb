@@ -236,7 +236,7 @@ module Operations
               alive_evidence.mark_as_attested
             when :outstanding
               person.demographics_group.alive_status.update(is_deceased: true, date_of_death: alive_status_entity.date_of_death)
-              update_outstanding_alive_evidence(alive_evidence, person)
+              alive_evidence.determine_outstanding_state('bulk_call')
             end
 
             add_request_result(alive_evidence, alive_evidence_entity)
@@ -254,18 +254,6 @@ module Operations
           def add_verification_history(alive_evidence, alive_evidence_entity)
             verification_history = alive_evidence_entity.verification_histories.first
             alive_evidence.verification_histories.new(verification_history.to_h) if verification_history.present?
-          end
-
-          def update_outstanding_alive_evidence(alive_evidence, person)
-            verification_document_due = EnrollRegistry[:bulk_call_verification_due_in_days].item
-            today = TimeKeeper.date_of_record
-            attrs = { due_on: (today + verification_document_due.days), due_on_type: 'bulk_response_from_hub' }
-            alive_evidence.update_attributes(attrs)
-
-            return if alive_evidence.current_state == :rejected # do not change state if rejected
-
-            is_enrolled = person.families.any? { |f| f.person_has_an_active_enrollment?(person) }
-            is_enrolled ? alive_evidence.mark_as_outstanding : alive_evidence.mark_as_negative_response_received
           end
 
           # TODO: remove this method when qhp_application feature is fully implemented
