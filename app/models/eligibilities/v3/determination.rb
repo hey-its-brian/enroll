@@ -21,6 +21,14 @@ module Eligibilities
       include Mongoid::Document
       include Mongoid::Timestamps
 
+      VALID_V3_DETERMINATION_KEYS = %i[
+        aptc_determination
+        csr_determination
+        individual_market_determination
+        magi_medicaid_determination
+        magi_medicaid_chip_determination
+      ].freeze
+
       embedded_in :eligibility, class_name: 'Eligibilities::V3::Eligibility'
 
       # @!attribute bases
@@ -31,8 +39,12 @@ module Eligibilities
       #   @return [Boolean] Whether the applicant is eligible based on all bases being satisfied
       field :is_eligible, type: Boolean, default: false
 
+      # need a :key property to use with the eligibility service
+      field :key, type: Symbol
+
       validates :is_eligible, presence: true
       validate :unique_basis_kinds
+      validates :key, inclusion: { in: VALID_V3_DETERMINATION_KEYS, message: "%{value} is not a valid key" }
 
       private
 

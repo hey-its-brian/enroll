@@ -3,7 +3,7 @@
 require 'rails_helper'
 # require Rails.root.join('spec/shared_contexts/valid_cv3_application_setup.rb')
 
-RSpec.describe Operations::Fdsh::BuildAndValidateUqhpApplicationPayload, dbclean: :after_each do
+RSpec.describe Operations::IndividualMarket::Application::TransformToEntity, dbclean: :after_each do
   # include_context "valid cv3 application setup"
   let(:application) { FactoryBot.create(:individual_market_application, :with_primary, submitted_at: Time.current) }
 

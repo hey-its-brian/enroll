@@ -160,6 +160,11 @@ module IndividualMarket
       records.first
     end
 
+    # returns the age of the applicant as an integer
+    def age_of_applicant
+      age_on(TimeKeeper.date_of_record)
+    end
+
     # @!attribute age_on
     # @return [Integer] The age of the applicant on a given date
     def age_on(date)

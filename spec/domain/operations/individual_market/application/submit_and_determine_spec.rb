@@ -110,6 +110,15 @@ RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, db
         expect(family.active_household.hbx_enrollments.count).to eq(2)
         expect(family.active_household.hbx_enrollments.last.aasm_state).to eq('coverage_selected')
       end
+
+      context 'when attempting to send qhp notifications for a renewal application' do
+        it 'returns Success with no notifications message' do
+          application.update_attributes(is_renewal: true)
+          result = subject.send(:trigger_notifications, application)
+          expect(result).to be_success
+          expect(result.success).to eq('No notifications for renewals.')
+        end
+      end
     end
 
     context 'with an existing aptc enrollment' do
@@ -151,7 +160,6 @@ RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, db
         family.reload
         expect(family.active_household.hbx_enrollments.last.applied_aptc_amount).to eq(0)
       end
-
     end
   end
 end

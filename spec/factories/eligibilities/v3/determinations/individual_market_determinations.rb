@@ -5,6 +5,7 @@ FactoryBot.define do
     association :eligibility, factory: :aptc_csr_eligibility
 
     is_eligible { true }
+    key { :individual_market_determination }
 
     trait :with_basis do
       after(:build) do |determination|

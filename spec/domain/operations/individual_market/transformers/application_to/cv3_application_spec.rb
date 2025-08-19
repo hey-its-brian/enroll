@@ -22,6 +22,10 @@ RSpec.describe Operations::IndividualMarket::Transformers::ApplicationTo::Cv3App
   before do
     application.relationships << relationship
     application.attestation = attestation
+    applicant1.build_individual_market_eligibility
+    applicant2.build_individual_market_eligibility
+    applicant1.individual_market_eligibility.build_individual_market_determination
+    applicant2.individual_market_eligibility.build_individual_market_determination
     application.save
     @result = subject.call(application)
     @payload = @result.value!
@@ -70,6 +74,23 @@ RSpec.describe Operations::IndividualMarket::Transformers::ApplicationTo::Cv3App
 
         expect(demographics[:gender]).to eq(applicant1.demographics.gender.capitalize)
         expect(demographics[:dob]).to eq(applicant1.demographics.dob)
+      end
+
+      it 'transforms applicant determinations if present' do
+        eligibility1 = @payload[:applicants].first[:eligibilities].first
+        eligibility2 = @payload[:applicants].last[:eligibilities].first
+
+        expect(eligibility1).to be_a(Hash)
+        expect(eligibility2).to be_a(Hash)
+
+        expect(eligibility1[:determinations]).to be_an(Array)
+        expect(eligibility1[:determinations].size).to eq(1)
+
+        expect(eligibility2[:determinations]).to be_an(Array)
+        expect(eligibility2[:determinations].size).to eq(1)
+
+        expect(eligibility1[:determinations].first[:key]).to eq(:individual_market_determination)
+        expect(eligibility2[:determinations].first[:key]).to eq(:individual_market_determination)
       end
 
       it 'transforms relationships correctly' do

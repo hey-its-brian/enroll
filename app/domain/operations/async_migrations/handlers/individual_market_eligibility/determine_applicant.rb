@@ -30,8 +30,8 @@ module Operations
           end
 
           def build_determinations(applicant)
-            applicant.individual_market_eligibility.determinations.build({_type: "Eligibilities::V3::Determinations::IndividualMarketDetermination"})
-            applicant.individual_market_eligibility.determinations.build({_type: "Eligibilities::V3::Determinations::CsrDetermination"})
+            applicant.individual_market_eligibility.determinations.build({_type: "Eligibilities::V3::Determinations::IndividualMarketDetermination", key: :individual_market_determination})
+            applicant.individual_market_eligibility.determinations.build({_type: "Eligibilities::V3::Determinations::CsrDetermination", key: :csr_determination})
 
             Success(true)
           end

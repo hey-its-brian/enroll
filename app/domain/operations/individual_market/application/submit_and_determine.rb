@@ -24,10 +24,11 @@ module Operations
           applicant_results       = yield determine_applicants(application)
           _applicants             = yield build_evidences(applicant_results)
           determined_application  = yield determine_application(application)
+          _application_entity     = yield build_app_entity(application)
           _calls                  = yield call_hubs(application)
           _family                 = yield update_family(application)
           _enrollments            = yield generate_enrollments(application)
-
+          _notification           = yield trigger_notifications(application)
           Success(determined_application)
         end
 
@@ -115,9 +116,23 @@ module Operations
           Failure("An error occurred while determining the application: #{application.errors.full_messages.join(', ')}")
         end
 
+        # Builds the application entity required for verification services
+        #
+        # Uses the Fdsh BuildAndValidateApplicationPayload operation to create the
+        # standardized application entity representation needed by verification services.
+        #
+        # @param application [FinancialAssistance::Application] The application to build an entity from
+        # @return [Dry::Monads::Result::Success] Always returns success as the actual entity is stored in @application_entity
+        def build_app_entity(application)
+          @application_entity = Operations::IndividualMarket::Application::TransformToEntity.new.call(application)
+          return Failure("Failed to build application entity for #{application.id}, #{@application_entity.failure}") if @application_entity.failure?
+
+          Success(nil)
+        end
+
         # Calls the hubs for verifying the evidences of eligibilities of applicants for the application
         #
-        # @param application [IndividualMarket::Application] the individual market application
+        # @param application entity [IndividualMarket::Application] the individual market application
         #
         # @return [Dry::Monads::Result] Success with message or Failure with error message
         #
@@ -126,7 +141,8 @@ module Operations
           if application.is_renewal
             Success('No hub calls for renewals.')
           else
-            ::Operations::Eligibilities::V3::IndividualMarket::VerificationRequests.new.call(application: application)
+            params = { application: application, application_entity: @application_entity }
+            ::Operations::Eligibilities::V3::IndividualMarket::VerificationRequests.new.call(params)
           end
         end
 
@@ -160,6 +176,21 @@ module Operations
 
         def has_enrollments_to_generate?(application)
           application.family.active_household&.hbx_enrollments&.enrolled_and_renewal&.individual_market&.by_health&.by_year(application.assistance_year)&.any?
+        end
+
+        # Triggers qhp eligibility notifications the for all applicants in the application
+        #
+        # @param application [IndividualMarket::Application] the individual market application
+        # @param application_entity [AcaEntities::IndividualMarket::Application] the individual market application entity
+        #
+        # @return [Dry::Monads::Result] Success with message or Failure with error message
+        def trigger_notifications(application)
+          if application.is_renewal
+            Success('No notifications for renewals.')
+          else
+            params = { application: application, application_entity: @application_entity }
+            Operations::IndividualMarket::Application::TriggerQhpEligibilityNotices.new.call(params)
+          end
         end
       end
     end

@@ -102,14 +102,20 @@ module Eligibilities
 
       # Retrieves the QHP determination for this eligibility
       def qhp_determination
-        determinations.where(_type: 'Eligibilities::V3::Determinations::IndividualMarketDetermination').last
+        determinations.where(
+          _type: Eligibilities::V3::Determinations::IndividualMarketDetermination,
+          key: :individual_market_determination
+        ).last
       end
 
       # Retrieves the CSR determination for this eligibility
       #
       # @return [Eligibilities::V3::Determinations::CsrDetermination, nil] The CSR determination or nil if not found
       def csr_determination
-        determinations.where(_type: 'Eligibilities::V3::Determinations::CsrDetermination').last
+        determinations.where(
+          _type: Eligibilities::V3::Determinations::CsrDetermination,
+          key: :csr_determination
+        ).last
       end
 
       # Builds a new QHP determination for this eligibility
@@ -117,7 +123,8 @@ module Eligibilities
       # @return [Eligibilities::V3::Determinations::IndividualMarketDetermination] The new QHP determination
       def build_individual_market_determination
         self.determinations.build({
-                                    _type: Eligibilities::V3::Determinations::IndividualMarketDetermination
+                                    _type: Eligibilities::V3::Determinations::IndividualMarketDetermination,
+                                    key: :individual_market_determination
                                   })
       end
 
@@ -126,7 +133,8 @@ module Eligibilities
       # @return [Eligibilities::V3::Determinations::CsrDetermination] The new CSR determination
       def build_csr_determination
         self.determinations.build({
-                                    _type: Eligibilities::V3::Determinations::CsrDetermination
+                                    _type: Eligibilities::V3::Determinations::CsrDetermination,
+                                    key: :csr_determination
                                   })
       end
 

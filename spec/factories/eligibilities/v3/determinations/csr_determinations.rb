@@ -6,6 +6,7 @@ FactoryBot.define do
 
     is_eligible { true }
     csr_type { 'csr_73' }
+    key { :csr_determination }
 
     trait :with_csr_100 do
       csr_type { 'csr_100' }

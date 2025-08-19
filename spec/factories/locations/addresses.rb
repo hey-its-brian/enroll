@@ -5,10 +5,10 @@ FactoryBot.define do
     kind { 'home' }
     sequence(:address_1, 1111) { |n| "#{n} Test St NE" }
     sequence(:address_2, 111) { |n| "##{n}" }
-    city { 'Fairfield' }
+    city { 'Agawam' }
     state { Settings.aca.state_abbreviation }
-    zip { '04937' }
-    county { 'Somerset' }
+    zip { '01001' }
+    county { 'Hampden' }
 
     before(:create) do |address|
       ::BenefitMarkets::Locations::CountyZip.find_or_create_by!(

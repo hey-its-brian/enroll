@@ -25,12 +25,15 @@ module Operations
 
           # Processes verification requests for the given application
           #
-          # @param application [FinancialAssistance::Application] The application to process verifications for
+          # @param application [FinancialAssistance::Application, IndividualMarket::Application]
+          # -> The application to process verifications for, required
+          # @param application_entity [AcaEntities::MagiMedicaid::Application, AcaEntities::IndividualMarket::Application]
+          # -> The application entity to use for verification requests, optional
           # @return [Dry::Monads::Result::Success] On successful processing with the application
           # @return [Dry::Monads::Result::Failure] On processing failure with error message
-          def call(application:)
-            application = yield validate(application)
-            _app_entity = yield build_app_entity(application)
+          def call(params)
+            application = yield validate(params[:application])
+            _app_entity = yield build_app_entity(application, params[:application_entity])
             call_ssa_vlp(application)
 
             Success(application)
@@ -58,11 +61,13 @@ module Operations
           #
           # @param application [FinancialAssistance::Application] The application to build an entity from
           # @return [Dry::Monads::Result::Success] Always returns success as the actual entity is stored in @application_entity
-          def build_app_entity(application)
-            @application_entity = if application.is_a?(::FinancialAssistance::Application)
+          def build_app_entity(application, application_entity = nil)
+            @application_entity = if application_entity.present?
+                                    application_entity
+                                  elsif application.is_a?(::FinancialAssistance::Application)
                                     Operations::Fdsh::BuildAndValidateApplicationPayload.new.call(application)
                                   else
-                                    Operations::Fdsh::BuildAndValidateUqhpApplicationPayload.new.call(application)
+                                    Operations::IndividualMarket::Application::TransformToEntity.new.call(application)
                                   end
             Success(nil)
           end

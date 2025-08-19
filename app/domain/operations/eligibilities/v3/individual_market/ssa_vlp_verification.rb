@@ -123,7 +123,7 @@ module Operations
                      elsif @application.is_a?(::FinancialAssistance::Application)
                        Operations::Fdsh::BuildAndValidateApplicationPayload.new.call(@application)
                      else
-                       Operations::Fdsh::BuildAndValidateUqhpApplicationPayload.new.call(@application)
+                       Operations::IndividualMarket::Application::TransformToEntity.new.call(@application)
                      end
             if result.success?
               @request_transaction.json_payload = result.value!.to_h

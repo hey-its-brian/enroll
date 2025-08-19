@@ -9,7 +9,7 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::SubmitAndDe
   let(:primary_applicant) { family.primary_applicant }
 
   let(:renewal_application) { FactoryBot.create(:individual_market_application, :initial, :renewal, family_id: family.id) }
-  let(:renewal_applicant) { FactoryBot.create(:individual_market_applicant, application: renewal_application, family_member_id: primary_applicant.id) }
+  let(:renewal_applicant) { FactoryBot.create(:individual_market_applicant, :with_person_name, application: renewal_application, family_member_id: primary_applicant.id) }
   let(:renewal_demographics) do
     demo = FactoryBot.create(:individual_market_demographics, applicant: renewal_applicant)
     renewal_applicant.build_individual_market_eligibility
@@ -29,7 +29,7 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::SubmitAndDe
 
       let(:current_application) do
         application = FactoryBot.create(:individual_market_application, :determined, family_id: family.id)
-        applicant = FactoryBot.create(:individual_market_applicant, application: application, family_member_id: primary_applicant.id)
+        applicant = FactoryBot.create(:individual_market_applicant, :with_person_name, application: application, family_member_id: primary_applicant.id)
         FactoryBot.create(:individual_market_demographics, applicant: applicant)
         applicant.build_individual_market_eligibility
         applicant.build_individual_market_evidences

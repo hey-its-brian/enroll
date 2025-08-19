@@ -91,7 +91,9 @@ module Operations
                 is_applying_coverage: applicant.is_applying_coverage,
                 is_homeless: applicant.is_homeless,
                 addresses: addresses(applicant),
-                hbx_id: applicant.hbx_id
+                hbx_id: applicant.hbx_id,
+                contact_method: applicant.contact_method,
+                age_of_applicant: applicant.age_of_applicant
               }
 
               applicant_hash.merge!(immigration_information: immigration_information(applicant)) if applicant.immigration_information.present?
@@ -146,7 +148,8 @@ module Operations
             applicant.eligibilities.inject([]) do |result, eligibility|
               eligibility_hash = applicant.eligibilities.first.attributes.deep_symbolize_keys.slice(:key, :title, :description, :current_state, :is_satisfied,
                                                                                                     :determined_at, :is_disqualified, :disqualified_at, :disqualified_reason)
-              eligibility_hash[:evidences] = evidence(eligibility)
+              eligibility_hash[:evidences] = evidences(eligibility)
+              eligibility_hash[:determinations] = determinations(eligibility)
 
               result << eligibility_hash
               result
@@ -185,10 +188,35 @@ module Operations
           #
           # @param [Eligibilities::V3::Eligibility] eligibility The eligibility containing evidences
           # @return [Array<Hash>] Collection of transformed evidence hashes
-          def evidence(eligibility)
+          def evidences(eligibility)
             eligibility.evidences.inject([]) do |result, evidence|
               evidence_hash = evidence.attributes.deep_symbolize_keys.slice(:key, :title, :description, :is_satisfied, :determined_at, :current_state, :due_on)
               result << evidence_hash
+              result
+            end
+          end
+
+          # Transforms all determinations for an eligibility to their CV3 representation
+          #
+          # @param [Eligibilities::V3::Eligibility] eligibility The eligibility containing determinations
+          # @return [Array<Hash>] Collection of transformed determination hashes
+          def determinations(eligibility)
+            eligibility.determinations.inject([]) do |result, determination|
+              determination_hash = determination.attributes.deep_symbolize_keys.slice(:key, :is_eligible)
+              determination_hash[:bases] = bases(determination)
+              result << determination_hash
+              result
+            end
+          end
+
+          # Transforms all bases for a determination to their CV3 representation
+          #
+          # @param [Eligibilities::V3::Determination] determination The determination containing bases
+          # @return [Array<Hash>] Collection of transformed base hashes
+          def bases(determination)
+            determination.bases.inject([]) do |result, base|
+              base_hash = base.attributes.deep_symbolize_keys.slice(:basis_kind, :is_satisfied)
+              result << base_hash
               result
             end
           end

@@ -74,6 +74,8 @@ RSpec.shared_context 'dual applications with eligible family setup' do
                                                :with_demographics,
                                                :with_eligibilities,
                                                :with_phone_number,
+                                               :with_home_address,
+                                               :with_mailing_address,
                                                :with_email,
                                                family_member_id: family.primary_family_member.id,
                                                is_primary_applicant: true,
@@ -93,12 +95,30 @@ RSpec.shared_context 'dual applications with eligible family setup' do
                                                  family_name: non_primary_person.last_name
                                                })
                             ])
+
     app.applicants.first.demographics.update!(encrypted_ssn: encrypted_ssn, no_ssn: false, dob: primary_person.dob)
     app.applicants.last.demographics.update!(encrypted_ssn: encrypted_ssn2, no_ssn: false, dob: non_primary_person.dob)
+
+    app.applicants.first.individual_market_eligibility.build_individual_market_determination
+    app.applicants.last.individual_market_eligibility.build_individual_market_determination
+    app.applicants.first.individual_market_eligibility.qhp_determination.update!(is_eligible: true)
+    app.applicants.last.individual_market_eligibility.qhp_determination.update!(is_eligible: false)
+
+    app.applicants.first.individual_market_eligibility.qhp_determination.bases.build({basis_kind: 'not_incarcerated', is_satisfied: true})
+    app.applicants.first.individual_market_eligibility.qhp_determination.bases.build({basis_kind: 'applying_coverage', is_satisfied: true})
+    app.applicants.first.individual_market_eligibility.qhp_determination.bases.build({basis_kind: 'is_alive', is_satisfied: true})
+    app.applicants.first.individual_market_eligibility.qhp_determination.bases.build({basis_kind: 'state_resident', is_satisfied: true})
+    app.applicants.first.individual_market_eligibility.qhp_determination.bases.build({basis_kind: 'lawfully_present_in_us', is_satisfied: true})
+
+    app.applicants.last.individual_market_eligibility.qhp_determination.bases.build({basis_kind: 'not_incarcerated', is_satisfied: false })
+    app.applicants.last.individual_market_eligibility.qhp_determination.bases.build({basis_kind: 'applying_coverage', is_satisfied: false})
+    app.applicants.last.individual_market_eligibility.qhp_determination.bases.build({basis_kind: 'is_alive', is_satisfied: false})
+    app.applicants.last.individual_market_eligibility.qhp_determination.bases.build({basis_kind: 'state_resident', is_satisfied: false})
+    app.applicants.last.individual_market_eligibility.qhp_determination.bases.build({basis_kind: 'lawfully_present_in_us', is_satisfied: false})
+
     primary_person.update!(encrypted_ssn: encrypted_ssn)
     non_primary_person.update!(encrypted_ssn: encrypted_ssn2)
-    FactoryBot.create(:individual_market_immigration_information, applicant: app.applicants.first)
-    FactoryBot.create(:individual_market_immigration_information, applicant: app.applicants.last)
+
     app.save!
     app
   end
