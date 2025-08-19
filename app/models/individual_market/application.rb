@@ -188,6 +188,7 @@ module IndividualMarket
       action :determine, from: [:submitted], to: :determined
       action :expire, from: [:initial, :submission_failed, :submitted, :determination_failed, :determined], to: :expired
       action :cancel, from: [:initial, :submission_failed, :submitted, :determination_failed], to: :cancelled
+      action :failed_family_sync, from: [:determined], to: :family_sync_failed
     end
 
     # Finds and returns the applicant who is marked as the primary applicant

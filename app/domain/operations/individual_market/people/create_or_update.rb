@@ -121,8 +121,11 @@ module Operations
             is_homeless: applicant.is_homeless,
             is_temporarily_out_of_state: applicant.is_temporarily_out_of_state
           )
-
+          return Failure("Person is not valid: #{person.errors.full_messages.join(', ')}") unless person.valid?
           Success(person)
+        rescue StandardError => e
+          Rails.logger.error("QHP Application - Error while building person: #{e.message}, backtrace: #{e.backtrace.join('\n')}")
+          Failure("Error while building person: #{e.message}, backtrace: #{e.backtrace.join('\n')}")
         end
 
         # Builds or updates the consumer role for a person
@@ -132,13 +135,17 @@ module Operations
         def build_or_update_consumer_role(person, applicant)
           consumer_role = person.consumer_role || person.build_consumer_role
 
-          consumer_role.is_applicant = applicant.is_primary_applicant
-          consumer_role.contact_method = applicant.contact_method
-          consumer_role.is_applying_coverage = applicant.is_applying_coverage
-          consumer_role.language_preference = applicant.language_preference
+          consumer_role.assign_attributes(
+            is_applicant: applicant.is_primary_applicant,
+            contact_method: applicant.contact_method,
+            is_applying_coverage: applicant.is_applying_coverage,
+            language_preference: applicant.language_preference
+          )
 
           build_or_update_vlp_document(consumer_role, applicant)
           build_or_update_lawful_presence_determination(consumer_role, applicant)
+
+          return Failure("Consumer role is not valid: #{consumer_role.errors.full_messages.join(', ')}") unless consumer_role.valid?
 
           Success(consumer_role.person)
         end

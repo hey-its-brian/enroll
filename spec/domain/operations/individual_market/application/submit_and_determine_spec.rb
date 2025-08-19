@@ -7,6 +7,11 @@ RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, db
 
   let(:application) { FactoryBot.create(:individual_market_application, :with_primary) }
   let(:primary_applicant) { application.primary_applicant }
+  let(:family) { application.family }
+  let(:rating_area) { FactoryBot.create_default(:benefit_markets_locations_rating_area) }
+  let(:person) { FactoryBot.create(:person) }
+  let(:consumer_role) { FactoryBot.create(:consumer_role, person: person) }
+  let(:tax_household) { FactoryBot.create(:tax_household, household: family.active_household, effective_ending_on: nil, effective_starting_on: TimeKeeper.date_of_record.beginning_of_year) }
 
   describe '#call' do
     context 'with invalid params' do
@@ -38,7 +43,24 @@ RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, db
     end
 
     context 'with valid application' do
+      let(:existing_enrollment) do
+        FactoryBot.create(
+          :hbx_enrollment,
+          :individual_unassisted,
+          :with_silver_health_product,
+          family: family,
+          household: family.active_household,
+          coverage_kind: 'health',
+          consumer_role: consumer_role,
+          effective_on: TimeKeeper.date_of_record.beginning_of_year,
+          rating_area_id: rating_area.id
+        )
+      end
+
       before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:apply_aggregate_to_enrollment).and_return(true)
+        existing_enrollment
+        tax_household
         primary_applicant.update_attributes(demographics: {no_ssn: 'false', ssn: '123456789', encrypted_ssn: SymmetricEncryption.encrypt('123456789'), indian_tribe_member: 'true'})
         @result = subject.call(application: application)
         application.reload
@@ -77,6 +99,59 @@ RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, db
         # AmericanIndianEvidence, SocialSecurityNumberEvidence, AliveEvidence, CitizenshipEvidence
         expect(primary_applicant.individual_market_eligibility.evidences.count).to eq(4)
       end
+
+      it 'terminates existing enrollment' do
+        existing_enrollment.reload
+        expect(existing_enrollment.aasm_state).to eq('coverage_terminated')
+      end
+
+      it 'generates new enrollments' do
+        family.reload
+        expect(family.active_household.hbx_enrollments.count).to eq(2)
+        expect(family.active_household.hbx_enrollments.last.aasm_state).to eq('coverage_selected')
+      end
+    end
+
+    context 'with an existing aptc enrollment' do
+      let(:existing_aptc_enrollment) do
+        FactoryBot.create(
+          :hbx_enrollment,
+          :individual_aptc,
+          :with_silver_health_product,
+          family: family,
+          household: family.active_household,
+          coverage_kind: 'health',
+          consumer_role: consumer_role,
+          effective_on: TimeKeeper.date_of_record.beginning_of_year,
+          rating_area_id: rating_area.id,
+          aasm_state: 'coverage_selected'
+        )
+      end
+
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:apply_aggregate_to_enrollment).and_return(true)
+        existing_aptc_enrollment
+        primary_applicant.update_attributes(demographics: {no_ssn: 'false', ssn: '123456789', encrypted_ssn: SymmetricEncryption.encrypt('123456789'), indian_tribe_member: 'true'})
+        @result = subject.call(application: application)
+        application.reload
+        primary_applicant.reload
+      end
+
+      it "terminates the existing aptc enrollment" do
+        existing_aptc_enrollment.reload
+        expect(existing_aptc_enrollment.aasm_state).to eq('coverage_terminated')
+      end
+
+      it 'generates new enrollment' do
+        family.reload
+        expect(family.active_household.hbx_enrollments.count).to eq(2)
+      end
+
+      it 'applies no aptc to the new enrollment' do
+        family.reload
+        expect(family.active_household.hbx_enrollments.last.applied_aptc_amount).to eq(0)
+      end
+
     end
   end
 end

@@ -26,6 +26,7 @@ module Operations
           determined_application  = yield determine_application(application)
           _calls                  = yield call_hubs(application)
           _family                 = yield update_family(application)
+          _enrollments            = yield generate_enrollments(application)
 
           Success(determined_application)
         end
@@ -55,6 +56,7 @@ module Operations
           if application.save!
             Success(application)
           else
+            application.failed_submission
             Failure("Failed to submit application due to #{application.errors.full_messages.join(', ')}")
           end
         rescue StandardError => e
@@ -105,6 +107,7 @@ module Operations
           if application.save!
             Success(application)
           else
+            application.failed_determination
             Failure("Failed to determine application due to #{application.errors.full_messages.join(', ')}")
           end
         rescue StandardError => e
@@ -133,7 +136,30 @@ module Operations
         #
         # @return [Dry::Monads::Result] Success with message or Failure with error message
         def update_family(application)
-          Operations::IndividualMarket::Families::CreateOrUpdate.new.call(application: application)
+          result = Operations::IndividualMarket::Families::CreateOrUpdate.new.call(application: application)
+          return result if result.success?
+          application.failed_family_sync
+          result
+        rescue StandardError => e
+          Rails.logger.error("QHP Application - Failed to update family due to #{e.message}, #{e.backtrace.join("\n")}")
+          Failure("An error occurred while updating the family: #{e.message}")
+        end
+
+        def generate_enrollments(application)
+          return Success("apply aggregate to enrollment is disabled") unless EnrollRegistry.feature_enabled?(:apply_aggregate_to_enrollment)
+          return Success("No enrollments to generate") unless has_enrollments_to_generate?(application)
+
+          result = Operations::Individual::OnNewDetermination.new.call({family: application.family, year: application.assistance_year})
+          return result if result.success?
+
+          Failure("Failed to generate enrollments: #{result.failure}")
+        rescue StandardError => e
+          Rails.logger.error("QHP Application - Failed to generate enrollments due to #{e.message}, #{e.backtrace.join("\n")}")
+          Failure("An error occurred while generating enrollments: #{e.message}")
+        end
+
+        def has_enrollments_to_generate?(application)
+          application.family.active_household&.hbx_enrollments&.enrolled_and_renewal&.individual_market&.by_health&.by_year(application.assistance_year)&.any?
         end
       end
     end
