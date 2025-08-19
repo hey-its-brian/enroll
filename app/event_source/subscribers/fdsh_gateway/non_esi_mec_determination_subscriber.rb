@@ -7,12 +7,13 @@ module Subscribers
       include EventSource::Logging
       include ::EventSource::Subscriber[amqp: 'fdsh.eligibilities.non_esi']
 
-      subscribe(:on_non_esi_determination_complete) do |delivery_info, _metadata, response|
+      subscribe(:on_non_esi_determination_complete) do |delivery_info, metadata, response|
         logger.info "FdshGateway::NonESIMECDeterminationSubscriber: invoked on_non_esi_determination_complete with delivery_info: #{delivery_info.inspect}, response: #{response.inspect}"
         payload = JSON.parse(response, :symbolize_names => true)
+        call_type = metadata[:headers]["call_type"]
 
 
-        result = FinancialAssistance::Operations::Applications::NonEsi::H31::AddNonEsiMecDetermination.new.call(payload: payload)
+        result = FinancialAssistance::Operations::Applications::NonEsi::H31::AddNonEsiMecDetermination.new.call({payload: payload, call_type: call_type})
 
         if result.success?
           logger.info "FdshGateway::NonESIMECDeterminationSubscriber: on_non_esi_mec_determination acked with success: #{result.success}"
