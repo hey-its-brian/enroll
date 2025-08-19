@@ -104,7 +104,11 @@ module Eligibilities
         def latest_verification_history
           return @latest_verification_history if defined?(@latest_verification_history)
 
-          @latest_verification_history = verification_histories.newest.first
+          # For the migrated data, created at is same for all the migrated verification histories
+          # due to this verification_histories.newest.first is fetching first inserted record instead of last
+          # Since the history objects are stored in order it was built
+          # Fetching the last record from the verification_histories should resolve the issue
+          @latest_verification_history = verification_histories.last
         end
 
         def determine_outstanding_due_on_date(call_type)

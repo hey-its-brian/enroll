@@ -719,5 +719,75 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
 
       include_examples 'evidence state transitions'
     end
+
+    describe "#latest_verification_history" do
+      let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+      let(:primary_applicant) { family.primary_applicant }
+      let(:faa_application) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          aasm_state: 'determined',
+          submitted_at: Time.now,
+          assistance_year: TimeKeeper.date_of_record.year
+        )
+      end
+
+      let(:applicant) do
+        FactoryBot.create(
+          :financial_assistance_applicant,
+          family_member_id: primary_applicant.id,
+          person_hbx_id: person.hbx_id,
+          application: faa_application
+        )
+      end
+
+      let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+      let(:citizenship_evidence) { FactoryBot.create(:citizenship_evidence, :rejected, eligibility: ivl_eligibility) }
+      let(:vh1) {FactoryBot.build(:v3_verification_history, evidence: citizenship_evidence, action: 'test_action', update_reason: 'test_reason', updated_by: 'test_user')}
+      let(:vh2) {FactoryBot.build(:v3_verification_history, evidence: citizenship_evidence, action: 'test_action2', update_reason: 'test_reason2', updated_by: 'test_user2')}
+      let(:vh3) {FactoryBot.build(:v3_verification_history, evidence: citizenship_evidence, action: 'test_action3', update_reason: 'test_reason3', updated_by: 'test_user3')}
+
+      context "when verification histories are built in order" do
+        let(:create_embed_docs) do
+          [citizenship_evidence].each do |evidence|
+            FactoryBot.build(:v3_state_history, status_trackable: evidence, created_at: 2.days.ago)
+            FactoryBot.build(:v3_state_history, status_trackable: evidence, created_at: 1.day.ago)
+            evidence.verification_histories << vh1
+            evidence.verification_histories << vh2
+            evidence.verification_histories << vh3
+            evidence.documents.build(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
+          end
+
+          citizenship_evidence.save!
+        end
+
+        it "should fetch the last one that is saved" do
+          create_embed_docs
+          expect(citizenship_evidence.latest_verification_history).to eq(vh3)
+        end
+      end
+
+      context "when verification histories are built in different order" do
+        let(:create_embed_docs) do
+          [citizenship_evidence].each do |evidence|
+            FactoryBot.build(:v3_state_history, status_trackable: evidence, created_at: 2.days.ago)
+            FactoryBot.build(:v3_state_history, status_trackable: evidence, created_at: 1.day.ago)
+            evidence.verification_histories << vh1
+            evidence.verification_histories << vh3
+            evidence.verification_histories << vh2
+            evidence.documents.build(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
+          end
+
+          citizenship_evidence.save!
+        end
+
+        it "should fetch the last one that is saved" do
+          create_embed_docs
+          expect(citizenship_evidence.latest_verification_history).to eq(vh2)
+        end
+      end
+    end
   end
 end
