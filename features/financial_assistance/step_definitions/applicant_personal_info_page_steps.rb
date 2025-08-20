@@ -195,3 +195,56 @@ Then(/the user should see ssn editable & dob field disabled for the applicant/) 
     end
   end
 end
+
+And(/user unchecks lives with primary subscriber$/) do
+  checkbox = find('#applicant_same_with_primary')
+  checkbox.set(false) if checkbox.checked?
+  expect(page).to have_css('#applicant-home-address-area:not(.hidden)', visible: true)
+end
+
+And(/user fills in home address if needed$/) do
+  within '#applicant-home-address-area' do
+    fill_in 'applicant[addresses_attributes][0][address_1]', with: '123 Test Street'
+    fill_in 'applicant[addresses_attributes][0][city]', with: 'Test City'
+    select 'ME', from: 'applicant_addresses_attributes_0_state'
+    fill_in 'applicant[addresses_attributes][0][zip]', with: '04001'
+  end
+end
+
+Given(/the user has a dependent with no ssn and modal handling$/) do
+  steps %(
+    And user clicks the Add Member button
+    And user enters applicant name, gender, dob and checks no ssn
+    And user selects no for applicant's coverage requirement
+    And user selects no for applicant's incarcerated status
+    And user selects no for applicant's indian_tribe_member status
+    And user selects yes for applicant's us_citizen status
+    And user selects no for applicant's naturalized_citizen status
+    And user fills in the missing relationship
+    And user unchecks lives with primary subscriber
+    And user fills in home address if needed
+  )
+end
+
+When(/user clicks confirm member and handles modal$/) do
+  confirm_button = find(EnrollRegistry.feature_enabled?(:bs4_consumer_flow) ? '#confirm-dependent' : ".btn.applicant-confirm-member")
+  confirm_button.click
+
+  expect(page).to have_css('#addressChangeConfirmation', visible: true)
+
+  within '#addressChangeConfirmation' do
+    find('.close').click
+  end
+
+  expect(page).not_to have_css('#addressChangeConfirmation', visible: true)
+end
+
+Then(/the confirm member button should be re-enabled$/) do
+  confirm_button = find(EnrollRegistry.feature_enabled?(:bs4_consumer_flow) ? '#confirm-dependent' : ".btn.applicant-confirm-member")
+
+  expect(confirm_button).to be_visible
+  expect(confirm_button).to be_present
+
+  expect(confirm_button[:disabled]).not_to eq("true")
+  expect(confirm_button[:disabled]).not_to eq(true)
+end

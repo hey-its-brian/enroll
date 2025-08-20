@@ -66,7 +66,14 @@ function init_faa_dependent_form() {
         var form = $('#new_applicant')[0] || $('#new_dependent')[0] || $('#edit_dependent')[0];
 
         if (!$("input#applicant_same_with_primary").is(":checked")) {
-          $('#addressChangeConfirmation').modal('show');
+          $('#addressChangeConfirmation')
+            .modal({
+              show: true,
+              backdrop: false
+            })
+            .on('hidden.bs.modal', function (e) {
+              enableButton($button);
+            });
         } else {
           PersonValidations.manageRequiredValidations($('#confirm-dependent'));
         }

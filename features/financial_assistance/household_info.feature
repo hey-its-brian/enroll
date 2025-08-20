@@ -43,3 +43,12 @@ Feature: A dedicated page that gives the user access to household member creatio
     And the user has a dependent with no ssn
     And consumer edits the dependent of the application
     Then the user should see ssn editable & dob field disabled for the applicant
+
+   Scenario: Confirm Member button re-enables when modal is closed with X button
+    Given bs4_consumer_flow feature is enabled
+    And EnrollRegistry people_tab feature is enabled
+    And that the user is on the Application Checklist page
+    When user clicks Begin Application
+    And the user has a dependent with no ssn and modal handling
+    When user clicks confirm member and handles modal
+    Then the confirm member button should be re-enabled
