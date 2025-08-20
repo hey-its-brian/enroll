@@ -41,9 +41,12 @@ module Operations
         # @return [Dry::Monads::Result] Success with eligibility determination key
         # the logic here MAY need to be updated based on the actual eligibility determination logic
         def determine_application_event_key(application)
-          eligibility_type = if application.applicants.all?(&:is_qhp_eligible)
+          non_applicant_ids = application.non_applicants.map(&:family_member_id)
+          applicants = application.applicants.reject { |applicant| non_applicant_ids.include?(applicant.family_member_id) }
+
+          eligibility_type = if applicants.all?(&:is_qhp_eligible)
                                :qhp_eligible
-                             elsif application.applicants.none?(&:is_qhp_eligible)
+                             elsif applicants.none?(&:is_qhp_eligible)
                                :qhp_ineligible
                              else
                                :mixed_qhp_eligibilities

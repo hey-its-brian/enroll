@@ -75,4 +75,41 @@ RSpec.describe Operations::IndividualMarket::Application::TriggerQhpEligibilityN
       end
     end
   end
+
+  describe '#determine_application_event_key' do
+    context 'when all applicants are are applying for coverage' do
+      it 'returns mixed_qhp_eligibilities for mixed eligibility' do
+        result = subject.send(:determine_application_event_key, current_application)
+        expect(result.success).to eq('determined_mixed_qhp_eligibilities')
+      end
+    end
+
+    context 'when some applicants are not applying for coverage' do
+      before do
+        determination = current_application.applicants.last.individual_market_eligibility.qhp_determination
+        determination.bases.where(basis_kind: 'applying_coverage').first.update(is_satisfied: false)
+      end
+
+      context 'when all other applicants are eligible' do
+        # first applicant is qhp_eligible by default
+        it 'will return a determined_qhp_eligible event key' do
+          result = subject.send(:determine_application_event_key, current_application)
+          expect(result.success).to eq('determined_qhp_eligible')
+        end
+      end
+
+      context 'when all other applicants are ineligible' do
+        before do
+          determination = current_application.applicants.first.individual_market_eligibility.qhp_determination
+          determination.bases.where(basis_kind: 'not_incarcerated').first.update(is_satisfied: false)
+          determination.update(is_eligible: false)
+        end
+
+        it 'will return a determined_qhp_ineligible event key' do
+          result = subject.send(:determine_application_event_key, current_application)
+          expect(result.success).to eq('determined_qhp_ineligible')
+        end
+      end
+    end
+  end
 end
