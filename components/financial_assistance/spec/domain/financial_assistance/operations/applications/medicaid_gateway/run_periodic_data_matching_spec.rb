@@ -86,6 +86,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
     allow(hbx_profile).to receive(:benefit_sponsorship).and_return benefit_sponsorship
     allow(benefit_sponsorship).to receive(:current_benefit_period).and_return(benefit_coverage_period)
     allow(operation).to receive(:publish_mec_check).and_return(Success())
+    allow(operation).to receive(:qhp_application_feature_enabled?).and_return(false)
   end
 
   context 'Given invalid data' do
@@ -191,6 +192,20 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
 
       expect(result).to be_success
       expect(result.success).to eq({:total_applications_published => 0})
+    end
+
+    context 'when qhp_application feature is enabled' do
+      before do
+        allow(operation).to receive(:qhp_application_feature_enabled?).and_return(true)
+        allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:mec_check).and_return(true)
+      end
+
+      it 'should find results and run periodic matching' do
+        result = operation.call(assistance_year: TimeKeeper.date_of_record.year, transmittable_message_id: "f55bec40-98f1-4d1a-9336-63affe761a60")
+        expect(result).to be_success
+        expect(result.success).to eq({:total_applications_published => 1})
+        expect(applicant.reload&.aptc_csr_eligibility&.local_mec_evidence).to be_present
+      end
     end
   end
 end

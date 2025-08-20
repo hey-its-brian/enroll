@@ -11,11 +11,12 @@ module Subscribers
       logger.info "MecCheckSubscriber: invoked on_magi_medicaid_mec_check_enroll with delivery_info: #{delivery_info}, response: #{response}"
       payload = JSON.parse(response, :symbolize_names => true)
       payload_type = metadata[:headers]["payload_type"]
+      call_type = metadata[:headers]["call_type"]
 
       result = if payload_type == "person"
                  FinancialAssistance::Operations::Applications::MedicaidGateway::AddMecCheckPerson.new.call(payload)
                else
-                 FinancialAssistance::Operations::Applications::MedicaidGateway::AddMecCheckApplication.new.call(payload)
+                 FinancialAssistance::Operations::Applications::MedicaidGateway::AddMecCheckApplication.new.call({payload: payload, call_type: call_type})
                end
 
       if result.success?

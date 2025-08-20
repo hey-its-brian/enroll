@@ -533,6 +533,9 @@ module FinancialAssistance
     end
 
     def has_outstanding_local_mec_evidence?(application)
+      # when qhp is enabled, we don't copy evidences and their states instead we build new evidences with default states
+      # so the aptc csr evidences are not expected to be in any outstanding states in this case
+      return false if qhp_application_feature_enabled?
       application.applicants.any? {|applicant| Eligibilities::Evidence::OUTSTANDING_STATES.include?(applicant&.local_mec_evidence&.aasm_state)}
     end
 

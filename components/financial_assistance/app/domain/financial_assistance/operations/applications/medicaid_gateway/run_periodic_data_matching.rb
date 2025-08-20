@@ -17,6 +17,7 @@ module FinancialAssistance
           include Dry::Monads[:do, :result]
           include EventSource::Command
           include EventSource::Logging
+          include ::ResourceRegistryHelper
 
           def call(params)
             values = yield validate(params)
@@ -90,8 +91,26 @@ module FinancialAssistance
 
           def create_mec_evidence_if_needed(application)
             application.active_applicants.each do |applicant|
-              next if applicant.local_mec_evidence.present?
+              local_mec_evidence = local_mec_evidence(applicant)
+              next if local_mec_evidence.present?
 
+              create_local_mec_evidence(applicant)
+            end
+            application.save
+          end
+
+          def local_mec_evidence(applicant)
+            if qhp_application_feature_enabled?
+              applicant.aptc_csr_eligibility&.local_mec_evidence
+            else
+              applicant.local_mec_evidence
+            end
+          end
+
+          def create_local_mec_evidence(applicant)
+            if qhp_application_feature_enabled?
+              applicant.send(:build_local_mec_evi)
+            else
               applicant.create_evidence(:local_mec, "Local MEC")
             end
           end
@@ -176,7 +195,9 @@ module FinancialAssistance
           end
 
           def publish_mec_check(application_id, params)
-            ::FinancialAssistance::Operations::Applications::MedicaidGateway::RequestMecChecks.new.call(application_id: application_id, transmittable_message_id: params[:transmittable_message_id])
+            ::FinancialAssistance::Operations::Applications::MedicaidGateway::RequestMecChecks.new.call(application_id: application_id,
+                                                                                                        call_type: 'bulk_call',
+                                                                                                        transmittable_message_id: params[:transmittable_message_id])
           end
 
           def log_completion

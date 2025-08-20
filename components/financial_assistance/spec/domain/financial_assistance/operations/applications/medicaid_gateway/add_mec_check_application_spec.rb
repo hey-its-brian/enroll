@@ -29,6 +29,10 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
 
   let(:enrollment) { nil }
 
+  before do
+    allow(subject).to receive(:qhp_application_feature_enabled?).and_return(false)
+  end
+
   context 'success' do
     context 'ACES MEC Check' do
       include_context 'ACES MEC Check sample response'
@@ -43,7 +47,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
         @applicant.build_local_mec_evidence(key: :local_mec, title: "Local MEC", aasm_state: aasm_state,
                                             due_on: due_on)
         @applicant.save
-        @result = subject.call(payload)
+        @result = subject.call({payload: payload})
 
         @application = ::FinancialAssistance::Application.by_hbx_id(payload[:hbx_id]).first.reload
         @app_entity = ::AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(payload).success
@@ -183,7 +187,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
             let(:product) { FactoryBot.create(:benefit_markets_products_health_products_health_product, csr_variant_id: csr_variant_id)}
             let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, family: family, enrollment_members: family.family_members, product: product, applied_aptc_amount: is_aptc_zero ? 0.00 : 100.00) }
             before :each do
-              @result = subject.call(payload)
+              @result = subject.call({payload: payload})
             end
             it 'should return success' do
               expect(@result).to be_success
@@ -202,6 +206,52 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
           it_behaves_like "enrollment with csr_variant_id", "04", true, "outstanding"
           it_behaves_like "enrollment with csr_variant_id", "05", true, "outstanding"
           it_behaves_like "enrollment with csr_variant_id", "06", true, "outstanding"
+        end
+      end
+
+      context 'when qhp application feature is enabled' do
+        before do
+          allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:mec_check).and_return(true)
+          allow(subject).to receive(:qhp_application_feature_enabled?).and_return(true)
+          enrollment
+          @applicant = application.applicants.first
+          @applicant.build_aptc_eligibilities_evidences
+          @applicant.save
+          @result = subject.call({payload: payload, call_type: 'application_determination'})
+        end
+
+        it 'should return success' do
+          expect(@result).to be_success
+        end
+
+        context 'when aasm_state is verified' do
+          let(:payload) do
+            response_payload[:applicants].each { |applicant| applicant[:local_mec_evidence][:aasm_state] = 'verified' }
+            response_payload
+          end
+
+          it 'should return success' do
+            expect(@result).to be_success
+          end
+
+          it 'should update applicant verification' do
+            @applicant.reload
+            local_mec = @applicant.aptc_csr_eligibility&.local_mec_evidence
+            expect(local_mec.current_state).to eq :attested
+            expect(local_mec.request_results.present?).to eq true
+            expect(@result.success).to eq('Successfully updated Applicant with evidences and verifications')
+          end
+        end
+
+        context 'when aasm_state is outstanding' do
+          let(:payload) do
+            response_payload[:applicants].each { |applicant| applicant[:local_mec_evidence][:aasm_state] = 'outstanding' }
+            response_payload
+          end
+
+          it 'should return success' do
+            expect(@result).to be_success
+          end
         end
       end
     end

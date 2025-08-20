@@ -52,7 +52,7 @@ module FinancialAssistance
           end
 
           def build_event(payload)
-            headers = { payload_type: 'application', key: 'local_mec_check' }
+            headers = { payload_type: 'application', key: 'local_mec_check', call_type: 'hub_call' }
             event('events.iap.mec_check.mec_check_requested', attributes: payload, headers: headers.merge!({ local_mec_payload_format: "json" }))
           end
         end

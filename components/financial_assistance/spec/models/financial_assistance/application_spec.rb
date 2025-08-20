@@ -795,6 +795,7 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
     let(:income) { FactoryBot.build(:financial_assistance_income, amount: 200, start_on: Date.new(2021,6,1), end_on: Date.new(2021, 6, 30), frequency_kind: "biweekly") }
 
     before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
       allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:mec_check).and_return(true)
       allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:esi_mec_determination).and_return(true)
       allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:non_esi_mec_determination).and_return(true)
@@ -1921,6 +1922,7 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
     let(:publish_operation_class) { FinancialAssistance::Operations::Applications::Verifications::RequestEvidenceDetermination }
 
     before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
       allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:mec_check).and_return(true)
       allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:esi_mec_determination).and_return(true)
       allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:non_esi_mec_determination).and_return(true)

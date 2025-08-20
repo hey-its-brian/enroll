@@ -53,7 +53,7 @@ module FinancialAssistance
 
           # publish xml to medicaid gateway using event source
           def publish(payload)
-            FinancialAssistance::Operations::Applications::MedicaidGateway::PublishMecCheck.new.call(payload, "person")
+            FinancialAssistance::Operations::Applications::MedicaidGateway::PublishMecCheck.new.call(payload, "person", 'person_call')
           end
         end
       end

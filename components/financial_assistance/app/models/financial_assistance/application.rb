@@ -1093,12 +1093,6 @@ module FinancialAssistance
       Rails.logger.error { "FAA create_tax_household_groups error for application with hbx_id: #{hbx_id} message: #{e.message}, backtrace: #{e.backtrace.join('\n')}" }
     end
 
-    def trigger_local_mec
-      ::FinancialAssistance::Operations::Applications::MedicaidGateway::RequestMecChecks.new.call(application_id: id) if is_local_mec_checkable?
-    rescue StandardError => e
-      Rails.logger.error { "FAA trigger_local_mec error for application with hbx_id: #{hbx_id} message: #{e.message}, backtrace: #{e.backtrace.join('\n')}" }
-    end
-
     def is_local_mec_checkable?
       FinancialAssistanceRegistry.feature_enabled?(:mec_check)
     end

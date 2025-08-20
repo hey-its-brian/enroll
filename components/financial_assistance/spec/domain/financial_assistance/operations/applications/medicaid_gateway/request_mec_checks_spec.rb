@@ -83,7 +83,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
   context 'Given invalid data' do
     it 'should fail when the application does not exist' do
       invalid_id = "invalid_id"
-      result = operation.call(application_id: invalid_id)
+      result = operation.call(application_id: invalid_id, call_type: 'call_hub')
       expect(result).not_to be_success
       expect(result.failure).to eq "Unable to find Application with ID invalid_id."
     end
@@ -91,7 +91,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
 
   context 'Given a valid application' do
     before :each do
-      @result = operation.call(application_id: application_id)
+      @result = operation.call(application_id: application_id, call_type: 'call_hub')
     end
 
     it 'should succeed' do
