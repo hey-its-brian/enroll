@@ -60,6 +60,7 @@ module Forms
                     :no_ssn,
                     :is_applying_coverage,
                     :existing_ssn,
+                    :existing_no_ssn,
                     :id
 
       validates :gender, :dob, presence: true
@@ -283,7 +284,7 @@ module Forms
       end
 
       def no_ssn_or_encrypted_ssn
-        no_ssn = self.no_ssn.present? && self.no_ssn&.to_i == 1
+        no_ssn = self.no_ssn.present? ? self.no_ssn&.to_i == 1 : self.existing_no_ssn == true
         errors.add(:base, 'One of no_ssn or ssn must be present') if !no_ssn && !(encrypted_ssn.present? || ssn.present?)
         errors.add(:base, 'Only one of no_ssn or ssn must be present') if no_ssn && (encrypted_ssn.present? || ssn.present?)
       end

@@ -80,7 +80,9 @@ module Insured
       def update
         authorize @applicant, :edit?
         existing_ssn = @applicant.demographics.ssn
-        @applicant = ::Forms::IndividualMarket::Applicant.new(applicant_params.merge(application_id: params[:application_id], id: params[:id], existing_ssn: existing_ssn))
+        existing_no_ssn = @applicant.demographics.no_ssn unless applicant_params[:demographics_attributes].present? && applicant_params[:demographics_attributes][:no_ssn].present?
+
+        @applicant = ::Forms::IndividualMarket::Applicant.new(applicant_params.merge(application_id: params[:application_id], id: params[:id], existing_ssn: existing_ssn, existing_no_ssn: existing_no_ssn))
 
         success, result = @applicant.save
 
@@ -223,6 +225,10 @@ module Insured
           phones_attributes: [:id, :kind, :number, :country_code, :area_code, :extension, :full_phone_number, :_destroy],
           emails_attributes: [:id, :kind, :address, :_destroy]
         )
+      end
+
+      def existing_no_ssn
+        @applicant.demographics.no_ssn
       end
 
       def applicant_params

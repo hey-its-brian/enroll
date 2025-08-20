@@ -32,7 +32,7 @@ module Forms
       validate :validate_nested_forms
       validate :relationship_validation
 
-      delegate :is_applying_coverage, :is_applying_coverage=, :existing_ssn, :existing_ssn=,
+      delegate :is_applying_coverage, :is_applying_coverage=, :existing_ssn, :existing_ssn=, :existing_no_ssn, :existing_no_ssn=,
                to: :demographics
 
       # Initializes a new Applicant form object
@@ -79,6 +79,14 @@ module Forms
         @existing_ssn = value
         # Keep demographics form in sync
         @demographics_form.existing_ssn = value if @demographics_form
+      end
+
+      # Sets the existing_no_ssn flag and syncs with demographics form
+      # @param value [Boolean] Applicant's existing no ssn
+      def existing_no_ssn=(value)
+        @existing_no_ssn = value
+        # Keep demographics form in sync
+        @demographics_form.existing_no_ssn = value if @demographics_form
       end
 
       # Checks if the form represents a persisted record
@@ -186,6 +194,7 @@ module Forms
       def sync_demographics_coverage
         @demographics_form.is_applying_coverage = @is_applying_coverage if @demographics_form
         @demographics_form.existing_ssn = @existing_ssn if @demographics_form
+        @demographics_form.existing_no_ssn = @existing_no_ssn if @demographics_form
       end
 
       private
@@ -219,8 +228,9 @@ module Forms
       def demographics_params(attributes)
         return {} unless attributes[:demographics_attributes].present?
         demographics = attributes[:demographics_attributes]
-        return demographics unless existing_ssn.present?
+        return demographics unless existing_ssn.present? || existing_no_ssn.present?
         demographics[:existing_ssn] = existing_ssn
+        demographics[:existing_no_ssn] = existing_no_ssn
         demographics
       end
 

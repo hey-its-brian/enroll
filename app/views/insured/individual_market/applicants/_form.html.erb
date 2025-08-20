@@ -64,7 +64,7 @@
           <div class="col-md-6 col-lg-3 p-0" data-target="family-information.SsnInput">
             <%= demographics.label :ssn, l10n("social_security") %>
             <% if is_editing && EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields)  %>
-              <%= render 'ssn_fields', f: demographics, presenter: organize_ssn_params(demographics.object) %>
+              <%= render 'ssn_fields', f: demographics, presenter: organize_ssn_params(demographics.object), default_disabled: ssn_enabled %>
             <% else %>
               <% if EnrollRegistry.feature_enabled?(:ssn_ui_validation) %>
                 <%= demographics.text_field :ssn, placeholder: "000-00-0000", class: "required keep-label mask-ssn dependent-ssn-input",

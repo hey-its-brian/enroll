@@ -200,6 +200,34 @@ RSpec.describe ::Forms::IndividualMarket::DemographicsForm, type: :model, dbclea
           @applicant_form = described_class.new(params)
           expect(@applicant_form.valid?).to be_falsey
         end
+
+        it 'should be valid when no_ssn is not present, ssn is not present, and existing_no_ssn is true' do
+          params[:no_ssn] = nil
+          params[:encrypted_ssn] = nil
+          params[:ssn] = nil
+          params[:existing_no_ssn] = true
+          @applicant_form = described_class.new(params)
+          expect(@applicant_form.valid?).to be_truthy
+        end
+
+        it 'should be invalid when no_ssn is not present, ssn is not present, and existing_no_ssn is false' do
+          params[:no_ssn] = nil
+          params[:existing_no_ssn] = false
+          params[:encrypted_ssn] = nil
+          params[:ssn] = nil
+          params[:existing_ssn] = nil
+          @applicant_form = described_class.new(params)
+          expect(@applicant_form.valid?).to be_falsey
+        end
+
+        it 'should be valid when no_ssn is false, ssn is present, and existing_no_ssn is true' do
+          params[:no_ssn] = 0
+          params[:encrypted_ssn] = SymmetricEncryption.encrypt("123456789")
+          params[:ssn] = "123456789"
+          params[:existing_no_ssn] = true
+          @applicant_form = described_class.new(params)
+          expect(@applicant_form.valid?).to be_truthy
+        end
       end
     end
 
