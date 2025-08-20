@@ -7,6 +7,7 @@ module Subscribers
         # Subscriber will receive request payload from EA to submit rrv non_esi determination requests
         class IncomeEvidencesSubscriber
           include ::EventSource::Subscriber[amqp: 'enroll.ivl_market.families.iap_applications.rrvs.income_evidences']
+          include ::ResourceRegistryHelper
 
           subscribe(:on_determination_build_requested) do |delivery_info, _metadata, response|
             subscriber_logger = subscriber_logger_for(:on_rrv_income_evidences_determination_build_requested)
@@ -26,7 +27,12 @@ module Subscribers
           private
 
           def determine_build_request(payload, subscriber_logger)
-            result = ::Operations::Families::IapApplications::Rrvs::IncomeEvidences::RequestDetermination.new.call(payload)
+            result = if qhp_application_feature_enabled?
+                       ::FinancialAssistance::Operations::Applications::Rrv::IncomeEvidence::RequestVerification.new.call(payload)
+                     else
+                       ::Operations::Families::IapApplications::Rrvs::IncomeEvidences::RequestDetermination.new.call(payload)
+                     end
+
             result_str = result.success? ? "Success: #{result.success}" : "Failure: #{result.failure}"
             subscriber_logger.info "Rrvs::IncomeEvidencesSubscriber, determine_verifications result: #{result_str}"
           rescue StandardError => e
