@@ -480,6 +480,91 @@ describe Person, :dbclean => :after_each do
         end
       end
 
+      context "contact fields validation" do
+        let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+        let(:consumer_role) { person.consumer_role }
+
+        shared_examples_for "validate contact_validations" do |mobile_phone_present, home_email_present, contact_method_string, is_valid, expected_errors|
+          before do
+            person.phones.clear
+            person.emails.clear
+
+            person.phones.build(kind: 'mobile', full_phone_number: '202-555-1212') if mobile_phone_present
+            person.emails.build(kind: 'home', address: 'test@example.com') if home_email_present
+
+            consumer_role.contact_method = contact_method_string
+            person.valid?(:enhanced_contact_preferences)
+          end
+
+          it "#{is_valid ? 'passes' : 'fails'} validation" do
+            expect(person.valid?(:enhanced_contact_preferences)).to eq is_valid
+          end
+
+          it "has the expected errors" do
+            expected_errors.each do |error|
+              expect(person.errors[:base]).to include(error)
+            end
+            expect(person.errors[:base]).to be_empty if expected_errors.empty?
+          end
+        end
+
+        context "when validation context is :enhanced_contact_preferences" do
+          basic_contact_error = "An email or mobile phone number is required."
+          contact_method_error = "A contact method is required to proceed. If selecting Text, you must also choose Email or Mail."
+          text_other_method_error = "Text cannot be your only contact method. If you select Text, you must also choose Email or Mail."
+          text_mobile_phone_error = "You must enter a mobile phone number to receive notices and updates by text."
+          email_home_error = "You must enter an email address to receive notices and updates by email."
+
+          # Basic contact validation tests - using contact methods that don't require specific contact types
+          it_behaves_like "validate contact_validations", true, true, "Paper and Electronic communications", true, []
+          it_behaves_like "validate contact_validations", true, false, "Only Paper communication", true, []
+          it_behaves_like "validate contact_validations", false, true, "Only Electronic communications", true, []
+          it_behaves_like "validate contact_validations", false, false, "Only Paper communication", false, [basic_contact_error]
+
+          # Contact method validation tests
+          it_behaves_like "validate contact_validations", true, true, "", false, [contact_method_error]
+
+          # Text contact method validation tests
+          context "text messaging validations" do
+            it_behaves_like "validate contact_validations", true, true, "Electronic and Text Message communications", true, []
+            it_behaves_like "validate contact_validations", true, true, "Paper and Text Message communications", true, []
+            it_behaves_like "validate contact_validations", true, true, "Only Text Message communication", false, [text_other_method_error]
+            it_behaves_like "validate contact_validations", false, true, "Electronic and Text Message communications", false, [text_mobile_phone_error]
+          end
+
+          # Email contact method validation tests
+          context "email communication validations" do
+            it_behaves_like "validate contact_validations", true, true, "Only Electronic communications", true, []
+            it_behaves_like "validate contact_validations", true, false, "Only Electronic communications", false, [email_home_error]
+          end
+
+          # Complex scenarios with multiple errors
+          context "multiple validation failures" do
+            it_behaves_like "validate contact_validations", false, false, "", false, [basic_contact_error, contact_method_error]
+            it_behaves_like "validate contact_validations", false, false, "Only Text Message communication", false, [basic_contact_error, text_other_method_error, text_mobile_phone_error]
+            it_behaves_like "validate contact_validations", false, false, "Only Electronic communications", false, [basic_contact_error, email_home_error]
+          end
+
+          # Test the specific failing case to verify the validation logic is working correctly
+          context "contact method requirement validation" do
+            it_behaves_like "validate contact_validations", true, false, "Paper and Electronic communications", false, [email_home_error]
+            it_behaves_like "validate contact_validations", false, true, "Electronic and Text Message communications", false, [text_mobile_phone_error]
+          end
+        end
+
+        context "when validation context is not :enhanced_contact_preferences" do
+          it "does not validate contacts when using default validation" do
+            person.phones.clear
+            person.emails.clear
+            consumer_role.contact_method = ""
+
+            expect(person.valid?).to be_truthy
+            expect(person.errors[:base]).not_to include("An email or mobile phone number is required.")
+            expect(person.errors[:base]).not_to include("A contact method is required to proceed. If selecting Text, you must also choose Email or Mail.")
+          end
+        end
+      end
+
       context "is_consumer_role_active?" do
         let(:person) {FactoryBot.build(:person)}
         let(:consumer_role) {double(is_active?: true)}

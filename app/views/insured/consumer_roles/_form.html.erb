@@ -27,23 +27,25 @@
     <section class="mb-4">
       <%= render partial: 'shared/consumer_home_address_fields', locals: {f: f, bs4: true} %>
     </section>
-    <section class="mb-4">
-      <h4 class="gamma mb-0"><%= l10n("insured.consumer_roles.phone_and_email") %></h4>
-      <p><%= l10n("insured.consumer_roles.please_provide") %></p>
-      <%= render partial: 'shared/phone_fields', locals: {f: f, bs4: true} %>
-      <div id="email_info" class="">
-        <div class="email d-flex mb-md-4 row col-sm">
-          <%= f.fields_for :emails, errors: {}, fieldset: true do |email|  %>
-            <%= render partial: 'shared/email_fields', locals: {f: email, bs4: true} %>
-          <% end %>
+    <% unless EnrollRegistry.feature_enabled?(:enroll_sms_notifications) %>
+      <section class="mb-4">
+        <h4 class="gamma mb-0"><%= l10n("insured.consumer_roles.phone_and_email") %></h4>
+        <p><%= l10n("insured.consumer_roles.please_provide") %></p>
+        <%= render partial: 'shared/phone_fields', locals: {f: f, bs4: true} %>
+        <div id="email_info" class="">
+          <div class="email d-flex mb-md-4 row col-sm">
+            <%= f.fields_for :emails, errors: {}, fieldset: true do |email|  %>
+              <%= render partial: 'shared/email_fields', locals: {f: email, bs4: true} %>
+            <% end %>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="mb-4 mt-4">
-      <%= render 'shared/contact_preferences', {f: f, role: :consumer_role, contact_preferences_mapping: nil, bs4: true } %>
-    </section>
-    <%= render partial: "shared/progress_navigation_buttons", locals: {dont_show_prev_button: true, run_person_validations: true} %>
+      <section class="mb-4 mt-4">
+        <%= render 'shared/contact_preferences', {f: f, role: :consumer_role, contact_preferences_mapping: nil, bs4: true } %>
+      </section>
+    <% end %>
+    <%= render partial: "shared/progress_navigation_buttons", locals: {run_person_validations: true} %>
   </div>
 <% else %>
 <div class="container">

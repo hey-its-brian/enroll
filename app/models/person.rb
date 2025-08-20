@@ -404,6 +404,7 @@ class Person
 #  ViewFunctions::Person.install_queries
 
   validate :consumer_fields_validations
+  validates_with Validations::ContactPreferencesValidator, on: :enhanced_contact_preferences
 
   before_save :generate_hbx_id
   before_save :update_full_name

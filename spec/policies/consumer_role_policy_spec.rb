@@ -40,7 +40,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
       end
     end
 
-    permissions :edit? do
+    permissions :contact_preferences? do
       let(:hbx_staff_user) {FactoryBot.create(:user, person: person)}
       let(:person) { FactoryBot.create(:person, :with_hbx_staff_role) }
       let(:hbx_staff_role) { FactoryBot.create(:hbx_staff_role, person: person)}
@@ -73,6 +73,71 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
       end
     end
 
+    permissions :create_contact_preferences? do
+      let(:hbx_staff_user) {FactoryBot.create(:user, person: person)}
+      let(:person) { FactoryBot.create(:person, :with_hbx_staff_role) }
+      let(:hbx_staff_role) { FactoryBot.create(:hbx_staff_role, person: person)}
+      let(:permission) { FactoryBot.create(:permission)}
+
+      it "grants access when hbx_staff" do
+        allow(hbx_staff_role).to receive(:permission).and_return permission
+        allow(person).to receive(:hbx_staff_role).and_return hbx_staff_role
+        allow(hbx_staff_user).to receive(:person).and_return person
+        allow(permission).to receive(:can_update_ssn).and_return true
+        expect(subject).to permit(hbx_staff_user, consumer_role)
+      end
+
+      it "denies access when normal user" do
+        expect(subject).not_to permit(User.new, consumer_role)
+      end
+
+      context "consumer" do
+        let(:user) { FactoryBot.create(:user, :consumer, person: consumer_role.person) }
+        let(:consumer_role) { FactoryBot.create(:consumer_role) }
+        let(:other_consumer_role) { FactoryBot.build(:consumer_role) }
+
+        it "grants access" do
+          expect(subject).to permit(user, consumer_role)
+        end
+
+        it "denies access" do
+          expect(subject).not_to permit(user, other_consumer_role)
+        end
+      end
+    end
+
+    permissions :edit? do
+      let(:hbx_staff_user) {FactoryBot.create(:user, person: person)}
+      let(:person) { FactoryBot.create(:person, :with_hbx_staff_role) }
+      let(:hbx_staff_role) { FactoryBot.create(:hbx_staff_role, person: person)}
+      let(:permission) { FactoryBot.create(:permission)}
+
+      it "grants access when hbx_staff" do
+        allow(hbx_staff_role).to receive(:permission).and_return permission
+        allow(person).to receive(:hbx_staff_role).and_return hbx_staff_role
+        allow(hbx_staff_user).to receive(:person).and_return person
+        allow(permission).to receive(:can_update_ssn).and_return true
+        expect(subject).to permit(hbx_staff_user, consumer_role)
+      end
+
+      it "denies access when normal user" do
+        expect(subject).not_to permit(User.new, consumer_role)
+      end
+
+      context "consumer" do
+        let(:user) { FactoryBot.create(:user, :consumer, person: consumer_role.person) }
+        let(:consumer_role) { FactoryBot.create(:consumer_role) }
+        let(:other_consumer_role) { FactoryBot.build(:consumer_role) }
+
+        it "grants access" do
+          expect(subject).to permit(user, consumer_role)
+        end
+
+        it "denies access" do
+          expect(subject).not_to permit(user, other_consumer_role)
+        end
+      end
+    end
 
     permissions :ridp_document_upload? do
       context 'when a valid user is logged in' do

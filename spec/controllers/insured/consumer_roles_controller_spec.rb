@@ -224,23 +224,41 @@ RSpec.describe Insured::ConsumerRolesController, dbclean: :after_each, :type => 
   end
 
   context "POST create consumer role", dbclean: :after_each do
-    let(:person_params) { { "dob" => "1985-10-01", "first_name" => "martin","gender" => "male","last_name" => "york","middle_name" => "","name_sfx" => "","ssn" => "345274083","user_id" => "xyz" } }
-    let(:person_user) { FactoryBot.create(:user) }
-    before(:each) do
-      allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
-      sign_in person_user
-      post :create, params: { person: person_params }
+    shared_examples "creates consumer role data and redirects based on SMS flag" do |flag_enabled, expected_redirect_resource|
+      let(:person_params) { { "dob" => "1985-10-01", "first_name" => "martin","gender" => "male","last_name" => "york","middle_name" => "","name_sfx" => "","ssn" => "345274083","user_id" => "xyz" } }
+      let(:person_user) { FactoryBot.create(:user) }
+      before(:each) do
+        allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:enroll_sms_notifications).and_return(flag_enabled)
+        sign_in person_user
+        post :create, params: { person: person_params }
+      end
+
+      it "should create new person/consumer role object" do
+        expect(person_user.person).to be_a(Person)
+        expect(person_user.person.consumer_role).to be_a(ConsumerRole)
+      end
+
+      it "should create a demographics_group and an alive_status for the created person" do
+        demographics_group = person_user&.person&.demographics_group
+
+        expect(demographics_group).to be_a DemographicsGroup
+        expect(demographics_group.alive_status).to be_a AliveStatus
+      end
+
+      it "should redirect to the #{expected_redirect_resource} route" do
+        action = "#{expected_redirect_resource.split.join('_')}_insured_consumer_role_path"
+        expected_path = send(action, person_user.person.consumer_role)
+        expect(response.location).to end_with(expected_path)
+      end
     end
 
-    it "should create new person/consumer role object" do
-      expect(response).to have_http_status(:redirect)
+    context "when SMS Messaging flag is off" do
+      include_examples "creates consumer role data and redirects based on SMS flag", false, 'edit'
     end
 
-    it "should create a demographics_group and an alive_status for the created person" do
-      demographics_group = person_user&.person&.demographics_group
-
-      expect(demographics_group).to be_a DemographicsGroup
-      expect(demographics_group.alive_status).to be_a AliveStatus
+    context "when SMS Messaging flag is on" do
+      include_examples "creates consumer role data and redirects based on SMS flag", true, 'contact preferences'
     end
   end
 
@@ -304,7 +322,7 @@ RSpec.describe Insured::ConsumerRolesController, dbclean: :after_each, :type => 
     end
   end
 
-  context "GET edit", dbclean: :after_each do
+  context "GET contact_preferences", dbclean: :after_each do
     before(:each) do
       allow(ConsumerRole).to receive(:find).and_return(consumer_role)
       allow(consumer_role).to receive(:person).and_return(person)
@@ -313,12 +331,156 @@ RSpec.describe Insured::ConsumerRolesController, dbclean: :after_each, :type => 
       allow(person).to receive(:consumer_role).and_return(consumer_role)
       allow(consumer_role).to receive(:save!).and_return(true)
       allow(consumer_role).to receive(:bookmark_url=).and_return(true)
-    end
-    it "should render new template" do
       sign_in user
-      get :edit, params: { id: "test" }
-      expect(response).to have_http_status(:success)
-      expect(response).to render_template(:edit)
+    end
+
+    context "when SMS notifications are enabled" do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:enroll_sms_notifications).and_return(true)
+      end
+
+      it "should render contact_preferences template" do
+        get :contact_preferences, params: { id: "test" }
+        expect(response).to have_http_status(:success)
+        expect(response).to render_template(:contact_preferences)
+      end
+    end
+
+    context "when SMS notifications are disabled" do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:enroll_sms_notifications).and_return(false)
+        allow(controller).to receive(:edit_insured_consumer_role_path).and_return("/insured/consumer_role/test/edit")
+      end
+
+      it "should redirect to edit page" do
+        get :contact_preferences, params: { id: "test" }
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to("/insured/consumer_role/test/edit")
+      end
+    end
+  end
+
+  context "PATCH create_contact_preferences", dbclean: :after_each do
+    let(:person_params) do
+      {
+        first_name: "John",
+        last_name: "Doe",
+        phones_attributes: {
+          "0" => { kind: "mobile", full_phone_number: "1234567890" }
+        },
+        emails_attributes: {
+          "0" => { kind: "home", address: "john@example.com" }
+        }
+      }
+    end
+
+    before(:each) do
+      allow(ConsumerRole).to receive(:find).and_return(consumer_role)
+      allow(consumer_role).to receive(:person).and_return(person)
+      allow(consumer_role).to receive(:build_nested_models_for_person).and_return(true)
+      allow(user).to receive(:person).and_return(person)
+      allow(person).to receive(:consumer_role).and_return(consumer_role)
+      allow(consumer_role).to receive(:save!).and_return(true)
+      allow(consumer_role).to receive(:bookmark_url=).and_return(true)
+      allow(controller).to receive(:authorize).and_return(true)
+      sign_in user
+    end
+
+    context "when SMS notifications are enabled" do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:enroll_sms_notifications).and_return(true)
+      end
+
+      context "when person saves successfully" do
+        before do
+          allow(person).to receive(:assign_attributes).and_return(true)
+          allow(person).to receive(:save).with(context: :enhanced_contact_preferences).and_return(true)
+          allow(controller).to receive(:edit_insured_consumer_role_path).and_return("/insured/consumer_role/test/edit")
+        end
+
+        it "should redirect to edit page" do
+          patch :create_contact_preferences, params: { id: "test", person: person_params }
+          expect(response).to have_http_status(:redirect)
+          expect(response).to redirect_to("/insured/consumer_role/test/edit")
+        end
+      end
+
+      context "when person fails to save" do
+        before do
+          allow(person).to receive(:assign_attributes).and_return(true)
+          allow(person).to receive(:save).with(context: :enhanced_contact_preferences).and_return(false)
+          allow(person).to receive_message_chain(:errors, :full_messages, :join).and_return("Phone number is required")
+          allow(controller).to receive(:bubble_consumer_role_errors_by_person).and_return(true)
+          allow(controller).to receive(:contact_preferences_insured_consumer_role_path).and_return("/insured/consumer_role/test/contact_preferences")
+        end
+
+        it "should redirect back to contact preferences with error" do
+          patch :create_contact_preferences, params: { id: "test", person: person_params }
+          expect(response).to have_http_status(:redirect)
+          expect(response).to redirect_to("/insured/consumer_role/test/contact_preferences")
+          expect(flash[:error]).to eq("Phone number is required")
+        end
+      end
+    end
+
+    context "when SMS notifications are disabled" do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:enroll_sms_notifications).and_return(false)
+        allow(controller).to receive(:edit_insured_consumer_role_path).and_return("/insured/consumer_role/test/edit")
+      end
+
+      it "should redirect to edit page" do
+        patch :create_contact_preferences, params: { id: "test", person: person_params }
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to("/insured/consumer_role/test/edit")
+      end
+    end
+  end
+
+  context "GET edit", dbclean: :after_each do
+    shared_examples "edit action behavior" do |sms_enabled, preferences_valid, expected_behavior|
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:enroll_sms_notifications).and_return(sms_enabled)
+        allow(person).to receive(:valid?).with(:enhanced_contact_preferences).and_return(preferences_valid)
+        allow(person).to receive_message_chain(:errors, :full_messages, :join).and_return("Phone number is required") if sms_enabled && !preferences_valid
+        allow(controller).to receive(:contact_preferences_insured_consumer_role_path).and_return("/insured/consumer_role/test/contact_preferences")
+      end
+
+      if expected_behavior == :redirect
+        it "should redirect to contact preferences page" do
+          get :edit, params: { id: "test" }
+          expect(response).to have_http_status(:redirect)
+          expect(response).to redirect_to(contact_preferences_insured_consumer_role_path(consumer_role))
+        end
+      else
+        it "should render edit template" do
+          get :edit, params: { id: "test" }
+          expect(response).to have_http_status(:success)
+          expect(response).to render_template(:edit)
+        end
+      end
+    end
+
+    before(:each) do
+      allow(ConsumerRole).to receive(:find).and_return(consumer_role)
+      allow(consumer_role).to receive(:person).and_return(person)
+      allow(consumer_role).to receive(:build_nested_models_for_person).and_return(true)
+      allow(user).to receive(:person).and_return(person)
+      allow(person).to receive(:consumer_role).and_return(consumer_role)
+      allow(consumer_role).to receive(:save!).and_return(true)
+      allow(consumer_role).to receive(:bookmark_url=).and_return(true)
+      sign_in user
+    end
+
+    [
+      [true,  false, :redirect, "SMS enabled, preferences invalid"],
+      [true,  true,  :render,   "SMS enabled, preferences valid"],
+      [false, false, :render,   "SMS disabled, preferences invalid"],
+      [false, true,  :render,   "SMS disabled, preferences valid"]
+    ].each do |sms_enabled, preferences_valid, expected_behavior, description|
+      context "when #{description}" do
+        include_examples "edit action behavior", sms_enabled, preferences_valid, expected_behavior
+      end
     end
   end
 

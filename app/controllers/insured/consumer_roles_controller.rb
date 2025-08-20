@@ -8,14 +8,17 @@ class Insured::ConsumerRolesController < ApplicationController
 
   layout :resolve_layout
 
-  before_action :enable_bs4_layout, only: [:privacy, :search, :match, :edit, :update, :ridp_agreement, :help_paying_coverage, :upload_ridp_document]
+  before_action :enable_bs4_layout, only: [:privacy, :search, :match, :edit, :update, :ridp_agreement, :help_paying_coverage, :upload_ridp_document, :contact_preferences, :create_contact_preferences]
   before_action :check_consumer_role, only: [:search, :match]
-  before_action :find_consumer_role, only: [:edit, :update]
+  before_action :find_consumer_role, only: [:edit, :update, :contact_preferences, :create_contact_preferences]
   before_action :individual_market_is_enabled?
   before_action :decrypt_params, only: [:create]
   before_action :set_cache_headers, only: [:edit, :help_paying_coverage, :privacy, :search]
   before_action :redirect_if_medicaid_tax_credits_link_is_disabled, only: [:privacy, :search]
-  before_action :sanitize_contact_method, :validate_person_match, only: [:update]
+  before_action :redirect_to_edit_if_sms_messaging_disabled, only: [:contact_preferences, :create_contact_preferences]
+  before_action :sanitize_contact_method, only: EnrollRegistry.feature_enabled?(:enroll_sms_notifications) ? [:create_contact_preferences] : [:update]
+  before_action :validate_person_match, only: [:update]
+  before_action :redirect_to_contact_preferences_if_invalid, only: [:edit]
 
   FIELDS_TO_ENCRYPT = [:ssn,:dob,:first_name,:middle_name,:last_name,:gender,:user_id].freeze
 
@@ -192,7 +195,8 @@ class Insured::ConsumerRolesController < ApplicationController
               @person.primary_family&.update_attribute(:e_case_id, "curam_landing_for#{@person.id}")
               redirect_to navigate_to_assistance_saml_index_path
             else
-              redirect_to :action => "edit", :id => @consumer_role.id
+              action = EnrollRegistry.feature_enabled?(:enroll_sms_notifications) ? :contact_preferences : :edit
+              redirect_to :action => action, :id => @consumer_role.id
             end
           end
         end
@@ -223,6 +227,26 @@ class Insured::ConsumerRolesController < ApplicationController
     respond_to :js
   end
 
+  def contact_preferences
+    authorize @consumer_role, :contact_preferences?
+    set_consumer_bookmark_url
+    @consumer_role.build_nested_models_for_person
+  end
+
+  def create_contact_preferences
+    authorize @consumer_role, :create_contact_preferences?
+    @consumer_role.skip_consumer_role_callbacks = true
+    valid_params = build_person_params_with_skip_flags(contact_preferences_params)
+    @person.assign_attributes(valid_params)
+    if @person.save(context: :enhanced_contact_preferences)
+      redirect_to edit_insured_consumer_role_path(@consumer_role)
+    else
+      bubble_consumer_role_errors_by_person(@consumer_role.person)
+      flash[:error] = @person.errors.full_messages.join(", ")
+      redirect_to contact_preferences_insured_consumer_role_path(@consumer_role)
+    end
+  end
+
   def edit
     authorize @consumer_role, :edit?
     set_consumer_bookmark_url
@@ -240,7 +264,7 @@ class Insured::ConsumerRolesController < ApplicationController
     mec_check(@person.hbx_id) if EnrollRegistry.feature_enabled?(:mec_check) && @person.send(:mec_check_eligible?)
     @shop_coverage_result = EnrollRegistry.feature_enabled?(:shop_coverage_check) ? (check_shop_coverage.success? && check_shop_coverage.success.present?) : nil
     @consumer_role.skip_consumer_role_callbacks = true
-    valid_params = {"skip_person_updated_event_callback" => true, "skip_lawful_presence_determination_callbacks" => true}.merge(params.require(:person).permit(*existing_personal_parameters_list))
+    valid_params = build_person_params_with_skip_flags(existing_personal_parameters_list)
 
     if update_vlp_documents(@consumer_role, 'person') && @consumer_role.update_by_person(valid_params)
       @consumer_role.update_attribute(:is_applying_coverage, params[:person][:is_applying_coverage]) unless params[:person][:is_applying_coverage].nil?
@@ -374,6 +398,28 @@ class Insured::ConsumerRolesController < ApplicationController
   end
 
   private
+
+  # Builds valid parameters with common skip flags
+  #
+  # @param permitted_params [ActionController::Parameters] The permitted parameters
+  # @return [Hash] Parameters with skip flags merged in
+  def build_person_params_with_skip_flags(specified_params)
+    {
+      "skip_person_updated_event_callback" => true,
+      "skip_lawful_presence_determination_callbacks" => true
+    }.merge(params.require(:person).permit(*specified_params))
+  end
+
+  # Parameters allowed for contact preferences action
+  #
+  # @return [ActionController::Parameters] Permitted parameters for contact preferences
+  def contact_preferences_params
+    [
+       { :phones_attributes => [:kind, :full_phone_number, :id, :_destroy] },
+       { :emails_attributes => [:kind, :address, :id, :_destroy] },
+       { :consumer_role_attributes => [:contact_method, :language_preference]}
+    ]
+  end
 
   # Prepares parameters for financial assistance application
   #
@@ -519,12 +565,11 @@ class Insured::ConsumerRolesController < ApplicationController
   end
 
   def existing_personal_parameters_list
-    if EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields)
-      # NOTE: with this update, the only place ssn/dob/no_ssn can be updated is the edit ssn dob feature, which is restricted to admin
-      person_parameters_list - [:dob, :ssn, :no_ssn]
-    else
-      person_parameters_list
-    end
+    flagged_params = []
+    # NOTE: with this update, the only place ssn/dob/no_ssn can be updated is the edit ssn dob feature, which is restricted to admin
+    flagged_params += [:dob, :ssn, :no_ssn] if EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields)
+    flagged_params += contact_preferences_params if EnrollRegistry.feature_enabled?(:enroll_sms_notifications)
+    person_parameters_list - flagged_params
   end
 
   def person_parameters_list
@@ -611,6 +656,23 @@ class Insured::ConsumerRolesController < ApplicationController
 
     @person_params[:dob] = @person.dob.strftime("%Y-%m-%d")
     @person_params.merge!({user_id: current_user.id})
+  end
+
+  def redirect_to_edit_if_sms_messaging_disabled
+    return if EnrollRegistry.feature_enabled?(:enroll_sms_notifications)
+
+    Rails.logger.info "Redirecting user #{current_user.id} to edit page"
+    redirect_to edit_insured_consumer_role_path(@consumer_role) and return
+  end
+
+  def redirect_to_contact_preferences_if_invalid
+    # In the edge case where a user is on the edit route without saved contact information and the `enroll_sms_notifications` flag is on, return them to the contact preferences page
+    # NOTE: this would (should?) only happen if they had the edit page bookmarked prior to the flag being flipped on
+    return unless EnrollRegistry.feature_enabled?(:enroll_sms_notifications)
+    return if @person.valid?(:enhanced_contact_preferences)
+
+    Rails.logger.info "Redirecting user #{current_user.id} to contact preferences error: #{@person.errors.full_messages.join(', ')}"
+    redirect_to contact_preferences_insured_consumer_role_path(@consumer_role) and return
   end
 
   def enable_bs4_layout

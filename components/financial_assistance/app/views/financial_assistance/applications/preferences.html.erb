@@ -211,7 +211,7 @@
             id:      "btn-continue",
             data:    (qhp_enabled ?
                         { target: "contact-methods.submitButton",
-                          action: "click->contact-methods#alertForInvalidContactMethods" }
+                          action: "click->contact-methods#validateSubmission" }
                         : {})
           ) %>
     <% end %>

@@ -135,6 +135,10 @@ class ConsumerRolePolicy < ApplicationPolicy
     false
   end
 
+  def contact_preferences?
+    edit?
+  end
+
   # Checking if consumer identity has been verified or if user has hbx_staff_role.
   # If either are true, then the user has access beyond the RIDP page.
   def ridp_verified?
@@ -144,6 +148,10 @@ class ConsumerRolePolicy < ApplicationPolicy
   end
 
   def update?
+    edit?
+  end
+
+  def create_contact_preferences?
     edit?
   end
 

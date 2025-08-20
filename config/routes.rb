@@ -384,6 +384,8 @@ Rails.application.routes.draw do
       get :search, on: :collection
       get :privacy, on: :collection
       post :match, on: :collection
+      get :contact_preferences, on: :member
+      patch :create_contact_preferences, on: :member
       post :build, on: :collection
       get :ridp_agreement, on: :collection
       get :help_paying_coverage, to: 'consumer_roles/help_paying_coverage', on: :collection, as: :help_paying_coverage

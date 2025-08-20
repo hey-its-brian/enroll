@@ -2,106 +2,116 @@ import { Controller } from "stimulus"
 import IMask from "imask"
 
 export default class extends Controller {
-  static targets = ["preferencesForm", "homePhone", "mobilePhone", "homeEmail", "workEmail", "submitButton", "mailPreference", "emailPreference", "textPreference",
-  "yearsToRenew", "methodContainer"]
+  static targets = [
+    "enrollSmsNotificationsInput",
+    "disableSubmissionInput",
+    "preferencesForm",
+    "homePhone",
+    "mobilePhone",
+    "homeEmail",
+    "workEmail",
+    "submitButton",
+    "mailPreference",
+    "emailPreference",
+    "textPreference",
+    "yearsToRenew",
+    "methodContainer"
+  ]
+
+  // Get the sms flag from the input.
+  get isSmsFlagEnabled() {
+    return this.hasEnrollSmsNotificationsInputTarget && this.enrollSmsNotificationsInputTarget.value === "true"
+  }
+
+  // Get the disable submission control from the input.
+  // This control is used to drive whether or not the contact method validation disables the save button, 
+  // allowing some flows to disable the save button when validation fails.
+  get canDisableSubmission() {
+    return this.hasDisableSubmissionInputTarget && this.disableSubmissionInputTarget.value === "true"
+  }
+
+  get validators() {
+    if (!this._validators) {
+      this._validators = {
+        homeEmail: new PersonalEmailValidator(this.homeEmailTarget),
+        mobilePhone: new MobilePhoneValidator(this.mobilePhoneTarget),
+        homePhone: new HomePhoneValidator(this.homePhoneTarget)
+      }
+    }
+    return this._validators
+  }
+
+  get hasMobilePhone() {
+    return this.validators.mobilePhone.hasValue
+  }
+
+  get hasHomeEmail() {
+    return this.validators.homeEmail.hasValue
+  }
+
+  get preferences() {
+    return {
+      mail: this.mailPreferenceTarget.checked,
+      email: this.emailPreferenceTarget.checked,
+      text: this.textPreferenceTarget.checked
+    }
+  }
 
   connect() {
-    this.canSubmitCheck()
+    this.updateFormState(this.canDisableSubmission) // when the form can disable the save button, we should report validity on connection
     this.maskPhones()
   }
 
-  canSubmitCheck() {
-    const emailValid = this.emailChecked()
-    const textValid = this.textChecked()
-    const homePhoneValid = this.homePhoneChecked()
+  updateFormState(reportErrors = true) {
+    this.homeEmailTarget.setCustomValidity(this.validateEmail() || '')
+    this.mobilePhoneTarget.setCustomValidity(this.validateText() || '')
+    this.homePhoneTarget.setCustomValidity(this.validateHomePhone() || '')
 
-    if (!emailValid || !textValid || !homePhoneValid) {
-      this.submitButtonTarget.disabled = true
-      this.submitButtonTarget.classList.add('disabled')
-    } else {
-      this.submitButtonTarget.disabled = false
-      this.submitButtonTarget.classList.remove('disabled')
+    if (this.canDisableSubmission) {
+      const hasErrors = !this.preferencesFormTarget.checkValidity()
+      this.submitButtonTarget.disabled = hasErrors
+      this.submitButtonTarget.classList.toggle('disabled', hasErrors)
+    }
+
+    if (reportErrors) {
+      this.preferencesFormTarget.reportValidity()
     }
   }
 
-  emailChecked() {
-    const emailPreference = this.emailPreferenceTarget.checked
-    let homeEmail = this.homeEmailTarget
-    let emailLabel = homeEmail.closest('div').querySelector('label')
-    if (emailPreference) {
-      homeEmail.required = true
-      emailLabel.classList.add('required')
-      let valid = true
-      if (homeEmail.value.length < 1) {
-        homeEmail.setCustomValidity("You must enter an email address to receive notices and updates by email.")
-        valid = false
-      } else {
-        homeEmail.setCustomValidity('')
-      }
-      this.preferencesFormTarget.reportValidity()
-      return valid
-    } else {
-      this.homeEmailTarget.required = false
-      emailLabel.classList.remove('required')
-      homeEmail.setCustomValidity('')
-      this.preferencesFormTarget.reportValidity()
-      return true
+  validateEmail() {
+    const hasEmailContact = this.preferences.email
+
+    let isMobilePhoneBlankOrBothFilled = (this.isSmsFlagEnabled && (!this.hasMobilePhone || this.hasHomeEmail))
+    this.toggleFieldRequired(this.homeEmailTarget, hasEmailContact || isMobilePhoneBlankOrBothFilled)
+
+    if (hasEmailContact) {
+      return this.validators.homeEmail.validate()
     }
+    return null
   }
 
-  textChecked() {
-    const textPreference = this.textPreferenceTarget.checked
-    let mobilePhone = this.mobilePhoneTarget
-    let textLabel = mobilePhone.closest('div').querySelector('label')
-    let phoneValue = mobilePhone.value.replace(/\D/g, '')
-    if (textPreference) {
-      mobilePhone.required = true
-      textLabel.classList.add('required')
-      let valid = true
-      if (/^(.)\0*$/.test(phoneValue)) {
-        mobilePhone.setCustomValidity("Mobile Phone number cannot be all zeros.")
-        valid = false
-      } else if (phoneValue.length < 1 || phoneValue.length < 10) {
-        mobilePhone.setCustomValidity("You must enter a mobile phone number to receive notices and updates by text.")
-        valid = false
-      } else {
-        mobilePhone.setCustomValidity('')
-      }
-      this.preferencesFormTarget.reportValidity()
-      return valid
-    } else {
-      mobilePhone.required = false
-      textLabel.classList.remove('required')
-      mobilePhone.setCustomValidity('')
-      this.preferencesFormTarget.reportValidity()
-      return true
+  validateText() {
+    const hasTextContact = this.preferences.text
+    let isHomeEmailBlankOrBothFilled = (this.isSmsFlagEnabled && (!this.hasHomeEmail || this.hasMobilePhone))
+    this.toggleFieldRequired(this.mobilePhoneTarget, hasTextContact || isHomeEmailBlankOrBothFilled)
+
+    if (hasTextContact) {
+      return this.validators.mobilePhone.validate()
     }
+    return null
+  }
+  
+  validateHomePhone() {
+    return this.validators.homePhone.validate()
   }
 
-  homePhoneChecked() {
-    let homePhone = this.homePhoneTarget
-    let phoneValue = homePhone.value.replace(/\D/g, '')
-    if (phoneValue.length > 0) {
-      let valid = true
-      if (/^(.)\0*$/.test(phoneValue)) {
-        homePhone.setCustomValidity("Home Phone number cannot be all zeros.")
-        valid = false
-      } else if (phoneValue.length < 1 || phoneValue.length < 10) {
-        homePhone.setCustomValidity("Home phone must be 10 digits long.")
-        valid = false
-      } else {
-        homePhone.setCustomValidity('')
-      }
-      this.preferencesFormTarget.reportValidity()
-      return valid
-    } else {
-      homePhone.setCustomValidity('')
-      this.preferencesFormTarget.reportValidity()
-      return true
+  validateSubmission(event) {
+    if (!this.preferencesFormTarget.checkValidity()) {
+      event.preventDefault();
+      this.preferencesFormTarget.reportValidity();
+      return;
     }
-  }
 
-  alertForInvalidContactMethods(event) {
     if (this.hasYearsToRenewTarget) {
       if (!this.yearsToRenewTarget.checkValidity()) {
         event.preventDefault();
@@ -114,14 +124,16 @@ export default class extends Controller {
       this.setDestroys()
     }
 
-    let mailPreference = this.mailPreferenceTarget.checked
-    let emailPreference = this.emailPreferenceTarget.checked
-    let textPreference = this.textPreferenceTarget.checked
+    const preferences = this.preferences
 
-    if (!mailPreference && !emailPreference && !textPreference) {
+    if (this.isSmsFlagEnabled && this.homeEmailTarget.value.length == 0 && this.mobilePhoneTarget.value == 0) {
+      event.preventDefault();
+      alert('An email or mobile phone number is required.');
+      this.mobilePhoneTarget.focus();
+    } else if (!preferences.mail && !preferences.email && !preferences.text) {
       event.preventDefault();
       alert('A contact method is required to proceed. If selecting Text, you must also choose Email or Mail.');
-    } else if (textPreference && !mailPreference && !emailPreference) {
+    } else if (preferences.text && !preferences.mail && !preferences.email) {
       event.preventDefault();
       alert('Text cannot be your only contact method. If you select Text, you must also choose Email or Mail.');
     } else {
@@ -133,22 +145,11 @@ export default class extends Controller {
     this.methodContainerTargets.forEach(container => {
       let input = container.querySelector('input.full-width')
       let destroy = container.querySelector('input.destroy')
-      if (input && input.value.length === 0 && destroy) {
-        destroy.value = true
+      
+      if (input && destroy) {
+        destroy.value = input.value.length === 0
       }
     })
-  }
-
-  textMessageOnly() {
-    let textPreference = this.textPreferenceTarget.checked
-    let mailPreference = this.mailPreferenceTarget.checked
-    let emailPreference = this.emailPreferenceTarget.checked
-
-    if (textPreference && !mailPreference && !emailPreference) {
-      return false
-    } else {
-      return true
-    }
   }
 
   maskPhones() {
@@ -156,4 +157,89 @@ export default class extends Controller {
     IMask(this.mobilePhoneTarget, { mask: "(000) 000-0000" })
   }
 
+  toggleFieldRequired(fieldTarget, isRequired) {
+    let label = fieldTarget.closest('div').querySelector('label')
+    label.classList.toggle('required', isRequired)
+  }
+}
+
+class HomePhoneValidator {
+  static REQUIRED_LENGTH = 10
+  static ERRORS = {
+    allZeros: "Home Phone number cannot be all zeros.",
+    beginWithZero: "Phone numbers cannot begin with a 0. Please check the number you entered, remove any leading zeros, and resubmit.",
+    invalidLength: `Phone must be ${HomePhoneValidator.REQUIRED_LENGTH} digits long.`
+  }
+
+  constructor(phoneTarget) {
+    this.phoneTarget = phoneTarget
+  }
+
+  validate() {
+    const phoneValue = this.phoneTarget.value.replace(/\D/g, '')
+
+    if (phoneValue.length > 0) {
+      if (/^0+$/.test(phoneValue)) {
+        return HomePhoneValidator.ERRORS.allZeros
+      } else if(/^0\d+/.test(phoneValue)) {
+        return HomePhoneValidator.ERRORS.beginWithZero
+      } else if (phoneValue.length < HomePhoneValidator.REQUIRED_LENGTH) {
+        return HomePhoneValidator.ERRORS.invalidLength
+      }
+    }
+    return null
+  }
+}
+
+class PersonalEmailValidator {
+  static ERRORS = {
+    empty: "You must enter an email address to receive notices and updates by email."
+  }
+
+  constructor(emailTarget) {
+    this.emailTarget = emailTarget
+  }
+
+  get hasValue() {
+    return this.emailTarget.value.trim().length > 0
+  }
+
+  validate() {
+    const emailValue = this.emailTarget.value.trim()
+
+    if (emailValue.length === 0) {
+      return PersonalEmailValidator.ERRORS.empty
+    }
+    return null
+  }
+}
+
+class MobilePhoneValidator {
+  static REQUIRED_LENGTH = 10
+  static ERRORS = {
+    allZeros: "Mobile Phone number cannot be all zeros.",
+    beginWithZero: "Phone numbers cannot begin with a 0. Please check the number you entered, remove any leading zeros, and resubmit.",
+    invalidLength: "You must enter a mobile phone number to receive notices and updates by text."
+  }
+
+  constructor(phoneTarget) {
+    this.phoneTarget = phoneTarget
+  }
+
+  get hasValue() {
+    return this.phoneTarget.value.length > 0
+  }
+
+  validate() {
+    const phoneValue = this.phoneTarget.value.replace(/\D/g, '')
+
+    if (/^0+$/.test(phoneValue)) {
+      return MobilePhoneValidator.ERRORS.allZeros
+    } else if(/^0\d+/.test(phoneValue)) {
+      return MobilePhoneValidator.ERRORS.beginWithZero
+    } else if (phoneValue.length < 1 || phoneValue.length < MobilePhoneValidator.REQUIRED_LENGTH) {
+      return MobilePhoneValidator.ERRORS.invalidLength
+    }
+    return null
+  }
 }

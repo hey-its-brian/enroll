@@ -1,0 +1,14 @@
+<%= render partial: 'shared/progress_side_nav', locals: {nav: sign_up_nav_options(1, dont_show_exit_button: true)} %>
+
+<h1><%= l10n("qhp_application.review.contact_preferences") %></h1>
+<p><%= l10n("insured.preferences.description.contact_info") %></p>
+<p>
+  <b><%= l10n("insured.preferences.description.required_notice_1") %></b>
+  <%= l10n("insured.preferences.description.required_notice_2") %>
+  <b><%= l10n('continue_to_next_step') %></b>
+</p>
+<% person = @consumer_role.person %>
+<%= form_for person, { :autocomplete => :off , :as => :person, :url => create_contact_preferences_insured_consumer_role_path(@consumer_role), :method => :patch, data: { controller: "contact-methods", target: "contact-methods.preferencesForm" } } do |f| %>
+  <%= render partial: 'shared/contact_preferences_fields', locals: { config: contact_preferences_fields_config(f), disable_submission: false } %>
+  <%= submit_tag l10n("continue_next"), class: "btn", data: { action: "click->contact-methods#validateSubmission", target: "contact-methods.submitButton" } %>
+<% end %>
