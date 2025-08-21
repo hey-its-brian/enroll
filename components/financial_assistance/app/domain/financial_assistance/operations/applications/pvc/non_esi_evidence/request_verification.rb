@@ -4,6 +4,8 @@ require 'dry/monads'
 require 'dry/monads/do'
 require 'aca_entities/magi_medicaid/libraries/iap_library'
 
+# Syntax
+# ::FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidence::RequestVerification.new.call({application_hbx_id: payload[:application_hbx_id]})
 module FinancialAssistance
   module Operations
     module Applications
@@ -11,7 +13,7 @@ module FinancialAssistance
         module NonEsiEvidence
         # operation to manually trigger pvc events.
         # It will take families as input and find the determined application, add evidences and publish the group of applications
-          class RequestDetermination
+          class RequestVerification
             include FinancialAssistance::Operations::Applications::Shared::NonEsiEvidenceRequest
 
             private

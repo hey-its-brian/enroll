@@ -2,7 +2,7 @@
 
 require 'aasm/rspec'
 
-RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidence::RequestDetermination, dbclean: :after_each do
+RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidence::RequestVerification, dbclean: :after_each do
   include Dry::Monads[:do, :result]
 
   let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
