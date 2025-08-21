@@ -25,8 +25,10 @@ RSpec.describe Operations::Eligibilities::Evidences::ExtendDueDate, type: :opera
     )
   end
 
+  let(:due_date) { Date.current + 30.days }
+
   let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
-  let(:income_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories, :outstanding, eligibility: aptc_csr_eligibility) }
+  let(:income_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories, :outstanding, due_on: due_date, eligibility: aptc_csr_eligibility) }
   let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
   let(:ssn_evidence) { FactoryBot.create(:social_security_number_evidence, :with_verification_histories, :outstanding, eligibility: ivl_eligibility) }
 
@@ -84,32 +86,20 @@ RSpec.describe Operations::Eligibilities::Evidences::ExtendDueDate, type: :opera
             evidence: income_evidence,
             application: faa_application,
             current_user: user,
-            extension_period: 60
+            extension_period: 96
           }
         end
 
-        before do
-          allow(income_evidence).to receive(:extend_due_date).and_return(true)
-        end
-
-        it 'successfully extends due date by period' do
+        it 'returns success' do
           result = operation.call(params)
-
           expect(result).to be_success
           expect(result.success).to include("Income Evidence due date extended")
         end
 
-        it 'uses provided extension period' do
-          expected_due_date = Date.current + 60.days
-
-          expect(income_evidence).to receive(:extend_due_date).with(
-            'extend_due_date',
-            expected_due_date,
-            user.oim_id,
-            kind_of(String)
-          )
-
+        it 'successfully extends due date by period' do
           operation.call(params)
+          expect(income_evidence.due_on).to eq(Date.current + 96.days)
+          expect(income_evidence.verification_histories.last.action).to eq('extend_due_date')
         end
       end
     end
