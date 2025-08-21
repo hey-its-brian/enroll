@@ -8,6 +8,7 @@ module Operations
     # RelocateEnrolledProducts is a service class that will be used to relocate enrolled products for a given person, new address and existing coverage
     class RelocateEnrolledProducts
       include Dry::Monads[:do, :result]
+      include ResourceRegistryHelper
 
       EVENT_OUTCOME_MAPPING = {:service_area_changed => "product_service_area_relocated",
                                :rating_area_changed => "premium_rating_area_relocated",
@@ -39,6 +40,7 @@ module Operations
       private
 
       def validate(params)
+        return Failure('Relocation of Enrolled Products is not needed when QHP application feature is enabled.') if qhp_application_feature_enabled?
         return Failure("RelocateEnrolledProducts: Person_hbx_id is missing") unless params[:person_hbx_id].present?
         return Failure("RelocateEnrolledProducts: address_set is missing") unless params[:address_set].present?
         return Failure("RelocateEnrolledProducts: address_set should be of kind home") unless params[:address_set][:modified_address][:kind] == "home"
@@ -146,4 +148,3 @@ module Operations
     end
   end
 end
-
