@@ -71,8 +71,10 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
 
     context 'determined application with no years to renew' do
       before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
         application.update_attributes!({ aasm_state: 'determined', years_to_renew: [0, nil].sample })
         application.reload
+        family.update_attributes!(latest_application_gid: application.to_global_id.uri.to_s)
         @result = subject.call({ family_id: application.family_id, renewal_year: application.assistance_year.next })
         @renewal_draft_app = @result.success
       end
@@ -334,6 +336,8 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
         let(:renewal_draft_blocker_reason) { 'family_members_changed' }
 
         before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          family_11.update_attributes!(latest_application_gid: application_11.to_global_id.uri.to_s)
           @result = subject.call({ family_id: application_11.family_id, renewal_year: application_11.assistance_year.next })
         end
 
@@ -353,6 +357,8 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
 
       context 'New Family member dropped with corresponding applicant' do
         before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          family_11.update_attributes!(latest_application_gid: application_11.to_global_id.uri.to_s)
           family_11.remove_family_member(family_member_12.person)
           family_11.save!
           @result = subject.call({ family_id: application_11.family_id, renewal_year: application_11.assistance_year.next })
@@ -376,7 +382,9 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
 
       context 'Family members changed and missing relationships' do
         before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           allow(operation_instance).to receive(:missing_relationships?).and_return(true)
+          family.update_attributes!(latest_application_gid: application.to_global_id.uri.to_s)
           @result = subject.call({ family_id: application.family_id, renewal_year: application.assistance_year.next })
         end
 
@@ -414,6 +422,8 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
 
       context 'Claiming applicants missing' do
         before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          family_11.update_attributes!(latest_application_gid: application_11.to_global_id.uri.to_s)
           application_11.applicants.last.update_attributes!(claimed_as_tax_dependent_by: nil)
           @result = subject.call({ family_id: application_11.family_id, renewal_year: application_11.assistance_year.next })
         end

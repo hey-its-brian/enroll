@@ -49,11 +49,11 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
           expect(@result).to be_success
         end
 
-        it 'should return success with a message' do
-          expect(@result.success).to eq('Successfully updated Application object with Full Eligibility Determination')
+        it 'returns success with the updated application' do
+          expect(@result.success).to be_a(::FinancialAssistance::Application)
         end
 
-        context 'for Appplication' do
+        context 'for Application' do
           it 'should update aasm_state' do
             expect(@application.aasm_state).to eq("determined")
           end

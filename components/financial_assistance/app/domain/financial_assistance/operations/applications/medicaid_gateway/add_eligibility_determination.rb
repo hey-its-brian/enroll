@@ -21,14 +21,15 @@ module FinancialAssistance
             application_entity = yield initialize_application_entity(params)
             application        = yield find_application(application_entity)
             application        = yield update_application(application, application_entity)
-            result             = yield add_eligibility_determination(application_entity, application)
+            application        = yield add_eligibility_determination(application_entity, application)
             _evidences_result  = yield create_aptc_eligibilities_evidences(application)
             _family_result     = yield create_or_update_family(application)
             _done              = yield cache_determination_token(application)
-            payload_entity     = yield rebuild_payload_entity(application)
-            _verification_result = yield request_evidences_verification(payload_entity, application)
+            application_entity = yield rebuild_application_entity(application)
+            _verification_requested = yield request_evidences_verification(application_entity, application)
+            _notified          = yield trigger_notifications(application, application_entity)
 
-            Success(result)
+            Success(application)
           end
 
           private
@@ -108,7 +109,7 @@ module FinancialAssistance
             end
 
             update_http_code_and_aasm_state(application)
-            Success('Successfully updated Application object with Full Eligibility Determination')
+            Success(application)
           end
 
           def update_http_code_and_aasm_state(application)
@@ -181,13 +182,19 @@ module FinancialAssistance
             end
           end
 
-          def rebuild_payload_entity(application)
+          # Rebuilds the application entity for the given application with the latest information
+          #
+          # @param application [FinancialAssistance::Application] The application to rebuild
+          #
+          # @return [Dry::Monads::Result::Success] Returns success if the application entity is rebuilt successfully
+          # @return [Dry::Monads::Result::Failure] Returns failure if there are validation errors
+          def rebuild_application_entity(application)
             return Success(true) unless qhp_application_feature_enabled?
             result = ::Operations::Fdsh::BuildAndValidateApplicationPayload.new.call(application)
 
             if result.failure?
-              Rails.logger.error("Unable to rebuild payload entity for application with hbx_id: #{application.hbx_id} with errors: #{result.failure}")
-              return Failure("Unable to rebuild payload entity for application with hbx_id: #{application.hbx_id} with errors: #{result.failure}")
+              Rails.logger.error("Unable to rebuild application entity for application with hbx_id: #{application.hbx_id} with errors: #{result.failure}")
+              return Failure("Unable to rebuild application entity for application with hbx_id: #{application.hbx_id} with errors: #{result.failure}")
             end
 
             result
@@ -206,7 +213,7 @@ module FinancialAssistance
           # @return [Dry::Monads::Result::Success] Returns success in the following cases:
           #   - When QHP application feature is disabled
           #   - When all hub calls are turned off via feature flags
-          #   - When application is a renewal and RRV feature is enabled
+          #   - When application's RRV feature is enabled
           #   - When evidence verification completes successfully
           #   - When evidence verification fails (individual evidence statuses are updated separately)
           # @return [Dry::Monads::Result::Failure] Only returns failure when there is a critical system error
@@ -221,7 +228,7 @@ module FinancialAssistance
           def request_evidences_verification(payload_entity, application)
             return Success(true) unless qhp_application_feature_enabled?
             return Success(true) if all_hub_calls_turned_off?
-            return Success(true) if application.workflow_state_transitions.any? { |wst| wst.from_state == 'renewal_draft' } && FinancialAssistanceRegistry.feature_enabled?(:renewal_eligibility_verification_using_rrv)
+            return Success(true) if FinancialAssistanceRegistry.feature_enabled?(:renewal_eligibility_verification_using_rrv)
 
             ::FinancialAssistance::Operations::Application::Evidences::RequestVerification.new.call({application: application, payload_entity: payload_entity})
           rescue StandardError => e
@@ -234,6 +241,20 @@ module FinancialAssistance
               FinancialAssistanceRegistry[:non_esi_mec_determination].disabled? &&
               FinancialAssistanceRegistry[:ifsv_determination].disabled? &&
               FinancialAssistanceRegistry[:mec_check].disabled?
+          end
+
+          # Calls method to trigger notifications for a determined application
+          #
+          # @param application [FinancialAssistance::Application]
+          # @param application_entity [AcaEntities::MagiMedicaid::Application]
+          #
+          # @return [Dry::Monads::Result]
+          def trigger_notifications(application, application_entity)
+            return Success(true) unless qhp_application_feature_enabled?
+
+            ::FinancialAssistance::Operations::Application::TriggerNotifications.new.call(
+              { application: application, application_entity: application_entity }
+            )
           end
         end
       end

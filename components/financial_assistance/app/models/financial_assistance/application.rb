@@ -832,7 +832,7 @@ module FinancialAssistance
       # An application can be in the cancelled state if a new application is created.
       state :cancelled
 
-      event :set_magi_medicaid_eligibility_request_errored, :after => :record_transition do
+      event :set_magi_medicaid_eligibility_request_errored, :after => [:record_transition, :build_transition] do
         if FinancialAssistanceRegistry.feature_enabled?(:haven_determination)
           transitions from: :submitted, to: :haven_magi_medicaid_eligibility_request_errored
         elsif FinancialAssistanceRegistry.feature_enabled?(:medicaid_gateway_determination)
@@ -842,7 +842,7 @@ module FinancialAssistance
         end
       end
 
-      event :submit, :after => [:record_transition, :set_submit] do
+      event :submit, :after => [:record_transition, :build_transition, :set_submit] do
         transitions from: [:draft,
                            :renewal_draft,
                            :haven_magi_medicaid_eligibility_request_errored,
@@ -865,7 +865,7 @@ module FinancialAssistance
         end
       end
 
-      event :unsubmit, :after => [:record_transition, :unset_submit] do
+      event :unsubmit, :after => [:record_transition, :build_transition, :unset_submit] do
         transitions from: :submitted, to: :renewal_draft do
           guard do
             previously_renewal_draft?
@@ -879,24 +879,24 @@ module FinancialAssistance
         end
       end
 
-      event :set_determination_response_error, :after => :record_transition do
+      event :set_determination_response_error, :after => [:record_transition, :build_transition] do
         transitions from: :submitted, to: :determination_response_error
       end
 
-      event :determine, :after => [:record_transition, :create_tax_household_groups, :send_determination_to_ea, :create_evidences, :publish_application_determined, :notify_totally_ineligible_members] do
+      event :determine, :after => [:record_transition, :build_transition, :create_tax_household_groups, :send_determination_to_ea, :create_evidences, :publish_application_determined, :notify_totally_ineligible_members] do
         transitions from: :submitted, to: :determined
       end
 
-      event :determine_renewal, :after => [:record_transition, :create_tax_household_groups, :send_determination_to_ea, :create_evidences, :publish_application_determined] do
+      event :determine_renewal, :after => [:record_transition, :build_transition, :create_tax_household_groups, :send_determination_to_ea, :create_evidences, :publish_application_determined] do
         transitions from: :submitted, to: :determined
       end
 
-      event :terminate, :after => :record_transition do
+      event :terminate, :after => [:record_transition, :build_transition] do
         transitions from: [:submitted, :determined, :determination_response_error],
                     to: :terminated
       end
 
-      event :cancel, :after => :record_transition do
+      event :cancel, :after => [:record_transition, :build_transition] do
         transitions from: [:draft], to: :cancelled
       end
 
@@ -912,7 +912,7 @@ module FinancialAssistance
         transitions from: :renewal_draft, to: :applicants_update_required
       end
 
-      event :import, :after => [:record_transition] do
+      event :import, :after => [:record_transition, :build_transition] do
         transitions from: :draft, to: :imported
       end
     end
@@ -1591,13 +1591,23 @@ module FinancialAssistance
 
     # Records the transition of the application state.
     #
-    # @return [WorkflowStateTransition] the newly created transition object
-    def build_transition
-      workflow_state_transitions.build(
-        event: aasm.current_event,
-        from_state: aasm.from_state,
-        to_state: aasm.to_state
-      )
+    # Args can be passed to the method to record the transition.
+    # Example: application.build_transition(comment: "This is a comment", reason: "This is a reason")
+    # @param args [Hash] optional arguments to pass to the transition
+    # @option args [String] :comment comment to be recorded
+    # @option args [String] :reason reason to be recorded
+    #
+    # @return [WorkflowStateTransition] the newly built transition object
+    def build_transition(*args)
+      return unless qhp_application_feature_enabled?
+
+      wfst_params = { event: aasm.current_event, from_state: aasm.from_state, to_state: aasm.to_state }
+      if args.present? && args.first.is_a?(Hash)
+        wfst_params[:comment] = args.first[:comment] if args.first[:comment].present?
+        wfst_params[:reason] = args.first[:reason] if args.first[:reason].present?
+      end
+
+      workflow_state_transitions.build(wfst_params)
     end
 
     # Validates that origin and generation_reason have permitted values
@@ -1853,6 +1863,8 @@ module FinancialAssistance
     # @option args [String] :reason reason to be recorded
     # @return [void]
     def record_transition(*args)
+      return if qhp_application_feature_enabled?
+
       self.save if self.aasm_state_changed?
 
       wfst_params = { from_state: aasm.from_state, to_state: aasm.to_state }

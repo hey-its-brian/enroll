@@ -1149,6 +1149,7 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
     context 'income_verification_extension_required' do
       context 'event: set_income_verification_extension_required' do
         before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           application.update_attributes!(aasm_state: 'renewal_draft')
         end
 
@@ -1175,6 +1176,7 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
 
     context '#set_applicants_update_required' do
       before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
         application.update_attributes!(aasm_state: 'renewal_draft')
       end
 
