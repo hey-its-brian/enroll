@@ -4,8 +4,19 @@
   <% qhp_enabled = qhp_application_feature_enabled? %>
   <% page_title = qhp_enabled ? "eligibility_results_page" : "review_page" %>
   <% step_number = calculate_step_number(@application, page_title) %>
-  <%= render partial: '/financial_assistance/shared/faa_progress_options', locals: {step: step_number} %>
-  <div class="<%= 'container mt-4' if !@in_application_flow %>">
+  <% if @in_application_flow || !qhp_enabled %>
+    <%= render partial: '/financial_assistance/shared/faa_progress_options', locals: {step: step_number} %>
+  <% else %>
+    <%= render partial: 'shared/family_side_nav' %>
+  <% end %>
+  <% if qhp_enabled %>
+    <ul class="breadcrumbs mb-3">
+      <li><%= link_to l10n("qhp_application.show.applications"), main_app.current_applications_insured_sbm_applications_path %></li>
+      <li><%= link_to l10n("qhp_application.show.application_details"), financial_assistance.application_path(@application) %></li>
+      <li><%= l10n("faa.results.eligibility_results") %></li>
+    </ul>
+  <% end %>
+  <div class="<%= 'container mt-4' if !@in_application_flow && !qhp_enabled %>">
     <h1 data-cuke='eligibility_results'><%= l10n("faa.results.eligibility_results") %></h1>
 
     <% @application.eligibility_determinations.each_with_index do |ed, i| %>
@@ -192,24 +203,36 @@
     <h2 data-cuke='next_steps' class="mt-4"><%= l10n("faa.results.next_steps") %></h2>
 
     <% if @application.applicants_applying_coverage.all?(&:is_medicaid_chip_eligible) %>
-      <p data-cuke='all_medicaid_next_steps_continue_text'><%= l10n("faa.results.all_medicaid_next_steps_continue_text",
+      <% if qhp_application_feature_enabled? %>
+        <p data-cuke='all_medicaid_next_steps_continue_text'><%= l10n("faa.results.qhp_all_medicaid_next_steps_continue_text",
                                                                     short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+        <p><p data-cuke='next_steps_text'><%= l10n("qhp_application.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+      <% else %>
+        <p data-cuke='all_medicaid_next_steps_continue_text'><%= l10n("faa.results.all_medicaid_next_steps_continue_text",
+                                                                    short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+      <% end %>
     <% else %>
       <% if qhp_application_feature_enabled? %>
         <p data-cuke='next_steps_text'><%= l10n("qhp_application.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
-        <div data-cuke='return_to_account_home' class="my-4">
-            <% group_selection_url = main_app.new_insured_group_selection_path(person_id: @person.id, consumer_role_id: @person.consumer_role.id) %>
-            <% find_sep_url = main_app.find_sep_insured_families_path(consumer_role_id: @person.consumer_role.id) %>
-            <% next_url = @person.consumer_role.present? && is_under_open_enrollment? ? main_app.new_insured_group_selection_path(person_id: @person.id, consumer_role_id: @person.consumer_role.id) : main_app.find_sep_insured_families_path(consumer_role_id: @person.consumer_role.id) %>
-            <%= h(link_to l10n("qhp_application.results.continue_to_shop"), next_url, class: "button") %>
-            <%= link_to l10n("qhp_application.results.return_to_account"), main_app.family_account_path, class: "button secondary outline ml-2" %>
-        </div>
       <% else %>
         <p data-cuke='next_steps_text'><%= l10n("faa.results.next_steps_text", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
       <% end %>
     <% end %>
 
-    <% unless qhp_application_feature_enabled? %>
+    <% if qhp_application_feature_enabled? %>
+      <div data-cuke='return_to_account_home' class="my-4">
+        <% if @in_application_flow %>
+          <% group_selection_url = main_app.new_insured_group_selection_path(person_id: @person.id, consumer_role_id: @person.consumer_role.id) %>
+          <% find_sep_url = main_app.find_sep_insured_families_path(consumer_role_id: @person.consumer_role.id) %>
+          <% next_url = @person.consumer_role.present? && is_under_open_enrollment? ? main_app.new_insured_group_selection_path(person_id: @person.id, consumer_role_id: @person.consumer_role.id) : main_app.find_sep_insured_families_path(consumer_role_id: @person.consumer_role.id) %>
+          <%= h(link_to l10n("qhp_application.results.continue_to_shop"), next_url, class: "button") %>
+          <%= link_to l10n("qhp_application.results.return_to_account"), main_app.family_account_path, class: "button secondary outline ml-2" %>
+        <% else %>
+        <%= h(link_to l10n("qhp_application.results.view_my_applications"), main_app.current_applications_insured_sbm_applications_path, class: "button outline") %>
+          <%= link_to l10n("qhp_application.results.return_to_account"), main_app.family_account_path, class: "button ml-2" %>
+        <% end%>
+      </div>
+    <% else %>
       <!-- Start: Return to Account Home -->
       <div data-cuke='return_to_account_home' class="my-4">
         <%= h(link_to l10n('faa.results.return_to_account_home'), main_app.family_account_path, class: "button secondary") %>
@@ -217,12 +240,7 @@
       <!-- End: Return to Account Home -->
     <% end %>
 
-    <% unless (action_name == "eligibility_results" || action_name == "review") && (params.keys.exclude?"cur") %>
-      <% continue_text = qhp_enabled ? l10n("faa.results.shop_for_plans") : l10n("continue_next") %>
-      <p data-cuke='continue_text'><%= l10n("faa.results.continue_text", continue_text: continue_text) %></p>
-    <% end %>
-
-    <% if qhp_application_feature_enabled? %>
+    <% if qhp_application_feature_enabled? && @in_application_flow %>
       <div class="my-4">
         <p data-cuke='your_application_reference_2' class="mt-4"><span class="secondary-semibold"><%= l10n("qhp_application.results.application_reference_id") %>:</span> <%= @application.hbx_id %></p>
         <%= h(link_to l10n("qhp_application.results.view_my_applications"), main_app.current_applications_insured_sbm_applications_path, class: "button outline my-3") %>

@@ -55,8 +55,7 @@ module Insured
         @prospective_year = @applicable_year + 1
         prospective_application = @family.application_for_year(@prospective_year)
         @prospective_application = prospective_application if prospective_application.present? && prospective_application.determined?
-        oe_start_date = ::Operations::Individual::OpenEnrollmentStartOn.new.call({date: TimeKeeper.date_of_record})
-        @oe_start_date = oe_start_date.success? ? oe_start_date.value!&.to_formatted_s(:long) : nil
+        @oe_start_date = HbxProfile.current_hbx.try(:benefit_sponsorship).try(:renewal_benefit_coverage_period).try(:open_enrollment_start_on)&.to_formatted_s(:long) if @prospective_application.present?
       end
 
       def set_family

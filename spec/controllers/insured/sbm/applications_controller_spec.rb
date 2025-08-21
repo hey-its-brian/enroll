@@ -56,28 +56,38 @@ RSpec.describe Insured::Sbm::ApplicationsController, dbclean: :after_each do
         expect(assigns(:prospective_year)).not_to be_nil
       end
 
-      it 'should set the oe start date' do
-        get :current_applications
-        expect(assigns(:oe_start_date)).not_to be_nil
-      end
-
       it 'should not set the prospective application' do
         get :current_applications
         expect(assigns(:prospective_application)).to be_nil
       end
 
-      context 'when a prospective application is present' do
-        it 'should set the prospective application when it is determined' do
-          application = FactoryBot.create(:individual_market_application, :determined,:with_applicants, family_id: family.id, assistance_year: TimeKeeper.date_of_record.year + 1)
+      it 'should not set the oe start date when prospective application is not present' do
+        get :current_applications
+        expect(assigns(:oe_start_date)).to be_nil
+      end
+
+      context 'when a prospective application is present and not under OE' do
+        let(:application) { FactoryBot.create(:individual_market_application, :determined,:with_applicants, family_id: family.id, assistance_year: TimeKeeper.date_of_record.year + 1) }
+        before do
+          application
           get :current_applications
-          expect(assigns(:prospective_application)).to eq(application)
         end
 
-        it 'should not set the prospective application when it is not determined' do
-          FactoryBot.create(:individual_market_application, :initial, :with_applicants, family_id: family.id, assistance_year: TimeKeeper.date_of_record.year + 1)
-          get :current_applications
-          expect(assigns(:prospective_application)).to be_nil
+        context 'when the application is determined' do
+          it 'should set the prospective application' do
+            expect(assigns(:prospective_application)).to eq(application)
+          end
+
+          it 'should set the oe start date' do
+            expect(assigns(:oe_start_date)).not_to be_nil
+          end
         end
+      end
+
+      it 'should not set the prospective application when it is not determined' do
+        FactoryBot.create(:individual_market_application, :initial, :with_applicants, family_id: family.id, assistance_year: TimeKeeper.date_of_record.year + 1)
+        get :current_applications
+        expect(assigns(:prospective_application)).to be_nil
       end
     end
   end

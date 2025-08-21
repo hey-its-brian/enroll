@@ -1291,5 +1291,12 @@ describe "Enabled/Disabled IVL market" do
       expect(helper.format_response_payload(payload)).to eq(helper.pretty_xml(payload))
       expect(helper.format_response_payload(payload)).to include("encoding")
     end
+
+    context "when the payload is a stringified hash" do
+      it "returns the formatted json" do
+        payload = "{\"SSAResponses\":[{\"ResponseMetadata\":{\"ResponseCode\":\"HS000000\"},\"SSAResponse\":{\"SSNVerificationIndicator\":true,\"PersonUSCitizenIndicator\":true}}],\"ResponseM\":{\"ResponseCode\":\"H\"}}"
+        expect(helper.format_response_payload(payload)).to include("\n")
+      end
+    end
   end
 end

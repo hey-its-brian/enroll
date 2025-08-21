@@ -1287,7 +1287,7 @@ module ApplicationHelper
 
   def qhp_application_state(application)
     return l10n('draft') if application.current_state == :initial
-    return l10n('determination_error') if application.current_state.in?(:determination_failed, :family_sync_failed)
+    return l10n('determination_error') if application.current_state.in?([:determination_failed, :family_sync_failed])
     return l10n('determined') if application.current_state.in?([:determined, :expired])
 
     application.current_state.to_s.titleize
@@ -1304,9 +1304,18 @@ module ApplicationHelper
   def format_response_payload(payload)
     return if payload.blank?
     return pretty_xml(payload) if xml_string?(payload)
-    JSON.pretty_generate(JSON.parse(payload))
+    return JSON.pretty_generate(JSON.parse(payload)) if parsable_json?(payload)
+    parsed_string = parse_stringified_hash(payload)
+    return parsed_string if parsed_string == payload
+    JSON.pretty_generate(JSON.parse(parsed_string))
   rescue JSON::ParserError, TypeError => _e
     payload
+  end
+
+  def parsable_json?(payload)
+    JSON.parse(payload)
+  rescue JSON::ParserError, TypeError => _e
+    false
   end
 
   def xml_string?(possible_xml)
@@ -1330,5 +1339,13 @@ XSL
     out = xslt.transform(doc)
 
     out.to_xml
+  end
+
+  def parse_stringified_hash(string)
+    return string unless string.is_a?(String)
+    string
+      .gsub(/:(\w+)/){"\"#{Regexp.last_match(1)}\""}
+      .gsub('=>', ':')
+      .gsub("nil", "null")
   end
 end

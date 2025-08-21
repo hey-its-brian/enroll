@@ -477,7 +477,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.insured.sbm.applications.index.pre_oe_warning2' => "To prepare for Open Enrollment, we’ve determined your eligibility for next year in advance. You won’t be able to make changes to this application until Open Enrollment begins on ",
   :"en.insured.sbm.applications.eligibility.history" => "History",
   :'en.insured.sbm.applications.eligibility_history' => "Eligibility History",
-  :'en.insured.sbm.applications.application_history' => "Application History",
+  :'en.insured.sbm.applications.application_history_heading' => "Application History",
   :'en.insured.sbm.applications.eligibility_history.header1' => "If you’ve started or submitted an application, it will be listed below.",
   :'en.insured.sbm.applications.eligibility_history.header' => "To make changes, find your current application – you can either update it or copy it to begin a new one. If your updates apply to both %{previous_year} and %{current_year}, you’ll need to submit a separate application for each year.",
   :'en.insured.sbm.applications.table.year' => "Year",

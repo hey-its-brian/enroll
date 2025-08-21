@@ -94,7 +94,9 @@
   <p class="my-3">
     <span class="secondary-semibold"><%= l10n("qhp_application.results.application_reference_id") %>:</span> <%= @application.hbx_id %>
   </p>
-  <%= h(link_to l10n("qhp_application.results.view_my_applications"), main_app.current_applications_insured_sbm_applications_path, class: "button outline my-3") %>
+  <% if @in_application_flow %>
+    <%= h(link_to l10n("qhp_application.results.view_my_applications"), main_app.current_applications_insured_sbm_applications_path, class: "button outline my-3") %>
+  <% end %>
 </div>
 <div id="other-accordion" data-cuke='other_actions'>
   <div class="card p-0">
