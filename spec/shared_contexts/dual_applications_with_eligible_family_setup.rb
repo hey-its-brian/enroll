@@ -108,7 +108,7 @@ RSpec.shared_context 'dual applications with eligible family setup' do
     app.applicants.first.individual_market_eligibility.qhp_determination.bases.build({ basis_kind: 'applying_coverage', is_satisfied: true })
     app.applicants.first.individual_market_eligibility.qhp_determination.bases.build({ basis_kind: 'is_alive', is_satisfied: true })
     app.applicants.first.individual_market_eligibility.qhp_determination.bases.build({ basis_kind: 'state_resident', is_satisfied: true })
-    app.applicants.first.individual_market_eligibility.qhp_determination.bases.build({basis_kind: 'lawfully_present_in_us', is_satisfied: true })
+    app.applicants.first.individual_market_eligibility.qhp_determination.bases.build({ basis_kind: 'lawfully_present_in_us', is_satisfied: true })
 
     app.applicants.last.individual_market_eligibility.qhp_determination.bases.build({ basis_kind: 'not_incarcerated', is_satisfied: false })
     app.applicants.last.individual_market_eligibility.qhp_determination.bases.build({ basis_kind: 'applying_coverage', is_satisfied: true })

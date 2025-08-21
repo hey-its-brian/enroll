@@ -12,7 +12,11 @@ module Subscribers
         payload = JSON.parse(response, :symbolize_names => true)
 
 
-        result = FinancialAssistance::Operations::Applications::Rrv::Ifsv::AddRrvIfsvDetermination.new.call(payload: payload)
+        result = if EnrollRegistry.feature_enabled?(:qhp_application)
+                   FinancialAssistance::Operations::Applications::Rrv::IncomeEvidence::DetermineAndStoreResponse.new.call(payload: payload)
+                 else
+                   FinancialAssistance::Operations::Applications::Rrv::Ifsv::AddRrvIfsvDetermination.new.call(payload: payload)
+                 end
 
         if result.success?
           logger.info "FdshGateway::RrvIfsvDeterminationSubscriber: invoked on_magi_medicaid_application_renewal_eligibilities_ifsv_determined acked with success: #{result.success}"
