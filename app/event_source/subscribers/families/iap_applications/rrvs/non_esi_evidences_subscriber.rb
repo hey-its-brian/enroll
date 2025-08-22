@@ -28,7 +28,7 @@ module Subscribers
 
           def determine_build_request(payload, subscriber_logger)
             result = if qhp_application_feature_enabled?
-                       ::FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestDetermination.new.call(payload)
+                       ::FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestVerification.new.call(payload)
                      else
                        ::Operations::Families::IapApplications::Rrvs::NonEsiEvidences::RequestDetermination.new.call(payload)
                      end

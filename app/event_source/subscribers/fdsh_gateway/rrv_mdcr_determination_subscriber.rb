@@ -3,16 +3,22 @@
 module Subscribers
   module FdshGateway
     # Subscriber will receive response payload from FDSH gateway and determine non esi mec responses for FAA applicants
+    # This subscriber will be used for Hub Calls
     class RrvMdcrDeterminationSubscriber
       include EventSource::Logging
       include ::EventSource::Subscriber[amqp: 'fdsh.renewal_eligibilities.medicare']
+      include ::ResourceRegistryHelper
 
       subscribe(:on_magi_medicaid_application_renewal_eligibilities_medicare_determined) do |delivery_info, _metadata, response|
         logger.info "FdshGateway::RrvMdcrDeterminationSubscriber: invoked on_magi_medicaid_application_renewal_eligibilities_mdcr_determined with delivery_info: #{delivery_info.inspect}, response: #{response.inspect}"
         fdsh_response = JSON.parse(response, :symbolize_names => true)
 
         logger.info "FdshGateway::RrvMdcrDeterminationSubscriber: parsed_response: #{fdsh_response.inspect}"
-        result = FinancialAssistance::Operations::Applications::Rrv::Medicare::AddRrvMedicareDetermination.new.call(fdsh_response)
+        result = if qhp_application_feature_enabled?
+                   FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::DetermineAndStoreResponse.new.call(fdsh_response)
+                 else
+                   FinancialAssistance::Operations::Applications::Rrv::Medicare::AddRrvMedicareDetermination.new.call(fdsh_response)
+                 end
 
         if result.success?
           logger.info "FdshGateway::RrvMdcrDeterminationSubscriber: invoked on_magi_medicaid_application_renewal_eligibilities_mdcr_determined acked with success: #{result.success}"

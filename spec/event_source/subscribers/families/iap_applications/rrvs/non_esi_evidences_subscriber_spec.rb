@@ -10,7 +10,7 @@ RSpec.describe Subscribers::Families::IapApplications::Rrvs::NonEsiEvidencesSubs
   let(:subscriber_logger) { instance_double(Logger) }
 
   # Mock the operation classes - separate instances for each operation
-  let(:fa_request_determination_operation) { instance_double(FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestDetermination) }
+  let(:fa_request_determination_operation) { instance_double(FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestVerification) }
   let(:operations_request_determination_operation) { instance_double(Operations::Families::IapApplications::Rrvs::NonEsiEvidences::RequestDetermination) }
 
   before do
@@ -19,7 +19,7 @@ RSpec.describe Subscribers::Families::IapApplications::Rrvs::NonEsiEvidencesSubs
     allow(subscriber_logger).to receive(:error)
 
     # Mock the operation classes
-    allow(FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestDetermination).to receive(:new).and_return(fa_request_determination_operation)
+    allow(FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestVerification).to receive(:new).and_return(fa_request_determination_operation)
     allow(Operations::Families::IapApplications::Rrvs::NonEsiEvidences::RequestDetermination).to receive(:new).and_return(operations_request_determination_operation)
   end
 
@@ -29,17 +29,17 @@ RSpec.describe Subscribers::Families::IapApplications::Rrvs::NonEsiEvidencesSubs
         allow(subscriber).to receive(:qhp_application_feature_enabled?).and_return(true)
       end
 
-      context 'when RequestDetermination operation succeeds' do
+      context 'when RequestVerification operation succeeds' do
         let(:success_result) { Success('Operation completed successfully') }
 
         before do
           allow(fa_request_determination_operation).to receive(:call).with(payload).and_return(success_result)
         end
 
-        it 'calls RequestDetermination operation' do
+        it 'calls RequestVerification operation' do
           subscriber.send(:determine_build_request, payload, subscriber_logger)
 
-          expect(FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestDetermination).to have_received(:new)
+          expect(FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestVerification).to have_received(:new)
           expect(fa_request_determination_operation).to have_received(:call).with(payload)
         end
 
@@ -49,24 +49,24 @@ RSpec.describe Subscribers::Families::IapApplications::Rrvs::NonEsiEvidencesSubs
           subscriber.send(:determine_build_request, payload, subscriber_logger)
         end
 
-        it 'does not call Operations RequestDetermination operation' do
+        it 'does not call Operations RequestVerification operation' do
           subscriber.send(:determine_build_request, payload, subscriber_logger)
 
           expect(Operations::Families::IapApplications::Rrvs::NonEsiEvidences::RequestDetermination).not_to have_received(:new)
         end
       end
 
-      context 'when RequestDetermination operation fails' do
+      context 'when RequestVerification operation fails' do
         let(:failure_result) { Failure('Operation failed with error') }
 
         before do
           allow(fa_request_determination_operation).to receive(:call).with(payload).and_return(failure_result)
         end
 
-        it 'calls RequestDetermination operation' do
+        it 'calls RequestVerification operation' do
           subscriber.send(:determine_build_request, payload, subscriber_logger)
 
-          expect(FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestDetermination).to have_received(:new)
+          expect(FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestVerification).to have_received(:new)
           expect(fa_request_determination_operation).to have_received(:call).with(payload)
         end
 
@@ -77,7 +77,7 @@ RSpec.describe Subscribers::Families::IapApplications::Rrvs::NonEsiEvidencesSubs
         end
       end
 
-      context 'when RequestDetermination operation raises an exception' do
+      context 'when RequestVerification operation raises an exception' do
         let(:error_message) { 'Something went wrong' }
         let(:backtrace) { ['line1', 'line2', 'line3'] }
         let(:standard_error) { StandardError.new(error_message) }
@@ -93,10 +93,10 @@ RSpec.describe Subscribers::Families::IapApplications::Rrvs::NonEsiEvidencesSubs
           expect { subscriber.send(:determine_build_request, payload, subscriber_logger) }.not_to raise_error
         end
 
-        it 'still calls the RequestDetermination operation' do
+        it 'still calls the RequestVerification operation' do
           subscriber.send(:determine_build_request, payload, subscriber_logger)
 
-          expect(FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestDetermination).to have_received(:new)
+          expect(FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestVerification).to have_received(:new)
           expect(fa_request_determination_operation).to have_received(:call).with(payload)
         end
       end
@@ -107,14 +107,14 @@ RSpec.describe Subscribers::Families::IapApplications::Rrvs::NonEsiEvidencesSubs
         allow(subscriber).to receive(:qhp_application_feature_enabled?).and_return(false)
       end
 
-      context 'when RequestDetermination operation succeeds' do
+      context 'when RequestVerification operation succeeds' do
         let(:success_result) { Success('Legacy operation completed successfully') }
 
         before do
           allow(operations_request_determination_operation).to receive(:call).with(payload).and_return(success_result)
         end
 
-        it 'calls RequestDetermination operation' do
+        it 'calls RequestVerification operation' do
           subscriber.send(:determine_build_request, payload, subscriber_logger)
 
           expect(Operations::Families::IapApplications::Rrvs::NonEsiEvidences::RequestDetermination).to have_received(:new)
@@ -127,21 +127,21 @@ RSpec.describe Subscribers::Families::IapApplications::Rrvs::NonEsiEvidencesSubs
           subscriber.send(:determine_build_request, payload, subscriber_logger)
         end
 
-        it 'does not call FinancialAssistance RequestDetermination operation' do
+        it 'does not call FinancialAssistance RequestVerification operation' do
           subscriber.send(:determine_build_request, payload, subscriber_logger)
 
-          expect(FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestDetermination).not_to have_received(:new)
+          expect(FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidence::RequestVerification).not_to have_received(:new)
         end
       end
 
-      context 'when RequestDetermination operation fails' do
+      context 'when RequestVerification operation fails' do
         let(:failure_result) { Failure('Legacy operation failed with error') }
 
         before do
           allow(operations_request_determination_operation).to receive(:call).with(payload).and_return(failure_result)
         end
 
-        it 'calls RequestDetermination operation' do
+        it 'calls RequestVerification operation' do
           subscriber.send(:determine_build_request, payload, subscriber_logger)
 
           expect(Operations::Families::IapApplications::Rrvs::NonEsiEvidences::RequestDetermination).to have_received(:new)
@@ -155,7 +155,7 @@ RSpec.describe Subscribers::Families::IapApplications::Rrvs::NonEsiEvidencesSubs
         end
       end
 
-      context 'when RequestDetermination operation raises an exception' do
+      context 'when RequestVerification operation raises an exception' do
         let(:error_message) { 'Legacy operation exception' }
         let(:backtrace) { ['legacy_line1', 'legacy_line2'] }
         let(:standard_error) { StandardError.new(error_message) }
@@ -171,7 +171,7 @@ RSpec.describe Subscribers::Families::IapApplications::Rrvs::NonEsiEvidencesSubs
           expect { subscriber.send(:determine_build_request, payload, subscriber_logger) }.not_to raise_error
         end
 
-        it 'still calls the RequestDetermination operation' do
+        it 'still calls the RequestVerification operation' do
           subscriber.send(:determine_build_request, payload, subscriber_logger)
 
           expect(Operations::Families::IapApplications::Rrvs::NonEsiEvidences::RequestDetermination).to have_received(:new)

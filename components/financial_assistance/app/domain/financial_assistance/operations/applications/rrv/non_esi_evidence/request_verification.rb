@@ -9,7 +9,7 @@ module FinancialAssistance
       module Rrv
         module NonEsiEvidence
           # This operation is to publish cv3 application for rrv non_esi verification for QHP
-          class RequestDetermination
+          class RequestVerification
             include FinancialAssistance::Operations::Applications::Shared::NonEsiEvidenceRequest
 
             private
