@@ -18,10 +18,11 @@ RSpec.describe Operations::Families::AddFinancialAssistanceEligibilityDeterminat
   let(:application) do
     FactoryBot.create(:financial_assistance_application, params)
   end
+  let(:rating_area) { FactoryBot.create_default(:benefit_markets_locations_rating_area) }
   let(:params) do
     default_tobacco_use = "unknown"
     {:family_id => BSON::ObjectId(family.id),
-     :assistance_year => 2020,
+     :assistance_year => TimeKeeper.date_of_record.year,
      :benchmark_product_id => BSON::ObjectId('5f6020f26e81d9c148d3db34'),
      :integrated_case_id => '2000',
      :applicants =>
@@ -334,6 +335,43 @@ RSpec.describe Operations::Families::AddFinancialAssistanceEligibilityDeterminat
       it 'should return csr_percent_as_integer value correctly' do
         expect(@thhm.csr_percent_as_integer).to eq(-1)
       end
+    end
+  end
+
+  context 'with an existing aptc enrollment' do
+    let(:existing_aptc_enrollment) do
+      FactoryBot.create(
+        :hbx_enrollment,
+        :individual_aptc,
+        :with_silver_health_product,
+        family: family,
+        household: family.active_household,
+        coverage_kind: 'health',
+        consumer_role: person.consumer_role,
+        effective_on: Date.new(application.assistance_year, 1, 1),
+        rating_area_id: rating_area.id,
+        aasm_state: 'coverage_selected'
+      )
+    end
+
+    before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:apply_aggregate_to_enrollment).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:temporary_configuration_enable_multi_tax_household_feature).and_return(true)
+      existing_aptc_enrollment
+      bcp = HbxProfile.current_hbx.benefit_sponsorship.current_benefit_coverage_period
+      bcp.update_attributes!(slcsp_id: product.id)
+      @result = subject.call(application)
+      family.reload
+      existing_aptc_enrollment.reload
+      @thhs = family.active_household.tax_households
+    end
+
+    it 'should create a new aptc enrollment' do
+      expect(family.active_household.hbx_enrollments.count).to eq(2)
+    end
+
+    it "terminates the existing aptc enrollment" do
+      expect(existing_aptc_enrollment.aasm_state).to eq('coverage_terminated')
     end
   end
 
