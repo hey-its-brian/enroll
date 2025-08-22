@@ -97,9 +97,9 @@ module Operations
           #
           # @return [Dry::Monads::Result] Success with the renewal application or Failure with an error message
           def retain_evidence_info(current_application, application)
-            current_application.applicants.each do |applicant|
-              renewal_applicant = application.applicants.where(family_member_id: applicant.family_member_id).first
-              renewal_applicant.retain_evidence_information(applicant)
+            application.applicants.each do |applicant|
+              current_applicant = current_application.applicants.where(family_member_id: applicant.family_member_id).first
+              applicant.retain_evidence_information(current_applicant)
             end
 
             Success(application)

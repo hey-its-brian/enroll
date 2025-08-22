@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbclean: :after_each do
-  let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+  let(:person) { FactoryBot.create(:person, :with_ssn, :with_consumer_role, :with_active_consumer_role) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
   let(:primary_applicant) { family.primary_applicant }
 
@@ -113,6 +113,13 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::Create, dbc
 
       it 'does not cancel the current application' do
         expect(current_application.reload.current_state).to eq(:initial)
+      end
+
+      it 'creates the renewal application with applicants' do
+        expect(result).to be_success
+        expect(result.success).to be_a(IndividualMarket::Application)
+        expect(result.success.applicants.count).to eq(family.active_family_members.count)
+        expect(result.success.applicants.map(&:family_member_id).sort).to match_array(family.active_family_members.map(&:id).sort)
       end
     end
 

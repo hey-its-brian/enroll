@@ -37,7 +37,7 @@ module Operations
           #
           # @return [Dry::Monads::Result] Success with family and renewal year or Failure with an error message
           def validate_inputs(family_id, renewal_year)
-            family = Family.only(:_id).where(id: family_id).first
+            family = ::Family.where(id: family_id).first
             return Failure("Family with id #{family_id} not found") unless family
             return Failure("Invalid renewal year: #{renewal_year}") unless renewal_year.is_a?(Integer)
 

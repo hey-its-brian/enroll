@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe Operations::IndividualMarket::Applications::Renewals::SubmitAndDetermine, dbclean: :after_each do
 
-  let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+  let(:person) { FactoryBot.create(:person, :with_ssn, :with_consumer_role, :with_active_consumer_role) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
   let(:primary_applicant) { family.primary_applicant }
 
