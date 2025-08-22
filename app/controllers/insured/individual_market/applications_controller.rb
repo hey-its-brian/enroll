@@ -57,11 +57,11 @@ module Insured
               @application.failed_determination
             end
             flash[:error] = result.failure
-            redirect_to insured_individual_market_application_path(@application) and return
+            redirect_to submit_and_determine_error_insured_individual_market_application_path(@application) and return
           end
         else
           flash[:error] = "Invalid attestation"
-          redirect_to insured_individual_market_application_path(@application) and return
+          redirect_to submit_and_determine_error_insured_individual_market_application_path(@application) and return
         end
       end
 
@@ -105,6 +105,12 @@ module Insured
           flash[:error] = copy_result.failure
           redirect_back(fallback_location: insured_sbm_applications_path)
         end
+      end
+
+      def submit_and_determine_error
+        authorize @application, :submit_and_determine_error?
+
+        respond_to :html
       end
 
       private

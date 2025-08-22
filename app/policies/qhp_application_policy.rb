@@ -121,4 +121,12 @@ class QhpApplicationPolicy < ApplicationPolicy
 
     false
   end
+
+  # Determines if the current user has permission to view the submit and determine error of the application.
+  # The user can view the submit and determine error if they have permission to edit it.
+  #
+  # @return [Boolean] Returns true if the user has permission to view the submit and determine error of the application, false otherwise.
+  def submit_and_determine_error?
+    edit?
+  end
 end

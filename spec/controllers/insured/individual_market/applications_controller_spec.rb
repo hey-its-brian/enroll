@@ -206,7 +206,7 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
           end
 
           it "redirects back to application with error" do
-            expect(response).to redirect_to(insured_individual_market_application_path(application))
+            expect(response).to redirect_to(submit_and_determine_error_insured_individual_market_application_path(application))
             expect(flash[:error]).to eq("Invalid attestation")
           end
         end

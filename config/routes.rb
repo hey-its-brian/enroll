@@ -286,6 +286,7 @@ Rails.application.routes.draw do
           get :eligibility_results
           get :copy
           get :eligibility_criteria
+          get :submit_and_determine_error
         end
 
         resources :applicants do

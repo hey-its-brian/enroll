@@ -1,0 +1,13 @@
+<%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(6, @application, show_account_button: @family.eligibility_determination.present?)} %>
+
+<h1><%= l10n('financial_assistance.applications.response_error') %></h1>
+
+<p><%= l10n("financial_assistance.applications.cant_determine_eligibility",
+          site_short_name: site_short_name,
+          contact_center_phone_number: health_benefit_exchange_authority_phone_number,
+          contact_center_tty_number: contact_center_tty_number,
+          contact_center_email_address: contact_center_email_address)%></p>
+
+<p><%= l10n('financial_assistance.applications.report_error', determination_http_status_code: '999') %></p>
+
+<%= link_to l10n("go_to_my_account"), family_account_path, class: 'btn btn-primary' %>
