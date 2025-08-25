@@ -4,7 +4,7 @@ require 'csv'
 require 'rails_helper'
 
 describe RejectedVerificationTypesOrEvidencesReport do
-  before :all do
+  before :each do
     DatabaseCleaner.clean
   end
 
@@ -78,6 +78,24 @@ describe RejectedVerificationTypesOrEvidencesReport do
       expect(evidence_row[7]).to eq(person.hbx_id)
       expect(evidence_row[8]).to eq(l10n('faa.evidence_type_esi'))
       expect(evidence_row[9]).to eq(esi_evidence.aasm_state.capitalize)
+    end
+  end
+
+  context 'with multiple applications' do
+    let!(:another_application) do
+      FactoryBot.create(:application, created_at: application.created_at - 4.days, family_id: family.id, aasm_state: 'submitted', assistance_year: TimeKeeper.date_of_record.year)
+    end
+
+    before do
+      another_application.workflow_state_transitions.create(to_state: another_application.aasm_state, from_state: 'draft', created_at: TimeKeeper.date_of_record)
+      application.workflow_state_transitions.create(to_state: application.aasm_state, from_state: 'draft', created_at: TimeKeeper.date_of_record - 2.days)
+      esi_evidence
+      subject.migrate
+      @csv = CSV.read(output_csv)
+    end
+
+    it 'should reflect the rejected evidences of the latest transitioned application' do
+      expect(@csv.count).to eq(1) # only header row, no data rows because the latest application has no rejected evidences
     end
   end
 end

@@ -119,7 +119,8 @@ class RejectedVerificationTypesOrEvidencesReport < MongoidMigrationTask
   def process_families(offset_count, csv)
     families.no_timeout.limit(10_000).offset(offset_count).inject([]) do |_dummy, family|
       primary = family.primary_person
-      application = FinancialAssistance::Application.by_year(assistance_year).submitted_and_after.where(family_id: family.id).order(created_at: :desc).first
+      applications = FinancialAssistance::Application.by_year(assistance_year).submitted_and_after.where(family_id: family.id)
+      application = applications.max_by { |app| app.workflow_state_transitions.where(to_state: app.aasm_state).last&.created_at || app.submitted_at || app.created_at }
       active_enr = family.hbx_enrollments.by_year(assistance_year).enrolled_and_renewal.order(created_at: :desc).first
       csv = process_family_members(family, csv, primary, application, active_enr)
       process_application(application, primary, csv, active_enr, family) if application.present?
