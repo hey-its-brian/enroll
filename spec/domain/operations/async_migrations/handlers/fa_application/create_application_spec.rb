@@ -1059,6 +1059,92 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           expect(subject.eligibility_states[1].evidence_states.count).to eq(4)
         end
       end
+
+      context "when applicant is indian tribe member" do
+        context "and csr_eligibility_kind is nil and csr_percent_as_integer is -1" do
+          before do
+            allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
+            application.applicants.first.update_attributes(indian_tribe_member: true, csr_eligibility_kind: nil, csr_percent_as_integer: -1)
+            @result = subject.call({document_id: application.id.to_s})
+            @old_applicant = application.applicants.first
+            @new_application_hbx_id = @result.value![1]
+            @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
+            @new_application.reload
+            @new_applicant = @new_application.applicants.first
+          end
+
+          it 'should be a success' do
+            expect(@result).to be_success
+            expect(@new_applicant.is_csr_eligible).to be_truthy
+            expect(@new_applicant.csr_eligibility_kind).to eq("csr_limited")
+            expect(@new_applicant.csr_percent_as_integer).to eq(-1)
+          end
+        end
+
+        context "and csr_eligibility_kind is present" do
+          before do
+            allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
+            application.applicants.first.update_attributes(indian_tribe_member: true)
+            @result = subject.call({document_id: application.id.to_s})
+            @old_applicant = application.applicants.first
+            @new_application_hbx_id = @result.value![1]
+            @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
+            @new_application.reload
+            @new_applicant = @new_application.applicants.first
+          end
+
+          it 'should be a success' do
+            expect(@result).to be_success
+            expect(@new_applicant.is_csr_eligible).to be_truthy
+            expect(@new_applicant.csr_eligibility_kind).to eq('csr_87')
+            expect(@new_applicant.csr_percent_as_integer).to eq(87)
+          end
+        end
+      end
+
+      context "when applicant is not indian tribe member" do
+        context "- is_ia_eligible is true
+        - csr_eligibility_kind is present" do
+          before do
+            allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
+            application.applicants.first.update_attributes(is_ia_eligible: true)
+            @result = subject.call({document_id: application.id.to_s})
+            @old_applicant = application.applicants.first
+            @new_application_hbx_id = @result.value![1]
+            @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
+            @new_application.reload
+            @new_applicant = @new_application.applicants.first
+          end
+
+          it 'should be a success' do
+            expect(@result).to be_success
+            expect(@new_applicant.is_csr_eligible).to be_truthy
+            expect(@new_applicant.csr_eligibility_kind).to eq('csr_87')
+            expect(@new_applicant.csr_percent_as_integer).to eq(87)
+          end
+        end
+
+        context "- is_ia_eligible is true
+        - csr_eligibility_kind is not present" do
+          before do
+            allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
+            application.applicants.first.update_attributes(is_ia_eligible: true, csr_eligibility_kind: nil, csr_percent_as_integer: 0)
+            @result = subject.call({document_id: application.id.to_s})
+            @old_applicant = application.applicants.first
+            @new_application_hbx_id = @result.value![1]
+            @new_application = FinancialAssistance::Application.where(hbx_id: @new_application_hbx_id).first
+            @new_application.reload
+            @new_applicant = @new_application.applicants.first
+          end
+
+          it 'should be a success' do
+            expect(@result).to be_success
+            expect(@new_applicant.is_csr_eligible).to be_truthy
+            expect(@new_applicant.csr_eligibility_kind).to eq('csr_0')
+            expect(@new_applicant.csr_percent_as_integer).to eq(0)
+          end
+        end
+      end
     end
 
     context 'failed case' do

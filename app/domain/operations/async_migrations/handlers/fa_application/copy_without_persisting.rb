@@ -106,6 +106,20 @@ module Operations
             source_application.applicants.each do |source_applicant|
               source_applicant_params = fetch_applicant_params(source_applicant, nil)
               new_applicant = new_app.build_new_applicant(source_applicant_params.except(:emails, :phones, :addresses))
+
+              # If an applicant is american_indian_alaskan_native, then
+              #   1. set is_csr_eligible to true
+              #   2. set the csr_kind to 'limited' only when it is not present.
+              # If an applicant is not american_indian_alaskan_native and is_ia_eligible then,
+              #   set is_csr_eligible to true
+              #   csr_eligibility_kind is always default to csr_0 if none is present.
+              if new_applicant.indian_tribe_member || new_applicant.is_ia_eligible
+                new_applicant.is_csr_eligible = true
+                new_applicant.assign_attributes(csr_eligibility_kind: 'csr_limited', csr_percent_as_integer: -1) if new_applicant.indian_tribe_member && new_applicant.csr_eligibility_kind.blank?
+              else
+                new_applicant.assign_attributes(is_csr_eligible: false, csr_percent_as_integer: 0)
+              end
+
               build_applicant_embeded_documents(source_applicant, new_applicant, source_applicant_params)
             end
           end
