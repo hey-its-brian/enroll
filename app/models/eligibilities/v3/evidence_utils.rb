@@ -198,7 +198,7 @@ module Eligibilities
           if ivl_evidence_keys.include?(key.to_s) &&
              prev_evidence&.verified? &&
              demographics_changed?(call_type)
-            copied_verified
+            copied_verified(call_type)
           else
             eligible_state(call_type)
           end
@@ -222,15 +222,13 @@ module Eligibilities
         # Used when previous evidence was verified and no demographics changes occurred.
         #
         # @return [void]
-        def copied_verified
+        def copied_verified(call_type)
           return unless can_move_to_verified?
+          pre_state = self.current_state
 
           mark_as_verified
-          build_verification_history(
-            'copied_verified',
-            "no demographics changes for the applicant",
-            'system'
-          )
+          message = build_copied_message(pre_state, call_type)
+          build_verification_history('copied_verified', message, 'system')
         end
 
         # Determines the appropriate state transition based on whether ROP is in progress.
@@ -263,11 +261,11 @@ module Eligibilities
 
           case prev_evidence.current_state.to_s
           when 'review'
-            copied_review(prev_evidence)
+            copied_review(prev_evidence, call_type)
           when 'outstanding'
-            copied_outstanding(prev_evidence)
+            copied_outstanding(prev_evidence, call_type)
           when 'rejected'
-            copied_rejected(prev_evidence)
+            copied_rejected(prev_evidence, call_type)
           else
             Rails.logger.warn("Unexpected state in rop_eligible_state: #{prev_evidence.current_state}")
           end
@@ -318,27 +316,30 @@ module Eligibilities
           prev_evidence.current_state
         end
 
-        def copied_review(prev_evidence)
+        def copied_review(prev_evidence, call_type)
           return unless can_move_to_review?
 
+          prev_state = self.current_state
           move_to_review
-          add_history_with_prev_due_on('copied_review', prev_evidence)
+          add_history_with_prev_due_on('copied_review', prev_evidence, prev_state, call_type)
         end
 
-        def copied_outstanding(prev_evidence)
+        def copied_outstanding(prev_evidence, call_type)
           return unless can_move_to_outstanding?
 
+          prev_state = self.current_state
           assign_attributes(verification_outstanding: true, is_satisfied: false)
           move_to_outstanding
-          add_history_with_prev_due_on('copied_outstanding', prev_evidence)
+          add_history_with_prev_due_on('copied_outstanding', prev_evidence, prev_state, call_type)
         end
 
-        def copied_rejected(prev_evidence)
+        def copied_rejected(prev_evidence, call_type)
           return unless can_move_to_rejected?
 
+          prev_state = self.current_state
           assign_attributes(verification_outstanding: true, is_satisfied: false)
           move_to_rejected
-          add_history_with_prev_due_on('copied_rejected', prev_evidence)
+          add_history_with_prev_due_on('copied_rejected', prev_evidence, prev_state, call_type)
         end
 
         # Sets the due date from previous evidence and adds verification history.
@@ -346,13 +347,35 @@ module Eligibilities
         # @param action [String] The action being performed
         # @param prev_evidence [Evidence] The previous evidence to copy due date from
         # @return [void]
-        def add_history_with_prev_due_on(action, prev_evidence)
-          self.due_on = prev_evidence.due_on
-          build_verification_history(
-            action,
-            "copied state from previous application",
-            'system'
-          )
+        def add_history_with_prev_due_on(action, prev_evidence, prev_state, call_type)
+          self.due_on = prev_evidence.due_on if prev_evidence.due_on.present?
+          self.due_date_extended_at = prev_evidence.due_date_extended_at if prev_evidence.due_date_extended_at.present?
+          message = build_copied_message(prev_state, call_type)
+          build_verification_history(action, message, 'system')
+        end
+
+        # Generates a message describing the state transition and data copied
+        #
+        # @param prev_state [Symbol] The previous state before transition
+        # @param call_type [String] The type of call
+        # @return [String, nil] The generated message or nil if application not found
+        def build_copied_message(prev_state, call_type)
+          application = fetch_last_determined_application(call_type)
+          return nil if application.nil?
+
+          app_hbx_id = application.hbx_id
+          app_type = application_type(application)
+
+          base_message = "State updated from #{prev_state} to #{self.current_state}"
+          app_info = "from previous application #{app_hbx_id} application type #{app_type}"
+
+          if due_on.present? && due_date_extended_at.present?
+            "#{base_message}, due date of #{due_on} copied, and #{due_date_extended_at} automatic due date extended at copied #{app_info} due to active ROP."
+          elsif due_on.present?
+            "#{base_message} and due date of #{due_on} copied #{app_info} due to active ROP."
+          else
+            "#{base_message} based on previous application #{app_hbx_id} application type #{app_type} because there were no demographic changes for the person."
+          end
         end
 
         def application_type(application)

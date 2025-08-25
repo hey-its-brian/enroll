@@ -383,7 +383,7 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
       describe "#copied_verified" do
         context "when can move to verified" do
           it "moves to verified and adds history" do
-            citizenship_evidence1.copied_verified
+            citizenship_evidence1.copied_verified("hub_call")
             expect(citizenship_evidence1.current_state).to eq(:verified)
           end
         end
@@ -393,7 +393,7 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
 
           it "does not move to verified" do
             present_state = citizenship_evidence1.current_state
-            citizenship_evidence1.copied_verified
+            citizenship_evidence1.copied_verified("hub_call")
             expect(citizenship_evidence1.current_state).to eq(present_state)
           end
         end
@@ -416,6 +416,7 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
             citizenship_evidence1.save
             expect(citizenship_evidence1.current_state).to eq(citizenship_evidence.current_state)
             expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_rejected')
+            expect(citizenship_evidence1.verification_histories.first.update_reason).to include('State updated from outstanding to rejected based on previous application')
           end
         end
 
@@ -508,6 +509,7 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
             citizenship_evidence1.save
             expect(citizenship_evidence1.current_state).to eq(:review)
             expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_review')
+            expect(citizenship_evidence1.verification_histories.first.update_reason).to include('due date of')
           end
         end
 
@@ -539,6 +541,23 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
             citizenship_evidence1.save
             expect(citizenship_evidence1.current_state).to eq(:rejected)
             expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_rejected')
+          end
+        end
+
+        context "when previous evidence is in rejected state and extended due date" do
+          before do
+            citizenship_evidence.due_on = today + 5.days
+            citizenship_evidence.due_date_extended_at = today - 2.days
+            citizenship_evidence.save
+            citizenship_evidence1.update_attributes(current_state: :pending)
+            allow(citizenship_evidence1).to receive(:can_move_to_rejected?).and_return(true)
+          end
+
+          it "calls copied_rejected" do
+            citizenship_evidence1.rop_eligible_state(call_type)
+            citizenship_evidence1.save
+            expect(citizenship_evidence1.current_state).to eq(:rejected)
+            expect(citizenship_evidence1.verification_histories.first.update_reason).to include('automatic due date extended at copied from previous application')
           end
         end
 
