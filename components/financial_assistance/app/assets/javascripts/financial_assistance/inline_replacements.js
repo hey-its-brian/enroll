@@ -71,7 +71,11 @@ function init_faa_dependent_form() {
               show: true,
               backdrop: false
             })
-            .on('hidden.bs.modal', function (e) {
+            .one('hidden.bs.modal', function (e) {
+              let param = $(this).data('customParam');
+              if (param && param.disable) {
+                return;
+              }
               enableButton($button);
             });
         } else {
@@ -82,7 +86,7 @@ function init_faa_dependent_form() {
         if (!form.checkValidity()){
           enableButton($button);
        }
-       if (!$('#showWarning').hasClass('hidden')) {
+       if ($('#showWarning').length && !$('#showWarning').hasClass('hidden')) {
         if (!immigrationDocWarning) {
           immigrationDocWarning = true;
           enableButton($button);

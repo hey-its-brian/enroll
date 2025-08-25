@@ -62,7 +62,7 @@ $(document).on('click', '.address-change-confirmation', function () {
   $('.modal-open').removeClass('modal-open');
 
   PersonValidations.manageRequiredValidations($('#confirm-dependent'));
-  $('#addressChangeConfirmation').modal('hide');
+  $('#addressChangeConfirmation').data('customParam', { disable: true }).modal('hide');
 
   return false;
 });

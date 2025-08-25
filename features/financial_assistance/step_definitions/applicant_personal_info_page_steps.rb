@@ -248,3 +248,22 @@ Then(/the confirm member button should be re-enabled$/) do
   expect(confirm_button[:disabled]).not_to eq("true")
   expect(confirm_button[:disabled]).not_to eq(true)
 end
+
+When(/user clicks confirm member and accepts modal$/) do
+  confirm_button = find(EnrollRegistry.feature_enabled?(:bs4_consumer_flow) ? '#confirm-dependent' : ".btn.applicant-confirm-member")
+  confirm_button.click
+  expect(page).to have_css('#addressChangeConfirmation', visible: true)
+
+  within '#addressChangeConfirmation' do
+    find('.btn-confirmation, .address-change-confirmation').click
+  end
+
+  expect(page).not_to have_css('#addressChangeConfirmation', visible: true)
+end
+
+Then(/the confirm member button should remain disabled$/) do
+  confirm_button = find(EnrollRegistry.feature_enabled?(:bs4_consumer_flow) ? '#confirm-dependent' : ".btn.applicant-confirm-member")
+  button_has_disabled_class = confirm_button[:class].include?('disabled')
+  button_disabled_attr = confirm_button['disabled'] == 'disabled' || confirm_button['disabled'] == 'true'
+  expect(button_has_disabled_class || button_disabled_attr).to be_truthy
+end
