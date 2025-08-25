@@ -22,7 +22,7 @@ class EvidenceHistoryDecorator < SimpleDelegator
       @modifier_id = determine_modifier_id(obj)
       @update_reason = l10n('fdsh_hub_call')
       @date_of_action = obj.date_of_action
-      @payload = JSON.parse(obj.raw_payload) if obj.raw_payload.present?
+      @payload = parsable_json?(obj.raw_payload) ? JSON.parse(obj.raw_payload) : obj.raw_payload if obj.raw_payload.present?
     when Eligibilities::VerificationHistory, Eligibilities::V3::VerificationHistory
       @action = obj.action
       @modifier_id = obj.updated_by
@@ -33,6 +33,12 @@ class EvidenceHistoryDecorator < SimpleDelegator
   end
 
   private
+
+  def parsable_json?(payload)
+    JSON.parse(payload)
+  rescue JSON::ParserError, TypeError => _e
+    false
+  end
 
   # Determines the modifier ID for the evidence history record.
   # For verification types, we use source_transaction_id as the primary identifier,

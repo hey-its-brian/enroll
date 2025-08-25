@@ -24,6 +24,7 @@ module Insured
         authorize @family, :index?
 
         @copyable_application_ids = @family.fetch_copyable_application_ids
+        @applicable_year = Family.application_applicable_year
 
         result = Operations::Sbm::Applications::QueryFilteredApplications.new.call(
           {

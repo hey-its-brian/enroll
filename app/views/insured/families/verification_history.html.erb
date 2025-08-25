@@ -30,7 +30,7 @@
         <tr data-target="expandable-table.details">
           <td colspan="4">
             <h3><%= l10n('insured.families.verifications.history.payload') %></h3>
-            <pre><%= qhp_application_feature_enabled? ? format_response_payload(record.payload) : record.payload %> </pre>
+            <pre><%= qhp_application_feature_enabled? ? format_response_payload(record.payload&.to_s) : record.payload %> </pre>
           </td>
         </tr>
       <% end %>

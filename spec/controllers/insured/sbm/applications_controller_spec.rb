@@ -128,6 +128,10 @@ RSpec.describe Insured::Sbm::ApplicationsController, dbclean: :after_each do
         expect(assigns(:applications)).to eq([qhp_application, faa_application])
       end
 
+      it 'assigns the application year' do
+        expect(assigns(:applicable_year)).not_to be_nil
+      end
+
       it 'assigns filtered applications from the operation result' do
         expect(assigns(:filtered_applications)).to eq([faa_application, qhp_application])
       end

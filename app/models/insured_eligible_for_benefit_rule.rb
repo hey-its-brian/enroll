@@ -97,7 +97,7 @@ class InsuredEligibleForBenefitRule
     # if the member is over 26 and has age_off_excluded set to true, the state residency criteria can be overridden, allowing them to shop
     # this logic is fragile, and should be refactored when FAA has basis implemented.
     return status if state_residency_overridden?
-    @errors << ["Ineligible for Plan shopping"] #TODO: Error message changes based on business input
+    @errors << ["Ineligible for Plan shopping"] unless @errors.any?
     status
   end
 

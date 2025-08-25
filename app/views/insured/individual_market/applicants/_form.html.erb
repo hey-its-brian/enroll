@@ -583,8 +583,10 @@
             <%= l10n("confirm_member") %>
           <% end %>
         <% else %>
-          <div id="remove_confirm" class="hidden"></div>
-          <%= h(link_to l10n('remove_member'), form_url, class: 'btn button-error outline close-2', :method => :delete, :remote => true) %>
+          <% if is_dependent %>
+            <div id="remove_confirm" class="hidden"></div>
+            <%= h(link_to l10n('remove_member'), form_url, class: 'btn button-error outline close-2', :method => :delete, :remote => true) %>
+          <% end %>
           <%= f.button(class: "btn btn-primary", data: { action: "family-information#checkValidations" }) do %>
             <%= l10n("save_changes") %>
           <% end %>

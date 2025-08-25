@@ -96,6 +96,27 @@ RSpec.describe DropdownHelper, type: :helper do
 
       context 'when:
         - application is a determined
+        - logged in user is a consumer
+        - copyable application ids includes the application id
+        - qhp application feature is enabled
+        - current year is given
+        ' do
+        let(:app_state) { 'determined' }
+        let(:current_user) { user }
+
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        end
+
+        it 'returns the copy option with the alt year text' do
+          expect(
+            helper.application_dropdowns(application, [application.id], 2025).collect { |dropdwn| dropdwn[:title] }
+          ).to include(l10n('insured.sbm.applications.actions.copy_to_alt_year', alt_year: 2025))
+        end
+      end
+
+      context 'when:
+        - application is a determined
         - logged in user is an admin
         ' do
         let(:app_state) { 'determined' }
@@ -384,6 +405,13 @@ RSpec.describe DropdownHelper, type: :helper do
           expect(
             helper.qhp_application_dropdowns(application, []).collect { |dropdwn| dropdwn[:title] }
           ).to include(l10n('insured.sbm.applications.actions.copy'))
+        end
+
+        it 'returns the copy option with the alt year text when the current year is given' do
+          allow(helper).to receive(:do_not_allow_copy?).and_return(false)
+          expect(
+            helper.qhp_application_dropdowns(application, [], 2025).collect { |dropdwn| dropdwn[:title] }
+          ).to include(l10n('insured.sbm.applications.actions.copy_to_alt_year', alt_year: 2025))
         end
       end
     end
