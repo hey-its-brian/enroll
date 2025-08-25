@@ -46,7 +46,8 @@
       <% human_readable_file_types = ::FileUploadValidator.human_readable_file_types(content_types: accepted_file_types, formatter: :to_sentence, pluralize: true) %>
       <p><%= l10n("insured.families.verifications.detail.document_upload.disclaimer", file_types: human_readable_file_types, max_size: ::FileUploadValidator::MAX_FILE_SIZE_MB) %></p>
       <div class='d-flex'>
-        <span tabindex="0" class="btn btn-secondary btn-file text-nowrap mr-2" data-keydown-id="file-input" >
+        <% btn_class = qhp_application_feature_enabled? ? 'btn-primary' : 'btn-secondary'  %>
+        <span tabindex="0" class="btn <%= btn_class %> btn-file text-nowrap mr-2" data-keydown-id="file-input" >
           <i class="fa fa-upload" aria-hidden="true"></i>
           <label>
             <%= l10n('upload_document') %>
