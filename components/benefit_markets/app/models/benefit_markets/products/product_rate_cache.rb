@@ -27,6 +27,7 @@ module BenefitMarkets
             minimum: product[2]["min"],
             maximum: product[2]["max"]
           }
+          next unless product[1].present?
           product[1].each do |pt|
             r_area_tag = rating_area_cache[pt["rating_area_id"]]
             pt["premium_tuples"].each do |tuple|

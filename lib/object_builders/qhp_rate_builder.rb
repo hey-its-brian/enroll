@@ -178,7 +178,10 @@ class QhpRateBuilder
       products.each do |product|
         product.rating_method = rating_method
         product.premium_tables << premium_tables
-        product.premium_ages = premium_tuples.map(&:age).minmax
+        premium_ages = premium_tables.flat_map(&:premium_tuples).map(&:age).compact
+        premium_age_min = premium_ages.min
+        premium_age_max = premium_ages.max
+        product.premium_ages = Range.new(premium_age_min, premium_age_max)
         product.save
       end
     end
