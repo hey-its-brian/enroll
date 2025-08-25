@@ -6,6 +6,17 @@ module VerificationHelper
   include L10nHelper
   include ResourceRegistryHelper
 
+  def windowed_pages(current, total)
+    return (1..total).to_a if total <= 7
+
+    pages = [1]
+    pages << :gap if current > 4
+    pages += ((current - 1)..(current + 1)).to_a.select { |p| p.between?(2, total - 1) }
+    pages << :gap if current < total - 3
+    pages << total if total > 1
+    pages.uniq
+  end
+
   def doc_status_label(doc)
     case doc.status
       when "not submitted"
@@ -422,9 +433,10 @@ module VerificationHelper
 
   def build_evidence_admin_actions_list_aptc_csr(evidence)
     return [] if evidence.evidence_group == 'ridp'
-    return [Eligibilities::Evidence::VIEW_HISTORY] if evidence.inactive
+    return [Eligibilities::Evidence::VIEW_HISTORY] if evidence.inactive || (EnrollRegistry.feature_enabled?(:ai_an_self_attestation) && evidence.evidence_item_key == Eligibilities::EvidenceState::AMERICAN_INDIAN_STATUS)
 
     rejections = []
+    rejections << Eligibilities::Evidence::CALL_HUB if [:alive_status, :american_indian_status].include?(evidence.evidence_item_key)
     rejections << Eligibilities::Evidence::REJECT if evidence.status == :outstanding
     rejections << Eligibilities::Evidence::EXTEND unless !EnrollRegistry.feature_enabled?(:verification_due_on_options) || (evidence.is_action_needed? && pundit_allow(HbxProfile, :can_extend_due_date?))
 
@@ -623,6 +635,25 @@ module VerificationHelper
     else
       build_legacy_verification_query(person, gid)
     end
+  end
+
+  def verification_history_link(evidence)
+    located_evidence = evidence.locate_evidence
+    eligibility = located_evidence&.eligibility
+    applicant = eligibility&.eligible
+    application = applicant&.application
+    person = evidence.person
+
+    params = {
+      application_gid: application&.to_global_id&.uri&.to_s,
+      applicant_id: applicant&.id,
+      person_id: person.id,
+      eligibility_kind: evidence.evidence_group,
+      evidence_key: evidence.evidence_item_key,
+      family_id: application.family.id
+    }
+
+    eligibility_evidence_documents_path(eligibility, located_evidence, params)
   end
 
   def build_qhp_application_query(evidence)

@@ -33,9 +33,6 @@ module Operations
           @due_on = params[:due_on]
           @extension_period = params[:extension_period]
 
-          return Failure("Evidence must be in outstanding state") unless @evidence.current_state == :outstanding
-          return Failure("Evidence must have a due date") unless @evidence.due_on.present?
-
           Success(params)
         end
 

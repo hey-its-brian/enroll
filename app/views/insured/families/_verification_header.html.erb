@@ -1,5 +1,3 @@
-<% navigation = verification_navigation %>
-
 <ul class="breadcrumbs">
   <% navigation[:breadcrumbs].each do |step| %>
     <li><%= link_to(*step.values) %></li>
@@ -10,7 +8,7 @@
 
 <% if current_user.has_hbx_staff_role? %>
   <aside class="mb-2 hidden" id="admin-designation-descriptor">
-    <span class="admin-designation"></span> 
+    <span class="admin-designation"></span>
     <%= l10n('admin.admin_designation_descriptor') %>
   </aside>
 <% end %>
@@ -20,23 +18,23 @@
   <% if summary_rows.include?(:member) %>
     <div class='d-flex align-items-center'>
       <dt class="<%= dt_class %>"><%= l10n('member') %>:</dt>
-      <dd><%= @member.full_name %></dd>
+      <dd><%= member.full_name %></dd>
     </div>
   <% end %>
   <% if summary_rows.include?(:member_status) && current_user.has_hbx_staff_role? && EnrollRegistry.feature_enabled?(:show_inactive_verification_members) %>
     <div class='d-flex align-items-center'>
       <dt class="<%= dt_class %>"><%= l10n('insured.families.verifications.detail.summary.member_status') %>:</dt>
-      <dd class="admin-designation"><%= @member.is_active? ? l10n('active') : l10n('inactive') %></dd>
+      <dd class="admin-designation"><%= member.is_active? ? l10n('active') : l10n('inactive') %></dd>
     </div>
   <% end %>
   <% if summary_rows.include?(:status) %>
     <div class='d-flex align-items-center'>
       <dt class="<%= dt_class %>"><%= "#{l10n("insured.families.verifications.detail.summary.status")}:" %></dt>
       <dd class='d-flex'>
-        <%= strong_if(is_strong: @evidence.is_action_needed?) do %>
-          <% show_v_type(@evidence) %>
+        <%= strong_if(is_strong: evidence.is_action_needed?) do %>
+          <% show_v_type(evidence) %>
         <% end %>
-        <% if @evidence.is_action_needed? %>
+        <% if evidence.is_action_needed? %>
           <div class="pl-2">
             <div class="warning-icon icon pl-2" alt="warning" aria-hidden="true" data-cuke="actionable-status-icon">&nbsp;</div>
           </div>
@@ -44,24 +42,33 @@
       </dd>
     </div>
   <% end %>
-  <% if summary_rows.include?(:update_reason) && @evidence.update_reason.present? && @evidence.status.to_s == "rejected" %>
+  <% if summary_rows.include?(:update_reason) && evidence.update_reason.present? && evidence.status.to_s == "rejected" %>
     <div class='d-flex align-items-center'>
       <dt class="<%= dt_class %>"><%= "#{l10n("insured.families.verifications.detail.summary.status_reason")}:" %></dt>
-      <dd><strong><%= @evidence.update_reason %></strong></dd>
+      <dd><strong><%= evidence.update_reason %></strong></dd>
     </div>
   <% end %>
   <% if summary_rows.include?(:due_on) %>
     <div class='d-flex align-items-center'>
       <dt class="<%= dt_class %>"><%= "#{l10n("insured.families.verifications.detail.summary.due_on")}:" %></dt>
-      <% due_on = @evidence.due_on %>
-      <%= strong_if(is_strong: @evidence.is_action_needed? && due_on.present?) do %>
+      <% due_on = evidence.due_on %>
+      <%= strong_if(is_strong: evidence.is_action_needed? && due_on.present?) do %>
         <% due_on&.to_s || l10n('not_applicable') %>
       <% end %>
+    </div>
+  <% end %>
+  <% if qhp_application_feature_enabled? && display_application_id && evidence.evidence_group != 'ridp' %>
+    <% application = evidence.locate_evidence&.eligibility&.eligible&.application %>
+    <div class='d-flex align-items-center'>
+      <dt class="px-0 col-4 col-lg-3 col-xl-2"><%= l10n("application_id") %>:</dt>
+      <% link = application.is_a?(FinancialAssistance::Application) ? financial_assistance.review_application_path(application) : insured_individual_market_application_path(application) %>
+      <dd><%= link_to  application.hbx_id, link, class: 'primary-text' %></dd>
     </div>
   <% end %>
 </dl>
 
 <div class="my-4">
   <% previous_step = navigation[:previous_step] %>
-  <%= link_to(l10n("insured.families.verifications_back_to") +  previous_step[:title], previous_step[:link], class: "button #{'outline' unless is_back_nav_primary}") %>
+  <% title = qhp_application_feature_enabled? && previous_step[:title] != "Individual" ? l10n("insured.families.verifications_return_to") : l10n("insured.families.verifications_back_to") %>
+  <%= link_to(title +  previous_step[:title], previous_step[:link], class: "button #{'outline' unless is_back_nav_primary}") %>
 </div>

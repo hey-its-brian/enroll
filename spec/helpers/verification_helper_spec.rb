@@ -543,7 +543,8 @@ RSpec.describe VerificationHelper, :type => :helper do
         evidence_group: evidence_group,
         inactive: inactive,
         status: status,
-        is_action_needed?: is_action_needed
+        is_action_needed?: is_action_needed,
+        evidence_item_key: evidence_item_key
       )
     end
 
@@ -551,6 +552,7 @@ RSpec.describe VerificationHelper, :type => :helper do
     let(:inactive) { false }
     let(:status) { :verified }
     let(:is_action_needed) { false }
+    let(:evidence_item_key) { :social_security_number }
 
     before do
       allow(EnrollRegistry).to receive(:feature_enabled?).and_call_original
@@ -1165,6 +1167,160 @@ describe 'verification actions' do
       it "returns general reject reasons" do
         result = helper.evidences_v3_reject_reasons_list("unknown_evidence")
         expect(result).to eq(::VlpDocument::ALL_TYPES_REJECT_REASONS)
+      end
+    end
+  end
+
+  describe '#build_evidence_admin_actions_list_aptc_csr' do
+    let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+    let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+    let(:primary_applicant) { family.primary_applicant }
+
+    let(:aptc_csr_eligibility)  { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
+    let(:income_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories,  :verified, eligibility: aptc_csr_eligibility) }
+    let(:determination) { ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family) }
+    let(:ssn_evidence) { FactoryBot.create(:social_security_number_evidence, :with_verification_histories, :outstanding, eligibility: ivl_eligibility) }
+    let(:american_evidence) { FactoryBot.create(:american_indian_evidence, :with_verification_histories, :outstanding, eligibility: ivl_eligibility) }
+    let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+
+    let(:faa_application) do
+      FactoryBot.create(
+        :financial_assistance_application,
+        family_id: family.id,
+        aasm_state: 'determined',
+        submitted_at: Time.now,
+        assistance_year: TimeKeeper.date_of_record.year
+      )
+    end
+
+    let(:applicant) do
+      FactoryBot.create(
+        :financial_assistance_applicant,
+        family_member_id: primary_applicant.id,
+        person_hbx_id: person.hbx_id,
+        application: faa_application
+      )
+    end
+
+    before :each do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      income_evidence
+      ssn_evidence
+      american_evidence
+      family.assign_latest_application_gid
+      family.save!
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:verification_due_on_options).and_return(false)
+      allow(helper).to receive(:pundit_allow).with(HbxProfile, :can_extend_due_date?).and_return(false)
+    end
+
+    context "when evidence group is ridp" do
+      it "returns empty array" do
+        ridp_evidence = ::Adapters::EvidenceAdapter.new(person)
+        expect(helper.build_evidence_admin_actions_list_aptc_csr(ridp_evidence)).to eq([])
+      end
+    end
+
+    context "when ai_an_self_attestation is enabled and evidence is American Indian Status" do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:ai_an_self_attestation).and_return(true)
+      end
+
+      it "returns only View History action" do
+        subject = determination.success.subjects.first
+        uploadable_states = subject.eligibility_states.by_type_uploadable
+        evidence_states = uploadable_states.flat_map(&:evidence_states)
+        evidence_adapters = evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
+        evidence_adapter = evidence_adapters.detect { |adapter| adapter.evidence_item_key == :american_indian_status }
+
+        expect(helper.build_evidence_admin_actions_list_aptc_csr(evidence_adapter)).to eq(["View History"])
+      end
+    end
+
+    context "when evidence item key is not in ADMIN_CALL_HUB_VERIFICATION_TYPES" do
+      it "removes Call HUB from actions" do
+        subject = determination.success.subjects.first
+        uploadable_states = subject.eligibility_states.by_type_uploadable
+        evidence_states = uploadable_states.flat_map(&:evidence_states)
+        evidence_adapters = evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
+        evidence_adapter = evidence_adapters.detect { |adapter| adapter.evidence_item_key == :american_indian_status }
+
+        expect(helper.build_evidence_admin_actions_list_aptc_csr(evidence_adapter)).not_to include("Call HUB")
+      end
+    end
+
+    context "when evidence item key is in ADMIN_CALL_HUB_VERIFICATION_TYPES" do
+      it "includes Call HUB in actions" do
+        subject = determination.success.subjects.first
+        uploadable_states = subject.eligibility_states.by_type_uploadable
+        evidence_states = uploadable_states.flat_map(&:evidence_states)
+        evidence_adapters = evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
+        evidence_adapter = evidence_adapters.detect { |adapter| adapter.evidence_item_key == :social_security_number }
+
+        expect(helper.build_evidence_admin_actions_list_aptc_csr(evidence_adapter)).to include("Call HUB")
+      end
+    end
+
+    context "when status is outstanding" do
+      it "removes Reject from actions" do
+        subject = determination.success.subjects.first
+        uploadable_states = subject.eligibility_states.by_type_uploadable
+        evidence_states = uploadable_states.flat_map(&:evidence_states)
+        evidence_adapters = evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
+        evidence_adapter = evidence_adapters.detect { |adapter| adapter.evidence_item_key == :social_security_number }
+
+        expect(helper.build_evidence_admin_actions_list_aptc_csr(evidence_adapter)).not_to include("Reject")
+      end
+    end
+
+    context "when verification_due_on_options is enabled" do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:verification_due_on_options).and_return(true)
+      end
+
+      context "and action is not needed" do
+        it "removes Extend from actions" do
+          subject = determination.success.subjects.first
+          uploadable_states = subject.eligibility_states.by_type_uploadable
+          evidence_states = uploadable_states.flat_map(&:evidence_states)
+          evidence_adapters = evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
+          evidence_adapter = evidence_adapters.detect { |adapter| adapter.evidence_item_key == :income_evidence }
+
+          expect(helper.build_evidence_admin_actions_list_aptc_csr(evidence_adapter)).not_to include("Extend")
+        end
+      end
+
+      context "and action is needed but user is not authorized" do
+        before do
+          allow(helper).to receive(:pundit_allow).with(HbxProfile, :can_extend_due_date?).and_return(false)
+        end
+
+        it "removes Extend from actions" do
+          subject = determination.success.subjects.first
+          uploadable_states = subject.eligibility_states.by_type_uploadable
+          evidence_states = uploadable_states.flat_map(&:evidence_states)
+          evidence_adapters = evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
+          evidence_adapter = evidence_adapters.detect { |adapter| adapter.evidence_item_key == :social_security_number }
+
+          expect(helper.build_evidence_admin_actions_list_aptc_csr(evidence_adapter)).not_to include("Set due date")
+        end
+      end
+
+      context "and action is needed and user is authorized" do
+        let(:is_action_needed) { true }
+
+        before do
+          allow(helper).to receive(:pundit_allow).with(HbxProfile, :can_extend_due_date?).and_return(true)
+        end
+
+        it "includes Extend in actions" do
+          subject = determination.success.subjects.first
+          uploadable_states = subject.eligibility_states.by_type_uploadable
+          evidence_states = uploadable_states.flat_map(&:evidence_states)
+          evidence_adapters = evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
+          evidence_adapter = evidence_adapters.detect { |adapter| adapter.evidence_item_key == :social_security_number }
+
+          expect(helper.build_evidence_admin_actions_list_aptc_csr(evidence_adapter)).to include("Extend")
+        end
       end
     end
   end

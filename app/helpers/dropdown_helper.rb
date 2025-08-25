@@ -212,33 +212,35 @@ module DropdownHelper
     construct_options(option_args)
   end
 
-  def qhp_enabled_verification_dropdowns(verification, document)
+  def qhp_enabled_verification_dropdowns(evidence_delegator, document, evidence = nil)
     doc_key = document.identifier.split('#').last
-    located_evidence = verification.locate_evidence
+
+    return construct_options([[l10n('download'), "/insured/ridp_documents/download/#{doc_key}", :blank_target]]) if evidence_delegator.evidence_group == 'ridp'
+
+    # Find all the necessary objects
+    located_evidence = evidence.present? ? evidence : evidence_delegator.locate_evidence
     eligibility = located_evidence&.eligibility
     applicant = eligibility&.eligible
     application = applicant&.application
-    person = verification.person
+    person = evidence.present? ? applicant&.family_member&.person : evidence_delegator.person
 
-    option_args = [[l10n('download'),
-                    download_eligibility_evidence_documents_path(eligibility, located_evidence,
-                                                                 application_gid: application&.to_global_id&.uri&.to_s,
-                                                                 applicant_id: applicant&.id,
-                                                                 person_id: person.id,
-                                                                 eligibility_kind: verification.evidence_group,
-                                                                 evidence_key: verification.evidence_item_key,
-                                                                 key: doc_key), :blank_target]]
+    return [] unless applicant.present?
 
-    unless verification.inactive
-      option_args << [l10n('remove'),
-                      eligibility_evidence_documents_path(eligibility, located_evidence,
-                                                          application_gid: application&.to_global_id&.uri&.to_s,
-                                                          applicant_id: applicant&.id,
-                                                          person_id: person.id,
-                                                          eligibility_kind: verification.evidence_group,
-                                                          evidence_key: verification.evidence_item_key,
-                                                          doc_key: doc_key), :delete]
-    end
+    # Create a context object to avoid parameter explosion
+    context = {
+      eligibility: eligibility,
+      located_evidence: located_evidence,
+      application: application,
+      applicant: applicant,
+      person: person,
+      evidence_delegator: evidence_delegator,
+      doc_key: doc_key
+    }
+
+    # Build options array
+    option_args = [create_download_option(context)]
+    option_args << create_remove_option(context) unless evidence_delegator.inactive
+
     construct_options(option_args)
   end
 
@@ -347,6 +349,40 @@ module DropdownHelper
 
   def construct_option(title, link, option_type)
     {title: title, link: link, attributes: attribute_hash(option_type)}
+  end
+
+  def create_download_option(context)
+    [
+      l10n('download'),
+      download_eligibility_evidence_documents_path(
+        context[:eligibility],
+        context[:located_evidence],
+        application_gid: context[:application]&.to_global_id&.uri&.to_s,
+        applicant_id: context[:applicant].id,
+        person_id: context[:person].id,
+        eligibility_kind: context[:evidence_delegator].evidence_group,
+        evidence_key: context[:evidence_delegator].evidence_item_key,
+        key: context[:doc_key]
+      ),
+      :blank_target
+    ]
+  end
+
+  def create_remove_option(context)
+    [
+      l10n('remove'),
+      eligibility_evidence_documents_path(
+        context[:eligibility],
+        context[:located_evidence],
+        application_gid: context[:application]&.to_global_id&.uri&.to_s,
+        applicant_id: context[:applicant].id,
+        person_id: context[:person].id,
+        eligibility_kind: context[:evidence_delegator].evidence_group,
+        evidence_key: context[:evidence_delegator].evidence_item_key,
+        doc_key: context[:doc_key]
+      ),
+      :delete
+    ]
   end
 
   # map dropdown type keys to link attributes

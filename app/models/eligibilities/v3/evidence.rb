@@ -71,7 +71,7 @@ module Eligibilities
       #  @param modified_by [String] Identifier of the user or process that modified the evidence
       # @return [void]
       def extend_due_date(action, extend_by, modified_by, reason)
-        return if self.current_state != :outstanding
+        return if [:rejected, :outstanding].exclude?(self.current_state)
         return if self.due_on.blank?
 
         self.due_on = extend_by

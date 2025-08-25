@@ -5,8 +5,12 @@
 <% type_name = display_verification_type_name(@evidence.evidence_item_key) %>
 <%= render partial: 'verification_header', locals: {
     title: type_name,
+    evidence: @evidence,
+    member: @member,
+    navigation: verification_navigation(@member, @evidence),
     summary_rows: [:member, :member_status, :status, :update_reason, :due_on],
-    is_back_nav_primary: !display_upload_for_verification?(@evidence)
+    is_back_nav_primary: !display_upload_for_verification?(@evidence),
+    display_application_id: true
   } %>
 
 <% if display_upload_for_verification?(@evidence) %>
@@ -53,7 +57,7 @@
           <button class="primary" disabled="disabled" data-target="file-manager.uploadButton"><%= l10n('insured.families.verifications.detail.submit_document') %></button>
         <% end %>
       </div>
-      
+
       <% if attachable %>
         <section class="d-flex mt-3">
           <dt class="col-auto px-0 mr-2"><%= l10n('insured.families.verifications.detail.uploaded_document')%>:</dt>
@@ -68,35 +72,51 @@
   </section>
 <% end %>
 
-<% unless @evidence.documents&.empty? %>
-  <section class="mb-4">
+<section class="mb-4">
+  <% if @evidence.documents&.present? || (qhp_application_feature_enabled? && @evidence.evidence_group != 'ridp') %>
     <h2><%= l10n('insured.families.verifications.detail.upload_history', verification_type: type_name) %></h2>
+  <% end %>
 
+  <% if qhp_application_feature_enabled? && @evidence.evidence_group != 'ridp' %>
+    <p>
+      <%= l10n('insured.families.verifications.detail.view_upload_history_text',
+               history_button_text: content_tag(:strong, "'#{l10n('insured.families.verifications.detail.view_upload_history')}'")) %>
+    </p>
+  <% end %>
+
+  <% if @evidence.documents&.present? %>
     <div class="mb-4">
       <table class="col-sm-12 col-md-8">
         <thead>
-          <tr>
-            <th class='col-7'><%= l10n('insured.families.verifications.detail.document.name') %></th>
-            <th class='col-3'><%= l10n('insured.families.verifications.detail.document.submitted_on') %></th>
-            <th class='col-2'><%= l10n('actions') %></th>
-          </tr>
+        <tr>
+          <th class='col-7'><%= l10n('insured.families.verifications.detail.document.name') %></th>
+          <th class='col-3'><%= l10n('insured.families.verifications.detail.document.submitted_on') %></th>
+          <th class='col-2'><%= l10n('actions') %></th>
+        </tr>
         </thead>
         <tbody>
-          <% @evidence.documents&.each do |document| %>
-            <tr>
-              <td class='col-7'><%= document.title.titleize %></td>
-              <td class='col-3'><%= document.created_at %></td>
-              <td class='col-2'>
-                <% dropdowns = qhp_application_feature_enabled? ? qhp_enabled_verification_dropdowns(@evidence, document) : verification_dropdowns(@evidence, document)  %>
-                <%= render partial: 'datatables/shared/dropdown', locals: {dropdowns: dropdowns} %>
-              </td>
-            </tr>
-          <% end %>
+        <% @evidence.documents&.each do |document| %>
+          <tr>
+            <td class='col-7'><%= document.title.titleize %></td>
+            <td class='col-3'><%= document.created_at %></td>
+            <td class='col-2'>
+              <% dropdowns = qhp_application_feature_enabled? ? qhp_enabled_verification_dropdowns(@evidence, document) : verification_dropdowns(@evidence, document)  %>
+              <%= render partial: 'datatables/shared/dropdown', locals: {dropdowns: dropdowns} %>
+            </td>
+          </tr>
+        <% end %>
         </tbody>
       </table>
     </div>
-  </section>
-<% end %>
+  <% end %>
+
+  <% if qhp_application_feature_enabled? && @evidence.evidence_group != 'ridp' %>
+    <div class="d-flex justify-content-start">
+      <%= link_to l10n('insured.families.verifications.detail.view_upload_history'), verification_history_link(@evidence), class: 'btn btn-secondary' %>
+    </div>
+  <% end %>
+</section>
+
 
 <% admin_actions = admin_actions(@evidence, @member.person) %>
 <% if current_user.has_hbx_staff_role? && admin_actions.values.any?(&:present?) %>

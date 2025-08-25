@@ -53,6 +53,103 @@ RSpec.describe Eligibilities::Evidences::DocumentsController, type: :controller 
       sign_in(admin_user)
     end
 
+    context 'GET #index' do
+      context 'with valid params' do
+        before do
+          ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
+          income_evidence.documents.create!(identifier: "test#sample-key",
+                                            title: "sample-document.pdf", subject: "sample-document.pdf")
+        end
+
+        let!(:params) do
+          {
+            eligibility_id: aptc_csr_eligibility.id,
+            evidence_id: income_evidence.id,
+            application_gid: faa_application&.to_global_id&.uri&.to_s,
+            applicant_id: applicant&.id,
+            person_id: primary_applicant.person.id,
+            eligibility_kind: 'aptc_csr_eligibility',
+            evidence_key: :income_evidence,
+            family_id: faa_application.family&.id
+          }
+        end
+
+        it 'returns success response' do
+          get :index, params: params
+
+          expect(response).to be_successful
+        end
+
+        it 'sets expected instance variables from the operation result' do
+          get :index, params: params
+
+          expect(assigns(:uploads)).to be_present
+          expect(assigns(:years)).to eq([faa_application.assistance_year])
+        end
+
+        it 'renders the index template' do
+          get :index, params: params
+
+          expect(response).to render_template(:index)
+        end
+      end
+
+      context 'with failed operation' do
+        before do
+          request.headers["Accept"] = "text/html"
+          request.headers["X-Requested-With"] = "XMLHttpRequest"
+          ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
+          income_evidence.documents.create!(identifier: "test#sample-key",
+                                            title: "sample-document.pdf", subject: "sample-document.pdf")
+        end
+
+        let!(:params) do
+          {
+            eligibility_id: aptc_csr_eligibility.id,
+            evidence_id: income_evidence.id,
+            application_gid: faa_application&.to_global_id&.uri&.to_s,
+            applicant_id: applicant&.id,
+            person_id: primary_applicant.person.id,
+            eligibility_kind: 'aptc_csr_eligibility',
+            evidence_key: :income_evidence
+          }
+        end
+
+        it 'sets flash error' do
+          get :index, params: params
+          expect(flash[:error]).to eq("Family ID is required")
+        end
+      end
+
+      context 'with AJAX request' do
+        before do
+          request.headers["Accept"] = "text/html"
+          request.headers["X-Requested-With"] = "XMLHttpRequest"
+          ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
+          income_evidence.documents.create!(identifier: "test#sample-key",
+                                            title: "sample-document.pdf", subject: "sample-document.pdf")
+        end
+
+        let!(:params) do
+          {
+            eligibility_id: aptc_csr_eligibility.id,
+            evidence_id: income_evidence.id,
+            application_gid: faa_application&.to_global_id&.uri&.to_s,
+            applicant_id: applicant&.id,
+            person_id: primary_applicant.person.id,
+            eligibility_kind: 'aptc_csr_eligibility',
+            evidence_key: :income_evidence,
+            family_id: faa_application.family&.id
+          }
+        end
+
+        it 'renders the table partial' do
+          get :index, params: params, xhr: true
+          expect(response).to render_template(partial: '_table')
+        end
+      end
+    end
+
     context 'POST #upload' do
       let(:bucket_name) { 'id-verification' }
       let(:doc_id) { "urn:openhbx:terms:v1:file_storage:s3:bucket:#{bucket_name}sample-key" }
@@ -182,6 +279,32 @@ RSpec.describe Eligibilities::Evidences::DocumentsController, type: :controller 
       family.assign_latest_application_gid
       family.save!
       sign_in(fake_user)
+    end
+
+    context 'GET #index' do
+      let!(:params) do
+        {
+          eligibility_id: aptc_csr_eligibility.id,
+          evidence_id: income_evidence.id,
+          application_gid: faa_application&.to_global_id&.uri&.to_s,
+          applicant_id: applicant&.id,
+          person_id: primary_applicant.person.id,
+          eligibility_kind: 'aptc_csr_eligibility',
+          evidence_key: :income_evidence,
+          family_id: faa_application.family&.id
+        }
+      end
+
+      context 'with unauthorized user' do
+        before do
+          ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
+        end
+
+        it 'returns failure' do
+          get :index, params: params
+          expect(flash[:error]).to eq("Access not allowed for financial_assistance/evidences/income_evidence_policy.index?, (Pundit policy)")
+        end
+      end
     end
 
     context 'POST #upload' do

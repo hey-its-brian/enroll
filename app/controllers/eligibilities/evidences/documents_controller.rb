@@ -4,9 +4,47 @@ module Eligibilities
   module Evidences
     # Controller for managing documents related to V3 evidence in the eligibility process
     class DocumentsController < ::ApplicationController
+      layout 'progress'
+
+      before_action :set_current_person, only: [:index]
       before_action :fetch_evidence
-      before_action :check_for_uneditable_application
+      before_action :set_evidence_context, only: [:index]
+      before_action :check_for_uneditable_application, only: [:upload, :destroy]
       after_action :build_determination, only: [:upload, :destroy]
+
+      # Handles the index action for documents related to evidence
+      # This action authorizes the evidence and retrieves all documents related to it.
+      # If successful, it assigns the documents to instance variables and renders the index view.
+      # If it fails, it redirects with an error message.
+      # @return [void]
+      # @note This action is only used for the V3 evidence verification process.
+      def index
+        authorize @evidence, :index?
+
+        operation = Operations::Eligibilities::Evidences::Documents::Index.new
+        result = operation.call(params: params, evidence: @evidence)
+
+        if result.success?
+          # Assign all returned values to instance variables
+          result.value!.each do |key, value|
+            instance_variable_set("@#{key}", value)
+          end
+
+          if request.headers["Accept"] == "text/html" && request.xhr?
+            render partial: "table", locals: {
+              uploads: @uploads,
+              selected_year: @selected_year,
+              per_page: @per_page,
+              page: @page,
+              total_pages: @total_pages,
+              document_app_map: @document_app_map
+            }
+          end
+        else
+          flash[:error] = result.failure
+          redirect_to determine_redirect_location
+        end
+      end
 
       # Handles the upload of documents related to evidence
       # This action authorizes the evidence and processes the file upload.
@@ -84,6 +122,31 @@ module Eligibilities
       end
 
       private
+
+      # Sets the context for the V3 evidence
+      # This method retrieves the member and evidence delegator for the V3 evidence.
+      # If successful, it assigns the values to instance variables.
+      # If it fails, it redirects with an error message.
+      # @return [void]
+      # @note This method is only used for the V3 evidence verification process.
+      def set_evidence_context
+        result = Operations::Families::Verifications::Summary::EvidenceQuery.new.call(
+          family: @application.family,
+          person_id: params[:person_id],
+          evidence_key: params[:evidence_key],
+          eligibility_kind: params[:eligibility_kind],
+          inactive: params[:inactive]
+        )
+
+        if result.success?
+          value = result.value!
+
+          @member = value[:member]
+          @evidence_delegator = value[:evidence]
+        else
+          redirect_back(fallback_location: verification_insured_families_path, :flash => {error: result.failure})
+        end
+      end
 
       def build_determination
         family = @application.family

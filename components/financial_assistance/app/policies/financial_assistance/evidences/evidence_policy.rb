@@ -16,6 +16,14 @@ module FinancialAssistance
         @family ||= record.eligibility.eligible.application.family
       end
 
+      # Determines if the current user has permission to view all documents for an applicant.
+      # The user can view all documents for the applicant if they have permission to edit it.
+      #
+      # @return [Boolean] Returns true if the user has permission to upload a document for an applicant, false otherwise.
+      def index?
+        edit?
+      end
+
       # Determines if the current user has permission to upload a document for an applicant.
       # The user can upload a document for the applicant if they have permission to edit it.
       #

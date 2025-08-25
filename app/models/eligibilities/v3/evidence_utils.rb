@@ -163,7 +163,8 @@ module Eligibilities
           return unless self.can_move_to_rejected?
 
           assign_attributes(verification_outstanding: true, is_satisfied: false)
-          self.due_on = schedule_verification_due_on unless self.current_state == 'review'
+          due_on = self.due_on || schedule_verification_due_on
+          self.due_on = due_on unless self.current_state == 'review'
           self.move_to_rejected
         end
 

@@ -161,16 +161,34 @@ module NavigationHelper
     ]
   end
 
-  def verification_navigation
+  def verification_navigation(member, evidence)
     steps = {
       "verification" => {title: l10n('insured.families.verifications'), link: main_app.verification_insured_families_path(tab: 'verification')},
-      "verification_individual" => {title: l10n('insured.families.verifications.individual'), link: verification_individual_insured_families_path(person_id: @member.person_id) },
-      "verification_detail" => {title: l10n('insured.families.verifications.detail'), link: main_app.verification_detail_insured_families_path(@evidence&.detail_params)},
-      "verification_history" => {title: l10n('insured.families.verifications.history.verification_history'), link: '#'}
+      "verification_individual" => {title: l10n('insured.families.verifications.individual'), link: verification_individual_insured_families_path(person_id: member.person_id) },
+      "verification_detail" => {title: l10n('insured.families.verifications.detail'), link: main_app.verification_detail_insured_families_path(evidence&.detail_params)}
     }
 
+    case action_name
+    when "verification_history"
+      steps["verification_history"] = {
+        title: l10n('insured.families.verifications.history.verification_history'),
+        link: "#"
+      }
+    when "index"
+      return { breadcrumbs: steps.values[0..2], previous_step: steps.values[1] } unless qhp_application_feature_enabled?
+
+      steps["index"] = {
+        title: l10n('insured.families.verifications.detail.document_upload_history'),
+        link: "#"
+      }
+    end
+
     current_step_index = steps.keys.find_index(action_name)
-    { breadcrumbs: steps.values[0..current_step_index], previous_step: steps.values[current_step_index - 1] }
+    if current_step_index.present?
+      { breadcrumbs: steps.values[0..current_step_index], previous_step: steps.values[current_step_index - 1] }
+    else
+      { breadcrumbs: steps.values[0..2], previous_step: steps.values[1] }
+    end
   end
 
   def eligibility_navigation

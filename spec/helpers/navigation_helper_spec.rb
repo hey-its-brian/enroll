@@ -188,4 +188,93 @@ RSpec.describe NavigationHelper, :type => :helper, dbclean: :after_each do
     end
   end
 
+  describe '#verification_navigation' do
+    let(:person_id) { '123abc' }
+    let(:member) { double('member', person_id: person_id) }
+    let(:detail_params) { { id: '456def' } }
+    let(:evidence) { double('evidence', detail_params: detail_params) }
+
+    before do
+      allow(helper).to receive(:action_name).and_return(action_name)
+    end
+
+    context 'when action_name is verification' do
+      let(:action_name) { 'verification' }
+
+      it 'returns the correct navigation structure with one breadcrumb' do
+        result = helper.verification_navigation(member, evidence)
+
+        expect(result[:breadcrumbs].length).to eq(1)
+        expect(result[:breadcrumbs][0][:title]).to eq('Verifications')
+      end
+    end
+
+    context 'when action_name is verification_individual' do
+      let(:action_name) { 'verification_individual' }
+
+      it 'returns the correct navigation structure with two breadcrumbs' do
+        result = helper.verification_navigation(member, evidence)
+
+        expect(result[:breadcrumbs].length).to eq(2)
+        expect(result[:breadcrumbs][1][:title]).to eq('Individual')
+        expect(result[:previous_step][:title]).to eq('Verifications')
+      end
+    end
+
+    context 'when action_name is verification_detail' do
+      let(:action_name) { 'verification_detail' }
+
+      it 'returns the correct navigation structure with three breadcrumbs' do
+        result = helper.verification_navigation(member, evidence)
+
+        expect(result[:breadcrumbs].length).to eq(3)
+        expect(result[:breadcrumbs][2][:title]).to eq('Verification Detail')
+        expect(result[:previous_step][:title]).to eq('Individual')
+      end
+    end
+
+    context 'when action_name is verification_history' do
+      let(:action_name) { 'verification_history' }
+
+      it 'adds verification_history step to the navigation' do
+        result = helper.verification_navigation(member, evidence)
+
+        expect(result[:breadcrumbs].length).to eq(4)
+        expect(result[:breadcrumbs][3][:title]).to eq('Verification History')
+        expect(result[:previous_step][:title]).to eq('Verification Detail')
+      end
+    end
+
+    context 'when action_name is index' do
+      let(:action_name) { 'index' }
+
+      context 'when qhp_application_feature is enabled' do
+        before do
+          allow(helper).to receive(:qhp_application_feature_enabled?).and_return(true)
+        end
+
+        it 'adds index step to the navigation' do
+          result = helper.verification_navigation(member, evidence)
+
+          expect(result[:breadcrumbs].length).to eq(4)
+          expect(result[:breadcrumbs][3][:title]).to eq('Upload History')
+          expect(result[:breadcrumbs][3][:link]).to eq('#')
+          expect(result[:previous_step][:title]).to eq('Verification Detail')
+        end
+      end
+
+      context 'when qhp_application_feature is disabled' do
+        before do
+          allow(helper).to receive(:qhp_application_feature_enabled?).and_return(false)
+        end
+
+        it 'does not add index step to the navigation' do
+          result = helper.verification_navigation(member, evidence)
+
+          expect(result[:breadcrumbs].length).to eq(3)
+          expect(result[:breadcrumbs][2][:title]).to eq('Verification Detail')
+        end
+      end
+    end
+  end
 end

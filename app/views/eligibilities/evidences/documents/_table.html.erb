@@ -1,0 +1,105 @@
+<div class="mb-4">
+  <table class="col-sm-12">
+    <thead>
+    <tr>
+      <th><%= l10n("application_id") %></th>
+      <th class="col-5"><%= l10n('insured.families.verifications.detail.document.name') %></th>
+      <th><%= l10n("plan_year") %></th>
+      <th><%= l10n('insured.families.verifications.detail.document.submitted_on') %></th>
+      <th><%= l10n('actions') %></th>
+    </tr>
+    </thead>
+    <tbody>
+    <% if uploads.any? %>
+      <% uploads.each do |document| %>
+        <% app_info = @document_app_map[document.id.to_s] %>
+        <tr>
+          <td>
+            <div class="d-flex row align-items-center mx-0">
+              <div class="col-md-auto text-nowrap pl-0">
+                <% link = app_info[:type] == "FinancialAssistance::Application" ? financial_assistance.review_application_path(app_info[:id]) : insured_individual_market_application_path(app_info[:id]) %>
+                <%= link_to  app_info[:hbx_id], link, class: 'primary-text' %>
+              </div>
+            </div>
+          </td>
+          <td><%= document.title %></td>
+          <td><%= app_info[:assistance_year] %></td>
+          <td><%= document.created_at %></td>
+          <td class='col-2'>
+            <% dropdowns = qhp_enabled_verification_dropdowns(@evidence_delegator, document, document.documentable)  %>
+            <%= render partial: 'datatables/shared/dropdown', locals: {dropdowns: dropdowns} %>
+          </td>
+        </tr>
+      <% end %>
+    <% else %>
+      <tr>
+        <td colspan="5" class="text-center py-3"><%= l10n('insured.evidences.no_documents') %></td>
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+  <div>
+    <% if uploads.any? %>
+      <%= l10n("pagination.showing_entries",
+               start_entry: (page - 1) * per_page + 1,
+               end_entry: (page - 1) * per_page + uploads.size,
+               total_entries: total_pages) %>
+      <%= l10n("pagination.with") %>
+      <select data-target="evidence-documents.perPage" data-action="change->evidence-documents#changePerPage" class="form-select d-inline-block w-auto ms-2">
+        <% [10, 25, 50, 100].each do |pp| %>
+          <option value="<%= pp %>" <%= 'selected' if pp == per_page %>><%= pp %></option>
+        <% end %>
+      </select> <%= l10n("pagination.entries_per_page") %>
+    <% else %>
+      <%= l10n("pagination.zero_entries_per_page") %>
+    <% end %>
+  </div>
+
+  <% if total_pages >= 1 %>
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-end mb-0">
+        <li class="page-item <%= 'disabled' if page <= 1 %>">
+          <a
+            href="#"
+            class="page-link"
+            data-page="<%= page - 1 %>"
+            data-action="click->evidence-documents#paginate"
+            <%= 'aria-disabled="true"' if page <= 1 %>>
+            <%= l10n("previous") %>
+          </a>
+        </li>
+
+        <% windowed_pages(page, total_pages).each do |p| %>
+          <% if p == :gap %>
+            <li class="page-item disabled"><span>…</span></li>
+          <% elsif p == page %>
+            <li class="page-item active disabled">
+              <a
+              href="#"
+              class="page-link">
+              <%= page %>
+            </a></li>
+          <% else %>
+            <li class="page-item">
+              <a href="#" class="page-link" data-page="<%= p %>" data-action="click->evidence-documents#paginate"><%= p %></a>
+            </li>
+          <% end %>
+        <% end %>
+
+        <li class="page-item <%= 'disabled' if page >= total_pages %>">
+          <a
+             href="#"
+             class="page-link"
+             data-page="<%= page + 1 %>"
+             data-action="click->evidence-documents#paginate"
+             <%= 'aria-disabled="true"' if page >= total_pages %>>
+            <%= l10n("next_page") %>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  <% end %>
+</div>

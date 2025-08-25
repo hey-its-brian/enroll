@@ -225,44 +225,6 @@ RSpec.describe Operations::Eligibilities::Evidences::ExtendDueDate, type: :opera
       end
     end
 
-    context 'with invalid evidence state' do
-      let(:verified_evidence) { FactoryBot.create(:income_evidence, :verified, eligibility: aptc_csr_eligibility) }
-      let(:params) do
-        {
-          evidence: verified_evidence,
-          application: faa_application,
-          current_user: user,
-          extension_period: 30
-        }
-      end
-
-      it 'returns failure when evidence is not in outstanding state' do
-        result = operation.call(params)
-
-        expect(result).to be_failure
-        expect(result.failure).to eq("Evidence must be in outstanding state")
-      end
-    end
-
-    context 'when evidence has no due date' do
-      let(:evidence_without_due_date) { FactoryBot.create(:income_evidence, :outstanding, eligibility: aptc_csr_eligibility, due_on: nil) }
-      let(:params) do
-        {
-          evidence: evidence_without_due_date,
-          application: faa_application,
-          current_user: user,
-          extension_period: 30
-        }
-      end
-
-      it 'returns failure when evidence has no due date' do
-        result = operation.call(params)
-
-        expect(result).to be_failure
-        expect(result.failure).to eq("Evidence must have a due date")
-      end
-    end
-
     context 'when extend_due_date method fails' do
       let(:params) do
         {

@@ -3,8 +3,12 @@
 
 <%= render partial: 'verification_header', locals: {
     title: @member.full_name,
+    evidence: nil,
+    member: @member,
+    navigation: verification_navigation(@member, @evidence),
     summary_rows: [:member_status],
-    is_back_nav_primary: !@family.eligibility_determination.subjects.by_person(@member.person_id).first&.documents_action_needed?
+    is_back_nav_primary: !@family.eligibility_determination.subjects.by_person(@member.person_id).first&.documents_action_needed?,
+    display_application_id: false
   } %>
 
 <% if EnrollRegistry.feature_enabled?(:verifications_household_summary_text_update) %>

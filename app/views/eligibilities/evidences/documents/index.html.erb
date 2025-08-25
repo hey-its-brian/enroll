@@ -1,0 +1,45 @@
+<%= render partial: 'shared/family_side_nav' %>
+
+<%= render partial: 'insured/families/verification_header', locals: {
+  title: "#{l10n('insured.families.verifications.detail.document_upload_history')}",
+  evidence: @evidence_delegator,
+  member: @member,
+  navigation: verification_navigation(@member, @evidence_delegator),
+  summary_rows: [:member, :member_status, :status, :update_reason, :due_on],
+  is_back_nav_primary: true,
+  display_application_id: false
+} %>
+
+<div data-controller="evidence-documents">
+
+  <h2><%= l10n('insured.families.verifications_upload_history') %></h2>
+
+  <dl>
+    <div class='d-flex'>
+      <dt><%= l10n('verification_type') %>:</dt>
+      <dd><%= @evidence.title %></dd>
+    </div>
+  </dl>
+  <div class="d-flex align-items-center">
+    <label>
+      <div class="mb-1"><%= l10n('application_year') %></div>
+      <%= select_tag "year-select",
+                     options_for_select(@years, (@selected_year.presence || @years.first.to_s)),
+                     class: "col",
+                     data: {
+                       target: "evidence-documents.year",
+                       action: "change->evidence-documents#changeYear"
+                     } %>
+    </label>
+  </div>
+
+  <div data-target="evidence-documents.container"
+       data-uploads-url-value="<%= verification_history_link(@evidence_delegator) %>">
+    <%= render partial: "eligibilities/evidences/documents/table", locals: {
+      uploads: @uploads,
+      page: @page,
+      per_page: @per_page,
+      total_pages: @total_pages
+    } %>
+  </div>
+</div>

@@ -4,8 +4,12 @@
 <%# Main Content (right) %>
 <%= render partial: 'verification_header', locals: {
   title: l10n('insured.families.verifications.history.type_header', verification_type: display_verification_type_name(@evidence.evidence_item_key)),
+  evidence: @evidence,
+  member: @member,
+  navigation: verification_navigation(@member, @evidence),
   summary_rows: [:member, :member_status, :status, :update_reason, :due_on],
-  is_back_nav_primary: true
+  is_back_nav_primary: true,
+  display_application_id: false
   } %>
 
 <h2><%= l10n('insured.families.verifications.history.verification_history') %></h2>
