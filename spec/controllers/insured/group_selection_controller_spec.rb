@@ -779,6 +779,35 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
           end
         end
 
+        context 'person is a child of the primary applicant under 26 on the first of the year' do
+          before do
+            dependent.addresses.each do |address|
+              address.update_attributes!(state: 'NA')
+            end
+            year = benefit_package.effective_year
+            dependent.update_attributes!(dob: Date.new(year, 1, 2) - 26.years)
+          end
+
+          it 'should not have any errors' do
+            sign_in user_2
+            sign_in user_2
+            get(
+              :new,
+              params: {
+                person_id: dependent.id,
+                consumer_role_id: dependent.consumer_role.id,
+                change_plan: "",
+                coverage_kind: hbx_enrollment.coverage_kind,
+                market_kind: "individual"
+              }
+            )
+            fm_hash = assigns(:fm_hash)
+            expect(response).to have_http_status("200")
+            expect(fm_hash[dependent_fm_id].first).to be_truthy
+            expect(fm_hash[dependent_fm_id].third).to be_empty
+          end
+        end
+
         context 'dependent is over 26 and has age_off_excluded set to true' do
           before do
             dependent.addresses.each do |address|
@@ -841,7 +870,8 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
             dependent.addresses.each do |address|
               address.update_attributes!(state: 'NA')
             end
-            dependent.update_attributes!(dob: TimeKeeper.date_of_record - 30.years, age_off_excluded: false)
+            year = benefit_package.effective_year
+            dependent.update_attributes!(dob: Date.new(year - 1, 1, 2) - 26.years)
           end
 
           it 'should not have any errors' do

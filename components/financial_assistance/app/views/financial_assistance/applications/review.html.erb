@@ -3,12 +3,13 @@
   <%= render partial: 'shared/family_side_nav' %>
 
   <%# Main Content (right) %>
+  <% if qhp_application_feature_enabled? %>
   <ul class="breadcrumbs">
     <li><a href=<%= main_app.family_account_path(tab: 'home') %>><%= l10n('layout.header.home') %></a></li>
     <li><a href=<%= qhp_application_feature_enabled? ? main_app.current_applications_insured_sbm_applications_path : financial_assistance.applications_path(tab: 'cost_savings') %>><%= l10n('faa.applications') %></a></li>
     <li><a href='#'><%= l10n('faa.applications.detail') %></a></li>
   </ul>
-
+  <% end %>
   <h1><%= l10n('faa.applications.detail') %></h1>
 
   <%= h(link_to l10n('faa.applications.detail.back'), applications_path, class: "btn btn-primary mt-2 mb-3") %>
