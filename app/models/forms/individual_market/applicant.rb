@@ -122,6 +122,7 @@ module Forms
       # @return [Array<(Boolean, IndividualMarket::Applicant, Hash)>] Success flag and either the applicant or error messages
       def save
         return [false, self.errors.full_messages] unless valid?
+
         applicant_entity = build_applicant_entity
         return handle_failure(applicant_entity) unless applicant_entity.success?
 
@@ -301,6 +302,7 @@ module Forms
 
         address_forms.each do |address_form|
           next if address_form.valid?
+          next unless address_form.skip_validation?
           address_form.errors.each do |error|
             errors.add(:base, "#{error.attribute} #{error.message}")
           end
@@ -350,7 +352,7 @@ module Forms
         return primary_address_params if is_primary_applicant.to_s == "false" && address_same_as_primary == "true"
         return [] if addresses.nil?
 
-        addresses.map(&:to_h).compact
+        addresses.select { |address| address.skip_validation? == false }.map(&:to_h).compact
       end
 
       def primary_address_params

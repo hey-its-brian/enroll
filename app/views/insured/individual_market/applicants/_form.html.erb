@@ -513,18 +513,23 @@
           <% mailing_address = f.object.addresses.find { |a| a.kind == "mailing" } %>
           <% addresses = [home_address, mailing_address].compact_blank %>
           <%= f.fields_for :addresses, addresses do |address| %>
-            <%= render partial: 'address_fields',
-                locals: {
-                  f: f,
-                  address: address,
-                  type: address.object.kind,
-                  dependent: is_dependent
-                } %>
+            <div data-target="<%= 'family-information.newAddressFields' if address.object.kind == "mailing" %>">
+              <%= render partial: 'address_fields',
+                  locals: {
+                    f: f,
+                    address: address,
+                    type: address.object.kind,
+                    dependent: is_dependent
+                  } %>
+              </div>
+              <%= address.hidden_field :_destroy, data: { target: "family-information.destroy#{address.object.kind&.to_s.capitalize}Address" } %>
           <% end %>
         <% end %>
       </div>
 
-      <div id="new_address_fields" data-target="family-information.newAddressFields"></div>
+      <% unless mailing_address.present? %>
+        <div id="new_address_fields" data-target="family-information.newAddressFields"></div>
+      <% end %>
       <%# Templates should be outside the fields_for block %>
       <template data-target="family-information.NewMailingAddressFieldsTemplate">
         <div class="generated_address_fields">

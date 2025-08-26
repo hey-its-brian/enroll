@@ -23,13 +23,17 @@ module Forms
                     :_destroy
 
       validates :kind, presence: true, inclusion: { in: %w[home work mailing] }
-      validates :address_1, :city, :state, :zip, presence: true
-      validates :zip, format: { with: /\A\d{5}\z/, message: "should be 5 digits" }
-      validates :state, inclusion: { in: State::STATE_IDS }
+      validates :address_1, :city, :state, :zip, presence: true, unless: :skip_validation?
+      validates :zip, format: { with: /\A\d{5}\z/, message: "should be 5 digits" }, unless: :skip_validation?
+      validates :state, inclusion: { in: State::STATE_IDS }, unless: :skip_validation?
 
       def initialize(attributes = {})
         super
         @kind = attributes[:kind] || 'home'
+      end
+
+      def skip_validation?
+        id.present? && _destroy == "true"
       end
 
       def to_h

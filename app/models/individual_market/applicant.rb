@@ -118,6 +118,7 @@ module IndividualMarket
 
     accepts_nested_attributes_for :phones, :reject_if => proc { |addy| addy[:full_phone_number].blank? }, allow_destroy: true
     accepts_nested_attributes_for :emails, :reject_if => proc { |addy| addy[:address].blank? }, allow_destroy: true
+    accepts_nested_attributes_for :addresses, :reject_if => proc { |addy| addy[:address_1].blank? && addy[:city].blank? && addy[:state].blank? && addy[:zip].blank? }, allow_destroy: true
 
     # Finds and returns the family member associated with this applicant
     #

@@ -103,6 +103,8 @@ class InsuredEligibleForBenefitRule
 
   def state_residency_overridden?
     return false unless relation_ship_with_primary_applicant == 'child'
+    return false unless primary_applicant.person.is_dc_resident?
+
     first_of_year = DateTime.new(@benefit_package.effective_year, 1, 1)
     @role.person.age_off_excluded || @role.person.age_on(first_of_year) < 26
   end

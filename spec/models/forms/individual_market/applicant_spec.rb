@@ -292,6 +292,32 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
     end
   end
 
+  context 'with a destroyed address' do
+    let(:input_applicant) {spouse_applicant}
+
+    before do
+      params[:addresses_attributes][:'1'][:_destroy] = 'true'
+      params[:addresses_attributes][:'1'][:kind] = 'mailing'
+      params[:addresses_attributes][:'1'][:address_1] = ''
+      params[:addresses_attributes][:'1'][:city] = ''
+      params[:addresses_attributes][:'1'][:state] = ''
+      params[:addresses_attributes][:'1'][:zip] = ''
+      params[:addresses_attributes][:'1'][:county] = ''
+    end
+
+    it 'should be valid' do
+      @applicant_form = described_class.new(params)
+      expect(@applicant_form.valid?).to be_truthy
+    end
+
+    it 'should destroy the address' do
+      @applicant_form = described_class.new(params)
+      @applicant_form.save
+      application.reload
+      expect(application.applicants.last.mailing_address).to be_nil
+    end
+  end
+
   context 'when dependent ssn is taken' do
     let(:input_applicant) {spouse_applicant}
     let(:existing_person) { FactoryBot.create(:person, :with_consumer_role, first_name: spouse_applicant.person_name.given_name, last_name: spouse_applicant.person_name.family_name, dob: spouse_applicant.demographics.dob) }

@@ -71,6 +71,24 @@ describe Forms::Locations::AddressForm, "validations" do
       expect(subject).to be_invalid
       expect(subject.errors.full_messages).to include("State is not included in the list")
     end
+
+    context 'with a destroyed address' do
+      it 'should be valid with an id and destroy set to true' do
+        invalid_params[:state] = "XX"
+        invalid_params[:id] = BSON::ObjectId.new
+        invalid_params[:_destroy] = "true"
+        subject.attributes = invalid_params
+        expect(subject).to be_valid
+      end
+
+      it 'should be invalid without an id' do
+        invalid_params[:state] = "XX"
+        invalid_params[:id] = nil
+        invalid_params[:_destroy] = "true"
+        subject.attributes = invalid_params
+        expect(subject).to be_invalid
+      end
+    end
   end
 
   context 'with valid params' do

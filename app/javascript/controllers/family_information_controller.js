@@ -25,7 +25,8 @@ export default class extends Controller {
     "UsCitizenshipFields",
     "IncarceratedFields",
     "IndianTribeMember",
-    "AddressButtons"
+    "AddressButtons",
+    "destroyMailingAddress"
   ]
 
   connect() {
@@ -390,6 +391,10 @@ export default class extends Controller {
       this.newAddressFieldsTarget.removeChild(this.newAddressFieldsTarget.firstChild)
     }
     this.newAddressFieldsTarget.innerHTML = ''
+
+    if (this.hasDestroyMailingAddressTarget) {
+      this.destroyMailingAddressTarget.value = 'true'
+    }
 
     // Toggle button visibility
     document.getElementById('remove_mail_address').classList.add('d-none')
