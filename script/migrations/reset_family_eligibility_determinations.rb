@@ -18,7 +18,7 @@ elapsed_time = Caches::BenchmarkCache.with_benchmark do
   data_type = ARGV[1].present? ? ARGV[1].to_s : nil
 
   params = {
-    data_source: 'fetch_family_ids', # Specifies the data source for the migration
+    data_source: 'fetch_family_ids_with_eligibility_determination', # Specifies the data source for the migration
     migration_handler_name: 'remove_family_eligibility', # Mapping key for the migration handler
     batch_size: batch_size, # Number of records to process in each batch
     additional_params: { data_type: data_type } # Additional parameters for the migration

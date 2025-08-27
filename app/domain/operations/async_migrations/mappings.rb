@@ -10,11 +10,12 @@ module Operations
       # @return [Hash] The mapping of model or query names to their corresponding classes.
       QUERY_MAP = {
         'families_with_id' => ::Family.only(:_id),
-        'fetch_family_ids' => Operations::AsyncMigrations::Handlers::Families::Eligibility::FetchFamiliesWithEligibilityDetermination.new,
+        'fetch_family_ids_with_eligibility_determination' => Operations::AsyncMigrations::Handlers::Families::Eligibility::FetchFamiliesWithEligibilityDetermination.new,
         'applications_with_aasm_state_and_hbx_ids' => Operations::AsyncMigrations::Handlers::FAApplication::FetchApplicationsWithoutV3Evidences.new,
         'latest_determined_fa_application_with_ids' => ::Operations::AsyncMigrations::Handlers::Families::FetchLatestDeterminedFAApplicationHbxIds.new,
         'families_without_determined_fa_applications_for_current_year' => ::Operations::AsyncMigrations::Handlers::Families::FetchFamiliesWithoutDeterminedFAApplication.new,
-        'families_with_tax_household_groups' => Family.exists(:tax_household_groups => true).only(:_id)
+        'families_with_tax_household_groups' => Family.exists(:tax_household_groups => true).only(:_id),
+        'people_with_ridp_verified' => ::Operations::AsyncMigrations::Handlers::People::BookmarkURL::FetchEligiblePersonRecords.new
       }.freeze
 
       # Mapping of event handler names to their corresponding classes.
@@ -27,7 +28,8 @@ module Operations
         'migrate_fa_evidences' => ::Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvidence,
         'create_financial_assistance_application' => ::Operations::AsyncMigrations::Handlers::FAApplication::CreateApplication,
         'create_qhp_application' => ::Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::CreateApplication,
-        'migrate_tax_household_group' => ::Operations::AsyncMigrations::Handlers::Families::MigrateTaxHouseholdGroup
+        'migrate_tax_household_group' => ::Operations::AsyncMigrations::Handlers::Families::MigrateTaxHouseholdGroup,
+        'remove_bookmark_url' => ::Operations::AsyncMigrations::Handlers::People::BookmarkURL::Remove
       }.freeze
     end
   end
