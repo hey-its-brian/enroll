@@ -58,6 +58,7 @@ module Operations
 
         Success(person)
       rescue StandardError => e
+        Rails.logger.error { "Person creation failed. Reason: #{e}" }
         Failure("Person creation failed: #{e}")
       end
 
