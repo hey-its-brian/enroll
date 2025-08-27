@@ -10,8 +10,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
   end
 
   let!(:hbx_profile) { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
-  let(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
-  let(:benefit_coverage_period) { hbx_profile.benefit_sponsorship.benefit_coverage_periods.first }
+  let!(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
+  let!(:benefit_coverage_period) { hbx_profile.benefit_sponsorship.benefit_coverage_periods.first }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
   let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true, first_name: "main_name") }
   let(:consumer_role) do
@@ -22,7 +22,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
     consumer
   end
 
-  let!(:immigration_type) do
+  let(:immigration_type) do
     immigration_type = FactoryBot.build(:verification_type, type_name: 'Immigration status',
                                                             validation_status: 'rejected',
                                                             applied_roles: ['consumer_role'],
@@ -80,7 +80,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
     consumer_role.alive_status_responses.last
   end
 
-  let!(:update_type_history_elements) do
+  let(:update_type_history_elements) do
+    immigration_type
     person.verification_types.ssn_type.each do |verification_type|
       verification_type.assign_attributes(validation_status: "review",
                                           applied_roles: ["consumer_role"],
@@ -170,7 +171,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
     end
   end
 
-  let!(:draft_application) do
+  let(:draft_application) do
     FactoryBot.create(:application,
                       family_id: family.id,
                       aasm_state: "draft",
@@ -180,7 +181,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                       generation_reason: :manual)
   end
 
-  let!(:draft_applicant) do
+  let(:draft_applicant) do
     FactoryBot.create(:applicant,
                       application: draft_application,
                       dob: TimeKeeper.date_of_record - 40.years,
@@ -190,7 +191,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                       addresses: [FactoryBot.build(:financial_assistance_address)])
   end
 
-  let!(:application) do
+  let(:application) do
     FactoryBot.create(:application,
                       family_id: family.id,
                       aasm_state: "determined",
@@ -210,7 +211,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                       renewal_base_year: TimeKeeper.date_of_record.year + 1)
   end
 
-  let!(:eligibility_determination1) { FactoryBot.create(:financial_assistance_eligibility_determination, application: application) }
+  let(:eligibility_determination1) { FactoryBot.create(:financial_assistance_eligibility_determination, application: application) }
 
   let(:override_rules) {::AcaEntities::MagiMedicaid::Types::EligibilityOverrideRule.values}
   let(:member_determinations) do
@@ -235,7 +236,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
     end
   end
 
-  let!(:applicant) do
+  let(:applicant) do
     FactoryBot.create(:applicant,
                       first_name: "app_nmae",
                       application: application,
@@ -300,8 +301,9 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
     context '#perform' do
       before do
         allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
-        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
         consumer_role.save!
+        update_type_history_elements
         person.verification_types.where(type_name: "DC Residency").delete_all
         person.verification_types.alive_status_type.each do |verification_type|
           verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
@@ -324,6 +326,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
       context 'when the application is created' do
         before do
           allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          draft_applicant
           @result = subject.call({document_id: application.id.to_s})
           @old_applicant = application.applicants.first
           @new_application_hbx_id = @result.value![1]
@@ -405,6 +409,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
 
       context 'should migrate individual_market_eligibility' do
         before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           @result = subject.call({document_id: application.id.to_s})
           @old_applicant = application.applicants.first
           @new_application_hbx_id = @result.value![1]
@@ -703,6 +708,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
 
       context 'should migrate aptc csr eligibility' do
         before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           @result = subject.call({document_id: application.id.to_s})
           @old_applicant = application.applicants.first
           @new_application_hbx_id = @result.value![1]
@@ -803,6 +809,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           family_member2
           family.primary_person.ensure_relationship_with(person2, 'spouse')
           family.primary_person.ensure_relationship_with(person3, 'child')
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           @result = subject.call({document_id: application.id.to_s})
           @old_applicant = application.applicants.first
           @new_application_hbx_id = @result.value![1]
@@ -861,6 +868,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
 
         it 'should create family_determination and populate due_date_extended_at' do
           expect(family.eligibility_determination).not_to be_present
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           result = subject.call({document_id: application.id.to_s})
           new_application_hbx_id = result.value![1]
           new_application = FinancialAssistance::Application.where(hbx_id: new_application_hbx_id).first
@@ -889,6 +897,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
 
         it 'should create family_determination but not populate due_date_extended_at' do
           expect(family.eligibility_determination).not_to be_present
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           result = subject.call({document_id: application.id.to_s})
           new_application_hbx_id = result.value![1]
           new_application = FinancialAssistance::Application.where(hbx_id: new_application_hbx_id).first
@@ -969,6 +978,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           dependent_person.verification_types.delete_all
           @old_applicant = application.applicants.first
           @old_applicant.update_attributes(is_primary_caregiver_for: [dependent_applicant.person_hbx_id])
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           @result = subject.call({document_id: application.id.to_s})
           new_application_hbx_id = @result.value![1]
           @new_application = FinancialAssistance::Application.where(hbx_id: new_application_hbx_id).first
@@ -1033,6 +1043,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
         before do
           tax_household_previous
           current_tax_household_member
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           @result = subject.call({document_id: application.id.to_s})
           new_application_hbx_id = @result.value![1]
           @new_application = FinancialAssistance::Application.where(hbx_id: new_application_hbx_id).first
@@ -1065,6 +1076,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           before do
             allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
             application.applicants.first.update_attributes(indian_tribe_member: true, csr_eligibility_kind: nil, csr_percent_as_integer: -1)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
             @result = subject.call({document_id: application.id.to_s})
             @old_applicant = application.applicants.first
             @new_application_hbx_id = @result.value![1]
@@ -1085,6 +1097,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           before do
             allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
             application.applicants.first.update_attributes(indian_tribe_member: true)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
             @result = subject.call({document_id: application.id.to_s})
             @old_applicant = application.applicants.first
             @new_application_hbx_id = @result.value![1]
@@ -1108,6 +1121,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           before do
             allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
             application.applicants.first.update_attributes(is_ia_eligible: true)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
             @result = subject.call({document_id: application.id.to_s})
             @old_applicant = application.applicants.first
             @new_application_hbx_id = @result.value![1]
@@ -1129,6 +1143,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           before do
             allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
             application.applicants.first.update_attributes(is_ia_eligible: true, csr_eligibility_kind: nil, csr_percent_as_integer: 0)
+            allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
             @result = subject.call({document_id: application.id.to_s})
             @old_applicant = application.applicants.first
             @new_application_hbx_id = @result.value![1]
@@ -1174,6 +1189,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           end
           family_member2
           applicant2
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           @result = subject.call({document_id: application.id.to_s})
           @old_applicant = application.applicants.first
         end

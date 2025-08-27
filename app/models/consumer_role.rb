@@ -813,6 +813,7 @@ class ConsumerRole
 
   # collect all verification types user can have based on information he provided
   def ensure_verification_types
+    return if EnrollRegistry.feature_enabled?(:qhp_application)
     return unless person
 
     live_types = collect_live_types
@@ -860,6 +861,8 @@ class ConsumerRole
   end
 
   def create_or_update_verification_types(live_types)
+    return if EnrollRegistry.feature_enabled?(:qhp_application)
+
     inactive = verification_types.map(&:type_name) - live_types
     new_types = live_types - verification_types.active.map(&:type_name)
     person.deactivate_types(inactive)

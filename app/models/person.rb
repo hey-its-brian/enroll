@@ -690,6 +690,8 @@ class Person
   # @param new_type [String] the name of the new verification type to add.
   # @return [void]
   def add_new_verification_type(new_type)
+    return if EnrollRegistry.feature_enabled?(:qhp_application)
+
     default_status = default_verification_type_status(new_type)
     if verification_types.map(&:type_name).include? new_type
       verification_type_by_name(new_type).update_attributes(:inactive => false)

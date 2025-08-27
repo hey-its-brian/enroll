@@ -4,6 +4,9 @@ require 'rails_helper'
 
 RSpec.describe Person, type: :model do
   let(:person) { FactoryBot.create(:person) }
+  before do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+  end
 
   describe '#person_addresses=' do
     let(:address_attributes) { { 'kind' => 'home', 'address_1' => '123 Main St', 'city' => 'test', 'state' => 'CA', 'zip' => '52486' } }
@@ -96,7 +99,7 @@ RSpec.describe Person, type: :model do
 
     context 'when qhp_application_feature_enabled is true' do
       before do
-        allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(true)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
       end
 
       it 'returns early without calling Operations::FinancialAssistance::PersonCreateOrUpdateHandler' do

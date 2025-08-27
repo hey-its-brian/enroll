@@ -16,7 +16,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
     consumer.save!
     consumer
   end
-  let!(:first_immigration_type) do
+  let(:first_immigration_type) do
     immigration = FactoryBot.build(:verification_type, type_name: 'Immigration status',
                                                        validation_status: 'rejected',
                                                        applied_roles: ['consumer_role'],
@@ -75,7 +75,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
     consumer_role.alive_status_responses.last
   end
 
-  let!(:update_type_history_elements) do
+  let(:update_type_history_elements) do
+    first_immigration_type
     person.verification_types.ssn_type.each do |verification_type|
       verification_type.assign_attributes(validation_status: "review",
                                           applied_roles: ["consumer_role"],
@@ -168,7 +169,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
   let(:product) {FactoryBot.create(:benefit_markets_products_health_products_health_product, benefit_market_kind: :aca_individual, kind: :health, csr_variant_id: '01')}
   let(:effective_on) { TimeKeeper.date_of_record.beginning_of_year}
-  let!(:active_enrollment) do
+  let(:active_enrollment) do
     FactoryBot.create(:hbx_enrollment,
                       family: family,
                       household: family.active_household,
@@ -180,6 +181,10 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
                       hbx_enrollment_members: [
                         FactoryBot.build(:hbx_enrollment_member, applicant_id: family.primary_applicant.id, eligibility_date: effective_on, coverage_start_on: effective_on, is_subscriber: true)
                       ])
+  end
+
+  before do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
   end
 
   context "#create qhp eligibility" do
@@ -205,8 +210,10 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
       tax_household_previous
       current_tax_household_member
       allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
-      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
       consumer_role.save!
+      update_type_history_elements
+      active_enrollment
       person.verification_types.where(type_name: "DC Residency").delete_all
       person.verification_types.alive_status_type.each do |verification_type|
         verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
@@ -223,6 +230,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
                                                    event_response_record_id: nil,
                                                    created_at: DateTime.now - 5.minutes)
         verification_type.save!
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
         result = subject.call({document_id: family.id})
         new_application_hbx_id = result.value![1]
         @new_application = IndividualMarket::Application.where(hbx_id: new_application_hbx_id).first
@@ -284,8 +292,10 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
   context '#migration creates family eligibility determination' do
     before do
       allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
-      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
       consumer_role.save!
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      update_type_history_elements
+      active_enrollment
       person.verification_types.where(type_name: "DC Residency").delete_all
       person.verification_types.alive_status_type.each do |verification_type|
         verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
@@ -303,6 +313,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
                                                    created_at: DateTime.now - 5.minutes)
         verification_type.save!
       end
+      family.eligibility_determination&.destroy
     end
 
     it 'should create family_determination' do
@@ -347,6 +358,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
     before do
       allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
       allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      update_type_history_elements
+      active_enrollment
     end
 
     it 'should not create individual_market_eligibility' do
@@ -377,8 +390,10 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
   context '#migration - others' do
     before do
       allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
-      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
       consumer_role.save!
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      update_type_history_elements
+      active_enrollment
       person.verification_types.where(type_name: "DC Residency").delete_all
       person.verification_types.alive_status_type.each do |verification_type|
         verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
@@ -396,7 +411,6 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
                                                    created_at: DateTime.now - 5.minutes)
         verification_type.save!
       end
-
       @result = subject.call({document_id: family.id})
       @new_application_hbx_id = @result.value![1]
       @new_application = IndividualMarket::Application.where(hbx_id: @new_application_hbx_id).first
@@ -724,7 +738,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
 
   context '#when person have duplicate verification types
   - one is active and the other is inactive' do
-    let!(:duplicate_immigration_type) do
+    let(:duplicate_immigration_type) do
       immigration = FactoryBot.build(:verification_type, type_name: 'Immigration status',
                                                          validation_status: 'verified',
                                                          applied_roles: ['consumer_role'],
@@ -742,8 +756,11 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
 
     before do
       allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
-      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
       consumer_role.save!
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      duplicate_immigration_type
+      update_type_history_elements
+      active_enrollment
       person.verification_types.where(type_name: "DC Residency").delete_all
       person.verification_types.alive_status_type.each do |verification_type|
         verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
@@ -775,7 +792,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
 
   context '#when person have duplicate verification types
   - both are inactive' do
-    let!(:duplicate_immigration_type) do
+    let(:duplicate_immigration_type) do
       immigration = FactoryBot.build(:verification_type, type_name: 'Immigration status',
                                                          validation_status: 'verified',
                                                          applied_roles: ['consumer_role'],
@@ -794,8 +811,11 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
 
     before do
       allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
-      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
       consumer_role.save!
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      update_type_history_elements
+      duplicate_immigration_type
+      active_enrollment
       person.verification_types.where(type_name: "DC Residency").delete_all
       person.verification_types.alive_status_type.each do |verification_type|
         verification_type.add_type_history_element(action: "FDSH alive status Hub Response",

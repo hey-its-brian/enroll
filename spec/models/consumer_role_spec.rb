@@ -5,6 +5,10 @@ require 'aasm/rspec'
 
 # rubocop:disable Metrics/ParameterLists
 RSpec.describe ConsumerRole, dbclean: :after_each, type: :model do
+  before do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+  end
+
   describe "ConsumerRole" do
     it { is_expected.to have_attributes(active_vlp_document_id: nil) }
     it { should delegate_method(:hbx_id).to :person }
@@ -1544,6 +1548,17 @@ RSpec.describe ConsumerRole, dbclean: :after_each, type: :model do
       person.consumer_role.verification_type_history_elements.delete_all
       person.consumer_role.add_type_history_element(attr)
       expect(person.consumer_role.verification_type_history_elements.size).to be > 0
+    end
+  end
+
+  describe "#ensure_verification_types with qhp_application turned on" do
+    before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+    end
+    let(:person) {FactoryBot.create(:person, :with_consumer_role)}
+
+    it "Should not create verification types for person" do
+      expect(person.consumer_role.verification_types.size).to be 0
     end
   end
 
