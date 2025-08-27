@@ -94,7 +94,7 @@ module IndividualMarket
 
     # List of ethnicities the applicant identifies with
     # @return [Array]
-    field :ethnicity, type: Array
+    field :ethnicity, type: Array, default: []
 
     # List of races the applicant identifies with
     # @return [Array]

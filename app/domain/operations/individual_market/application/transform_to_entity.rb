@@ -21,9 +21,8 @@ module Operations
 
         def construct_cv3_application(application)
           if application.is_a?(::IndividualMarket::Application)
-
             begin
-              Transformers::ApplicationTo::Cv3Application.new.call(application)
+              ::Operations::IndividualMarket::Transformers::ApplicationTo::Cv3Application.new.call(application)
             rescue StandardError => e
               Failure(e.message)
             end

@@ -19,6 +19,8 @@ sorted_data = member_list.sort_by do |item|
   item["duration"]
 end
 
-sorted_data[-10..-1].each do |sd|
-  puts sd.inspect
+if sorted_data.any?
+  sorted_data[-10..-1].each do |sd|
+    puts sd.inspect
+  end
 end

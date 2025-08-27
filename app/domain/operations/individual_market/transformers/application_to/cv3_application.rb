@@ -119,7 +119,15 @@ module Operations
           # @param [IndividualMarket::Applicant] applicant The applicant whose name to transform
           # @return [Hash] The transformed name hash
           def name(applicant)
-            applicant.person_name.attributes.deep_symbolize_keys.slice(:given_name, :middle_name, :family_name, :name_sfx, :name_pfx, :alternate_name)
+            p_name = applicant.person_name
+            {
+              given_name: p_name.given_name,
+              middle_name: p_name.middle_name,
+              family_name: p_name.family_name,
+              name_sfx: p_name.name_sfx,
+              name_pfx: p_name.name_pfx,
+              alternate_name: p_name.alternate_name
+            }
           end
 
           # Transforms an applicant's demographics to its CV3 representation
@@ -128,10 +136,19 @@ module Operations
           # @return [Hash] The transformed demographics hash
           def demographics(applicant)
             demographics = applicant.demographics
-            demographics_hash = demographics.attributes.deep_symbolize_keys.slice(:no_ssn, :is_incarcerated, :is_physically_disabled,
-                                                                                  :indian_tribe_member, :tribal_id, :tribal_name,
-                                                                                  :tribal_state, :language_code, :ethnicity,
-                                                                                  :citizen_status, :race)
+            demographics_hash = {
+              no_ssn: demographics.no_ssn,
+              is_incarcerated: demographics.is_incarcerated,
+              is_physically_disabled: demographics.is_physically_disabled,
+              indian_tribe_member: demographics.indian_tribe_member,
+              tribal_id: demographics.tribal_id,
+              tribal_name: demographics.tribal_name,
+              tribal_state: demographics.tribal_state,
+              language_code: demographics.language_code,
+              ethnicity: demographics.ethnicity,
+              citizen_status: demographics.citizen_status,
+              race: demographics.race
+            }
             demographics_hash[:gender] = demographics.gender.capitalize
             demographics_hash[:encrypted_ssn] = encrypt(demographics.ssn) if demographics.encrypted_ssn.present?
             demographics_hash[:dob] = demographics.dob.to_date if demographics.dob.present?
@@ -145,23 +162,41 @@ module Operations
           # @param [IndividualMarket::Applicant] applicant The applicant whose eligibilities to transform
           # @return [Array<Hash>] Collection of transformed eligibility hashes
           def eligibilities(applicant)
-            applicant.eligibilities.inject([]) do |result, eligibility|
-              eligibility_hash = applicant.eligibilities.first.attributes.deep_symbolize_keys.slice(:key, :title, :description, :current_state, :is_satisfied,
-                                                                                                    :determined_at, :is_disqualified, :disqualified_at, :disqualified_reason)
-              eligibility_hash[:evidences] = evidences(eligibility)
-              eligibility_hash[:determinations] = determinations(eligibility)
-
-              result << eligibility_hash
-              result
+            applicant.eligibilities.collect do |eligibility|
+              {
+                key: eligibility.key,
+                title: eligibility.title,
+                description: eligibility.description,
+                current_state: eligibility.current_state,
+                is_satisfied: eligibility.is_satisfied,
+                determined_at: eligibility.determined_at,
+                is_disqualified: eligibility.is_disqualified,
+                disqualified_at: eligibility.disqualified_at,
+                disqualified_reason: eligibility.disqualified_reason,
+                evidences: evidences(eligibility),
+                determinations: determinations(eligibility)
+              }
             end
           end
 
           def immigration_information(applicant)
             immigration_information = applicant.immigration_information
-            info_hash = applicant.immigration_information.attributes.slice(:subject, :alien_number, :i94_number, :visa_number, :passport_number, :sevis_id,
-                                                                           :naturalization_number, :receipt_number, :citizenship_number, :card_number,
-                                                                           :country_of_citizenship, :issuing_country,
-                                                                           :description, :immigration_doc_statuses)
+            info_hash = {
+              subject: immigration_information.subject,
+              alien_number: immigration_information.alien_number,
+              i94_number: immigration_information.i94_number,
+              visa_number: immigration_information.visa_number,
+              passport_number: immigration_information.passport_number,
+              sevis_id: immigration_information.sevis_id,
+              naturalization_number: immigration_information.naturalization_number,
+              receipt_number: immigration_information.receipt_number,
+              citizenship_number: immigration_information.citizenship_number,
+              card_number: immigration_information.card_number,
+              country_of_citizenship: immigration_information.country_of_citizenship,
+              issuing_country: immigration_information.issuing_country,
+              description: immigration_information.description,
+              immigration_doc_statuses: immigration_information.immigration_doc_statuses
+            }
             info_hash.merge!(expiration_date: immigration_information.expiration_date.to_datetime) if immigration_information.expiration_date.present?
             info_hash
           end
@@ -189,10 +224,16 @@ module Operations
           # @param [Eligibilities::V3::Eligibility] eligibility The eligibility containing evidences
           # @return [Array<Hash>] Collection of transformed evidence hashes
           def evidences(eligibility)
-            eligibility.evidences.inject([]) do |result, evidence|
-              evidence_hash = evidence.attributes.deep_symbolize_keys.slice(:key, :title, :description, :is_satisfied, :determined_at, :current_state, :due_on)
-              result << evidence_hash
-              result
+            eligibility.evidences.collect do |evidence|
+              {
+                key: evidence.key,
+                title: evidence.title,
+                description: evidence.description,
+                is_satisfied: evidence.is_satisfied,
+                determined_at: evidence.determined_at,
+                current_state: evidence.current_state,
+                due_on: evidence.due_on
+              }
             end
           end
 
@@ -201,11 +242,8 @@ module Operations
           # @param [Eligibilities::V3::Eligibility] eligibility The eligibility containing determinations
           # @return [Array<Hash>] Collection of transformed determination hashes
           def determinations(eligibility)
-            eligibility.determinations.inject([]) do |result, determination|
-              determination_hash = determination.attributes.deep_symbolize_keys.slice(:key, :is_eligible)
-              determination_hash[:bases] = bases(determination)
-              result << determination_hash
-              result
+            eligibility.determinations.collect do |determination|
+              { key: determination.key, is_eligible: determination.is_eligible, bases: bases(determination) }
             end
           end
 
@@ -214,10 +252,8 @@ module Operations
           # @param [Eligibilities::V3::Determination] determination The determination containing bases
           # @return [Array<Hash>] Collection of transformed base hashes
           def bases(determination)
-            determination.bases.inject([]) do |result, base|
-              base_hash = base.attributes.deep_symbolize_keys.slice(:basis_kind, :is_satisfied)
-              result << base_hash
-              result
+            determination.bases.collect do |basis|
+              { basis_kind: basis.basis_kind, is_satisfied: basis.is_satisfied }
             end
           end
 
@@ -287,10 +323,19 @@ module Operations
           # @param [IndividualMarket::Applicant] applicant The applicant whose addresses to transform
           # @return [Array<Hash>] Collection of transformed address hashes
           def addresses(applicant)
-            applicant.addresses.inject([]) do |result, address|
-              address_hash = address.attributes.deep_symbolize_keys.slice(:kind, :address_1, :address_2, :address_3, :city, :county, :state, :zip, :country_name, :quadrant)
-              result << address_hash
-              result
+            applicant.addresses.collect do |address|
+              {
+                kind: address.kind,
+                address_1: address.address_1,
+                address_2: address.address_2,
+                address_3: address.address_3,
+                city: address.city,
+                county: address.county,
+                state: address.state,
+                zip: address.zip,
+                country_name: address.country_name,
+                quadrant: address.quadrant
+              }
             end
           end
 
