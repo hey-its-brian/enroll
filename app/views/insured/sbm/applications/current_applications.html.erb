@@ -4,7 +4,7 @@
 <% if @prospective_application.present? %>
   <div class="alert alert-warning d-flex align-items-start p-2" role="alert">
     <div class="warning-icon icon mt-1 px-3" alt="warning" aria-hidden="true">&nbsp;</div>
-    <p class="mb-0"><b><%= l10n("insured.sbm.applications.index.pre_oe_warning1") %></b> <%= l10n("insured.sbm.applications.index.pre_oe_warning2") %><b><%= @oe_start_date %></b>.</p>
+    <p class="mb-0"><b><%= l10n("insured.sbm.applications.index.pre_oe_warning1", year: @prospective_year&.to_s) %></b> <%= l10n("insured.sbm.applications.index.pre_oe_warning2") %><b><%= @oe_start_date %></b>.</p>
   </div>
 <% end %>
 <p><%= l10n("insured.sbm.applications.application_history_description1") %> '<strong><%= l10n("insured.sbm.applications.application_history_description2") %></strong>' <%= l10n("insured.sbm.applications.application_history_description3") %></p>
@@ -22,8 +22,8 @@
         <div class="w-100">
           <ol class="ml-0 pl-3 mb-0">
             <li><%= l10n("applications.how.start.step1") %></li>
-            <li><%= l10n("applications.how.start.step2") %></li>
-            <li><%= l10n("applications.how.start.step3") %></li>
+            <li><%= l10n("click") %> <b>"<%= l10n("applications.how.start.start_application") %>"</b> <%= l10n("applications.how.start.step2a") %> <b>"<%= l10n("insured.consumer_roles.upload_ridp_documents.actions") %>"</b> <%= l10n("applications.how.start.step2b") %> <b>"<%= l10n("applications.how.start.resume_application") %>"</b>.</li>
+            <li><%= l10n("applications.how.start.step3a") %> <b>"<%= l10n("applications.how.start.copy_info") %>"</b> <%= l10n("applications.how.start.step3b") %> <b>"<%= l10n("insured.consumer_roles.upload_ridp_documents.actions") %>"</b> <%= l10n("applications.how.start.step3c") %></li>
           </ol>
         </div>
       </div>
@@ -44,10 +44,10 @@
         <div class="w-100">
           <ol class="ml-0 pl-3 mb-0">
             <li><%= l10n("applications.how.update.step1") %></li>
-            <li><%= l10n("applications.how.update.step2") %></li>
-            <li><%= l10n("applications.how.update.step3") %></li>
+            <li><%= l10n("applications.how.update.step2a") %> <b>"<%= l10n("insured.consumer_roles.upload_ridp_documents.actions") %>"</b> <%= l10n("applications.how.update.step2b") %></li>
+            <li><%= l10n("select") %> <b>"<%= l10n("applications.how.update.update_application") %>"</b>.</li>
             <ul>
-              <li><%= l10n("applications.how.update.step3a") %></li>
+              <li><%= l10n("applications.how.update.step3.bullet") %></li>
             </ul>
             <li><%= l10n("applications.how.update.step4") %></li>
           </ol>
@@ -79,7 +79,7 @@
           <p class="mb-0"><%= l10n("applications.how.previous") %></p>
           <ul class="mb-0">
             <li><%= l10n("applications.how.previous.li1", year: @previous_year) %></li>
-            <li><%= l10n("applications.how.previous.li2", year: @previous_year, year2: @applicable_year) %></li>
+            <li><%= l10n("applications.how.previous.li2a", year: @previous_year, year2: @applicable_year) %> <b>"<%= l10n("insured.sbm.applications.actions.copy_to_alt_year", alt_year: @applicable_year) %>"</b> <%= l10n("applications.how.start.step3b") %> <b>"<%= l10n("insured.consumer_roles.upload_ridp_documents.actions") %>"</b> <%= l10n("applications.how.previous.li2b", year2: @applicable_year) %></li>
           </ul>
         </div>
       </div>
