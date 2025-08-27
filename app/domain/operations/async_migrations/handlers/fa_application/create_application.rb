@@ -106,7 +106,7 @@ module Operations
               # social security number verification type ---> social security number evidence
               # citizenship verification type ---> citizenship evidence
               result = Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::GenerateEvidences.new.call(applicant: new_applicant)
-              return Failure("Failed while generating applicant #{new_applicant.person_hbx_id} evidences #{result.failure}") if result.failure?
+              return Failure("Failed while generating applicant #{new_applicant.person_hbx_id} evidences, #{result.failure}") if result.failure?
 
               # Migrate existing aptc csr eligibility evidences
               old_aptc_csr_eligibility = old_applicant.aptc_csr_eligibility
@@ -369,7 +369,6 @@ module Operations
                            "Errors"
                           ]
 
-            # result = rows.collect do |row|
             event = event("events.migration_results.enqueue_result", attributes: {csv_file_name: "new_fa_application_report", csv_headers: csv_headers, csv_row: row})
 
             result = if event.success?

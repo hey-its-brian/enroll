@@ -134,6 +134,11 @@ module Operations
             individual_market_eligibility = applicant.build_individual_market_eligibility
             person_hbx_id = applicant.instance_of?(::IndividualMarket::Applicant) ? applicant.family_member.person.hbx_id : applicant.person_hbx_id
             person = Person.where(hbx_id: person_hbx_id).first
+
+            # Person with ssn but no verification type
+            # This is a data integrity issue
+            # raise error and stop the process for this family
+            valid_person?(person)
             lawful_presence_determination = person.consumer_role.lawful_presence_determination
             alive_status_responses = person.consumer_role.alive_status_responses
             responses = lawful_presence_determination.ssa_responses + lawful_presence_determination.vlp_responses + alive_status_responses
@@ -143,8 +148,16 @@ module Operations
             assign_individual_market_eligibility_attributes(individual_market_eligibility, evidences_result, applicant)
 
             Success(applicant)
+          rescue SSNVerificationError => e
+            Failure("Data integrity issue for family: #{applicant.application.family_id} - #{e.message}")
           rescue StandardError => e
             Failure("Failed to convert verification types to evidences for family: #{applicant.application.family_id} with error: #{e.message}")
+          end
+
+          def valid_person?(person)
+            raise SSNVerificationError,"Person with hbx_id: #{person.hbx_id} has SSN but no SSN verification type" if person.ssn.present? && person.verification_types.unscoped.ssn_type.blank?
+
+            true
           end
 
           def assign_individual_market_eligibility_attributes(individual_market_eligibility, evidences_result, applicant)
@@ -268,6 +281,8 @@ module Operations
             end
           end
         end
+
+        class SSNVerificationError < StandardError; end
       end
     end
   end

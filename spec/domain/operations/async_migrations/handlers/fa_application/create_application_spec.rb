@@ -1213,6 +1213,83 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           expect(@result.failure.to_s).to eq("generation failed for the application: #{application.hbx_id} with error: No APTC/CSR eligibility object found for old applicant #{applicant2.person_hbx_id}")
         end
       end
+
+      context 'person with ssn but no verification type' do
+        let(:dependent_person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true, ssn: "123-45-6789") }
+        let(:dependent_family_member) { FactoryBot.create(:family_member, family: family, person: dependent_person) }
+        let(:dependent_applicant) do
+          FactoryBot.create(:applicant,
+                            first_name: "dep_name",
+                            application: application,
+                            dob: TimeKeeper.date_of_record - 40.years,
+                            is_primary_applicant: true,
+                            family_member_id: dependent_family_member.id,
+                            person_hbx_id: dependent_person.hbx_id,
+                            addresses: [FactoryBot.build(:financial_assistance_address)],
+                            eligibility_determination_id: eligibility_determination1.id,
+                            is_eligible_for_non_magi_reasons: true,
+                            magi_medicaid_category: "medicaid",
+                            medicaid_household_size: 3,
+                            magi_medicaid_monthly_household_income: 1000,
+                            magi_medicaid_monthly_income_limit: 2000,
+                            magi_as_percentage_of_fpl: 150,
+                            csr_percent_as_integer: 87,
+                            csr_eligibility_kind: "csr_87",
+                            benchmark_premiums: {"health_only_slcsp_premiums" => [{"member_identifier" => dependent_person.hbx_id, "monthly_premium" => 1060.57}],
+                                                 "health_only_lcsp_premiums" => [{"member_identifier" => dependent_person.hbx_id, "monthly_premium" => 1058.99}]},
+                            contact_method: "Paper and Electronic communications",
+                            language_preference: "test",
+                            is_ia_eligible: true,
+                            is_csr_eligible: true,
+                            is_medicaid_chip_eligible: true,
+                            is_non_magi_medicaid_eligible: true,
+                            is_totally_ineligible: true,
+                            is_without_assistance: true,
+                            is_magi_medicaid: true,
+                            is_gap_filling: true,
+                            is_primary_caregiver_for: [],
+                            member_determinations: member_determinations)
+        end
+
+        let(:dep_aptc_csr_eligibility)  do
+          eligibility = FactoryBot.create(:aptc_csr_eligibility, eligible: dependent_applicant)
+          old_state = FactoryBot.build(:v3_state_history, created_at: 2.days.ago)
+          new_state = FactoryBot.build(:v3_state_history, created_at: 1.day.ago)
+          eligibility.state_histories << old_state
+          eligibility.state_histories << new_state
+          eligibility.save!
+          eligibility
+        end
+
+        let(:dep_evidence) do
+          FactoryBot.create(:income_evidence, eligibility: dep_aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::IncomeEvidence',key: :income_evidence, title: 'Income Evidence', determined_at: TimeKeeper.date_of_record,
+                                              description: 'Income Evidence Description', current_state: :pending)
+        end
+
+        let(:relationships) do
+          application.add_relationship(applicant, dependent_applicant, 'spouse')
+        end
+
+        before do
+          consumer_role.save!
+          dep_evidence
+          relationships
+          person.person_relationships.build(relative: dependent_person, kind: "spouse")
+          person.save
+          person.verification_types.where(type_name: "DC Residency").delete_all
+          dependent_person.verification_types.where(type_name: "DC Residency").delete_all
+          dependent_person.verification_types.ssn_type.delete_all
+          @old_applicant = application.applicants.first
+          @old_applicant.update_attributes(is_primary_caregiver_for: [dependent_applicant.person_hbx_id])
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          @result = subject.call({document_id: application.id.to_s})
+        end
+
+        it 'should fail' do
+          expect(@result.failure?).to be_truthy
+          expect(@result.failure.to_s).to match(/Data integrity issue for family: #{family.id} - Person with hbx_id: #{dependent_person.hbx_id} has SSN but no SSN verification type/i)
+        end
+      end
     end
   end
 end
