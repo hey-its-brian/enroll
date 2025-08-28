@@ -186,7 +186,7 @@ module Adapters
         # @return [String, nil] The determined update reason
         def determine_update_reason(specific_evidence)
           if qhp_application_feature_enabled?
-            specific_evidence.latest_verification_history&.update_reason
+            specific_evidence.latest_rejected_verification_history&.update_reason
           else
             specific_evidence.update_reason
           end

@@ -111,6 +111,19 @@ module Eligibilities
           @latest_verification_history = verification_histories.last
         end
 
+        # Returns the most recent rejected verification history record
+        #
+        # This method retrieves the newest rejected verification history record for this eligibility.
+        # The result is memoized to avoid repeated database queries.
+        #
+        # @return [StateHistory, nil] The most recent rejected verification history record, or nil if none exists
+        def latest_rejected_verification_history
+          return @latest_rejected_verification_history if defined?(@latest_rejected_verification_history)
+
+          @latest_rejected_verification_history = verification_histories.where(action: 'return_for_deficiency').last
+        end
+
+
         def determine_outstanding_due_on_date(call_type)
           if call_type == 'bulk_call'
             schedule_verification_due_on_for_bulk_call
