@@ -235,14 +235,12 @@ class Insured::ConsumerRolesController < ApplicationController
 
   def create_contact_preferences
     authorize @consumer_role, :create_contact_preferences?
-    @consumer_role.skip_consumer_role_callbacks = true
-    valid_params = build_person_params_with_skip_flags(contact_preferences_params)
-    @person.assign_attributes(valid_params)
-    if @person.save(context: :enhanced_contact_preferences)
+    update_params = build_person_params_with_skip_flags(contact_preferences_params)
+    result = Operations::ConsumerRoles::CreateContactPreferences.new.call(consumer_role: @consumer_role, params: update_params)
+    if result.success?
       redirect_to edit_insured_consumer_role_path(@consumer_role)
     else
-      bubble_consumer_role_errors_by_person(@consumer_role.person)
-      flash[:error] = @person.errors.full_messages.join(", ")
+      flash[:error] = result.failure.full_messages.join(", ")
       redirect_to contact_preferences_insured_consumer_role_path(@consumer_role)
     end
   end

@@ -2,7 +2,25 @@
 <div data-controller="contact-methods">
 <h1 data-cuke='preferences'><%= l10n("qhp_application.nav.preferences_label") %></h1>
 <h2><%= l10n("qhp_application.review.contact_preferences") %></h2>
-  <p><%= l10n("insured.preferences.contact_update_info") %><span class="primary-text"><%= link_to l10n("insured.preferences.family_info_page"), insured_individual_market_application_applicants_path(@application, applicant: @applicant.id) %></span></p>
+
+  <% family_info_link = link_to l10n("insured.preferences.family_info_page"), insured_individual_market_application_applicants_path(@application, applicant: @applicant.id) %>
+  <% if EnrollRegistry.feature_enabled?(:enroll_sms_notifications) %>
+    <p class='mb-0'><%= l10n("insured.preferences.description.contact_info") %></p>
+    <p>
+      <b><%= l10n("insured.preferences.description.required_notice_1") %></b>
+      <%= l10n("insured.preferences.description.required_notice_2") %>
+      <b><%= l10n('continue_to_next_step') %></b>
+      <%= l10n("insured.preferences.update_address") %>
+      <span class="primary-text"><%= family_info_link %></span>.
+    </p>
+  <% else %>
+    <p>
+      <%= l10n("insured.preferences.contact_update_info") %>
+      <%= l10n("insured.preferences.update_address") %>
+      <span class="primary-text"><%= family_info_link %></span>.
+    </p>
+  <% end %>
+
 
   <%= form_for(@applicant, url: insured_individual_market_application_applicant_update_preferences_path(@application, @applicant), method: :post, data: {target: "contact-methods.preferencesForm"}) do |f| %>
     <%= render partial: 'shared/contact_preferences_fields', locals: { config: contact_preferences_fields_config(f) } %>

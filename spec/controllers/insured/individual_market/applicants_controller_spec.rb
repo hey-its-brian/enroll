@@ -421,13 +421,73 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
     if [:all, :update_preferences].include?(action_name)
       describe "POST update_preferences" do
         if authorization_type == :authorized
-          it "transforms the preferences if it is an array" do
-            post :update_preferences, params: {
+          let(:base_preferences_params) do
+            {
               application_id: application.id,
               applicant_id: applicant.id,
               individual_market_applicant: { contact_method: ["Email"] }
             }
-            application.reload
+          end
+
+          before do
+            applicant.phones.create(kind: "mobile", number: "2234567890")
+            applicant.emails.create(kind: "work", address: "example@example.com")
+          end
+
+          context "when SMS notifications feature is enabled" do
+            before do
+              allow(EnrollRegistry).to receive(:feature_enabled?).with(:enroll_sms_notifications).and_return(true)
+            end
+
+            context "when applicant saves successfully with enhanced context" do
+              before do
+                allow_any_instance_of(::IndividualMarket::Applicant).to receive(:save).with(context: :enhanced_contact_preferences).and_return(true)
+              end
+
+              it "saves with enhanced_contact_preferences context" do
+                expect_any_instance_of(::IndividualMarket::Applicant).to receive(:save).with(context: :enhanced_contact_preferences)
+                post :update_preferences, params: base_preferences_params
+              end
+
+              it "redirects to review page on successful save" do
+                post :update_preferences, params: base_preferences_params
+                expect(response).to redirect_to(review_insured_individual_market_application_path(application))
+              end
+            end
+
+            context "when applicant fails validation with enhanced context" do
+              before do
+                allow_any_instance_of(::IndividualMarket::Applicant).to receive(:save).with(context: :enhanced_contact_preferences).and_return(false)
+                allow_any_instance_of(::IndividualMarket::Applicant).to receive_message_chain(:errors, :full_messages, :join).and_return("Phone number is required for SMS notifications")
+              end
+
+              it "redirects back to preferences with validation error" do
+                post :update_preferences, params: base_preferences_params
+                expect(response).to redirect_to(preferences_insured_individual_market_application_path(application))
+                expect(flash[:error]).to eq("Phone number is required for SMS notifications")
+              end
+            end
+          end
+
+          context "when SMS notifications feature is disabled" do
+            before do
+              allow(EnrollRegistry).to receive(:feature_enabled?).with(:enroll_sms_notifications).and_return(false)
+              allow_any_instance_of(::IndividualMarket::Applicant).to receive(:save).with(context: nil).and_return(true)
+            end
+
+            it "saves without enhanced context" do
+              expect_any_instance_of(::IndividualMarket::Applicant).to receive(:save).with(context: nil)
+              post :update_preferences, params: base_preferences_params
+            end
+
+            it "redirects to review page" do
+              post :update_preferences, params: base_preferences_params
+              expect(response).to redirect_to(review_insured_individual_market_application_path(application))
+            end
+          end
+
+          it "transforms the preferences if it is an array" do
+            post :update_preferences, params: base_preferences_params
             applicant.reload
             expect(applicant.contact_method).to include("Only Electronic communications")
           end
@@ -438,7 +498,6 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
               applicant_id: applicant.id,
               individual_market_applicant: { contact_method: "Email" }
             }
-            application.reload
             applicant.reload
             expect(applicant.contact_method).not_to eq("Email")
           end
@@ -452,7 +511,6 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
                 is_homeless: true
               }
             }
-            application.reload
             applicant.reload
             expect(applicant.contact_method).to include("Paper, Electronic and Text Message communications")
             expect(applicant.is_homeless).to be_falsey
@@ -465,9 +523,6 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
                   "0" => { kind: "home", full_phone_number: "(438) 763-7476", id: applicant.phones.first.id, _destroy: "false" }
                 }
               }
-            end
-            before do
-              applicant.phones.create(kind: "mobile", number: "2234567890")
             end
 
             it "updates the phone if the number changed" do
@@ -501,9 +556,6 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
                 }
               }
             end
-            before do
-              applicant.emails.create(kind: "work", address: "example@example.com")
-            end
 
             it "updates the email if the address changed" do
               post :update_preferences, params: {
@@ -525,15 +577,6 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
               applicant.reload
               expect(applicant.work_email).to be_nil
             end
-          end
-
-          it "redirects to the applicants review page" do
-            post :update_preferences, params: {
-              application_id: application.id,
-              applicant_id: applicant.id,
-              individual_market_applicant: { contact_method: ["Email"] }
-            }
-            expect(response).to redirect_to(review_insured_individual_market_application_path(application))
           end
         end
       end

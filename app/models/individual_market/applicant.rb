@@ -114,6 +114,8 @@ module IndividualMarket
 
     validate :unique_eligibilities
 
+    validates_with Validations::ContactPreferences::Validator, on: :enhanced_contact_preferences, if: :is_primary_applicant?
+
     accepts_nested_attributes_for :person_name, :demographics, :eligibilities, :immigration_information, :addresses, :phones, :emails
 
     accepts_nested_attributes_for :phones, :reject_if => proc { |addy| addy[:full_phone_number].blank? }, allow_destroy: true

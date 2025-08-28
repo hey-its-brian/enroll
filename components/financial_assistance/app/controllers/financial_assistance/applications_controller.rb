@@ -125,15 +125,14 @@ module FinancialAssistance
         mark_empty_emails_for_destruction(attrs[:applicants_attributes]) if attrs[:applicants_attributes].present?
 
         @application.assign_attributes(attrs)
-        if @application.save
-          redirection_link = if qhp_application_feature_enabled?
-                               review_and_submit_application_path(@application)
-                             else
-                               submit_your_application_application_path(@application)
-                             end
-          redirect_to redirection_link
+        applicant_errors = save_preferences_applicant_errors
+
+        if applicant_errors.empty? && @application.save
+          redirect_to save_preferences_redirection_link
         else
           @application.save!(validate: false)
+          # Add validation errors from applicants to the application's errors
+          applicant_errors.each { |error| @application.errors.add(:base, error) }
           flash[:error] = build_error_messages(@application).join(", ")
           render 'preferences'
         end
@@ -773,6 +772,20 @@ module FinancialAssistance
           email_attrs[:_destroy] = "1" if email_attrs[:address].blank? && email_attrs[:id].present?
         end
       end
+    end
+
+    def save_preferences_redirection_link
+      if qhp_application_feature_enabled?
+        review_and_submit_application_path(@application)
+      else
+        submit_your_application_application_path(@application)
+      end
+    end
+
+    def save_preferences_applicant_errors
+      return [] unless EnrollRegistry.feature_enabled?(:enroll_sms_notifications)
+
+      @application.applicants.map { |applicant| applicant.errors unless applicant.valid?(:enhanced_contact_preferences) }.compact
     end
   end
 end

@@ -112,14 +112,15 @@ module Insured
 
         contact_method = transform_contact_method
 
-        @applicant.update_attributes(preferences_params.except(:contact_method).merge(contact_method: contact_method))
+        @applicant.assign_attributes(preferences_params.except(:contact_method).merge(contact_method: contact_method))
 
         destroy_removed_contact_methods
 
-        if @applicant.save
+        save_context = EnrollRegistry.feature_enabled?(:enroll_sms_notifications) ? :enhanced_contact_preferences : nil
+        if @applicant.save(context: save_context)
           redirect_to review_insured_individual_market_application_path(@application)
         else
-          flash.now[:error] = @applicant.errors.full_messages.join(", ")
+          flash[:error] = @applicant.errors.full_messages.join(", ")
           redirect_to preferences_insured_individual_market_application_path(@application)
         end
       end

@@ -13,6 +13,13 @@ module ContactPreferencesHelper
   # Classes not listed here are assumed to store preferences directly.
   PREFERENCE_FIELD_MAPPING = { 'Person' => :consumer_role }.freeze
 
+  # Maps object class names to their contact method mapping constants
+  CONTACT_METHOD_MAPPINGS = {
+    'Person' => ConsumerRole::CONTACT_METHOD_MAPPING,
+    'ConsumerRole' => ConsumerRole::CONTACT_METHOD_MAPPING,
+    'FinancialAssistance::Applicant' => FinancialAssistance::Applicant::CONTACT_METHOD_MAPPING
+  }.freeze
+
   # Generates configuration for the contact preferences form based on the form object type.
   #
   # @param form_builder [ActionView::Helpers::FormBuilder] The form builder instance
@@ -20,8 +27,13 @@ module ContactPreferencesHelper
   #   - :contact_object - The object containing phone/email data
   #   - :form_builder - The original form builder
   #   - :preferences_field - The nested field name (if any) containing preferences
+  #   - :contact_method_mapping - The appropriate contact method mapping constant
   def contact_preferences_fields_config(form_builder)
-    config = { contact_object: form_builder.object, form_builder: form_builder }
+    config = {
+      contact_object: form_builder.object,
+      form_builder: form_builder,
+      contact_method_mapping: get_contact_method_mapping(form_builder.object)
+    }
     config[:preferences_field] = PREFERENCE_FIELD_MAPPING[form_builder.object.class.name]
     config
   end
@@ -40,5 +52,19 @@ module ContactPreferencesHelper
     else
       capture(config[:form_builder], &block)
     end
+  end
+
+  private
+
+  # Returns the appropriate contact method mapping constant for the given object
+  #
+  # @param object [Object] The object to get the mapping for
+  # @return [Hash] The contact method mapping constant
+  def get_contact_method_mapping(object)
+    mapping = CONTACT_METHOD_MAPPINGS[object.class.name]
+    return mapping if mapping
+
+    # Default fallback
+    ConsumerRole::CONTACT_METHOD_MAPPING
   end
 end

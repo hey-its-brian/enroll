@@ -777,6 +777,113 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       end
     end
 
+    context "SMS feature flag functionality" do
+      let(:params_with_contact_method) do
+        {
+          id: application.id,
+          application: {
+            applicants_attributes: {
+              "0" => {
+                id: applicant.id,
+                contact_method: ["Mail", "Text"]
+              }
+            }
+          }
+        }
+      end
+
+      context "when enroll_sms_notifications feature is disabled" do
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:enroll_sms_notifications).and_return(false)
+        end
+
+        it "does not perform enhanced contact preferences validation" do
+          post :save_preferences, params: params_with_contact_method
+          expect(response).to redirect_to(submit_your_application_application_path(application))
+        end
+
+        it "returns empty array from save_preferences_applicant_errors" do
+          post :save_preferences, params: params_with_contact_method
+          errors = controller.send(:save_preferences_applicant_errors)
+          expect(errors).to eq([])
+        end
+      end
+
+      context "when enroll_sms_notifications feature is enabled" do
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:enroll_sms_notifications).and_return(true)
+        end
+
+        context "when applicant has valid contact information" do
+          let(:params_with_valid_contact) do
+            {
+              id: application.id,
+              application: {
+                applicants_attributes: {
+                  "0" => {
+                    id: applicant.id,
+                    contact_method: ["Email", "Mail"],
+                    "phones_attributes": {
+                      "0" => {
+                        "kind": "mobile",
+                        "full_phone_number": "9876543210"
+                      }
+                    },
+                    "emails_attributes": {
+                      "0" => {
+                        "kind": "home",
+                        "address": "test@example.com"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          end
+
+          it "successfully saves and redirects" do
+            post :save_preferences, params: params_with_valid_contact
+            expect(response).to redirect_to(submit_your_application_application_path(application))
+          end
+
+          it "returns empty array from save_preferences_applicant_errors" do
+            post :save_preferences, params: params_with_valid_contact
+            errors = controller.send(:save_preferences_applicant_errors)
+            expect(errors).to eq([])
+          end
+        end
+
+        context "when applicant validation fails due to missing contact info" do
+          let(:params_with_text_only) do
+            {
+              id: application.id,
+              application: {
+                applicants_attributes: {
+                  "0" => {
+                    id: applicant.id,
+                    contact_method: ["Text"]
+                  }
+                }
+              }
+            }
+          end
+
+          it "includes applicant errors in save_preferences_applicant_errors" do
+            post :save_preferences, params: params_with_text_only
+            errors = controller.send(:save_preferences_applicant_errors)
+            expect(errors).not_to be_empty
+            expect(errors.first).to respond_to(:present?)
+          end
+
+          it "renders preferences template with flash error" do
+            post :save_preferences, params: params_with_text_only
+            expect(flash[:error]).to be_present
+            expect(response).to render_template('preferences')
+          end
+        end
+      end
+    end
+
     it "shows errors when @application does not save" do
       allow(application).to receive_message_chain('errors.full_messages').and_return(
         ["Hbx id can't be blank", "fake errors can't be blank"]

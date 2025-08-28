@@ -83,7 +83,7 @@
                     <span class="mr-2 contact-method">
                       <%= prefs_form.check_box(:contact_method,
                           {
-                            checked: (ConsumerRole::CONTACT_METHOD_MAPPING.invert)[prefs_form.object.contact_method].to_a.include?(type_string),
+                            checked: (config[:contact_method_mapping].invert)[prefs_form.object.contact_method].to_a.include?(type_string),
                             multiple: true,
                             id: check_box_id,
                             data: {target: "contact-methods.#{type_key}Preference", action: "change->contact-methods#updateFormState"}

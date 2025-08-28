@@ -38,119 +38,25 @@
       <% primary_applicant = @application.primary_applicant %>
       <%= f.fields_for :applicants, primary_applicant do |app_f| %>
         <h2><%= l10n("qhp_application.review.contact_preferences") %></h2>
-        <p><%= l10n("insured.preferences.contact_update_info") %><span class="primary-text"><%= link_to l10n("insured.preferences.family_info_page"), application_applicants_path(@application) %></span></p>
-        <section>
-          <div id="phone_info">
-            <div class="phone d-flex mb-md-2 row col-sm">
-              <% home_phone = primary_applicant.home_phone.present? ? primary_applicant.home_phone : primary_applicant.phones.build(kind: "home") %>
-              <% mobile_phone = primary_applicant.mobile_phone.present? ? primary_applicant.mobile_phone : primary_applicant.phones.build(kind: "mobile") %>
-              <% [home_phone, mobile_phone].each_with_index do |phone_obj, idx| %>
-                <%= app_f.fields_for :phones, phone_obj, child_index: idx, errors: {}, fieldset: true do |phone|  %>
-                  <% kind = phone.object.kind.upcase %>
-                  <% required = kind == 'HOME' ? "required" : "" %>
-                  <%= phone.hidden_field :kind %>
-                  <%= phone.hidden_field :_destroy %>
-                  <div class="col-sm col-md-6 p-0">
-                    <div class="col-md-12 <%= idx.even? ? 'pl-0' : 'pr-0'%>">
-                      <% unless kind == 'FAX' && params[:action] == "personal" %>
-                        <%= phone.label :full_phone_number, l10n(kind + "Phone") %>
-                        <%= phone.text_field :full_phone_number, placeholder: "(000) 000-0000", class: "#{required} full-width phone_number #{kind.downcase}-phone-number", data: {target: "contact-methods.#{kind.downcase}Phone", action: "change->contact-methods#canSubmitCheck"} %>
-                      <% end %>
-                    </div>
-                  </div>
-                <% end %>
-              <% end %>
-            </div>
-          </div>
-          <div id="email_info">
-            <div class="email d-flex mb-md-4 row col-sm">
-              <% email = primary_applicant.home_email.present? ? primary_applicant.home_email : primary_applicant.emails.build(kind: "home") %>
-              <% work_email = primary_applicant.work_email.present? ? primary_applicant.work_email : primary_applicant.emails.build(kind: "work") %>
-              <% [email, work_email].each_with_index do |email_obj, idx| %>
-                <%= app_f.fields_for :emails, email_obj, child_index: idx, errors: {}, fieldset: true do |f| %>
-                  <% kind = f.object.kind %>
-                  <div class="col-sm col-md-6 p-0">
-                    <div class="col-md-12 <%= idx.even? ? 'pl-0' : 'pr-0'%>">
-                      <%= f.hidden_field :kind %>
-                      <%= f.hidden_field :_destroy %>
-                      <%= f.label :address, kind.upcase.eql?('HOME') ? l10n("personal_email_address") : l10n(kind + " Email Address").titleize %>
-                      <%= f.email_field :address, placeholder: "example@mail.com", class: "full-width", data: {target: "contact-methods.#{kind.downcase}Email", action: "change->contact-methods#canSubmitCheck"} %>
-                    </div>
-                  </div>
-                <% end %>
-              <% end %>
-            </div>
-          </div>
-        </section>
+        <% family_info_link = link_to l10n("insured.preferences.family_info_page"), application_applicants_path(@application) %>
+        <% if EnrollRegistry.feature_enabled?(:enroll_sms_notifications) %>
+          <p class='mb-0'><%= l10n("insured.preferences.description.contact_info") %></p>
+          <p>
+            <b><%= l10n("insured.preferences.description.required_notice_1") %></b>
+            <%= l10n("insured.preferences.description.required_notice_2") %>
+            <b><%= l10n('continue_to_next_step') %></b>
+            <%= l10n("insured.preferences.update_address") %>
+            <span class="primary-text"><%= family_info_link %></span>.
+          </p>
+        <% else %>
+          <p>
+            <%= l10n("insured.preferences.contact_update_info") %>
+            <%= l10n("insured.preferences.update_address") %>
+            <span class="primary-text"><%= family_info_link %></span>.
+          </p>
+        <% end %>
 
-        <section>
-          <h3><%= l10n("notices") %></h3>
-          <% if EnrollRegistry.feature_enabled?(:enroll_sms_notifications) %>
-            <p>
-              <%= l10n(
-                  "insured.preferences.notices_disclosure",
-                  site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item,
-                  operating_entity: EnrollRegistry[:enroll_app].setting(:operating_entity).item
-                ) 
-              %>
-              <br>
-              <%= l10n("insured.preferences.sms_note") %>
-            </p>
-          <% else %>
-            <p><%= l10n("insured.preferences.notices_description", site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %><br><%= l10n("insured.preferences.data_rates_notice") %></p>
-          <% end %>
-
-          <div class="<%= 'hidden' if @identifier %>">
-            <fieldset class="d-block col-sm-12 p-0">
-              <legend><%= l10n("insured.preferences.contact_methods") %></legend>
-              <% if EnrollRegistry.feature_enabled?(:contact_method_via_dropdown) %>
-                <%= app_f.select :contact_method,
-                                 options_for_select([
-                                                      [l10n("insured.preferences.paper_only"), "Only Paper communication"],
-                                                      [l10n("insured.preferences.electronic_only"), "Only Electronic communications"],
-                                                      [l10n("insured.preferences.both_methods"), "Paper and Electronic communications"]
-                                                    ], selected: app_f.object.contact_method),
-                                 {prompt: l10n("insured.preferences.select_communications")} %>
-              <% else %>
-                <div class="d-flex mb-md-4 row col-sm">
-                  <% {
-                       email: l10n("insured.contact_option.email"),
-                       mail: l10n("insured.contact_option.mail"),
-                       text: l10n("insured.contact_option.text")
-                     }.each do |type_key, type_string| %>
-                    <div class="col-sm col-md-3 p-0">
-                      <% check_box_id = "contact_type_#{type_key}" %>
-                      <%= app_f.label(:contact_method, for: check_box_id) do %>
-                        <div class="d-flex col-4 p-0 pr-3 align-items-center option weight-n">
-                      <span class="mr-2 contact-method">
-                        <%= app_f.check_box(:contact_method,
-                                            {
-                                              checked: (FinancialAssistance::Applicant::CONTACT_METHOD_MAPPING.invert)[app_f.object.contact_method].to_a.include?(type_string),
-                                              multiple: true,
-                                              id: check_box_id,
-                                              data: {target: "contact-methods.#{type_key}Preference", action: "change->contact-methods#canSubmitCheck"}
-                                            }, type_string, nil) %>
-                      </span>
-                          <%= type_string %>
-                        </div>
-                      <% end %>
-                    </div>
-                  <% end %>
-                </div>
-              <% end %>
-            </fieldset>
-
-            <div class="col-sm-12 mb-4 p-0">
-              <%= app_f.label :language_preference, l10n("insured.preferences.language_preferences"), class: 'personal_landing_page_label required' %>
-              <%= app_f.select :language_preference,
-                               options_for_select(
-                                 EnrollRegistry[:state_based_language_preferences].item || ["English"],
-                                 selected: app_f.object.language_preference
-                               ),
-                               {prompt: l10n("insured.preferences.select_language")} %>
-            </div>
-          </div>
-        </section>
+        <%= render partial: 'shared/contact_preferences_fields', locals: { config: contact_preferences_fields_config(app_f) } %>
       <% end %>
     <% end %>
     <% primary_applicant = @application.primary_applicant %>

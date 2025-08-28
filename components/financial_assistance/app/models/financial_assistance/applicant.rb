@@ -397,6 +397,7 @@ module FinancialAssistance
     validate :presence_of_attr_other_qns, on: :other_qns
     validate :driver_question_responses, on: :submission
     validates :validate_applicant_information, presence: true, on: :submission
+    validates_with Validations::ContactPreferences::Validator, on: :enhanced_contact_preferences, if: :is_primary_applicant?
     validate :is_temporarily_out_of_state, on: :submission, if: :living_outside_state?
 
     validate :strictly_boolean
