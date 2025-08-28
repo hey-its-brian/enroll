@@ -1,7 +1,6 @@
 <% if @bs4 %>
   <h2><%= l10n("insured.individual_agreement.agreement.title") %></h2>
-  <p><%= l10n("insured.individual_agreement.agreement.report_changes", contact_center_name: contact_center_name, contact_center_phone_number: contact_center_phone_number) %></p>
-
+  <p><%= l10n("insured.individual_agreement.agreement.report_changes", contact_center_name: contact_center_name, contact_center_phone_number: contact_center_phone_number, tty_number: EnrollRegistry[:enroll_app].setting(:contact_center_tty_number).item) %></p>
   <% cov_year = locals[:coverage_year] %>
 
   <% if qhp_application_feature_enabled? %>

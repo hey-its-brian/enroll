@@ -2,6 +2,7 @@
 
 require 'html_scrubber_util'
 
+# Helper methods for localization with interpolation
 module L10nHelper
   include ActionView::Helpers::TranslationHelper
   include HtmlScrubberUtil
@@ -26,6 +27,8 @@ module L10nHelper
     options = interpolated_keys.present? ? interpolated_keys.merge(default: default_translation(translation_key)) : {}
 
     t(translation_key, **options, raise: true)
+  rescue I18n::MissingInterpolationArgument => e
+    handle_missing_interpolation_argument(translation_key, interpolated_keys, e)
   end
 
   def sanitize_result(result, translation_key)
@@ -38,6 +41,23 @@ module L10nHelper
     Rails.logger.error {"#L10nHelper missing translation for key: #{translation_key}, error: #{error.inspect}"}
 
     sanitize_result(default_translation(translation_key), translation_key)
+  end
+
+  def handle_missing_interpolation_argument(translation_key, interpolated_keys, error)
+    Rails.logger.error {"#L10nHelper missing interpolation argument for key: #{translation_key}, provided keys: #{interpolated_keys.keys}, error: #{error.inspect}"}
+
+    missing_key = error.message.match(/missing interpolation argument :(\w+)/i)&.captures&.first
+
+    fallback_keys = interpolated_keys.dup
+    fallback_keys[missing_key.to_sym] = "[#{missing_key}]" if missing_key
+
+    begin
+      options = fallback_keys.merge(default: default_translation(translation_key))
+      t(translation_key, **options, raise: true)
+    rescue I18n::MissingInterpolationArgument, I18n::MissingTranslationData => e
+      Rails.logger.error {"#L10nHelper fallback also failed for key: #{translation_key}, error: #{e.inspect}"}
+      default_translation(translation_key)
+    end
   end
 
   def default_translation(translation_key)
