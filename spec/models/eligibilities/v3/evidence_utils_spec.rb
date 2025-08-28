@@ -808,5 +808,165 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
         end
       end
     end
+
+    describe "#retain_evidence_information" do
+      let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+      let(:primary_applicant) { family.primary_applicant }
+
+      let(:current_application) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          aasm_state: 'determined',
+          submitted_at: Time.now,
+          assistance_year: TimeKeeper.date_of_record.year
+        )
+      end
+
+      let(:renewal_application) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          aasm_state: 'initial',
+          assistance_year: TimeKeeper.date_of_record.year + 1,
+          predecessor_id: current_application.id
+        )
+      end
+
+      let(:current_applicant) do
+        applicant = FactoryBot.create(
+          :financial_assistance_applicant,
+          family_member_id: primary_applicant.id,
+          person_hbx_id: person.hbx_id,
+          application: current_application
+        )
+        applicant.build_aptc_eligibilities_evidences
+        applicant.save!
+        applicant
+      end
+
+      let(:renewal_applicant) do
+        applicant = FactoryBot.create(
+          :financial_assistance_applicant,
+          family_member_id: primary_applicant.id,
+          person_hbx_id: person.hbx_id,
+          application: renewal_application
+        )
+        applicant.build_aptc_eligibilities_evidences
+        applicant.save!
+        applicant
+      end
+
+      let(:current_evidence) { current_applicant.aptc_csr_eligibility.income_evidence }
+      let(:renewal_evidence) { renewal_applicant.aptc_csr_eligibility.income_evidence }
+
+      before do
+        current_evidence.current_state = :outstanding
+        current_evidence.due_on = Date.current + 30.days
+        current_evidence.save!
+
+        renewal_evidence.current_state = :initial
+        renewal_evidence.save!
+      end
+
+      context 'when current evidence is in outstanding state with due date' do
+        it 'copies the state and due date from current evidence' do
+          expect { renewal_evidence.retain_evidence_information(current_evidence) }
+            .to change { renewal_evidence.current_state }.from(:initial).to(:outstanding)
+                                                         .and change { renewal_evidence.due_on }.from(nil).to(current_evidence.due_on)
+        end
+
+        it 'builds verification history with state and due date change message' do
+          renewal_evidence.retain_evidence_information(current_evidence)
+
+          verification_history = renewal_evidence.verification_histories.last
+          expect(verification_history.action).to eq('retain_evidence_info_on_renewal')
+          expect(verification_history.update_reason).to include('State updated from initial to outstanding')
+          expect(verification_history.update_reason).to include("due date of #{current_evidence.due_on} copied")
+          expect(verification_history.update_reason).to include("application #{current_application.hbx_id}")
+          expect(verification_history.update_reason).to include('application type faa')
+          expect(verification_history.update_reason).to include('due to annual eligibility redetermination')
+          expect(verification_history.updated_by).to eq('system')
+        end
+      end
+
+      context 'when current evidence is in verified state without due date' do
+        before do
+          current_evidence.current_state = :verified
+          current_evidence.due_on = nil
+          current_evidence.save!
+        end
+
+        it 'copies only the state from current evidence' do
+          expect { renewal_evidence.retain_evidence_information(current_evidence) }
+            .to change { renewal_evidence.current_state }.from(:initial).to(:verified)
+
+          expect(renewal_evidence.due_on).to be_nil
+        end
+
+        it 'builds verification history without due date message' do
+          renewal_evidence.retain_evidence_information(current_evidence)
+
+          verification_history = renewal_evidence.verification_histories.last
+          expect(verification_history.action).to eq('retain_evidence_info_on_renewal')
+          expect(verification_history.update_reason).to include('State updated from initial to verified')
+          expect(verification_history.update_reason).not_to include('due date')
+          expect(verification_history.update_reason).to include("application #{current_application.hbx_id}")
+          expect(verification_history.update_reason).to include('application type faa')
+        end
+      end
+
+      context 'when testing different evidence types' do
+        let(:current_esi_evidence) { current_applicant.aptc_csr_eligibility.esi_mec_evidence }
+        let(:renewal_esi_evidence) { renewal_applicant.aptc_csr_eligibility.esi_mec_evidence }
+
+        before do
+          current_esi_evidence.current_state = :review
+          current_esi_evidence.due_on = Date.current + 15.days
+          current_esi_evidence.save!
+
+          renewal_esi_evidence.current_state = :pending
+          renewal_esi_evidence.save!
+        end
+
+        it 'works with ESI MEC evidence' do
+          expect { renewal_esi_evidence.retain_evidence_information(current_esi_evidence) }
+            .to change { renewal_esi_evidence.current_state }.from(:pending).to(:review)
+                                                             .and change { renewal_esi_evidence.due_on }.from(nil).to(current_esi_evidence.due_on)
+        end
+      end
+
+      context 'when current evidence has due date but is not in outstanding status' do
+        before do
+          current_evidence.current_state = :verified
+          current_evidence.due_on = Date.current + 30.days
+          current_evidence.save!
+        end
+
+        it 'does not copy the due date' do
+          expect { renewal_evidence.retain_evidence_information(current_evidence) }
+            .to change { renewal_evidence.current_state }.from(:initial).to(:verified)
+
+          expect(renewal_evidence.due_on).to be_nil
+        end
+      end
+
+      described_class::OUTSTANDING_STATUSES.each do |status|
+        context "when current evidence is in #{status} state with due date" do
+          before do
+            current_evidence.current_state = status
+            current_evidence.due_on = Date.current + 30.days
+            current_evidence.save!
+          end
+
+          it "copies both state and due date for #{status} status" do
+            expect { renewal_evidence.retain_evidence_information(current_evidence) }
+              .to change { renewal_evidence.current_state }.from(:initial).to(status)
+                                                           .and change { renewal_evidence.due_on }.from(nil).to(current_evidence.due_on)
+          end
+        end
+      end
+    end
   end
 end

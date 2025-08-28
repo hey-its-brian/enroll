@@ -54,7 +54,7 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::SubmitAndDe
         result
         expect(renewal_application.reload.current_state).to eq(:determined)
       end
-
+      # rubocop:disable Layout/LineLength
       it 'retains evidence information from the current application to the renewal application' do
         result
         renewal_applicant.reload.individual_market_eligibility.evidences.each do |evidence|
@@ -65,8 +65,8 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::SubmitAndDe
             expect(
               evidence.verification_histories.any? do |history|
                 history.action == 'retain_evidence_info_on_renewal' &&
-                  history.update_reason == "Due date is retained from the previous application with hbx_id: #{current_application.hbx_id}, app_type: qhp, due_on: #{evidence.due_on}" &&
-                  history.updated_by == 'system'
+                history.update_reason == "State updated from pending to #{evidence.current_state} and due date of #{evidence.due_on} copied from previous application #{current_application.hbx_id} application type faa due to annual eligibility redetermination."
+                history.updated_by == 'system'
               end
             ).to be_truthy
           else
@@ -76,12 +76,13 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::SubmitAndDe
           expect(
             evidence.verification_histories.any? do |history|
               history.action == 'retain_evidence_info_on_renewal' &&
-                history.update_reason == "State is retained from the previous application with hbx_id: #{current_application.hbx_id}, app_type: qhp, change from: pending to: #{evidence.current_state}" &&
-                history.updated_by == 'system'
+                history.update_reason == "State updated from pending to #{evidence.current_state} copied from previous application #{current_application.hbx_id} application type qhp due to annual eligibility redetermination."
+              history.updated_by == 'system'
             end
           ).to be_truthy
         end
       end
+      # rubocop:enable Layout/LineLength
     end
 
     context 'when:
@@ -139,8 +140,11 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::SubmitAndDe
             expect(
               evidence.verification_histories.any? do |history|
                 history.action == 'retain_evidence_info_on_renewal' &&
-                  history.update_reason == "Due date is retained from the previous application with hbx_id: #{current_application.hbx_id}, app_type: faa, due_on: #{evidence.due_on}" &&
-                  history.updated_by == 'system'
+                history.update_reason == "State updated from pending to #{evidence.current_state} " \
+                "and due date of #{evidence.due_on} copied " \
+                "from previous application #{current_application.hbx_id} " \
+                "application type faa due to annual eligibility redetermination."
+                history.updated_by == 'system'
               end
             ).to be_truthy
           else
@@ -150,8 +154,10 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::SubmitAndDe
           expect(
             evidence.verification_histories.any? do |history|
               history.action == 'retain_evidence_info_on_renewal' &&
-                history.update_reason == "State is retained from the previous application with hbx_id: #{current_application.hbx_id}, app_type: faa, change from: pending to: #{evidence.current_state}" &&
-                history.updated_by == 'system'
+              history.update_reason == "State updated from pending to #{evidence.current_state} " \
+                "copied from previous application #{current_application.hbx_id} " \
+                "application type qhp due to annual eligibility redetermination."
+              history.updated_by == 'system'
             end
           ).to be_truthy
         end

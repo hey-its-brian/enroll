@@ -496,19 +496,22 @@ module Eligibilities
           new_state = current_evidence.current_state
 
           self.current_state = new_state
+
+          state_and_date_change_text = if current_evidence.due_on.present? && OUTSTANDING_STATUSES.include?(new_state.to_sym)
+                                         self.due_on = current_evidence.due_on
+                                         "State updated from #{pre_state} to #{new_state} " \
+                                                                      "and due date of #{current_evidence.due_on} copied " \
+                                                                      "from previous application #{app_hbx_id} application type #{app_type} " \
+                                                                      "due to annual eligibility redetermination."
+                                       else
+                                         "State updated from #{pre_state} to #{new_state} " \
+                                                                      "copied from previous application #{app_hbx_id} application type #{app_type} " \
+                                                                      "due to annual eligibility redetermination."
+                                       end
+
           self.build_verification_history(
             'retain_evidence_info_on_renewal',
-            "State is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: #{app_type}, change from: #{pre_state} to: #{new_state}",
-            'system'
-          )
-
-          return if current_evidence.due_on.blank?
-          return if OUTSTANDING_STATUSES.exclude?(new_state.to_sym)
-
-          self.due_on = current_evidence.due_on
-          self.build_verification_history(
-            'retain_evidence_info_on_renewal',
-            "Due date is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: #{app_type}, due_on: #{current_evidence.due_on}",
+            state_and_date_change_text,
             'system'
           )
         end

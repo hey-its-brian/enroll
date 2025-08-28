@@ -121,27 +121,30 @@ module FinancialAssistance
         new_state = current_evidence.current_state
 
         self.current_state = new_state
+
+        state_and_date_change_text = "State updated from #{pre_state} to #{new_state} copied from previous application #{app_hbx_id} application type #{app_type} due to annual eligibility redetermination."
+
+        if OUTSTANDING_STATUSES.include?(new_state.to_sym) && current_evidence.due_on.present?
+          self.due_on = current_evidence.due_on
+
+          state_and_date_change_text = if current_evidence.due_date_extended_at.present?
+                                         self.due_date_extended_at = current_evidence.due_date_extended_at
+                                         "State updated from #{pre_state} to #{new_state}, " \
+                                                                   "due date of #{current_evidence.due_on} copied, " \
+                                                                   "and #{current_evidence.due_date_extended_at} automatic due date extended at copied " \
+                                                                   "from previous application #{app_hbx_id} application type #{app_type} " \
+                                                                   "due to annual eligibility redetermination."
+                                       else
+                                         "State updated from #{pre_state} to #{new_state} " \
+                                                         "and due date of #{current_evidence.due_on} copied " \
+                                                         "from previous application #{app_hbx_id} application type #{app_type} " \
+                                                         "due to annual eligibility redetermination."
+                                       end
+        end
+
         self.build_verification_history(
           'retain_evidence_info_on_renewal',
-          "State is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: faa, change from: #{pre_state} to: #{new_state}",
-          'system'
-        )
-
-        return if current_evidence.due_on.blank?
-        return if OUTSTANDING_STATUSES.exclude?(new_state.to_sym)
-
-        self.due_on = current_evidence.due_on
-        self.build_verification_history(
-          'retain_evidence_info_on_renewal',
-          "Due date is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: faa, due_on: #{current_evidence.due_on}",
-          'system'
-        )
-
-        return if current_evidence.due_date_extended_at.blank?
-        self.due_date_extended_at = current_evidence.due_date_extended_at
-        self.build_verification_history(
-          'retain_evidence_info_on_renewal',
-          "Due date extension is retained from the previous application with hbx_id: #{app_hbx_id}, app_type: faa, due_date_extended_at: #{current_evidence.due_date_extended_at}",
+          state_and_date_change_text,
           'system'
         )
       end

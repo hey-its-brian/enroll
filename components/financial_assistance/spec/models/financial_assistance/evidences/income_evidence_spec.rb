@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe FinancialAssistance::Evidences::IncomeEvidence, type: :model do
+RSpec.describe FinancialAssistance::Evidences::IncomeEvidence, type: :model, dbclean: :after_each do
   let(:person)                { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
   let(:family)                { FactoryBot.create(:family, :with_primary_family_member, person: person) }
   let(:application)           { FactoryBot.create(:financial_assistance_application, family_id: family.id) }
@@ -81,6 +81,220 @@ RSpec.describe FinancialAssistance::Evidences::IncomeEvidence, type: :model do
         expect(evidence.reload.due_on).to be_nil
         expect(evidence.due_date_extended_at).to be_nil
         expect(evidence.verification_histories.count).to eq(0)
+      end
+    end
+  end
+
+  describe '#retain_evidence_information' do
+    let(:family) { FactoryBot.create(:family, :with_primary_family_member) }
+    let(:current_application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, hbx_id: 'current_app_123') }
+    let(:new_application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, hbx_id: 'new_app_456') }
+
+    let(:current_applicant) { FactoryBot.create(:financial_assistance_applicant, application: current_application) }
+    let(:new_applicant) { FactoryBot.create(:financial_assistance_applicant, application: new_application) }
+
+    let(:current_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: current_applicant) }
+    let(:new_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: new_applicant) }
+
+    let(:current_evidence) do
+      FactoryBot.create(:income_evidence,
+                        eligibility: current_eligibility,
+                        current_state: current_state,
+                        due_on: current_due_on,
+                        due_date_extended_at: current_extended_at)
+    end
+
+    let(:new_evidence) do
+      FactoryBot.create(:income_evidence,
+                        eligibility: new_eligibility,
+                        current_state: 'pending')
+    end
+
+    let(:current_state) { 'outstanding' }
+    let(:current_due_on) { Date.current + 30.days }
+    let(:current_extended_at) { nil }
+
+    before do
+      allow(new_evidence).to receive(:build_verification_history)
+    end
+
+    context 'when current evidence is in outstanding state' do
+      let(:current_state) { 'outstanding' }
+
+      it 'updates the state from current evidence' do
+        expect { new_evidence.retain_evidence_information(current_evidence) }
+          .to change { new_evidence.current_state }
+          .from(:pending).to(:outstanding)
+      end
+
+      it 'copies the due date from current evidence' do
+        expect { new_evidence.retain_evidence_information(current_evidence) }
+          .to change { new_evidence.due_on }
+          .from(nil).to(current_due_on)
+      end
+
+      it 'builds verification history with correct message' do
+        new_evidence.retain_evidence_information(current_evidence)
+
+        expected_message = "State updated from pending to outstanding " \
+                          "and due date of #{current_due_on} copied " \
+                          "from previous application current_app_123 application type faa " \
+                          "due to annual eligibility redetermination."
+
+        expect(new_evidence).to have_received(:build_verification_history)
+          .with('retain_evidence_info_on_renewal', expected_message, 'system')
+      end
+
+      context 'when current evidence has extended due date' do
+        let(:current_extended_at) { DateTime.current - 5.days }
+
+        it 'copies the due date extended timestamp' do
+          expect { new_evidence.retain_evidence_information(current_evidence) }
+            .to change { new_evidence.due_date_extended_at }
+            .from(nil).to(current_extended_at)
+        end
+
+        it 'builds verification history with extended due date message' do
+          new_evidence.retain_evidence_information(current_evidence)
+
+          expected_message = "State updated from pending to outstanding, " \
+                            "due date of #{current_due_on} copied, " \
+                            "and #{current_extended_at} automatic due date extended at copied " \
+                            "from previous application current_app_123 application type faa " \
+                            "due to annual eligibility redetermination."
+
+          expect(new_evidence).to have_received(:build_verification_history)
+            .with('retain_evidence_info_on_renewal', expected_message, 'system')
+        end
+      end
+
+      context 'when current evidence has due date but not extended due date' do
+        let(:current_extended_at) { nil }
+
+        it 'builds verification history with due date message and not extended due date message' do
+          new_evidence.retain_evidence_information(current_evidence)
+          expected_message = "State updated from pending to outstanding " \
+                                                         "and due date of #{current_due_on} copied " \
+                                                         "from previous application current_app_123 application type faa " \
+                                                         "due to annual eligibility redetermination."
+
+
+          expect(new_evidence).to have_received(:build_verification_history)
+            .with('retain_evidence_info_on_renewal', expected_message, 'system')
+        end
+      end
+
+      context 'when current evidence does not have due date' do
+        let(:current_due_on) { nil }
+
+        it 'builds verification history with due date message and not extended due date message' do
+          new_evidence.retain_evidence_information(current_evidence)
+          expected_message = "State updated from pending to outstanding copied from previous application current_app_123 application type faa due to annual eligibility redetermination."
+
+          expect(new_evidence).to have_received(:build_verification_history)
+            .with('retain_evidence_info_on_renewal', expected_message, 'system')
+        end
+      end
+    end
+
+    context 'when current evidence is in rejected state' do
+      let(:current_state) { 'rejected' }
+
+      it 'copies the due date when in rejected state' do
+        expect { new_evidence.retain_evidence_information(current_evidence) }
+          .to change { new_evidence.due_on }
+          .from(nil).to(current_due_on)
+      end
+
+      it 'builds verification history with due date message' do
+        new_evidence.retain_evidence_information(current_evidence)
+
+        expected_message = "State updated from pending to rejected " \
+                          "and due date of #{current_due_on} copied " \
+                          "from previous application current_app_123 application type faa " \
+                          "due to annual eligibility redetermination."
+
+        expect(new_evidence).to have_received(:build_verification_history)
+          .with('retain_evidence_info_on_renewal', expected_message, 'system')
+      end
+    end
+
+    context 'when current evidence is not in outstanding status' do
+      let(:current_state) { 'verified' }
+
+      it 'updates the state but does not copy due date' do
+        new_evidence.retain_evidence_information(current_evidence)
+
+        expect(new_evidence.current_state).to eq(:verified)
+        expect(new_evidence.due_on).to be_nil
+      end
+
+      it 'builds verification history without due date information' do
+        new_evidence.retain_evidence_information(current_evidence)
+
+        expected_message = "State updated from pending to verified copied " \
+                          "from previous application current_app_123 application type faa " \
+                          "due to annual eligibility redetermination."
+
+        expect(new_evidence).to have_received(:build_verification_history)
+          .with('retain_evidence_info_on_renewal', expected_message, 'system')
+      end
+    end
+
+    context 'when current evidence has no due date' do
+      let(:current_due_on) { nil }
+      let(:current_state) { 'outstanding' }
+
+      it 'does not copy due date when current evidence has none' do
+        new_evidence.retain_evidence_information(current_evidence)
+
+        expect(new_evidence.due_on).to be_nil
+      end
+
+      it 'builds verification history without due date information' do
+        new_evidence.retain_evidence_information(current_evidence)
+
+        expected_message = "State updated from pending to outstanding copied " \
+                          "from previous application current_app_123 application type faa " \
+                          "due to annual eligibility redetermination."
+
+        expect(new_evidence).to have_received(:build_verification_history)
+          .with('retain_evidence_info_on_renewal', expected_message, 'system')
+      end
+    end
+
+    context 'when current application is not a Financial Assistance application' do
+      let(:individual_market_application) { FactoryBot.create(:individual_market_application, family_id: family.id) }
+      let(:individual_market_applicant) { FactoryBot.create(:individual_market_applicant, application: individual_market_application) }
+      let(:individual_market_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: individual_market_applicant) }
+      let(:individual_market_evidence) do
+        FactoryBot.create(:income_evidence,
+                          eligibility: individual_market_eligibility,
+                          current_state: 'outstanding')
+      end
+
+      it 'raises an error for non-FA applications' do
+        expect { new_evidence.retain_evidence_information(individual_market_evidence) }
+          .to raise_error(RuntimeError, 'Unexpected application type: qhp')
+      end
+    end
+
+    context 'edge cases' do
+      let(:current_state) { 'outstanding' }
+
+      it 'handles same state transition' do
+        new_evidence.update(current_state: 'outstanding')
+
+        expect { new_evidence.retain_evidence_information(current_evidence) }
+          .not_to change(new_evidence, :current_state)
+      end
+
+      it 'handles nil current state gracefully' do
+        new_evidence.update(current_state: nil)
+
+        expect { new_evidence.retain_evidence_information(current_evidence) }
+          .to change(new_evidence, :current_state)
+          .from(nil).to(:outstanding)
       end
     end
   end
