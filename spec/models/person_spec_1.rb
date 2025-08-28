@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Person, type: :model do
+RSpec.describe Person, type: :model, :dbclean => :after_each do
   let(:person) { FactoryBot.create(:person) }
   before do
     allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
@@ -213,6 +213,70 @@ RSpec.describe Person, type: :model do
           modified: { 'hbx_id' => new_hbx_id.to_s }
         ).present?
       ).to be_truthy
+    end
+  end
+
+  describe '#indian_tribe_member' do
+    let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+
+    context 'when qhp feature is not enabled' do
+      context 'when citizen_status is nil' do
+        before do
+          person.consumer_role.lawful_presence_determination.update_attributes(citizen_status: '')
+          person.tribal_id = "3123123"
+          person.save!
+        end
+
+        it 'returns true' do
+          p = Person.all.first
+          expect(p.indian_tribe_member).to be_nil
+        end
+      end
+
+      context 'when citizen_status is not nil' do
+        before do
+          person.consumer_role.lawful_presence_determination.update_attributes(citizen_status: 'us_citizen')
+          person.tribal_id = "3123123"
+          person.save!
+        end
+
+        it 'returns true' do
+          p = Person.all.first
+          expect(p.indian_tribe_member).to be_truthy
+        end
+      end
+    end
+
+    context 'when qhp feature is enabled' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      end
+
+      context 'when citizen_status is nil' do
+        before do
+          person.consumer_role.lawful_presence_determination.update_attributes(citizen_status: '')
+          person.tribal_id = "3123123"
+          person.save!
+        end
+
+        it 'returns true' do
+          p = Person.all.first
+          expect(p.indian_tribe_member).to be_truthy
+        end
+      end
+
+      context 'when citizen_status is not nil' do
+        before do
+          person.consumer_role.lawful_presence_determination.update_attributes(citizen_status: 'us_citizen')
+          person.tribal_id = "3123123"
+          person.save!
+        end
+
+        it 'returns true' do
+          p = Person.all.first
+          expect(p.indian_tribe_member).to be_truthy
+        end
+      end
     end
   end
 end

@@ -1444,7 +1444,13 @@ class Person
 
   def indian_tribe_member
     return @indian_tribe_member unless @indian_tribe_member.nil?
-    return nil if citizen_status.blank?
+
+    # This is a PROD issue
+    # if member is not applying for coverage, then citizen status is always blank, but AI/AN is a mandatory question, so we should not return nil in that case
+    #
+    # Currently fixing this under QHP feature
+    # Revisit this logic once after QHP feature is live
+    return nil if !qhp_application_feature_enabled? && citizen_status.blank?
 
     result = @indian_tribe_member ||= !(tribal_id.nil? || tribal_id.empty?)
     result = @indian_tribe_member ||= !(tribal_state.nil? || tribal_state.empty?) if EnrollRegistry[:indian_alaskan_tribe_details].enabled?
