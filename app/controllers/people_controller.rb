@@ -23,6 +23,7 @@ class PeopleController < ApplicationController
     @native_status_changed = native_status_changed?(@person.consumer_role)
     respond_to do |format|
       if @valid_vlp != false && @person.update_attributes(person_params.except(:is_applying_coverage))
+        check_and_delete_phone(person_params)
         if @person.is_consumer_role_active? && person_params[:is_applying_coverage] == "true"
           @person.consumer_role.check_native_status(@family, @native_status_changed)
         end
@@ -80,6 +81,21 @@ class PeopleController < ApplicationController
   end
 
   private
+
+  # This is a PROD issue
+  # if full phone number is nil, we are deleting that
+  #
+  # Revisit this logic once after QHP feature is live
+  def check_and_delete_phone(person_params)
+    phones_attrs = person_params[:phones_attributes]
+    return unless phones_attrs
+
+    phones_attrs.each do |_k, v|
+      next unless v[:id].present? && v[:full_phone_number].blank?
+
+      @person.phones.where(id: v[:id]).first&.destroy
+    end
+  end
 
   def set_requested_record
     @person = find_person(params[:id])

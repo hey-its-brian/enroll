@@ -493,6 +493,71 @@ RSpec.describe PeopleController, dbclean: :after_each do
     end
   end
 
+  describe "POST update - phone deletion" do
+    let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+    let(:consumer_role) { person.consumer_role }
+    let(:user) { FactoryBot.create(:user, person: person) }
+    let(:addresses_attributes) do
+      {"0" => {"kind" => "home", "address_1" => "address1_a", "address_2" => "", "city" => "city1", "state" => "DC", "zip" => "22211", "county" => "test", "id" => person.addresses[0].id.to_s},
+       "1" => {"kind" => "mailing", "address_1" => "address1_b", "address_2" => "", "city" => "city1", "state" => "DC", "zip" => "22211", "county" => "test", "id" => person.addresses[1].id.to_s} }
+    end
+
+    let(:home_phone) do
+      person.phones.build(kind: "home", full_phone_number: "(555) 123-4567")
+    end
+
+    let(:mobile_phone) do
+      person.phones.build(kind: "mobile", full_phone_number: "(888) 999-9999")
+    end
+
+    let(:consumer_role_attributes) { consumer_role.attributes.to_hash }
+    let(:person_attributes) { person.attributes.to_hash }
+
+    before :each do
+      person.phones.destroy_all
+      home_phone
+      mobile_phone
+      person.save!
+
+      allow(Person).to receive(:find).and_return(person)
+      allow(Person).to receive(:where).and_return(Person)
+      allow(Person).to receive(:first).and_return(person)
+      allow(controller).to receive(:sanitize_person_params).and_return(true)
+      allow(person).to receive(:consumer_role).and_return(consumer_role)
+      allow(person).to receive(:employee_roles).and_return([])
+      allow_any_instance_of(VlpDoc).to receive(:sensitive_info_changed?).and_return([false, false])
+      allow(person).to receive(:is_consumer_role_active?).and_return(false)
+      allow(EnrollRegistry[:aca_shop_market].feature).to receive(:is_enabled).and_return(true)
+
+      person_attributes[:addresses_attributes] = addresses_attributes
+      person_attributes[:consumer_role_attributes] = consumer_role_attributes
+      person_attributes[:phones_attributes] = {
+        "0" => { "kind" => "home", "full_phone_number" => "", "id" => home_phone.id.to_s, "_destroy" => "false" },
+        "1" => { "kind" => "mobile", "full_phone_number" => "(888) 999-9999", "id" => mobile_phone.id.to_s, "_destroy" => "false" }
+      }
+
+      sign_in user
+      post :update, params: { id: person.id, person: person_attributes }
+    end
+
+    context "when deleting home phone number" do
+      it "should delete the home phone when full_phone_number is blank" do
+        person.reload
+        expect(person.phones.where(kind: "home")).to be_empty
+      end
+
+      it "should keep the mobile phone" do
+        person.reload
+        expect(person.phones.where(kind: "mobile").first.full_phone_number).to eq("8889999999")
+      end
+
+      it "should have only one phone remaining (home + mobile only)" do
+        person.reload
+        expect(person.phones.where(:kind.in => %w[home mobile]).count).to eq(1)
+      end
+    end
+  end
+
   context 'populate county information on dependent address' do
     let(:person) { FactoryBot.create(:person, first_name: 'test', addresses: [address]) }
     let(:dependent) { FactoryBot.create(:person, addresses: [address]) }

@@ -937,6 +937,7 @@ $(document).on('turbolinks:load', function () {
 
 function demographicValidations() {
   applyListeners();
+  addPhoneNumberFormatting();
 
   $('form.edit_person, form.new_dependent, form.edit_dependent').on(
     'submit',
@@ -983,5 +984,70 @@ function demographicValidations() {
         this.setCustomValidity('');
       });
     }
+  });
+}
+
+function formatPhoneNumber(value) {
+  const digits = value.replace(/\D/g, '').substring(0, 10);
+
+  if (digits.length >= 6) {
+    return `(${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`;
+  } else if (digits.length >= 3) {
+    return `(${digits.substring(0, 3)}) ${digits.substring(3)}`;
+  } else if (digits.length > 0) {
+    return `(${digits}`;
+  }
+  return '';
+}
+
+function formatPhoneNumber(value) {
+  const digits = value.replace(/\D/g, '').substring(0, 10);
+
+  if (digits.length >= 6) {
+    return `(${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`;
+  } else if (digits.length >= 3) {
+    return `(${digits.substring(0, 3)}) ${digits.substring(3)}`;
+  } else if (digits.length > 0) {
+    return `(${digits}`;
+  }
+  return '';
+}
+
+function addPhoneNumberFormatting() {
+  $('.phone_number').each(function() {
+    const $input = $(this);
+
+    if ($input.val() && $input.val().replace(/\D/g, '').length > 0) {
+      const formattedValue = formatPhoneNumber($input.val());
+      $input.val(formattedValue);
+    }
+
+    $input.off('input.phoneformat keypress.phoneformat paste.phoneformat');
+
+    $input.on('input.phoneformat', function(e) {
+      const cursorPosition = this.selectionStart;
+      const oldValue = this.value;
+      const newValue = formatPhoneNumber(oldValue);
+
+      if (newValue !== oldValue) {
+        this.value = newValue;
+        let newCursorPosition = Math.min(cursorPosition, newValue.length);
+        this.setSelectionRange(newCursorPosition, newCursorPosition);
+      }
+    });
+
+    $input.on('keypress.phoneformat', function(e) {
+      const char = String.fromCharCode(e.which);
+      if (!/\d/.test(char) && ![8, 9, 27, 13, 46].includes(e.which)) {
+        e.preventDefault();
+      }
+    });
+
+    $input.on('paste.phoneformat', function(e) {
+      setTimeout(() => {
+        const formattedValue = formatPhoneNumber(this.value);
+        this.value = formattedValue;
+      }, 0);
+    });
   });
 }
