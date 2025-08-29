@@ -590,12 +590,31 @@
         <% else %>
           <% if is_dependent %>
             <div id="remove_confirm" class="hidden"></div>
-            <%= h(link_to l10n('remove_member'), form_url, class: 'btn button-error outline close-2', :method => :delete, :remote => true) %>
+            <%= button_tag(type: "button", id: "delete_applicant_button_qhp", class: "btn button-error outline close2") do %>
+              <%= l10n('remove_member') %>
+            <% end %>
           <% end %>
           <%= f.button(class: "btn btn-primary", data: { action: "family-information#checkValidations" }) do %>
             <%= l10n("save_changes") %>
           <% end %>
         <% end %>
+
+        <div class="modal" id="destroyApplicantQhp" role="dialog">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-body">
+                <%= l10n('faa.edit.delete_applicant') %>
+                <strong><br /><%= l10n('faa.edit.remove_warning') %></strong>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default pull-left" data-dismiss="modal">Cancel</button>
+                <button type="button" class="" id="destroy-confirm-qhp" data-url="<%=form_url%>">Confirm</button>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
 
       </div>
     </div>
