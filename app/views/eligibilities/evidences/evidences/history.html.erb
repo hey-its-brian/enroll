@@ -1,0 +1,51 @@
+<%# Left Nav %>
+<%= render partial: 'shared/family_side_nav' %>
+
+<%# Main Content (right) %>
+<% type_name = display_verification_type_name(@evidence_delegator.evidence_item_key) %>
+<%= render partial: 'insured/families/verification_header', locals: {
+  title: type_name,
+  evidence: @evidence_delegator,
+  member: @member,
+  navigation: verification_navigation(@member, @evidence_delegator),
+  summary_rows: [:member, :member_status, :status, :update_reason, :due_on],
+  is_back_nav_primary: true,
+  display_application_id: true
+} %>
+
+<h2><%= l10n('insured.families.verifications.history.verification_history') %></h2>
+<p><%= l10n('insured.evidences.expand_row') %></p>
+<table class="action-table" class="col-sm-12 col-md-6" data-controller="expandable-table">
+  <thead>
+  <tr>
+    <th><%= l10n('insured.families.verifications.history.time_stamp') %></th>
+    <th><%= l10n('insured.families.verifications.history.modifier_transaction_id') %></th>
+    <th><%= l10n('insured.families.verifications.history.action') %></th>
+    <th><%= l10n('insured.families.verifications.history.update_reason') %></th>
+  </tr>
+  </thead>
+  <tbody>
+  <% @histories.each do |record| %>
+    <tr data-target=<%="expandable-table.row" %>>
+      <td><div class='d-flex text-nowrap'><%= record.date_of_action.in_time_zone('Eastern Time (US & Canada)') %></div></td>
+      <td><%= record.modifier_id %></td>
+      <td><%= record.action.capitalize %></td>
+      <td><%= record.update_reason %></td>
+    </tr>
+    <% if record.payload.present? %>
+      <tr data-target="expandable-table.details">
+        <td colspan="4">
+          <h3><%= l10n('insured.families.verifications.history.payload') %></h3>
+          <pre><%= qhp_application_feature_enabled? ? format_response_payload(record.payload&.to_s) : record.payload %> </pre>
+        </td>
+      </tr>
+    <% end %>
+  <% end %>
+  </tbody>
+</table>
+
+<script>
+  $(document).ready(function() {
+    displayAdminDesignationDescriptor();
+  });
+</script>

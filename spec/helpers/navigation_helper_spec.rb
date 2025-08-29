@@ -192,7 +192,7 @@ RSpec.describe NavigationHelper, :type => :helper, dbclean: :after_each do
     let(:person_id) { '123abc' }
     let(:member) { double('member', person_id: person_id) }
     let(:detail_params) { { id: '456def' } }
-    let(:evidence) { double('evidence', detail_params: detail_params) }
+    let(:evidence) { double('evidence', detail_params: detail_params, evidence_group: 'ridp') }
 
     before do
       allow(helper).to receive(:action_name).and_return(action_name)

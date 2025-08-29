@@ -637,14 +637,34 @@ module VerificationHelper
     end
   end
 
-  def verification_history_link(evidence)
+  def evidence_document_history_link(evidence)
+    params = evidence_params(evidence)
+
+    eligibility_evidence_documents_path(params[:eligibility], params[:evidence], params)
+  end
+
+  def evidence_details_link(evidence)
+    params = evidence_params(evidence)
+
+    eligibility_evidence_path(params[:eligibility], params[:evidence], params)
+  end
+
+  def evidence_history_link(evidence)
+    params = evidence_params(evidence)
+
+    history_eligibility_evidence_path(params[:eligibility], params[:evidence], params)
+  end
+
+  def evidence_params(evidence)
     located_evidence = evidence.locate_evidence
     eligibility = located_evidence&.eligibility
     applicant = eligibility&.eligible
     application = applicant&.application
     person = evidence.person
 
-    params = {
+    {
+      eligibility: eligibility,
+      evidence: located_evidence,
       application_gid: application&.to_global_id&.uri&.to_s,
       applicant_id: applicant&.id,
       person_id: person.id,
@@ -652,8 +672,6 @@ module VerificationHelper
       evidence_key: evidence.evidence_item_key,
       family_id: application.family.id
     }
-
-    eligibility_evidence_documents_path(eligibility, located_evidence, params)
   end
 
   def build_qhp_application_query(evidence)

@@ -164,13 +164,23 @@ module NavigationHelper
   def verification_navigation(member, evidence)
     steps = {
       "verification" => {title: l10n('insured.families.verifications'), link: main_app.verification_insured_families_path(tab: 'verification')},
-      "verification_individual" => {title: l10n('insured.families.verifications.individual'), link: verification_individual_insured_families_path(person_id: member.person_id) },
-      "verification_detail" => {title: l10n('insured.families.verifications.detail'), link: main_app.verification_detail_insured_families_path(evidence&.detail_params)}
+      "verification_individual" => {title: l10n('insured.families.verifications.individual'), link: verification_individual_insured_families_path(person_id: member&.person_id)}
     }
+
+    if qhp_application_feature_enabled? && evidence.present? && evidence.evidence_group != 'ridp'
+      steps["show"] = {title: l10n('insured.families.verifications.detail'), link: evidence_details_link(evidence)}
+    else
+      steps["verification_detail"] = {title: l10n('insured.families.verifications.detail'), link: main_app.verification_detail_insured_families_path(evidence&.detail_params)}
+    end
 
     case action_name
     when "verification_history"
       steps["verification_history"] = {
+        title: l10n('insured.families.verifications.history.verification_history'),
+        link: "#"
+      }
+    when "history"
+      steps["history"] = {
         title: l10n('insured.families.verifications.history.verification_history'),
         link: "#"
       }

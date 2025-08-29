@@ -2,18 +2,18 @@
 <%= render partial: 'shared/family_side_nav' %>
 
 <%# Main Content (right) %>
-<% type_name = display_verification_type_name(@evidence.evidence_item_key) %>
-<%= render partial: 'verification_header', locals: {
-    title: type_name,
-    evidence: @evidence,
-    member: @member,
-    navigation: verification_navigation(@member, @evidence),
-    summary_rows: [:member, :member_status, :status, :update_reason, :due_on],
-    is_back_nav_primary: !display_upload_for_verification?(@evidence),
-    display_application_id: true
-  } %>
+<% type_name = display_verification_type_name(@evidence_delegator.evidence_item_key) %>
+<%= render partial: 'insured/families/verification_header', locals: {
+  title: type_name,
+  evidence: @evidence_delegator,
+  member: @member,
+  navigation: verification_navigation(@member, @evidence_delegator),
+  summary_rows: [:member, :member_status, :status, :update_reason, :due_on],
+  is_back_nav_primary: !display_upload_for_verification?(@evidence_delegator),
+  display_application_id: true
+} %>
 
-<% if display_upload_for_verification?(@evidence) %>
+<% if display_upload_for_verification?(@evidence_delegator) %>
   <section class="my-4" data-cuke='upload-documents'>
     <h2><%= l10n('insured.families.verifications.detail.verification_details') %></h2>
 
@@ -35,7 +35,7 @@
 
   <section class="mb-4">
     <h2><%= l10n('insured.families.verifications.detail.document_upload') %></h2>
-    <% query = verification_upload_query(@evidence, @family) %>
+    <% query = verification_upload_query(@evidence_delegator, @family) %>
     <% attachable = false %>
     <%= form_tag query[:url], multipart: true, method: :post, :'data-controller' => ("file-manager" if attachable), :'data-action' => 'file-manager#submitForm' do %>
       <% query[:params].each do |name, value| %>
@@ -55,7 +55,7 @@
           </label>
         </span>
         <% if attachable %>
-          <button class="primary" disabled="disabled" data-target="file-manager.uploadButton"><%= l10n('insured.families.verifications.detail.submit_document') %></button>
+          <button class="button primary" disabled="disabled" data-target="file-manager.uploadButton"><%= l10n('insured.families.verifications.detail.submit_document') %></button>
         <% end %>
       </div>
 
@@ -74,18 +74,18 @@
 <% end %>
 
 <section class="mb-4">
-  <% if @evidence.documents&.present? || (qhp_application_feature_enabled? && @evidence.evidence_group != 'ridp') %>
+  <% if @evidence_delegator.documents&.present? || (qhp_application_feature_enabled? && @evidence_delegator.evidence_group != 'ridp') %>
     <h2><%= l10n('insured.families.verifications.detail.upload_history', verification_type: type_name) %></h2>
   <% end %>
 
-  <% if qhp_application_feature_enabled? && @evidence.evidence_group != 'ridp' %>
+  <% if qhp_application_feature_enabled? && @evidence_delegator.evidence_group != 'ridp' %>
     <p>
       <%= l10n('insured.families.verifications.detail.view_upload_history_text',
                history_button_text: content_tag(:strong, "'#{l10n('insured.families.verifications.detail.view_upload_history')}'")) %>
     </p>
   <% end %>
 
-  <% if @evidence.documents&.present? %>
+  <% if @evidence_delegator.documents&.present? %>
     <div class="mb-4">
       <table class="col-sm-12 col-md-8">
         <thead>
@@ -96,12 +96,12 @@
         </tr>
         </thead>
         <tbody>
-        <% @evidence.documents&.each do |document| %>
+        <% @evidence_delegator.documents&.each do |document| %>
           <tr>
             <td class='col-7'><%= document.title.titleize %></td>
             <td class='col-3'><%= document.created_at %></td>
             <td class='col-2'>
-              <% dropdowns = qhp_application_feature_enabled? ? qhp_enabled_verification_dropdowns(@evidence, document) : verification_dropdowns(@evidence, document)  %>
+              <% dropdowns = qhp_application_feature_enabled? ? qhp_enabled_verification_dropdowns(@evidence_delegator, document) : verification_dropdowns(@evidence_delegator, document)  %>
               <%= render partial: 'datatables/shared/dropdown', locals: {dropdowns: dropdowns} %>
             </td>
           </tr>
@@ -111,15 +111,15 @@
     </div>
   <% end %>
 
-  <% if qhp_application_feature_enabled? && @evidence.evidence_group != 'ridp' %>
+  <% if qhp_application_feature_enabled? && @evidence_delegator.evidence_group != 'ridp' %>
     <div class="d-flex justify-content-start">
-      <%= link_to l10n('insured.families.verifications.detail.view_upload_history'), evidence_document_history_link(@evidence), class: 'btn btn-secondary' %>
+      <%= link_to l10n('insured.families.verifications.detail.view_upload_history'), evidence_document_history_link(@evidence_delegator), class: 'btn btn-secondary' %>
     </div>
   <% end %>
 </section>
 
 
-<% admin_actions = admin_actions(@evidence, @member.person) %>
+<% admin_actions = admin_actions(@evidence_delegator, @member.person) %>
 <% if current_user.has_hbx_staff_role? && admin_actions.values.any?(&:present?) %>
   <% can_view_history = admin_actions[:can_view_history] %>
   <% options = admin_actions[:options] %>
@@ -127,7 +127,7 @@
     <h2 class="admin-designation"><%= l10n('insured.families.verifications.detail.admin_tools') %></h2>
     <% if options.present? %>
       <section class="mb-3">
-        <% actions_hash = verification_admin_actions(@evidence, @family) %>
+        <% actions_hash = verification_admin_actions(@evidence_delegator, @family) %>
         <label class="v-type-actions">
           <%= l10n('action') %>
           <div><%= select_tag :verification_actions, options_for_select(options), {id: "v-action-#{actions_hash[:id]}", class: 'col-4', prompt: l10n("insured.consumer_roles.upload_ridp_documents.select_action")} %></div>
@@ -137,8 +137,55 @@
     <% end %>
     <% if can_view_history %>
       <section>
-        <h3><%= l10n('history') %></h3>
-        <%= link_to l10n('insured.families.verifications.detail.admin_tools.view_history'), verification_history_insured_families_path(@evidence.detail_params) %>
+        <h2><%= l10n('verification_history') %></h2>
+        <h3><%= l10n('applications') %></h3>
+        <p><%= l10n('insured.evidences.select_application_year_text') %></p>
+        <div class="d-flex align-items-center">
+          <%= form_with url: nil, :method => :get, class: "col-2 mr-auto px-0",  data: { controller: "eligibility-history" } do %>
+            <label>
+              <div class="mb-1"><%= l10n('year')  %></div>
+              <%= select("filter", "year", @years.each, {:selected => params.dig(:filter, :year)}, {class: "col", data: { action: "change->eligibility-history#submit" }})%>
+            </label>
+            <% params = evidence_params(@evidence_delegator) %>
+            <%= hidden_field_tag :application_gid, params[:application_gid] %>
+            <%= hidden_field_tag :applicant_id, params[:applicant_id] %>
+            <%= hidden_field_tag :family_id, params[:family_id] %>
+            <%= hidden_field_tag :person_id, params[:person_id] %>
+            <%= hidden_field_tag :eligibility_kind, params[:eligibility_kind] %>
+            <%= hidden_field_tag :evidence_key, params[:evidence_key] %>
+          <% end %>
+        </div>
+
+        <div class="mb-4">
+          <table class="col-sm-12">
+            <thead>
+            <tr>
+              <th><%= l10n("application_id") %></th>
+              <th><%= l10n('qhp_application.nav.application_type') %></th>
+              <th><%= l10n('insured.sbm.applications.table.status') %></th>
+              <th><%= l10n('insured.sbm.applications.table.started') %></th>
+              <th><%= l10n('insured.sbm.applications.table.submission') %></th>
+            </tr>
+            </thead>
+            <tbody>
+            <% if @applications.present? %>
+              <% @applications&.each do |application| %>
+                <tr>
+                  <td><%= link_to application.hbx_id, evidence_history_link(@evidence_delegator), class: 'primary-text' %></td>
+                  <td><%= fetch_program_eligibility(application) %></td>
+                  <td><%= application_state_for_display(application) %></td>
+                  <td><%= to_est application.created_at %></td>
+                  <td><%= format_submission_date(application) %></td>
+                </tr>
+              <% end %>
+            <% else %>
+            <tr>
+              <td colspan="5"><%= l10n('insured.evidences.no_applications') %></td>
+            </tr>
+            <% end %>
+            </tbody>
+          </table>
+        </div>
       </section>
     <% end %>
   </section>

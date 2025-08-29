@@ -5,6 +5,7 @@ module Eligibilities
     # Controller for managing documents related to V3 evidence in the eligibility process
     class DocumentsController < ::ApplicationController
       layout 'progress'
+      include ResourceRegistryHelper
 
       before_action :set_current_person, only: [:index]
       before_action :fetch_evidence
@@ -157,11 +158,24 @@ module Eligibilities
 
       def determine_redirect_location
         if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
-          verification_detail_insured_families_path(
-            person_id: params['person_id'],
-            eligibility_kind: params['eligibility_kind'],
-            evidence_key: params['evidence_key']
-          )
+          if qhp_application_feature_enabled?
+            eligibility_evidence_path(
+              eligibility_id: @eligibility.id,
+              id: @evidence.id,
+              application_gid: params[:application_gid],
+              applicant_id: @applicant.id,
+              person_id: params[:person_id],
+              eligibility_kind: params[:eligibility_kind],
+              evidence_key: params[:evidence_key],
+              family_id: @family.id
+            )
+          else
+            verification_detail_insured_families_path(
+              person_id: params['person_id'],
+              eligibility_kind: params['eligibility_kind'],
+              evidence_key: params['evidence_key']
+            )
+          end
         else
           verification_insured_families_path
         end
@@ -191,13 +205,14 @@ module Eligibilities
         @application = GlobalID::Locator.locate(permitted[:application_gid])
         return handle_not_found("Application not found") unless @application
 
-        applicant = @application.applicants.where(id: permitted[:applicant_id]).first
-        return handle_not_found("Applicant not found") unless applicant
+        @family = @application.family
+        @applicant = @application.applicants.where(id: permitted[:applicant_id]).first
+        return handle_not_found("Applicant not found") unless @applicant
 
-        eligibility = applicant.eligibilities.where(id: permitted[:eligibility_id]).first
-        return handle_not_found("Eligibility not found") unless eligibility
+        @eligibility = @applicant.eligibilities.where(id: permitted[:eligibility_id]).first
+        return handle_not_found("Eligibility not found") unless @eligibility
 
-        @evidence = eligibility.evidences.where(id: permitted[:evidence_id]).first
+        @evidence = @eligibility.evidences.where(id: permitted[:evidence_id]).first
         handle_not_found("Evidence not found") unless @evidence
       end
 

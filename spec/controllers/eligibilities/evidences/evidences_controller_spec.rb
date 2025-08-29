@@ -83,10 +83,15 @@ RSpec.describe Eligibilities::Evidences::EvidencesController, type: :controller 
 
         it 'redirects to verification detail path' do
           put :update, params: params
-          expect(response).to redirect_to(verification_detail_insured_families_path(
+          expect(response).to redirect_to(eligibility_evidence_path(
+                                            eligibility_id: aptc_csr_eligibility.id,
+                                            id: income_evidence.id,
+                                            application_gid: params[:application_gid],
+                                            applicant_id: params[:applicant_id],
                                             person_id: params[:person_id],
                                             eligibility_kind: params[:eligibility_kind],
-                                            evidence_key: params[:evidence_key]
+                                            evidence_key: params[:evidence_key],
+                                            family_id: family.id
                                           ))
         end
 
@@ -214,10 +219,15 @@ RSpec.describe Eligibilities::Evidences::EvidencesController, type: :controller 
 
         it 'redirects to verification detail path' do
           put :extend_due_date, params: extend_params
-          expect(response).to redirect_to(verification_detail_insured_families_path(
+          expect(response).to redirect_to(eligibility_evidence_path(
+                                            eligibility_id: aptc_csr_eligibility.id,
+                                            id: income_evidence.id,
+                                            application_gid: extend_params[:application_gid],
+                                            applicant_id: extend_params[:applicant_id],
                                             person_id: extend_params[:person_id],
                                             eligibility_kind: extend_params[:eligibility_kind],
-                                            evidence_key: extend_params[:evidence_key]
+                                            evidence_key: extend_params[:evidence_key],
+                                            family_id: family.id
                                           ))
         end
 
@@ -337,10 +347,15 @@ RSpec.describe Eligibilities::Evidences::EvidencesController, type: :controller 
 
         it 'redirects to verification detail path' do
           put :fed_hub_request, params: params
-          expect(response).to redirect_to(verification_detail_insured_families_path(
+          expect(response).to redirect_to(eligibility_evidence_path(
+                                            eligibility_id: aptc_csr_eligibility.id,
+                                            id: income_evidence.id,
+                                            application_gid: params[:application_gid],
+                                            applicant_id: params[:applicant_id],
                                             person_id: params[:person_id],
                                             eligibility_kind: params[:eligibility_kind],
-                                            evidence_key: params[:evidence_key]
+                                            evidence_key: params[:evidence_key],
+                                            family_id: family.id
                                           ))
         end
 
@@ -363,10 +378,15 @@ RSpec.describe Eligibilities::Evidences::EvidencesController, type: :controller 
 
         it 'redirects to verification detail path' do
           put :fed_hub_request, params: params
-          expect(response).to redirect_to(verification_detail_insured_families_path(
+          expect(response).to redirect_to(eligibility_evidence_path(
+                                            eligibility_id: ivl_eligibility.id,
+                                            id: ssn_evidence.id,
+                                            application_gid: params[:application_gid],
+                                            applicant_id: params[:applicant_id],
                                             person_id: params[:person_id],
                                             eligibility_kind: params[:eligibility_kind],
-                                            evidence_key: params[:evidence_key]
+                                            evidence_key: params[:evidence_key],
+                                            family_id: family.id
                                           ))
         end
 
@@ -443,6 +463,136 @@ RSpec.describe Eligibilities::Evidences::EvidencesController, type: :controller 
         end
       end
     end
+
+    context 'get #history' do
+      let!(:history_params) do
+        {
+          eligibility_id: aptc_csr_eligibility.id,
+          id: income_evidence.id,
+          application_gid: faa_application&.to_global_id&.uri&.to_s,
+          applicant_id: applicant&.id,
+          person_id: primary_applicant.person.id,
+          eligibility_kind: 'aptc_csr_eligibility',
+          evidence_key: :income_evidence
+        }
+      end
+
+      before do
+        ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
+      end
+
+      context 'with valid params and successful operation' do
+        it 'assigns verification histories' do
+          get :history, params: history_params
+          expect(assigns(:histories)).to include(income_evidence.verification_histories.first)
+          expect(assigns(:bs4)).to be true
+        end
+
+        it 'renders the history template' do
+          get :history, params: history_params
+          expect(response).to render_template(:history)
+        end
+      end
+
+      context 'with missing evidence' do
+        let!(:invalid_params) do
+          history_params.merge(id: 'invalid_id')
+        end
+
+        it 'handles evidence not found' do
+          get :history, params: invalid_params
+          expect(flash[:error]).to eq("Evidence not found")
+        end
+      end
+
+      context 'with missing eligibility' do
+        let!(:invalid_params) do
+          history_params.merge(eligibility_id: 'invalid_id')
+        end
+
+        it 'handles eligibility not found' do
+          get :history, params: invalid_params
+          expect(flash[:error]).to eq("Eligibility not found")
+        end
+      end
+
+      context 'with missing application' do
+        let!(:invalid_params) do
+          history_params.merge(application_gid: 'invalid_gid')
+        end
+
+        it 'handles application not found' do
+          get :history, params: invalid_params
+          expect(flash[:error]).to eq("Application not found")
+        end
+      end
+    end
+
+    context 'get #show' do
+      let!(:show_params) do
+        {
+          eligibility_id: aptc_csr_eligibility.id,
+          id: income_evidence.id,
+          application_gid: faa_application&.to_global_id&.uri&.to_s,
+          applicant_id: applicant&.id,
+          person_id: primary_applicant.person.id,
+          eligibility_kind: 'aptc_csr_eligibility',
+          evidence_key: :income_evidence,
+          family_id: family.id
+        }
+      end
+
+      before do
+        ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
+      end
+
+      context 'with valid params and successful operation' do
+        it 'assigns verification histories' do
+          get :show, params: show_params
+
+          expect(assigns(:applications)).to include(faa_application)
+          expect(assigns(:bs4)).to be true
+        end
+
+        it 'renders the history template' do
+          get :show, params: show_params
+          expect(response).to render_template(:show)
+        end
+      end
+
+      context 'with missing evidence' do
+        let!(:invalid_params) do
+          show_params.merge(id: 'invalid_id')
+        end
+
+        it 'handles evidence not found' do
+          get :show, params: invalid_params
+          expect(flash[:error]).to eq("Evidence not found")
+        end
+      end
+
+      context 'with missing eligibility' do
+        let!(:invalid_params) do
+          show_params.merge(eligibility_id: 'invalid_id')
+        end
+
+        it 'handles eligibility not found' do
+          get :show, params: invalid_params
+          expect(flash[:error]).to eq("Eligibility not found")
+        end
+      end
+
+      context 'with missing application' do
+        let!(:invalid_params) do
+          show_params.merge(application_gid: 'invalid_gid')
+        end
+
+        it 'handles application not found' do
+          get :show, params: invalid_params
+          expect(flash[:error]).to eq("Application not found")
+        end
+      end
+    end
   end
 
   context 'unauthorized user' do
@@ -493,6 +643,51 @@ RSpec.describe Eligibilities::Evidences::EvidencesController, type: :controller 
 
       it 'returns authorization error' do
         put :extend_due_date, params: extend_params
+        expect(flash[:error]).to include("Access not allowed")
+        expect(response).to have_http_status(:found)
+      end
+    end
+
+    context 'GET history' do
+      let!(:history_params) do
+        {
+          eligibility_id: aptc_csr_eligibility.id,
+          id: income_evidence.id,
+          application_gid: faa_application&.to_global_id&.uri&.to_s,
+          applicant_id: applicant&.id,
+          person_id: primary_applicant.person.id,
+          eligibility_kind: 'aptc_csr_eligibility',
+          evidence_key: :income_evidence
+        }
+      end
+
+      it 'still allows access to history for any user' do
+        ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
+        get :history, params: history_params
+
+        expect(flash[:error]).to include("Access not allowed")
+        expect(response).to have_http_status(:found)
+      end
+    end
+
+    context 'GET show' do
+      let!(:show_params) do
+        {
+          eligibility_id: aptc_csr_eligibility.id,
+          id: income_evidence.id,
+          application_gid: faa_application&.to_global_id&.uri&.to_s,
+          applicant_id: applicant&.id,
+          person_id: primary_applicant.person.id,
+          eligibility_kind: 'aptc_csr_eligibility',
+          evidence_key: :income_evidence,
+          family_id: family.id
+        }
+      end
+
+      it 'not allow access to show for any user' do
+        ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
+        get :show, params: show_params
+
         expect(flash[:error]).to include("Access not allowed")
         expect(response).to have_http_status(:found)
       end

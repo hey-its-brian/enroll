@@ -241,10 +241,11 @@ Rails.application.routes.draw do
   end
 
   resources :eligibilities, only: [], module: :eligibilities do
-    resources :evidences,    only: [:update], module: :evidences do
+    resources :evidences,    only: [:update, :show], module: :evidences do
       member do
         post :fed_hub_request
         put :extend_due_date
+        get :history
       end
       resources :documents do
         collection do

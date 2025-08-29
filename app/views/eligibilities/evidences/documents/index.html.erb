@@ -34,7 +34,7 @@
   </div>
 
   <div data-target="evidence-documents.container"
-       data-uploads-url-value="<%= verification_history_link(@evidence_delegator) %>">
+       data-uploads-url-value="<%= evidence_document_history_link(@evidence_delegator) %>">
     <%= render partial: "eligibilities/evidences/documents/table", locals: {
       uploads: @uploads,
       page: @page,

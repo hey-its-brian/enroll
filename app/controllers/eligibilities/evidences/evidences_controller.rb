@@ -4,9 +4,41 @@ module Eligibilities
   module Evidences
     # Controller for managing V3 evidence verification actions in the eligibility process
     class EvidencesController < ::ApplicationController
+      layout 'progress'
+      include ResourceRegistryHelper
+
+      before_action :set_current_person, only: [:show, :history]
       before_action :fetch_evidence
-      before_action :check_for_uneditable_application
-      after_action :build_determination
+      before_action :set_evidence_context, only: [:show, :history]
+      before_action :check_for_uneditable_application, except: [:show, :history]
+      after_action :build_determination, except: [:show, :history]
+
+      # Displays the verification detail for a V3 evidence record
+      # @return [void] Renders the verification detail view or redirects with error message
+      # @note This action is only used for the V3 evidence verification process.
+      def show
+        authorize @family, :verification_detail?
+
+        operation = Operations::Eligibilities::Evidences::Show.new
+        result = operation.call(params: params, evidence: @evidence)
+
+        if result.success?
+          # Assign all returned values to instance variables
+          result.value!.each do |key, value|
+            instance_variable_set("@#{key}", value)
+          end
+
+          if request.headers["Accept"] == "text/html" && request.xhr?
+            render partial: "table", locals: {
+              selected_year: @selected_year,
+              applications: @applications
+            }
+          end
+        else
+          flash[:error] = result.failure
+          redirect_to determine_redirect_location
+        end
+      end
 
       # Updates evidence verification status through admin actions (verify/reject)
       # @return [void] Redirects with flash messages based on operation result
@@ -98,7 +130,43 @@ module Eligibilities
         end
       end
 
+      # Displays the history of a V3 evidence record
+      # @return [void] Renders the history view or redirects with error message
+      # @note This action is only used for the V3 evidence verification process.
+      def history
+        authorize @family, :verification_history?
+
+        operation = Operations::Eligibilities::Evidences::History.new
+        result = operation.call({application: @application, applicant: @applicant,  evidence: @evidence})
+        @bs4 = true
+        if result.success?
+          @histories = result.value!
+        else
+          flash[:error] = result.failure
+          redirect_to determine_redirect_location
+        end
+      end
+
       private
+
+      def set_evidence_context
+        result = Operations::Families::Verifications::Summary::EvidenceQuery.new.call(
+          family: @family,
+          person_id: params[:person_id],
+          evidence_key: params[:evidence_key],
+          eligibility_kind: params[:eligibility_kind],
+          inactive: params[:inactive]
+        )
+
+        if result.success?
+          value = result.value!
+
+          @member = value[:member]
+          @evidence_delegator = value[:evidence]
+        else
+          redirect_back(fallback_location: verification_insured_families_path, :flash => {error: result.failure})
+        end
+      end
 
       def fetch_reasons_list
         case @eligibility.key.to_s
@@ -113,10 +181,12 @@ module Eligibilities
         @application = GlobalID::Locator.locate(params[:application_gid])
         return handle_not_found("Application not found") unless @application
 
-        applicant = @application.applicants.where(id: params[:applicant_id]).first
-        return handle_not_found("Applicant not found") unless applicant
+        @family = @application.family
 
-        @eligibility = applicant.eligibilities.where(id: params[:eligibility_id]).first
+        @applicant = @application.applicants.where(id: params[:applicant_id]).first
+        return handle_not_found("Applicant not found") unless @applicant
+
+        @eligibility = @applicant.eligibilities.where(id: params[:eligibility_id]).first
         return handle_not_found("Eligibility not found") unless @eligibility
 
         @evidence = @eligibility.evidences.where(id: params[:id]).first
@@ -130,11 +200,26 @@ module Eligibilities
 
       def determine_redirect_location
         if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
-          verification_detail_insured_families_path(
-            person_id: params['person_id'],
-            eligibility_kind: params['eligibility_kind'],
-            evidence_key: params['evidence_key']
-          )
+          if qhp_application_feature_enabled?
+            eligibility_evidence_path(
+              @eligibility,
+              @evidence,
+              {
+                application_gid: params[:application_gid],
+                applicant_id: @applicant.id,
+                person_id: params[:person_id],
+                eligibility_kind: params[:eligibility_kind],
+                evidence_key: params[:evidence_key],
+                family_id: @family.id
+              }
+            )
+          else
+            verification_detail_insured_families_path(
+              person_id: params['person_id'],
+              eligibility_kind: params['eligibility_kind'],
+              evidence_key: params['evidence_key']
+            )
+          end
         else
           verification_insured_families_path
         end
