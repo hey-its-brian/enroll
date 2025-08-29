@@ -74,8 +74,17 @@ export default class extends Controller {
   hideSsn(event) {
     const target = event.target;
     const applicantId = target.getAttribute('data-id');
+    const ssnInput = document.querySelector(`.ssn-input-${applicantId}`);
 
-    document.querySelector(`.ssn-input-${applicantId}`).classList.add('hidden');
+    if (!ssnInput) {
+      return;
+    }
+
+    if (!ssnInput.value || ssnInput.value.trim() === '') {
+      return;
+    }
+
+    ssnInput.classList.add('hidden');
     $(`.ssn-input-${applicantId}`).parents('label').addClass('hidden');
     document.querySelector(`.ssn-facade-${applicantId}`).classList.remove('hidden');
     $(`.ssn-facade-${applicantId}`).parents('label').removeClass('hidden');
@@ -84,7 +93,6 @@ export default class extends Controller {
 
     document.querySelector(`.ssn-eye-off-${applicantId}`).focus();
     this.depopulateHtmlElement(applicantId);
-    const ssnInput = document.querySelector(`.ssn-input-${applicantId}`);
     if (ssnInput.getAttribute('data-admin-can-enable') !== null) {
       ssnInput.disabled = true;
     }
