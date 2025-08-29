@@ -102,6 +102,15 @@ module PermissionsConcern
     def does_not_have_any_staff_role?
       !has_broker_agency_staff_role? && !has_general_agency_staff_role? && !has_employer_staff_role?
     end
+
+    # Checks if the person has an hbx staff role
+    #
+    # @return [Boolean]
+    def is_admin?
+      return false unless person
+
+      person.hbx_staff_role.present?
+    end
   end
 
   class_methods do

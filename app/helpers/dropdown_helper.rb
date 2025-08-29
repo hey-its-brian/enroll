@@ -81,24 +81,30 @@ module DropdownHelper
   end
 
   def add_faa_copy_option(option_args, application, current_user, copyable_application_ids, current_year)
-    if qhp_application_feature_enabled? && current_year.present?
-      option_args << [l10n("insured.sbm.applications.actions.copy_to_alt_year", alt_year: current_year), financial_assistance.copy_application_path(application, assistance_year: current_year), :default]
+    if qhp_application_feature_enabled?
+      if show_copy?(application, copyable_application_ids, current_year, current_user)
+        option_args << [l10n('insured.sbm.applications.actions.copy_to_alt_year', alt_year: current_year), financial_assistance.copy_application_path(application, assistance_year: current_year), :default]
+      end
     else
       option_args << [l10n('insured.sbm.applications.actions.copy'), financial_assistance.copy_application_path(application), :default] unless do_not_allow_copy?(application, current_user, copyable_application_ids)
     end
   end
 
-  def add_qhp_copy_option(option_args, application, current_user, copyable_application_ids, current_year)
-    return if do_not_allow_copy?(application, current_user, copyable_application_ids)
+  # A method that is used only to extract common code into a single location.
+  #
+  # @return [Boolean]
+  def show_copy?(application, copyable_application_ids, current_year, logged_in_user)
+    ((logged_in_user.is_admin? && application.is_determined?) || copyable_application_ids.include?(application.id)) && current_year.present?
+  end
 
-    if current_year.present?
-      key = l10n("insured.sbm.applications.actions.copy_to_alt_year", alt_year: current_year)
-      link = copy_insured_individual_market_application_path(application, assistance_year: current_year)
-    else
-      key = l10n('insured.sbm.applications.actions.copy')
-      link = copy_insured_individual_market_application_path(application)
-    end
-    option_args << [key, link, :default]
+  def add_qhp_copy_option(option_args, application, current_user, copyable_application_ids, current_year)
+    return unless show_copy?(application, copyable_application_ids, current_year, current_user)
+
+    option_args << [
+      l10n('insured.sbm.applications.actions.copy_to_alt_year', alt_year: current_year),
+      copy_insured_individual_market_application_path(application, assistance_year: current_year),
+      :default
+    ]
   end
 
   # The dropdown options for QHP applications.
@@ -106,9 +112,10 @@ module DropdownHelper
   #
   # @param application [IndividualMarket::Application] the QHP application to which the dropdowns will be added
   # @param copyable_application_ids [Array] the IDs of applications that can be copied
+  # @param current_year [Integer] the current year
   #
   # @return [Array] the updated dropdown options including any QHP specific links
-  def qhp_application_dropdowns(application, copyable_application_ids, current_year = nil)
+  def qhp_application_dropdowns(application, copyable_application_ids, current_year)
     option_args = []
 
     add_qhp_update_option(option_args, application)
