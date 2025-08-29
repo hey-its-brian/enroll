@@ -60,9 +60,8 @@ $(document).on('click', '.address-change-confirmation', function () {
   $('.btn-confirmation').prop('disabled', true);
   $('.modal-backdrop').removeClass('modal-backdrop');
   $('.modal-open').removeClass('modal-open');
-
-  PersonValidations.manageRequiredValidations($('#confirm-dependent'));
   $('#addressChangeConfirmation').data('customParam', { disable: true }).modal('hide');
+  PersonValidations.manageRequiredValidations($('#confirm-dependent'));
 
   return false;
 });
