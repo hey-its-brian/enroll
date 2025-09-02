@@ -240,6 +240,16 @@ class HbxProfile
   # OpenEnrollmentLatestEnd -- 10th day of month prior to effective date
   # BinderPaymentDueDate -- 15th or earliest banking day prior
 
+  # Finds the current open enrollment benefit coverage period if it exists
+  #
+  # @return [BenefitCoveragePeriod, nil] the current open enrollment benefit coverage period or nil
+  def current_oe_bcp
+    benefit_sponsorship.benefit_coverage_periods.where(
+      :open_enrollment_start_on.lte => TimeKeeper.date_of_record,
+      :open_enrollment_end_on.gte => TimeKeeper.date_of_record
+    ).first
+  end
+
   private
   def build_nested_models
     build_inbox if inbox.nil?

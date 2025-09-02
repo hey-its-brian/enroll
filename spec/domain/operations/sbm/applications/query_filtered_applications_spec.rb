@@ -173,5 +173,137 @@ RSpec.describe Operations::Sbm::Applications::QueryFilteredApplications, dbclean
         end
       end
     end
+
+    context 'restore financial assistance info' do
+      let(:hbx_profile_with_oe) do
+        FactoryBot.create(
+          :hbx_profile,
+          :single_open_enrollment_coverage_period,
+          us_state_abbreviation: EnrollRegistry[:enroll_app].setting(:state_abbreviation).item,
+          cms_id: "#{EnrollRegistry[:enroll_app].setting(:state_abbreviation).item.upcase}0"
+        )
+      end
+
+      let(:hbx_profile_without_oe) do
+        FactoryBot.create(
+          :hbx_profile,
+          :no_open_enrollment_coverage_period,
+          us_state_abbreviation: EnrollRegistry[:enroll_app].setting(:state_abbreviation).item,
+          cms_id: "#{EnrollRegistry[:enroll_app].setting(:state_abbreviation).item.upcase}0"
+        )
+      end
+
+      let(:qhp_renewal_application) { FactoryBot.create(:individual_market_application, :renewal, family_id: family.id) }
+      let(:faa_renewal_application) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          aasm_state: fa_application_state,
+          assistance_year: TimeKeeper.date_of_record.year.next,
+          effective_date: TimeKeeper.date_of_record.next_year.beginning_of_year
+        )
+      end
+
+      context 'when:
+        - system is not in open enrollment period
+        ' do
+
+        before do
+          hbx_profile_without_oe
+        end
+
+        it 'returns nil for restore_fa_info' do
+          result = operation.call(family_id: family.id)
+          expect(result.value![:restore_fa_info]).to be_nil
+        end
+      end
+
+      context 'when:
+        - system is in open enrollment period
+        - there are no QHP renewal applications for renewal year
+        ' do
+
+        before do
+          hbx_profile_with_oe
+        end
+
+        it 'returns nil for restore_fa_info' do
+          result = operation.call(family_id: family.id)
+          expect(result.value![:restore_fa_info]).to be_nil
+        end
+      end
+
+      context 'when:
+        - system is in open enrollment period
+        - there exists a renewal QHP application for renewal year
+        - there is no FAA renewal application for renewal year
+        ' do
+
+        before do
+          hbx_profile_with_oe
+          qhp_renewal_application
+        end
+
+        it 'returns nil for restore_fa_info' do
+          result = operation.call(family_id: family.id)
+          expect(result.value![:restore_fa_info]).to be_nil
+        end
+      end
+
+      context 'when:
+        - system is in open enrollment period
+        - there exists a renewal QHP application for renewal year
+        - there exists a renewal FAA application for renewal year but not in state applicants_update_required or income_verification_extension_required
+        ' do
+
+        before do
+          hbx_profile_with_oe
+          qhp_renewal_application
+          faa_renewal_application
+        end
+
+        let(:fa_application_state) { 'determined' }
+
+        it 'returns nil for restore_fa_info' do
+          result = operation.call(family_id: family.id)
+          expect(result.value![:restore_fa_info]).to be_nil
+        end
+      end
+
+      context 'when:
+        - system is in open enrollment period
+        - there exists a renewal QHP application for renewal year
+        - there exists a renewal FAA application for renewal year in state applicants_update_required or income_verification_extension_required
+        ' do
+
+        before do
+          hbx_profile_with_oe
+          qhp_renewal_application
+          faa_renewal_application
+        end
+
+        context 'fa renewal application in applicants_update_required state' do
+          let(:fa_application_state) { 'applicants_update_required' }
+
+          it 'returns FAA and QHP application IDs for restore_fa_info' do
+            result = operation.call(family_id: family.id)
+            expect(result.value![:restore_fa_info]).to eq(
+              { qhp_app_id: qhp_renewal_application.id.to_s, faa_app_id: faa_renewal_application.id.to_s }
+            )
+          end
+        end
+
+        context 'fa renewal application in income_verification_extension_required state' do
+          let(:fa_application_state) { 'income_verification_extension_required' }
+
+          it 'returns FAA and QHP application IDs for restore_fa_info' do
+            result = operation.call(family_id: family.id)
+            expect(result.value![:restore_fa_info]).to eq(
+              { qhp_app_id: qhp_renewal_application.id.to_s, faa_app_id: faa_renewal_application.id.to_s }
+            )
+          end
+        end
+      end
+    end
   end
 end

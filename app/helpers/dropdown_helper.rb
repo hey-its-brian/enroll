@@ -112,18 +112,38 @@ module DropdownHelper
   #
   # @param application [IndividualMarket::Application] the QHP application to which the dropdowns will be added
   # @param copyable_application_ids [Array] the IDs of applications that can be copied
-  # @param current_year [Integer] the current year
+  # @param current_year [Integer] the current year for which the copied application will be created
+  # @param restore_fa_info [Hash, nil] a hash containing the QHP and FAA application IDs for restoring FA information, or nil if not applicable
   #
   # @return [Array] the updated dropdown options including any QHP specific links
-  def qhp_application_dropdowns(application, copyable_application_ids, current_year)
+  def qhp_application_dropdowns(application, copyable_application_ids, current_year, restore_fa_info)
     option_args = []
 
     add_qhp_update_option(option_args, application)
     add_qhp_copy_option(option_args, application, current_user, copyable_application_ids, current_year)
     add_qhp_eligibility_option(option_args, application)
     add_qhp_review_option(option_args, application)
+    add_restore_financial_assistance_link(option_args, application, restore_fa_info)
 
     construct_options(option_args)
+  end
+
+  # Method to add the 'Restore Financial Assistance' link to the dropdown options for QHP applications.
+  #
+  # @param option_args [Array] the array of dropdown options to which the restore link will be added
+  # @param application [IndividualMarket::Application] the QHP application for which the restore
+  # @param restore_fa_info [Hash, nil] a hash containing the QHP and FAA application IDs for restoring FA information, or nil if not applicable
+  #
+  # @return [void] modifies the option_args array in place by adding the restore link if applicable
+  def add_restore_financial_assistance_link(option_args, application, restore_fa_info)
+    return if restore_fa_info.nil?
+    return if application.id.to_s != restore_fa_info[:qhp_app_id]
+
+    option_args << [
+      l10n('insured.sbm.applications.actions.restore_fa'),
+      financial_assistance.copy_application_path(restore_fa_info[:faa_app_id], assistance_year: application.assistance_year),
+      :default
+    ]
   end
 
   def add_qhp_update_option(option_args, application)
@@ -164,11 +184,11 @@ module DropdownHelper
     ]
   end
 
-  def sbm_applications_dropdowns(application, copyable_application_ids, current_year = nil)
+  def sbm_applications_dropdowns(application, copyable_application_ids, current_year, restore_fa_info)
     if application.is_a?(::FinancialAssistance::Application)
       application_dropdowns(application, copyable_application_ids, current_year)
     else
-      qhp_application_dropdowns(application, copyable_application_ids, current_year)
+      qhp_application_dropdowns(application, copyable_application_ids, current_year, restore_fa_info)
     end
   end
 

@@ -11,14 +11,14 @@ RSpec.describe DropdownHelper, type: :helper do
   end
   let(:admin_user) { FactoryBot.create(:user, person: hbx_admin.person) }
   let(:current_user) { admin_user }
-
   let(:user) { FactoryBot.create(:user, person: person) }
   let(:person) { FactoryBot.create(:person, :with_consumer_role) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
-
+  let(:enabled) { false }
   before :each do
     allow(helper).to receive(:current_user).and_return(current_user)
     allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).and_return(false)
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(enabled)
   end
 
   describe '#application_dropdowns' do
@@ -375,7 +375,7 @@ RSpec.describe DropdownHelper, type: :helper do
       context 'when application is initial' do
         it 'returns the update option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).to include(l10n('insured.sbm.applications.actions.update'))
         end
       end
@@ -385,7 +385,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'does not return the update option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).not_to include(l10n('insured.sbm.applications.actions.update'))
         end
       end
@@ -402,7 +402,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'returns the copy option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).to include(l10n('insured.sbm.applications.actions.copy_to_alt_year', alt_year: input_assistance_year))
         end
       end
@@ -417,7 +417,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'does not return the copy option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).not_to include(l10n('insured.sbm.applications.actions.copy_to_alt_year', alt_year: input_assistance_year))
         end
       end
@@ -433,7 +433,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'returns the copy option' do
           expect(
-            helper.qhp_application_dropdowns(application, [application.id], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [application.id], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).to include(l10n('insured.sbm.applications.actions.copy_to_alt_year', alt_year: input_assistance_year))
         end
       end
@@ -449,7 +449,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'does not return the copy option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).not_to include(l10n('insured.sbm.applications.actions.copy_to_alt_year', alt_year: input_assistance_year))
         end
       end
@@ -465,7 +465,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'does not return the copy option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).not_to include(l10n('insured.sbm.applications.actions.copy_to_alt_year', alt_year: input_assistance_year))
         end
       end
@@ -477,7 +477,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'returns the view eligibility option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).to include(l10n('insured.sbm.applications.actions.view_eligibility'))
         end
       end
@@ -487,7 +487,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'does not return the view eligibility option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).not_to include(l10n('insured.sbm.applications.actions.view_eligibility'))
         end
       end
@@ -502,7 +502,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'returns the eligibility criteria option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).to include(l10n('insured.sbm.applications.actions.eligibility_criteria'))
         end
       end
@@ -516,7 +516,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'does not return the eligibility criteria option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).not_to include(l10n('insured.sbm.applications.actions.eligibility_criteria'))
         end
       end
@@ -532,7 +532,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'returns the review option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).to include(l10n('insured.sbm.applications.actions.review'))
         end
       end
@@ -545,7 +545,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'returns the review option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).to include(l10n('insured.sbm.applications.actions.review'))
         end
       end
@@ -559,7 +559,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'does not return the review option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).not_to include(l10n('insured.sbm.applications.actions.review'))
         end
       end
@@ -572,7 +572,7 @@ RSpec.describe DropdownHelper, type: :helper do
 
         it 'does not return the review option' do
           expect(
-            helper.qhp_application_dropdowns(application, [], input_assistance_year).collect { |dropdwn| dropdwn[:title] }
+            helper.qhp_application_dropdowns(application, [], input_assistance_year, nil).collect { |dropdwn| dropdwn[:title] }
           ).to include(l10n('insured.sbm.applications.actions.review'))
         end
       end
@@ -953,6 +953,61 @@ RSpec.describe DropdownHelper, type: :helper do
         result = helper.qhp_enabled_verification_dropdowns(verification, document)
 
         expect(result.map { |option| option[:title] }).not_to include('Remove')
+      end
+    end
+  end
+
+  describe '#add_restore_financial_assistance_link' do
+    let(:option_args) { [] }
+    let(:application) { FactoryBot.create(:individual_market_application, :renewal, family: family) }
+    let(:faa_app_id) { BSON::ObjectId.new.to_s }
+
+    context 'when:
+      - option_args is always empty
+      - application is a QHP application
+      - restore_fa_info is nil
+      ' do
+
+      let(:restore_fa_info) { nil }
+
+      it 'does not add the restore financial assistance option' do
+        expect(helper.add_restore_financial_assistance_link(option_args, application, restore_fa_info)).to be_nil
+      end
+    end
+
+    context 'when:
+      - option_args is always empty
+      - application is a QHP application
+      - restore_fa_info includes qhp_app_id that is not same as application id
+      ' do
+
+      let(:qhp_app_id) { BSON::ObjectId.new.to_s }
+      let(:restore_fa_info) { { qhp_app_id: qhp_app_id, faa_app_id: faa_app_id } }
+
+      it 'does not add the restore financial assistance option' do
+        expect(helper.add_restore_financial_assistance_link(option_args, application, restore_fa_info)).to be_nil
+      end
+    end
+
+    context 'when:
+      - option_args is always empty
+      - application is a QHP application
+      - restore_fa_info includes qhp_app_id that is same as application id
+      ' do
+
+      let(:qhp_app_id) { application.id.to_s }
+      let(:restore_fa_info) { { qhp_app_id: qhp_app_id, faa_app_id: faa_app_id } }
+
+      it 'adds the restore financial assistance option' do
+        expect(
+          helper.add_restore_financial_assistance_link(option_args, application, restore_fa_info)
+        ).to include(
+          [
+            l10n('insured.sbm.applications.actions.restore_fa'),
+            financial_assistance.copy_application_path(restore_fa_info[:faa_app_id], assistance_year: application.assistance_year),
+            :default
+          ]
+        )
       end
     end
   end

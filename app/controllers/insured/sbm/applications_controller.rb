@@ -39,6 +39,7 @@ module Insured
 
           @filtered_applications = value[:filtered_applications]
           @recent_determined_hbx_id = value[:recent_determined_hbx_id]
+          @restore_fa_info = value[:restore_fa_info]
 
           respond_to do |format|
             format.html

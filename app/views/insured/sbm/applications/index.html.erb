@@ -55,7 +55,7 @@
           <td><%= to_est application.created_at %></td>
           <td><%= format_submission_date(application) %></td>
           <td>
-            <%= render partial: 'datatables/shared/dropdown', locals: { dropdowns: sbm_applications_dropdowns(application, @copyable_application_ids, @applicable_year) } %>
+            <%= render partial: 'datatables/shared/dropdown', locals: { dropdowns: sbm_applications_dropdowns(application, @copyable_application_ids, @applicable_year, @restore_fa_info) } %>
           </td>
         </tr>
       <% end %>
