@@ -4,10 +4,12 @@ require 'rails_helper'
 
 RSpec.describe Operations::ConsumerRoles::OnUpdate, dbclean: :after_each do
 
+  subscriber_logger = Logger.new("#{Rails.root}/log/testing.log")
+
   subject do
     described_class.new.call(
       { payload: { gid: consumer_role_gid, previous: { is_applying_coverage: false } },
-        subscriber_logger: Logger.new("#{Rails.root}/log/testing.log") }
+        subscriber_logger: subscriber_logger }
     )
   end
 
@@ -45,6 +47,12 @@ RSpec.describe Operations::ConsumerRoles::OnUpdate, dbclean: :after_each do
         expect(subject.success).to eq(
           "ConsumerRole DetermineVerifications success: Successfully triggered Hub Calls for ConsumerRole with person_hbx_id: #{person.hbx_id}"
         )
+      end
+
+      it 'logs the consumer role update' do
+        expect(subscriber_logger).to receive(:info).with("Determing Consumer with id: #{consumer_role.id} and is_applying_coverage: true")
+        expect(subscriber_logger).to receive(:info).with("ConsumerRole DetermineVerifications success: Successfully triggered Hub Calls for ConsumerRole with person_hbx_id: #{person.hbx_id}")
+        subject
       end
 
       it 'updates consumer_role state to verification_outstanding' do

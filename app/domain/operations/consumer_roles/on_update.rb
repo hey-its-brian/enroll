@@ -38,6 +38,8 @@ module Operations
 
         return Failure('Consumer is not applying for coverage.') if payload[:previous].key?(:is_applying_coverage) && !role.is_applying_coverage
 
+        logger.info "Determing Consumer with id: #{role.id} and is_applying_coverage: #{role.is_applying_coverage}"
+
         result = ::Operations::Individual::DetermineVerifications.new.call(
           { id: role.id, skip_rr_config_and_active_enrollment_check: true }
         )
