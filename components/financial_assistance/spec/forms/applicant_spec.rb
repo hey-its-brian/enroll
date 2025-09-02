@@ -50,6 +50,140 @@ RSpec.describe FinancialAssistance::Forms::Applicant, type: :model do
         expect(subject.errors[:ssn]).to include(" must be 9 digits")
       end
     end
+
+    describe "#check_same_ssn" do
+      let(:ssn) { '123456789' }
+
+      context 'when SSN is blank' do
+        it 'returns early without adding errors' do
+          subject.ssn = nil
+          subject.check_same_ssn
+          expect(subject.errors).to be_empty
+        end
+
+        it 'returns early with empty string SSN' do
+          subject.ssn = ''
+          subject.check_same_ssn
+          expect(subject.errors).to be_empty
+        end
+      end
+
+      context 'when applicant exists and has the same SSN' do
+        let(:existing_applicant) { FactoryBot.create(:financial_assistance_applicant, application: application, ssn: ssn) }
+
+        before do
+          subject.applicant_id = existing_applicant.id
+          subject.ssn = ssn
+        end
+
+        it 'returns early without adding errors' do
+          subject.check_same_ssn
+          expect(subject.errors).to be_empty
+        end
+      end
+
+      context 'when QHP application feature is enabled' do
+        before do
+          allow(subject).to receive(:qhp_application_feature_enabled?).and_return(true)
+          subject.ssn = ssn
+          subject.dob = Date.new(1990, 1, 1)
+          subject.first_name = 'John'
+          subject.last_name = 'Doe'
+        end
+
+        context 'when ssn_is_taken? returns true' do
+          before do
+            allow(subject).to receive(:ssn_is_taken?).and_return([true, 'ssn is already taken'])
+          end
+
+          it 'returns early without checking application applicants' do
+            subject.check_same_ssn
+            expect(subject.errors).to be_empty
+          end
+        end
+
+        context 'when ssn_is_taken? returns false' do
+          before do
+            allow(subject).to receive(:ssn_is_taken?).and_return([false, nil])
+          end
+
+          context 'when no matching applicants exist in application' do
+            it 'does not add errors' do
+              subject.check_same_ssn
+              expect(subject.errors).to be_empty
+            end
+          end
+
+          context 'when matching applicants exist and applicant_id is present' do
+            let!(:other_applicant) { FactoryBot.create(:financial_assistance_applicant, application: application, ssn: ssn) }
+            let!(:current_applicant) { FactoryBot.create(:financial_assistance_applicant, application: application, ssn: 'different_ssn') }
+
+            before do
+              subject.applicant_id = current_applicant.id
+            end
+
+            it 'adds error when other applicants with same SSN exist' do
+              subject.check_same_ssn
+              expect(subject.errors[:base]).to include('The entered SSN is already taken by another applicant in this application.')
+            end
+          end
+
+          context 'when matching applicants exist and applicant_id is blank' do
+            let!(:existing_applicant) { FactoryBot.create(:financial_assistance_applicant, application: application, ssn: ssn) }
+
+            before do
+              subject.applicant_id = nil
+            end
+
+            it 'adds error when matching applicants exist' do
+              subject.check_same_ssn
+              expect(subject.errors[:base]).to include('The entered SSN is already taken by another applicant in this application.')
+            end
+          end
+
+          context 'when no matching applicants exist in application' do
+            before do
+              subject.applicant_id = nil
+            end
+
+            it 'does not add error when no matching applicants exist' do
+              subject.check_same_ssn
+              expect(subject.errors).to be_empty
+            end
+          end
+        end
+
+        context 'when applicant is nil and ssn_is_taken? returns false' do
+          before do
+            subject.applicant_id = nil
+            allow(subject).to receive(:ssn_is_taken?).and_return([false, nil])
+          end
+
+          it 'calls ssn_is_taken? method with correct values' do
+            expect(subject).to receive(:ssn_is_taken?).with({
+                                                              dob: subject.dob,
+                                                              first_name: subject.first_name,
+                                                              last_name: subject.last_name,
+                                                              ssn: subject.ssn
+                                                            }).and_return([false, nil])
+
+            subject.check_same_ssn
+          end
+        end
+      end
+
+      context 'edge cases' do
+        it 'handles case when applicant exists but has nil SSN' do
+          existing_applicant = FactoryBot.create(:financial_assistance_applicant, application: application, ssn: nil)
+          subject.applicant_id = existing_applicant.id
+          subject.ssn = ssn
+          allow(subject).to receive(:qhp_application_feature_enabled?).and_return(true)
+          allow(subject).to receive(:ssn_is_taken?).and_return([false, nil])
+
+          expect { subject.check_same_ssn }.not_to raise_error
+        end
+      end
+    end
   end
 
   describe "#has_in_state_home_addresses?" do

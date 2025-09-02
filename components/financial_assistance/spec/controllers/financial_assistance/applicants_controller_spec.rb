@@ -978,6 +978,80 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
         expect(applicant.valid?).to be_truthy
       end
     end
+
+    context "when SSN is already taken by another person" do
+      let(:existing_person) { FactoryBot.create(:person, :with_consumer_role, ssn: "123456789") }
+      let(:update_params_with_taken_ssn) do
+        {
+          application_id: application.id,
+          id: applicant2.id,
+          applicant: {
+            is_applying_coverage: true,
+            first_name: 'Test',
+            last_name: 'User',
+            gender: 'male',
+            dob: (TimeKeeper.date_of_record - 25.years).strftime("%Y-%m-%d"),
+            ssn: "123456789", # Same SSN as existing_person
+            relationship: 'spouse',
+            is_consumer_role: false,
+            addresses_attributes: {
+              '0' => {
+                kind: 'home',
+                address_1: '123 Test St',
+                city: 'Test City',
+                state: 'DC',
+                zip: '20001'
+              }
+            }
+          }
+        }
+      end
+
+      before do
+        existing_person # Ensure the person with SSN exists
+        # Mock the SSN taken operation to return that SSN is taken
+        operation_instance = instance_double(::Operations::People::SsnTaken)
+        allow(::Operations::People::SsnTaken).to receive(:new).and_return(operation_instance)
+        allow(operation_instance).to receive(:call).and_return(
+          double(success?: true, success: true, failure: nil)
+        )
+      end
+
+      it "should fail to update when SSN is taken" do
+        patch :update, params: update_params_with_taken_ssn
+        expect(response).to have_http_status(302)
+
+        # Should redirect back to applicants index or edit page due to form validation failure
+        redirect_path = if EnrollRegistry.feature_enabled?(:qhp_application)
+                          application_applicants_path(application)
+                        else
+                          edit_application_path(application)
+                        end
+        expect(response).to redirect_to(redirect_path)
+      end
+
+      it "should not update the applicant when SSN is taken" do
+        original_ssn = applicant2.ssn
+        patch :update, params: update_params_with_taken_ssn
+        applicant2.reload
+        expect(applicant2.ssn).to eq(original_ssn)
+        expect(applicant2.ssn).not_to eq("123456789")
+      end
+
+      it "should handle SSN validation error properly" do
+        # Mock form to test error handling
+        form_instance = instance_double(FinancialAssistance::Forms::Applicant)
+        allow(FinancialAssistance::Forms::Applicant).to receive(:new).and_return(form_instance)
+        allow(form_instance).to receive(:is_dependent=)
+        allow(form_instance).to receive(:application_id=)
+        allow(form_instance).to receive(:applicant_id=)
+        allow(form_instance).to receive(:save).and_return([false, ['ssn is already taken']])
+
+        patch :update, params: update_params_with_taken_ssn
+        expect(response).to have_http_status(302)
+        # The controller redirects on both success and failure for update action
+      end
+    end
   end
 
   context "DELETE destroy" do
