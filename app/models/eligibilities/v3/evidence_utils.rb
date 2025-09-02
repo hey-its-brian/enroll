@@ -38,12 +38,12 @@ module Eligibilities
       #   STATE_TRANSITIONS[:move_to_attested][:from] # Returns array of states from which :move_to_attested is allowed
       #   STATE_TRANSITIONS[:move_to_attested][:to]   # Returns the destination state after :move_to_attested event
       state_transitions do
-        action :move_to_attested, from: [:initial, :negative_response_received, :outstanding, :pending, :rejected, :review, :unverified, :verified], to: :attested
+        action :move_to_attested, from: [:initial, :negative_response_received, :outstanding, :pending, :rejected, :review, :unverified], to: :attested
         action :move_to_rejected, from: [:attested, :negative_response_received, :outstanding, :pending, :review, :unverified, :verified], to: :rejected
         action :move_to_negative_response_received, from: [:initial, :attested, :outstanding, :pending, :rejected, :review, :unverified, :verified], to: :negative_response_received
         action :move_to_unverified, from: [:initial, :attested, :negative_response_received, :outstanding, :pending, :rejected, :review, :verified], to: :unverified
         action :move_to_outstanding, from: [:initial, :attested, :negative_response_received, :pending, :rejected, :review, :unverified, :verified], to: :outstanding
-        action :move_to_verified, from: [:attested, :negative_response_received, :outstanding, :pending, :rejected, :review, :unverified], to: :verified
+        action :move_to_verified, from: [:negative_response_received, :outstanding, :pending, :rejected, :review, :unverified], to: :verified
         action :move_to_review, from: [:attested, :negative_response_received, :outstanding, :pending, :rejected, :unverified, :verified], to: :review
         action :move_to_pending, from: [:initial, :attested, :negative_response_received, :outstanding, :rejected, :review, :unverified, :verified], to: :pending
       end
@@ -122,7 +122,6 @@ module Eligibilities
 
           @latest_rejected_verification_history = verification_histories.where(action: 'return_for_deficiency').last
         end
-
 
         def determine_outstanding_due_on_date(call_type)
           if call_type == 'bulk_call'

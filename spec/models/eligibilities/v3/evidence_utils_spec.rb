@@ -182,6 +182,11 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
       allow(dummy_evidence).to receive(:can_move_to_verified?).and_return(false)
       expect { dummy_evidence.mark_as_verified }.not_to change(dummy_evidence, :verified?)
     end
+
+    it "does not mark as verified if attested" do
+      dummy_evidence.current_state = :attested
+      expect(dummy_evidence.mark_as_verified).not_to eq :verified
+    end
   end
 
   describe "#mark_as_rejected" do
