@@ -856,6 +856,108 @@ RSpec.describe ::FinancialAssistance::ApplicationHelper, :type => :helper, dbcle
     end
   end
 
+  describe 'applicant_faa_nav_options' do
+    let!(:family) { FactoryBot.create(:family, :with_primary_family_member) }
+    let!(:application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: 'draft') }
+    let!(:ed) { FactoryBot.create(:financial_assistance_eligibility_determination, application: application) }
+    let!(:applicant) do
+      FactoryBot.create(:financial_assistance_applicant,
+                        application: application,
+                        eligibility_determination_id: ed.id,
+                        is_ia_eligible: true,
+                        is_claimed_as_tax_dependent: false,
+                        is_required_to_file_taxes: true,
+                        first_name: 'Test',
+                        last_name: 'User')
+    end
+
+    before do
+      helper.class.class_eval do
+        def go_to_step_application_applicant_path(*args); end
+
+        def application_applicant_incomes_path(*args); end
+
+        def other_application_applicant_incomes_path(*args); end
+
+        def application_applicant_deductions_path(*args); end
+
+        def application_applicant_benefits_path(*args); end
+
+        def other_questions_application_applicant_path(*args); end
+      end
+
+      allow(helper).to receive(:go_to_step_application_applicant_path).and_return('tax_info_path')
+      allow(helper).to receive(:application_applicant_incomes_path).and_return('job_income_path')
+      allow(helper).to receive(:other_application_applicant_incomes_path).and_return('other_income_path')
+      allow(helper).to receive(:application_applicant_deductions_path).and_return('income_adjustments_path')
+      allow(helper).to receive(:application_applicant_benefits_path).and_return('health_coverage_path')
+      allow(helper).to receive(:other_questions_application_applicant_path).and_return('other_questions_path')
+
+
+      allow(applicant).to receive(:tax_info_complete?).and_return(true)
+      allow(applicant).to receive(:embedded_document_section_entry_complete?).and_return(false)
+      allow(applicant).to receive(:other_questions_complete?).and_return(false)
+    end
+
+    context 'when the applicant is applying for coverage' do
+      before do
+        applicant.update_attributes!(is_applying_coverage: true)
+      end
+
+      let(:nav_options) { helper.applicant_faa_nav_options(application, applicant) }
+
+      it 'returns a total of 6 navigation steps' do
+        expect(nav_options.count).to eq(6)
+      end
+
+      it 'includes the "Health Coverage" step as step 5' do
+        health_coverage_step = nav_options.find { |opt| opt[:label] == 'Health Coverage' }
+        expect(health_coverage_step).to be_present
+        expect(health_coverage_step[:step]).to eq(5)
+        expect(health_coverage_step[:link]).to eq('health_coverage_path')
+      end
+
+      it 'includes the "Other Questions" step as step 6' do
+        other_questions_step = nav_options.find { |opt| opt[:label] == 'Other Questions' }
+        expect(other_questions_step).to be_present
+        expect(other_questions_step[:step]).to eq(6)
+        expect(other_questions_step[:link]).to eq('other_questions_path')
+      end
+
+      it 'builds the first step correctly' do
+        tax_info_step = nav_options.first
+        expect(tax_info_step[:step]).to eq(1)
+        expect(tax_info_step[:label]).to eq('Tax Info')
+        expect(tax_info_step[:link]).to eq('tax_info_path')
+        expect(tax_info_step[:step_complete]).to be true
+      end
+    end
+
+    context 'when the applicant is NOT applying for coverage' do
+      before do
+        applicant.update_attributes!(is_applying_coverage: false)
+      end
+
+      let(:nav_options) { helper.applicant_faa_nav_options(application, applicant) }
+
+      it 'returns a total of 5 navigation steps' do
+        expect(nav_options.count).to eq(5)
+      end
+
+      it 'does NOT include the "Health Coverage" step' do
+        health_coverage_step = nav_options.find { |opt| opt[:label] == 'Health Coverage' }
+        expect(health_coverage_step).to be_nil
+      end
+
+      it 'includes the "Other Questions" step as step 5' do
+        other_questions_step = nav_options.find { |opt| opt[:label] == 'Other Questions' }
+        expect(other_questions_step).to be_present
+        expect(other_questions_step[:step]).to eq(5)
+        expect(other_questions_step[:link]).to eq('other_questions_path')
+      end
+    end
+  end
+
   describe '#faa_nav_options' do
     let!(:family) { FactoryBot.create(:family, :with_primary_family_member) }
     let!(:application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: 'draft') }

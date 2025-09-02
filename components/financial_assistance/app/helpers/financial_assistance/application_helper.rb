@@ -472,14 +472,21 @@ module FinancialAssistance
     end
 
     def applicant_faa_nav_options(application, applicant)
-      [
+      nav_options = [
         {step: 1, label: l10n('faa.nav.tax_info'), link: go_to_step_application_applicant_path(application, applicant, 1), step_complete: applicant.tax_info_complete? },
         {step: 2, label: l10n('faa.nav.job_income'), link: application_applicant_incomes_path(application, applicant), step_complete: applicant.embedded_document_section_entry_complete?(:income) },
         {step: 3, label: l10n('faa.nav.other_income'), link: other_application_applicant_incomes_path(application, applicant), step_complete: applicant.embedded_document_section_entry_complete?(:other_income) },
-        {step: 4, label: l10n('faa.nav.income_adjustments'), link: application_applicant_deductions_path(application, applicant), step_complete: applicant.embedded_document_section_entry_complete?(:income_adjustment) },
-        {step: 5, label: l10n('faa.nav.health_coverage'), link: application_applicant_benefits_path(application, applicant), step_complete: applicant.embedded_document_section_entry_complete?(:health_coverage) },
-        {step: 6, label: l10n('faa.nav.other_questions'), link: other_questions_application_applicant_path(application, applicant), step_complete: applicant.other_questions_complete? }
+        {step: 4, label: l10n('faa.nav.income_adjustments'), link: application_applicant_deductions_path(application, applicant), step_complete: applicant.embedded_document_section_entry_complete?(:income_adjustment) }
       ]
+
+      if applicant.is_applying_coverage?
+        nav_options << {step: 5, label: l10n('faa.nav.health_coverage'), link: application_applicant_benefits_path(application, applicant), step_complete: applicant.embedded_document_section_entry_complete?(:health_coverage) }
+      end
+
+      other_questions_step_number = applicant.is_applying_coverage? ? 6 : 5
+      nav_options << {step: other_questions_step_number, label: l10n('faa.nav.other_questions'), link: other_questions_application_applicant_path(application, applicant), step_complete: applicant.other_questions_complete? }
+
+      nav_options
     end
 
     def no_applicant_faa_nav_options(application)
