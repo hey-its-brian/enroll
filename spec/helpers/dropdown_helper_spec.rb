@@ -38,12 +38,58 @@ RSpec.describe DropdownHelper, type: :helper do
       end
 
       context 'when:
-        - application is a draft
-        - logged in user is a consumer
+        - application is imported
+        - logged in user is an HBX staff member (admin)
         ' do
-        let(:current_user) { user }
+        let(:app_state) { 'imported' }
 
-        it 'returns the update option' do
+        it 'does not return the update option (imported apps cannot be updated)' do
+          expect(
+            helper.application_dropdowns(application, []).collect { |dropdwn| dropdwn[:title] }
+          ).not_to include(l10n('insured.sbm.applications.actions.update'))
+        end
+      end
+
+      context 'when:
+        - application is imported
+        - logged in user is a non-admin HBX staff member
+        ' do
+        let(:app_state) { 'imported' }
+        let(:non_admin_staff_person) { FactoryBot.create(:person) }
+        let(:non_admin_hbx_staff) do
+          FactoryBot.create(
+            :hbx_staff_role,
+            person: non_admin_staff_person,
+            permission_id: FactoryBot.create(:permission, :hbx_staff).id
+          )
+        end
+        let(:non_admin_staff_user) { FactoryBot.create(:user, person: non_admin_hbx_staff.person) }
+        let(:current_user) { non_admin_staff_user }
+
+        it 'does not return the update option (imported apps cannot be updated)' do
+          expect(
+            helper.application_dropdowns(application, []).collect { |dropdwn| dropdwn[:title] }
+          ).not_to include(l10n('insured.sbm.applications.actions.update'))
+        end
+      end
+
+      context 'when:
+        - application is draft
+        - logged in user is non-admin HBX staff
+        ' do
+        let(:app_state) { 'draft' }
+        let(:non_admin_staff_person) { FactoryBot.create(:person) }
+        let(:non_admin_hbx_staff) do
+          FactoryBot.create(
+            :hbx_staff_role,
+            person: non_admin_staff_person,
+            permission_id: FactoryBot.create(:permission, :hbx_staff).id
+          )
+        end
+        let(:non_admin_staff_user) { FactoryBot.create(:user, person: non_admin_hbx_staff.person) }
+        let(:current_user) { non_admin_staff_user }
+
+        it 'returns the update option for draft applications' do
           expect(
             helper.application_dropdowns(application, []).collect { |dropdwn| dropdwn[:title] }
           ).to include(l10n('insured.sbm.applications.actions.update'))
@@ -51,10 +97,38 @@ RSpec.describe DropdownHelper, type: :helper do
       end
 
       context 'when:
-        - application is a imported
-        - logged in user is an HBX staff member
+        - application is imported
+        - logged in user is a consumer
         ' do
         let(:app_state) { 'imported' }
+        let(:current_user) { user }
+
+        it 'does not return the update option' do
+          expect(
+            helper.application_dropdowns(application, []).collect { |dropdwn| dropdwn[:title] }
+          ).not_to include(l10n('insured.sbm.applications.actions.update'))
+        end
+      end
+
+      context 'when:
+        - application is draft
+        - logged in user is an admin
+        ' do
+        let(:app_state) { 'draft' }
+        let(:current_user) { admin_user }
+
+        it 'still returns the update option for draft applications' do
+          expect(
+            helper.application_dropdowns(application, []).collect { |dropdwn| dropdwn[:title] }
+          ).to include(l10n('insured.sbm.applications.actions.update'))
+        end
+      end
+
+      context 'when:
+        - application is a draft
+        - logged in user is a consumer
+        ' do
+        let(:current_user) { user }
 
         it 'returns the update option' do
           expect(

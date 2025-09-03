@@ -24,7 +24,7 @@ module DropdownHelper
   end
 
   def add_update_option(option_args, application)
-    return unless application.is_draft? || (application.imported? && current_user.has_hbx_staff_role?)
+    return unless application.is_draft?
 
     update_path = if FinancialAssistanceRegistry.feature_enabled?(:qhp_application)
                     financial_assistance.application_applicants_path(application)
