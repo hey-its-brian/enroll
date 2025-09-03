@@ -1,8 +1,8 @@
 <div class="mb-4">
-  <% type_name = @evidence.evidence_item_key.to_s %>
+  <% type_name = evidence.evidence_item_key.to_s %>
   <% informational_sheet_url = EnrollRegistry[:enroll_app].setting(:submit_docs_information_url).item %>
 
-  <% case @evidence.evidence_item_key %>
+  <% case evidence.evidence_item_key %>
   <% when :income_evidence %>
     <p>
       <%= l10n('verifications_document_types.income.preface') %>
