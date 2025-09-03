@@ -88,7 +88,7 @@ module Operations
           race: parse_race(person),
           is_incarcerated: person.is_incarcerated,
           is_physically_disabled: person.is_disabled,
-          indian_tribe_member: person.indian_tribe_member,
+          indian_tribe_member: person.indian_tribe_member.present?,
           tribal_id: person.tribal_id,
           tribal_name: person.tribal_name,
           tribal_state: person.tribal_state,

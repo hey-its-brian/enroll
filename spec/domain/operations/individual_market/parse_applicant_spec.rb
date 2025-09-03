@@ -145,5 +145,41 @@ RSpec.describe Operations::IndividualMarket::ParseApplicant, dbclean: :after_eac
         end
       end
     end
+
+    context '#indian_tribe_member' do
+      let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+      let(:family)        { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+      let(:params) { { family_member: family.family_members.first } }
+
+      context 'when citizen_status is nil' do
+        before do
+          person.consumer_role.lawful_presence_determination.update_attributes(citizen_status: '')
+          person.tribal_id = "3123123"
+          person.save!
+        end
+
+        it 'returns true' do
+          result = subject.call(params)
+          payload = result.success
+          expect(result).to be_success
+          expect(payload.dig(:demographics,:indian_tribe_member)).to be_falsey
+        end
+      end
+
+      context 'when citizen_status is not nil' do
+        before do
+          person.consumer_role.lawful_presence_determination.update_attributes(citizen_status: 'us_citizen')
+          person.tribal_id = "3123123"
+          person.save!
+        end
+
+        it 'returns true' do
+          result = subject.call(params)
+          payload = result.success
+          expect(result).to be_success
+          expect(payload.dig(:demographics,:indian_tribe_member)).to be_truthy
+        end
+      end
+    end
   end
 end
