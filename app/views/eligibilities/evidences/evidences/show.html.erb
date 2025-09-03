@@ -18,7 +18,7 @@
     <h2><%= l10n('insured.families.verifications.detail.verification_details') %></h2>
 
     <% if EnrollRegistry.feature_enabled?(:show_new_documents_types) %>
-      <%= render partial: "accepted_document_types" %>
+      <%= render partial: "insured/families/accepted_document_types" %>
     <% else %>
       <div class="mb-4">
         <p><%= l10n('insured.verification_information_old') %></p>
