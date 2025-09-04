@@ -1121,7 +1121,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.applications.how.start.step2a' => 'or select the',
   :'en.applications.how.start.step2b' => 'drop-down and choose',
   :'en.applications.how.start.resume_application' => 'Resume Draft',
-  :'en.applications.how.start.step3a' => 'you’ve already submitted an application for a different year, you can save time by selecting',
+  :'en.applications.how.start.step3a' => 'If you’ve already submitted an application for a different year, you can save time by selecting',
   :'en.applications.how.start.step3b' => 'from the',
   :'en.applications.how.start.step3c' => 'drop-down to reuse your information.',
   :'en.applications.how.start.copy_info' => 'Copy Info to Application',
