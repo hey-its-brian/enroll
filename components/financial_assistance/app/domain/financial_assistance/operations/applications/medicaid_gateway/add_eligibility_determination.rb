@@ -18,16 +18,17 @@ module FinancialAssistance
           # @option opts [Hash] :application_response_payload ::AcaEntities::MagiMedicaid::Application params
           # @return [Dry::Monads::Result]
           def call(params)
-            application_entity = yield initialize_application_entity(params)
-            application        = yield find_application(application_entity)
-            application        = yield update_application(application, application_entity)
-            application        = yield add_eligibility_determination(application_entity, application)
-            _evidences_result  = yield create_aptc_eligibilities_evidences(application)
-            _family_result     = yield create_or_update_family(application)
-            _done              = yield cache_determination_token(application)
-            application_entity = yield rebuild_application_entity(application)
+            application_entity      = yield initialize_application_entity(params)
+            application             = yield find_application(application_entity)
+            application             = yield update_application(application, application_entity)
+            application             = yield add_eligibility_determination(application_entity, application)
+            _evidences_result       = yield create_aptc_eligibilities_evidences(application)
+            _family_result          = yield create_or_update_family(application)
+            _done                   = yield cache_determination_token(application)
+            application_entity      = yield rebuild_application_entity(application)
             _verification_requested = yield request_evidences_verification(application_entity, application)
-            _notified          = yield trigger_notifications(application, application_entity)
+            _notified               = yield trigger_notifications(application, application_entity)
+            _enrollments            = yield generate_enrollments(application)
 
             Success(application)
           end
@@ -255,6 +256,31 @@ module FinancialAssistance
             ::FinancialAssistance::Operations::Application::TriggerNotifications.new.call(
               { application: application, application_entity: application_entity }
             )
+          end
+
+          # Generates enrollments for the application when the QHP application feature is enabled.
+          #
+          # @param application [FinancialAssistance::Application] The application to generate enrollments for
+          # @return [Dry::Monads::Result]
+          def generate_enrollments(application)
+            return Success("apply aggregate to enrollment is disabled") unless EnrollRegistry.feature_enabled?(:apply_aggregate_to_enrollment)
+            return Success("No enrollments to generate") unless has_enrollments_to_generate?(application)
+            result = ::Operations::Individual::OnNewDetermination.new.call({family: application.family.reload, year: application.assistance_year})
+
+            return result if result.success?
+
+            Failure("Failed to generate enrollments: #{result.failure}")
+          rescue StandardError => e
+            Rails.logger.error("Financial Assistance Application - Failed to generate enrollments due to #{e.message}, #{e.backtrace.join("\n")}")
+            Failure("An error occurred while generating enrollments: #{e.message}")
+          end
+
+          # Checks if there are any enrollments to generate for the application
+          #
+          # @param application [FinancialAssistance::Application] The application to check for enrollments
+          # @return [Boolean] True if there are enrollments to generate, false otherwise
+          def has_enrollments_to_generate?(application)
+            application.family&.active_household&.hbx_enrollments&.enrolled_and_renewal&.individual_market&.by_health&.by_year(application.assistance_year)&.any?
           end
         end
       end

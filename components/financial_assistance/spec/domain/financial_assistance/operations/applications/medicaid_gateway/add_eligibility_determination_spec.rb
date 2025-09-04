@@ -297,6 +297,52 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
           expect(@aptc_csr_eligibility.income_evidence.verification_histories.count).to eq(1)
         end
       end
+
+      context 'with existing aptc enrollment' do
+        include_context 'cms ME simple_scenarios test_case_d'
+        let(:rating_area) { FactoryBot.create_default(:benefit_markets_locations_rating_area) }
+        let(:product) {FactoryBot.create(:benefit_markets_products_health_products_health_product, :ivl_product)}
+        let(:consumer_role) { FactoryBot.create(:consumer_role, person: person, is_active: true) }
+
+        let(:existing_aptc_enrollment) do
+          FactoryBot.create(
+            :hbx_enrollment,
+            :individual_aptc,
+            :with_silver_health_product,
+            family: family,
+            household: family.active_household,
+            coverage_kind: 'health',
+            consumer_role: consumer_role,
+            effective_on: Date.new(application.assistance_year, 1, 1),
+            rating_area_id: rating_area.id,
+            aasm_state: 'coverage_selected'
+          )
+        end
+
+        before do
+          individual_market
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:apply_aggregate_to_enrollment).and_return(true)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:temporary_configuration_enable_multi_tax_household_feature).and_return(true)
+          allow(HbxProfile).to receive(:current_hbx).and_return hbx_profile
+          allow(hbx_profile).to receive(:benefit_sponsorship).and_return benefit_sponsorship
+          allow(benefit_sponsorship).to receive(:current_benefit_period).and_return(benefit_coverage_period)
+          allow(benefit_coverage_period).to receive(:slcsp_id).and_return(product.id)
+          allow(::Operations::Products::ProductOfferedInServiceArea).to receive(:new).and_return(double(call: double(:success? => true)))
+          existing_aptc_enrollment
+          family
+          @result = subject.call(response_payload)
+        end
+
+        it 'should create a new aptc enrollment' do
+          expect(family.active_household.hbx_enrollments.count).to eq(2)
+        end
+
+        it "terminates the existing aptc enrollment" do
+          existing_aptc_enrollment.reload
+          expect(existing_aptc_enrollment.aasm_state).to eq('coverage_terminated')
+        end
+
+      end
     end
 
     context 'failure' do
