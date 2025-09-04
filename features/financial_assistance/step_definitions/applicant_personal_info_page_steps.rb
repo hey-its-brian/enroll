@@ -118,19 +118,49 @@ And(/user selects no for applicant's indian_tribe_member status$/) do
   end
 end
 
-And(/user selects yes for applicant's us_citizen status$/) do
+And(/(.*) selects (.*) for applicant's us_citizen status$/) do |_, attestation|
+  did_attest = attestation.downcase == 'yes'
+  attestation_value = did_attest.to_s
   if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
-    choose(FinancialAssistance::ApplicantForm.us_citizen, option: 'true')
+    choose(FinancialAssistance::ApplicantForm.us_citizen, option: attestation_value)
   else
-    choose('applicant_us_citizen_true', allow_label_click: true)
+    choose("applicant_us_citizen_#{attestation_value}", allow_label_click: true)
   end
 end
 
-And(/user selects no for applicant's naturalized_citizen status$/) do
+And(/(.*) selects (.*) for applicant's eligibile immigration status$/) do |_, attestation|
+  did_attest = attestation.downcase == 'yes'
+  attestation_value = did_attest.to_s
   if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
-    choose(FinancialAssistance::ApplicantForm.naturalized_citizen, option: 'false')
+    choose(FinancialAssistance::ApplicantForm.eligible_immigration_status, option: attestation_value)
   else
-    choose('applicant_naturalized_citizen_false', allow_label_click: true)
+    choose("applicant_eligible_immigration_status_#{attestation_value}", allow_label_click: true)
+  end
+end
+
+And(/(.*) selects (.*) for applicant's naturalized_citizen status$/) do |_, attestation|
+  did_attest = attestation.downcase == 'yes'
+  attestation_value = did_attest.to_s
+  if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+    choose(FinancialAssistance::ApplicantForm.naturalized_citizen, option: attestation_value)
+  else
+    choose("applicant_naturalized_citizen_#{attestation_value}", allow_label_click: true)
+  end
+end
+
+And(/(.*) selects (.*) immigration document option/) do |_, document_type|
+  select document_type, from: FinancialAssistance::ApplicantForm.immigration_doc_type
+end
+
+And(/(.*) selects (.*) naturalization document option/) do |_, document_type|
+  select document_type, from: FinancialAssistance::ApplicantForm.naturalization_doc_type
+end
+
+Then(/(.*) (should|should not) see the pre-1957 alien number warning/) do |_, can_see|
+  if can_see == 'should'
+    expect(page).to have_content("Pre-1956 certificates do not have an alien number. In this case, enter 9 nines (999999999)")
+  else
+    expect(page).to have_no_content("Pre-1956 certificates do not have an alien number. In this case, enter 9 nines (999999999)")
   end
 end
 

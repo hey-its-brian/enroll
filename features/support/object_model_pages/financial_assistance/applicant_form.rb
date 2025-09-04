@@ -76,5 +76,17 @@ module FinancialAssistance
     def self.naturalized_citizen_false
       'applicant_naturalized_citizen_false'
     end
+
+    def self.eligible_immigration_status
+      'applicant[eligible_immigration_status]'
+    end
+
+    def self.immigration_doc_type
+      'immigration_doc_type'
+    end
+
+    def self.naturalization_doc_type
+      'naturalization_doc_type'
+    end
   end
 end
