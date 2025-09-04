@@ -1,7 +1,7 @@
 <% if @bs4 %>
   <div id="phone_info">
     <div class="phone d-flex mb-md-2 row col-sm">
-      <%= f.fields_for :phones, errors: {}, fieldset: true do |phone|  %>
+      <%= f.fields_for :phones, f.object.phones.sort_by { |p| p.kind.to_s.upcase == 'HOME' ? 0 : 1 }, errors: {}, fieldset: true do |phone|  %>
         <% kind = phone.object.kind.upcase %>
         <% required = kind == 'HOME' ? "required" : "" %>
         <%= phone.hidden_field :kind %>

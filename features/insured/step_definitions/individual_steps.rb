@@ -67,6 +67,11 @@ When(/the individual edits the (.*)/) do |member|
   all(IvlManageFamilyPage.edit_dependent_button).send(member == 'primary' ? :first : :last).click
 end
 
+Then(/the mobile phone field should display after the home phone field/) do
+  mobile_phone = Person.all.first.phones.first.full_phone_number
+  expect(find('#person_phones_attributes_1_full_phone_number').value.to_s.gsub(/[()\-\s]/, "")).to eql(mobile_phone)
+end
+
 When(/^(.*) selects a past qle date$/) do |_name|
   expect(page).to have_content "Married"
   fill_in "qle_date", :with => (TimeKeeper.date_of_record - 5.days).strftime("%m/%d/%Y")

@@ -98,6 +98,12 @@ Then(/fields related to the consumer tribal status should display$/) do
   expect(page).to have_selector(".tribal-container")
 end
 
+And(/the consumer only has one mobile phone number$/) do
+  person = Person.all.first
+  person.phones.where(kind: 'home').destroy_all
+  person.phones.create(kind: 'mobile', full_phone_number: '123-456-7890')
+end
+
 And(/user selects no for applicant's coverage requirement$/) do
   find(:xpath, FinancialAssistance::ApplicantForm.is_applying_coverage_true).click
 end
