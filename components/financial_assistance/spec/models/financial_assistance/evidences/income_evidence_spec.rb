@@ -298,4 +298,68 @@ RSpec.describe FinancialAssistance::Evidences::IncomeEvidence, type: :model, dbc
       end
     end
   end
+
+  describe '#mark_as_verified' do
+    let(:evidence) do
+      FactoryBot.create(
+        :income_evidence,
+        eligibility: aptc_csr_eligibility,
+        current_state: evidence_state,
+        due_on: evidence_due_on,
+        due_date_extended_at: evidence_due_date_extended_at
+      )
+    end
+
+    context 'for valid evidence states that can be marked as verified' do
+      shared_examples_for 'marks evidence as verified and resets due dates' do
+        it 'marks the evidence as verified and resets the due_on & due_date_extended_at' do
+          expect { evidence.mark_as_verified }.to change(evidence, :current_state).to(:verified)
+          expect(evidence.due_on).to be_nil
+          expect(evidence.due_date_extended_at).to be_nil
+        end
+      end
+
+      %i[outstanding negative_response_received pending rejected review unverified].each do |state|
+        context "when evidence is in #{state} state" do
+          let(:evidence_state) { state }
+
+          context 'with due date and extended timestamp' do
+            let(:evidence_due_on) { 1.day.from_now }
+            let(:evidence_due_date_extended_at) { Time.current }
+            it_behaves_like 'marks evidence as verified and resets due dates'
+          end
+
+          context 'with due date only' do
+            let(:evidence_due_on) { 1.day.from_now }
+            let(:evidence_due_date_extended_at) { nil }
+            it_behaves_like 'marks evidence as verified and resets due dates'
+          end
+
+          context 'without due date or extended timestamp' do
+            let(:evidence_due_on) { nil }
+            let(:evidence_due_date_extended_at) { nil }
+            it_behaves_like 'marks evidence as verified and resets due dates'
+          end
+        end
+      end
+    end
+
+    context 'for invalid evidence states that cannot be marked as verified' do
+      shared_examples_for 'does not mark evidence as verified' do
+        it 'does not mark the evidence as verified' do
+          expect { evidence.mark_as_verified }.not_to change(evidence, :current_state)
+        end
+      end
+
+      [:initial, :attested, :verified, :determined, :expired, :denied, :errored, :closed, :corrected].each do |state|
+        context "when evidence is in #{state} state" do
+          let(:evidence_state) { state }
+          let(:evidence_due_on) { nil }
+          let(:evidence_due_date_extended_at) { nil }
+
+          it_behaves_like 'does not mark evidence as verified'
+        end
+      end
+    end
+  end
 end

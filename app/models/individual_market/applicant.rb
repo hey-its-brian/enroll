@@ -302,17 +302,14 @@ module IndividualMarket
 
     def build_individual_market_evidences
       return unless individual_market_eligibility.present?
+      build_alive_evidence
+      build_american_indian_evidence
       build_citizenship_evidence
       build_immigration_evidence
-      build_american_indian_evidence
       build_social_security_number_evidence
 
       # We do not have residency evidence verification for any client we are currently supporting from this codebase
       # build_residency_evidence
-
-      # Previously, the AliveStatus VerificationType was added on a person
-      # during a person.save event, we are creating it here as well to mimic that logic
-      build_alive_evidence
     end
 
     # Builds citizenship evidence if the applicant is applying for coverage, does not have citizenship evidence, and consumer is a US citizen or naturalized citizen.
@@ -412,7 +409,7 @@ module IndividualMarket
     #
     # @return [void]
     def build_alive_evidence
-      return individual_market_eligibility.alive_evidence if individual_market_eligibility&.alive_evidence
+      return individual_market_eligibility.alive_evidence if individual_market_eligibility.alive_evidence
       return if demographics.encrypted_ssn.blank?
       return unless is_applying_coverage
 

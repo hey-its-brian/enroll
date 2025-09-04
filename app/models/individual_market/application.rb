@@ -166,10 +166,9 @@ module IndividualMarket
     # @option submitted [Symbol] A state that is submitted
     # @option determination_failed [Symbol] A state that cannot be determined because of an error or missing information
     # @option determined [Symbol] A state that is determined
-    # @option expired [Symbol] A state that is expired. This could happen at any point during the process.
-    #                          Examples: 1) An in progress application exists and the user creates a new application,
-    #                          the old application will be marked as expired.
-    #                          2) FUTURE USE CASE: All applications that are older than specific number of years could be marked as expired.
+    # @option expired [Symbol] A state that is expired. This could happen in a couple of future use cases:
+    #                                                   1. An application can be transitioned to expired state when a new application is determined for the same assistance year irrespective of the assistance year.
+    #                                                   2. All the determined applications that have gone past some X number of years can be transitioned to expired state.
     STATES = %i[
       initial
       submission_failed

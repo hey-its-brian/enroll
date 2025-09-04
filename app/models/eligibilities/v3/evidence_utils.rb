@@ -153,7 +153,7 @@ module Eligibilities
         def mark_as_negative_response_received
           return unless self.can_move_to_negative_response_received?
 
-          assign_attributes(verification_outstanding: false, is_satisfied: true, due_on: nil)
+          assign_attributes(verification_outstanding: false, is_satisfied: true)
           self.move_to_negative_response_received
         end
 
@@ -472,7 +472,7 @@ module Eligibilities
         #
         # @raise [RuntimeError] if the due_date_extended_at field is already set
         def due_date_extended_at=(value)
-          if self.due_date_extended_at.blank?
+          if self.due_date_extended_at.blank? || value.blank?
             super(value)
           else
             # If the field is already set, do not change it.

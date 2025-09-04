@@ -148,6 +148,26 @@ module FinancialAssistance
           'system'
         )
       end
+
+      # Method is for setting the evidence as verified with resetting the Reasonable Opportunity Period (ROP) information.
+      #
+      # @return [void]
+      def mark_as_verified
+        return unless self.can_move_to_verified?
+
+        assign_attributes(verification_outstanding: false, is_satisfied: true, due_on: nil, due_date_extended_at: nil)
+        self.move_to_verified
+      end
+
+      # Method is for setting the evidence as attested with resetting the Reasonable Opportunity Period (ROP) information.
+      #
+      # @return [void]
+      def mark_as_attested
+        return unless self.can_move_to_attested?
+
+        assign_attributes(verification_outstanding: false, is_satisfied: true, due_on: nil, due_date_extended_at: nil)
+        self.move_to_attested
+      end
     end
   end
 end
