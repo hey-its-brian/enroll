@@ -1,6 +1,6 @@
 <% is_editing = @applicant.id.present? %>
 <% form_url = is_editing ? insured_individual_market_application_applicant_path(@application, @applicant) : insured_individual_market_application_applicants_path(@application) %>
-<div data-controller="family-information">
+<div data-controller="family-information" id="qhp-applicant-form">
   <%= form_for @applicant, {url: form_url, as: :applicant, method: is_editing ? :put : :post} do |f| %>
     <% is_dependent = !@applicant.is_primary_applicant %>
     <%= f.hidden_field :is_dependent, value: is_dependent %>

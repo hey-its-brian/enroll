@@ -49,7 +49,8 @@ export default class extends Controller {
       const template = document.createElement('template')
       template.innerHTML = response.data.trim()
 
-      this.NewApplicantTarget.insertAdjacentElement('beforeend', template.content.firstElementChild)
+      const qhpApplicantForm = template.content.querySelector('#qhp-applicant-form')
+      this.NewApplicantTarget.insertAdjacentElement('beforeend', qhpApplicantForm)
 
       const newForm = this.NewApplicantTarget.firstElementChild
       newForm.classList.remove('hidden')
@@ -106,7 +107,8 @@ export default class extends Controller {
       const template = document.createElement('template')
       template.innerHTML = response.data.trim()
 
-      editApplicantForm.insertAdjacentElement('beforeend', template.content.firstElementChild)
+      const qhpApplicantForm = template.content.querySelector('#qhp-applicant-form')
+      editApplicantForm.insertAdjacentElement('beforeend', qhpApplicantForm)
 
       const newForm = editApplicantForm.firstElementChild
       newForm.classList.remove('hidden')
