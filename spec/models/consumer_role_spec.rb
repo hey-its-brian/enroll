@@ -190,6 +190,35 @@ RSpec.describe ConsumerRole, dbclean: :after_each, type: :model do
       end
     end
 
+    context 'has a vlp_document for an inactive verification' do
+      before do
+        consumer_role.verification_types.first.vlp_documents << vlp_document
+        consumer_role.verification_types.first.update!(inactive: true)
+      end
+
+      shared_examples_for 'inactive verification document behavior' do |feature_enabled, expected_result|
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(feature_enabled)
+        end
+
+        it "#{expected_result ? 'returns' : 'does not return'} vlp_document when feature is #{feature_enabled ? 'enabled' : 'disabled'}" do
+          found_document = consumer_role.find_vlp_document_by_key(key)
+          if expected_result
+            expect(found_document).to eql(vlp_document)
+          else
+            expect(found_document).to be_nil
+          end
+        end
+      end
+
+      context 'when show_new_verifications_household_summary feature is enabled' do
+        it_behaves_like 'inactive verification document behavior', true, true
+      end
+
+      context 'when show_new_verifications_household_summary feature is disabled' do
+        it_behaves_like 'inactive verification document behavior', false, false
+      end
+    end
   end
 
   describe "CRM update" do
@@ -1018,8 +1047,51 @@ RSpec.describe ConsumerRole, dbclean: :after_each, type: :model do
         it_behaves_like "collecting verification types for person", [VerificationType::LOCATION_RESIDENCY, "Immigration status"], 2, nil, false, nil, 20
       end
 
-      context "Native Citizen with NO SSN" do
-        it_behaves_like "collecting verification types for person", [VerificationType::LOCATION_RESIDENCY, "Citizenship", "American Indian Status"], 3, nil, true, "native", 20
+      context "Inactive Verification Types" do
+        let(:person_with_inactive) { FactoryBot.create(:person, :with_consumer_role) }
+        let(:consumer_with_inactive) { person_with_inactive.consumer_role }
+
+        before do
+          allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+          allow(EnrollRegistry[:indian_alaskan_tribe_details].feature).to receive(:is_enabled).and_return(false)
+
+          person_with_inactive.ssn = nil
+          person_with_inactive.us_citizen = false
+          person_with_inactive.dob = TimeKeeper.date_of_record - 20.years
+          person_with_inactive.tribal_id = "444444444"
+          person_with_inactive.citizen_status = "indian_tribe_member"
+          person_with_inactive.consumer_role.save
+          person_with_inactive.verification_types.find_by(type_name: "Citizenship").update(inactive: true)
+        end
+
+        context "include_inactive is false" do
+          it "excludes inactive verification types" do
+            active_types = consumer_with_inactive.verification_types(include_inactive: false).map(&:type_name)
+            expect(active_types).to eq([VerificationType::LOCATION_RESIDENCY,  "American Indian Status", "Immigration status"])
+            expect(active_types).not_to include("Citizenship")
+            expect(active_types.count).to eq(3)
+          end
+        end
+
+        context "include_inactive is true" do
+          it "includes inactive verification types" do
+            all_types = consumer_with_inactive.verification_types(include_inactive: true).map(&:type_name)
+            expect(all_types).to include("Citizenship")
+            expect(all_types).to include(VerificationType::LOCATION_RESIDENCY)
+            expect(all_types).to include("Immigration status")
+            expect(all_types).to include("American Indian Status")
+            expect(all_types.count).to eq(6)
+          end
+        end
+
+        context "include_inactive is nil (defaults to false behavior)" do
+          it "excludes inactive verification types like when false" do
+            types_with_nil = consumer_with_inactive.verification_types(include_inactive: nil).map(&:type_name)
+            types_with_false = consumer_with_inactive.verification_types(include_inactive: false).map(&:type_name)
+            expect(types_with_nil).to eq(types_with_false)
+            expect(types_with_nil).not_to include("Citizenship")
+          end
+        end
       end
     end
 

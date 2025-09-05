@@ -905,7 +905,7 @@ class ConsumerRole
   # collect all vlp documents for person and all dependents.
   # return the one with matching key
   def find_vlp_document_by_key(key)
-    candidate_vlp_documents = verification_types.flat_map(&:vlp_documents)
+    candidate_vlp_documents = verification_types(include_inactive: EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)).flat_map(&:vlp_documents)
     if person.primary_family.present?
       person.primary_family.family_members.flat_map(&:person).each do |family_person|
         next unless family_person.consumer_role.present?
@@ -1038,8 +1038,12 @@ class ConsumerRole
                       identity_update_reason: "Verified from #{type}", application_update_reason: "Verified from #{type}")
   end
 
-  def verification_types
-    person.verification_types.active.where(applied_roles: "consumer_role") if person
+  def verification_types(include_inactive: false)
+    return unless person
+
+    verification_types = person.verification_types
+    verification_types_criteria = include_inactive ? verification_types : verification_types.active
+    verification_types_criteria.where(applied_roles: "consumer_role")
   end
 
   def check_native_status(family, native_status_changed)
