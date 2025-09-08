@@ -91,6 +91,27 @@ RSpec.describe ::Operations::FinancialAssistance::BulkHubCallsForEvidences, type
         expect(csv_data[1]["Status"]).to eq("Hub call initiated for local_mec")
       end
     end
+
+    context 'for a person having another, older application which is submitted more recently' do
+      let(:more_recent_hbx_id) { (application.hbx_id.to_i + 1).to_s }
+      let!(:more_recent_application) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          hbx_id: more_recent_hbx_id,
+          family_id: application.family.id,
+          assistance_year: application.assistance_year,
+          created_at: application.created_at - 1.day,
+          submitted_at: application.submitted_at + 1.day
+        )
+      end
+
+      it "should process the more recently submitted application" do
+        result = subject.call({hbx_ids: [person.hbx_id], evidence_types: ["esi_evidence"]})
+        expect(result).to be_a(Dry::Monads::Result::Success)
+        csv_data = CSV.read("#{Rails.root}/bulk_evidences_hub_call_report_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.csv")
+        expect(csv_data[1][0]).to eq(more_recent_hbx_id)
+      end
+    end
   end
 
   context "person not found" do

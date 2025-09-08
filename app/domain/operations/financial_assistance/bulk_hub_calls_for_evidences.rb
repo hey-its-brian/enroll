@@ -65,7 +65,7 @@ module Operations
       end
 
       def process_family(family, hbx_id, evidence_types, result)
-        application = ::FinancialAssistance::Application.where(family_id: family.id).determined.max_by(&:created_at)
+        application = family.latest_determined_faa_application
         return unless validate_and_collect_status(result, application, ["", hbx_id, "", "Determined application not found"])
 
         applicant = application.applicants.where(person_hbx_id: hbx_id).first
