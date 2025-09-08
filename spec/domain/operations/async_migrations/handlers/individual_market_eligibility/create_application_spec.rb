@@ -845,26 +845,45 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
     end
   end
 
-  context 'person with ssn but no verification type' do
-    let(:dependent_person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true, ssn: "123-45-6789") }
-    let(:dependent_family_member) { FactoryBot.create(:family_member, family: family, person: dependent_person) }
+  context 'when there are two applicants' do
+    let!(:dependent_person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true, ssn: "123-45-6789") }
+    let!(:dependent_family_member) { FactoryBot.create(:family_member, family: family, person: dependent_person) }
 
-    before do
-      consumer_role.save!
-      dependent_family_member
-      person.person_relationships.build(relative: dependent_person, kind: "spouse")
-      person.save
-      person.verification_types.where(type_name: "DC Residency").delete_all
-      dependent_person.verification_types.where(type_name: "DC Residency").delete_all
-      dependent_person.verification_types.ssn_type.delete_all
-      active_enrollment
-      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
-      @result = subject.call({document_id: family.id.to_s})
+    context 'person with ssn but no verification type' do
+      before do
+        consumer_role.save!
+        person.person_relationships.build(relative: dependent_person, kind: "spouse")
+        person.save
+        person.verification_types.where(type_name: "DC Residency").delete_all
+        dependent_person.verification_types.where(type_name: "DC Residency").delete_all
+        dependent_person.verification_types.ssn_type.delete_all
+        active_enrollment
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        @result = subject.call({document_id: family.id.to_s})
+      end
+
+      it 'should fail' do
+        expect(@result.failure?).to be_truthy
+        expect(@result.failure.to_s).to eq("Data integrity issue for family: #{family.id} - Person with hbx_id: #{dependent_person.hbx_id} has SSN but no SSN verification type")
+      end
     end
 
-    it 'should fail' do
-      expect(@result.failure?).to be_truthy
-      expect(@result.failure.to_s).to eq("Data integrity issue for family: #{family.id} - Person with hbx_id: #{dependent_person.hbx_id} has SSN but no SSN verification type")
+    context 'when relationship is invalid' do
+      before do
+        consumer_role.save!
+        person.person_relationships.build(relative: dependent_person, kind: "stepchild")
+        person.save
+        person.verification_types.where(type_name: "DC Residency").delete_all
+        dependent_person.verification_types.where(type_name: "DC Residency").delete_all
+        active_enrollment
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        @result = subject.call({document_id: family.id.to_s})
+      end
+
+      it 'should fail' do
+        expect(@result.failure?).to be_truthy
+        expect(@result.failure.to_s).to eq("Unable to build relationship for applicant #{dependent_person.hbx_id} due to invalid relationship kind stepchild, family_id: #{family.id}")
+      end
     end
   end
 end

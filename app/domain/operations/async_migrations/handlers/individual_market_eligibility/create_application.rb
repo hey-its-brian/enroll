@@ -105,6 +105,8 @@ module Operations
 
             build_relationships(application)
             Success(application)
+          rescue RelationshipError => e
+            Failure(e.message)
           end
 
           # Builds evidence records for an applicant
@@ -140,6 +142,10 @@ module Operations
 
             application.non_primary_applicants.each do |applicant|
               next unless applicant.family_member&.relationship
+              unless PersonRelationship::Relationships_UI.include?(applicant.family_member&.relationship)
+                raise RelationshipError,
+                      "Unable to build relationship for applicant #{applicant.person.hbx_id} due to invalid relationship kind #{applicant.family_member&.relationship}, family_id: #{application.family_id}"
+              end
 
               relationships_params = {
                 source_id: applicant.id,
@@ -298,6 +304,8 @@ module Operations
             result.all?(true) ? Success("All evidence migration events published successfully") : Failure("Some evidence migration events failed to publish")
           end
         end
+
+        class RelationshipError < StandardError; end
       end
     end
   end
