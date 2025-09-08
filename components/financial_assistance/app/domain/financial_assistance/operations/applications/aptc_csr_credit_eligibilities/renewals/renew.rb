@@ -99,7 +99,7 @@ module FinancialAssistance
 
                               app
                             else
-                              applications_by_family.by_year(current_year).determined.created_asc.last
+                              applications_by_family.newest_determined_by_year(current_year).first
                             end
 
               if application&.eligible_for_renewal?

@@ -294,22 +294,20 @@ module FinancialAssistance
 
     # @!scope class
     # @return [Mongoid::Criteria] The most recent determined FinancialAssistance::Application based on assistance year and submitted_at
-    scope :newest_determined_by_family_id, lambda { |family_id|
-      for_determined_family(family_id).order_by(assistance_year: -1, submitted_at: -1).limit(1)
-    }
+    scope :newest_determined_by_family_id, ->(family_id) { for_determined_family(family_id).order_by(assistance_year: -1, submitted_at: -1).limit(1) }
+
+    # @!scope class
+    # @return [Mongoid::Criteria] The most recent determined FinancialAssistance::Application for a given year, ordered by submitted_at descending.
+    # @param year [Integer] The assistance year to filter applications.
+    # @note This scope is intended to be chained onto an existing scope which has already isolated the family.
+    scope :newest_determined_by_year, ->(year) { determined.by_year(year).order_by(submitted_at: -1).limit(1) }
 
     # @!scope class
     # @return [Mongoid::Criteria] The most recent determined FinancialAssistance::Application for a given family and assistance year, ordered by submitted_at descending.
     # @param family_id [BSON::ObjectId, String] The family identifier to filter applications.
     # @param year [Integer] The assistance year to filter applications.
     # @note This scope returns the latest determined application for the specified family and year.
-    scope :newest_determined_by_family_and_year, lambda { |family_id, year|
-      where(family_id: family_id)
-        .determined
-        .by_year(year)
-        .order_by(submitted_at: -1)
-        .limit(1)
-    }
+    scope :newest_determined_by_family_and_year, ->(family_id, year) { where(family_id: family_id).newest_determined_by_year(year) }
 
     scope :last_determined_by_family_id, lambda { |family_id, present_app_id|
       renewal_eligible_by_family_id(family_id)

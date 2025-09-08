@@ -297,6 +297,52 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
         expect(result).to be_nil
       end
     end
+
+    context '.newest_determined_by_year' do
+      let!(:current_application_1) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family_id,
+          assistance_year: TimeKeeper.date_of_record.year,
+          aasm_state: 'determined',
+          submitted_at: TimeKeeper.date_of_record - 1.month,
+          created_at: TimeKeeper.date_of_record + 1.year
+        )
+      end
+      let!(:current_application_2) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family_id,
+          assistance_year: TimeKeeper.date_of_record.year,
+          aasm_state: 'determined',
+          submitted_at: TimeKeeper.date_of_record - 2.month
+        )
+      end
+      let!(:prior_application_1) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family_id,
+          assistance_year: TimeKeeper.date_of_record.year - 1,
+          aasm_state: 'determined',
+          submitted_at: TimeKeeper.date_of_record,
+          created_at: TimeKeeper.date_of_record + 1.year
+        )
+      end
+      let!(:family_applications) { FinancialAssistance::Application.where(family_id: family_id) }
+      let(:year) { TimeKeeper.date_of_record.year }
+
+      it 'returns the most recent determined application for the family and year' do
+        result = FinancialAssistance::Application.newest_determined_by_year(year).first
+        expect(result).to eq(current_application_1)
+        expect(result.determined?).to be_truthy
+        expect(result.submitted_at.year).to eq(year)
+      end
+
+      it 'returns nil if no determined application for the year' do
+        result = FinancialAssistance::Application.newest_determined_by_year(year - 5).first
+        expect(result).to be_nil
+      end
+    end
   end
 
   describe '.compute_actual_days_worked' do
