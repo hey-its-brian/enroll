@@ -467,11 +467,6 @@ class Family
     )
   }
 
-  # It fetches active or renewal application for the family based on the year passed
-  def active_financial_assistance_application(year = TimeKeeper.date_of_record.year)
-    ::FinancialAssistance::Application.where(family_id: self.id).by_year(year).determined.max_by(&:created_at)
-  end
-
   # It fetches the most recent application for the curent enrollment year if the application is in draft state
   def most_recent_and_draft_financial_assistance_application
     year = FinancialAssistance::Operations::EnrollmentDates::ApplicationYear.new.call.value!
