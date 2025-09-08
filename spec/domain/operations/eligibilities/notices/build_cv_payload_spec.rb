@@ -8,7 +8,7 @@ RSpec.describe ::Operations::Eligibilities::Notices::BuildCvPayload,
     expect(subject.respond_to?(:call)).to be_truthy
   end
 
-  describe 'build familuy cv payload' do
+  describe 'build family cv payload' do
     let!(:person1) do
       FactoryBot.create(
         :person,
@@ -87,6 +87,38 @@ RSpec.describe ::Operations::Eligibilities::Notices::BuildCvPayload,
         puts result.failure.inspect if result.failure?
 
         expect(result.success?).to be_truthy
+      end
+
+      context 'when another, older application is submitted more recently' do
+        let!(:hbx_profile) { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
+        let!(:application) do
+          FactoryBot.create(:financial_assistance_application,
+                            :with_applicants,
+                            hbx_id: SecureRandom.uuid,
+                            family_id: family.id,
+                            aasm_state: "determined",
+                            effective_date: TimeKeeper.date_of_record.beginning_of_year,
+                            created_at: TimeKeeper.date_of_record,
+                            submitted_at: TimeKeeper.date_of_record)
+        end
+        let!(:more_recent_application) do
+          FactoryBot.create(:financial_assistance_application,
+                            :with_applicants,
+                            hbx_id: SecureRandom.uuid,
+                            family_id: family.id,
+                            aasm_state: "determined",
+                            effective_date: TimeKeeper.date_of_record.beginning_of_year,
+                            created_at: application.created_at - 1.day,
+                            submitted_at: application.submitted_at + 1.day)
+        end
+
+        it 'should return only the most recent application' do
+          result = subject.call(params)
+
+          app_entities = result.value![:magi_medicaid_applications]
+          expect(app_entities.count).to eq(1)
+          expect(app_entities.first[:hbx_id]).to eq(more_recent_application.hbx_id)
+        end
       end
     end
   end

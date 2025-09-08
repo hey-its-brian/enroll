@@ -36,7 +36,7 @@ module Operations
           result =
             Operations::Transformers::FamilyTo::Cv3Family.new.call(family)
           if result.success?
-            application = fetch_application(family)
+            application = family.latest_determined_faa_application
             family_hash = result.value!
             if application.present?
               app_hash =
@@ -52,13 +52,6 @@ module Operations
           else
             result
           end
-        end
-
-        def fetch_application(family)
-          ::FinancialAssistance::Application
-            .where(family_id: family.id)
-            .determined
-            .max_by(&:created_at)
         end
 
         def modify_enrollments_hash(family_hash, family)
