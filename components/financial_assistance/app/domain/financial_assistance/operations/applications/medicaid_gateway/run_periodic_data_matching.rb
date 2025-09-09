@@ -89,7 +89,14 @@ module FinancialAssistance
             end
           end
 
+          # This method will only be used for 1.0 Evidences.
+          #
+          # Evidences 3.0:
+          #   We should not create/build evidences during the bulk processes for 3.0 evidences.
+          #   The bulk processes should assume that the valid evidences are already created for the applicants.
           def create_mec_evidence_if_needed(application)
+            return if qhp_application_feature_enabled?
+
             application.active_applicants.each do |applicant|
               local_mec_evidence = local_mec_evidence(applicant)
               next if local_mec_evidence.present?
@@ -100,19 +107,11 @@ module FinancialAssistance
           end
 
           def local_mec_evidence(applicant)
-            if qhp_application_feature_enabled?
-              applicant.aptc_csr_eligibility&.local_mec_evidence
-            else
-              applicant.local_mec_evidence
-            end
+            applicant.local_mec_evidence
           end
 
           def create_local_mec_evidence(applicant)
-            if qhp_application_feature_enabled?
-              applicant.send(:build_local_mec_evi)
-            else
-              applicant.create_evidence(:local_mec, "Local MEC")
-            end
+            applicant.create_evidence(:local_mec, "Local MEC")
           end
 
           def fetch_application(family, assistance_year)

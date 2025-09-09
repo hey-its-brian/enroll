@@ -19,7 +19,7 @@ module FinancialAssistance
             # @option opts [BSON::ObjectId] :application_id id ofFinancialAssistance::Application
             # @return [Dry::Monads::Result]
             def call(params)
-              application             = yield find_application(params[:application_id])
+              application             = yield find_application(params)
               application             = yield validate(application)
               application             = yield submit_application(application)
               payload_param           = yield construct_payload(application)
@@ -32,12 +32,27 @@ module FinancialAssistance
 
             private
 
-            def find_application(application_id)
-              application = FinancialAssistance::Application.find(application_id)
-
-              Success(application)
-            rescue Mongoid::Errors::DocumentNotFound
-              Failure("Unable to find Application with ID #{application_id}.")
+            # Finds the application based on the provided parameters.
+            #
+            # @param params [Hash] The parameters to find the application.
+            # @option params [BSON::ObjectId] :application_id The ID of the application to find. OR
+            # @option params [FinancialAssistance::Application] :application The application instance.
+            #
+            # @return [Success, Failure] Returns a Success object containing the application if found, otherwise returns a Failure object with an error message.
+            def find_application(params)
+              if params.key?(:application)
+                if params[:application].is_a?(FinancialAssistance::Application)
+                  Success(params[:application])
+                else
+                  Failure("Invalid value: #{params[:application]} for key application, must be a FinancialAssistance::Application")
+                end
+              else
+                begin
+                  Success(FinancialAssistance::Application.find(params[:application_id]))
+                rescue Mongoid::Errors::DocumentNotFound
+                  Failure("Unable to find Application with ID #{params[:application_id]}.")
+                end
+              end
             end
 
             def submit_application(application)

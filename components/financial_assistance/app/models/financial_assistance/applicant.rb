@@ -2029,9 +2029,8 @@ module FinancialAssistance
     # @return [void]
     def build_local_mec_evi
       return unless FinancialAssistanceRegistry.feature_enabled?(:mec_check)
-      return aptc_csr_eligibility.local_mec_evidence if aptc_csr_eligibility&.local_mec_evidence
+      return aptc_csr_eligibility.local_mec_evidence if aptc_csr_eligibility.local_mec_evidence
       return unless is_applying_coverage
-      build_aptc_csr_eligibility unless aptc_csr_eligibility&.present?
 
       evidence = aptc_csr_eligibility.evidences.build(
         _type: 'FinancialAssistance::Evidences::LocalMecEvidence',

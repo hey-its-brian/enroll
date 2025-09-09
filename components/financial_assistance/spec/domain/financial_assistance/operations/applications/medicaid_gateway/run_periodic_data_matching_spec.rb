@@ -196,6 +196,9 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
 
     context 'when qhp_application feature is enabled' do
       before do
+        application.build_aptc_eligibilities_evidences
+        application.build_ivl_eligibility_with_evidences
+        application.save!
         allow(operation).to receive(:qhp_application_feature_enabled?).and_return(true)
         allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:mec_check).and_return(true)
       end
@@ -204,7 +207,6 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
         result = operation.call(assistance_year: TimeKeeper.date_of_record.year, transmittable_message_id: "f55bec40-98f1-4d1a-9336-63affe761a60")
         expect(result).to be_success
         expect(result.success).to eq({:total_applications_published => 1})
-        expect(applicant.reload&.aptc_csr_eligibility&.local_mec_evidence).to be_present
       end
     end
 

@@ -70,6 +70,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
   end
 
   before do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
     allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:full_medicaid_determination_step)
     allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:indian_alaskan_tribe_details)
     allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:out_of_state_primary)
@@ -84,6 +85,20 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
 
   context 'success' do
     context 'with valid application' do
+      before do
+        @result = subject.call({ application: application })
+      end
+
+      it 'should return success' do
+        expect(@result).to be_success
+      end
+
+      it 'should return success with message' do
+        expect(@result.success).to match(/Successfully Published for event determination_requested/)
+      end
+    end
+
+    context 'with valid application id' do
       before do
         @result = subject.call({application_id: application.id})
       end

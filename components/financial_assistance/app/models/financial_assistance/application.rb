@@ -1815,16 +1815,25 @@ module FinancialAssistance
       write_attribute(:e_case_id, app.e_case_id)
     end
 
+    # Resets the submitted_at attribute to nil.
+    #
+    # @return [void]
     def unset_submission_date
-      update_attribute(:submitted_at, nil)
+      self.submitted_at = nil
     end
 
+    # Resets the assistance_year attribute to nil.
+    #
+    # @return [void]
     def unset_assistance_year
-      update_attribute(:assistance_year, nil)
+      self.assistance_year = nil
     end
 
+    # Resets the effective_date attribute to nil.
+    #
+    # @return [void]
     def unset_effective_date
-      update_attribute(:effective_date, nil)
+      self.effective_date = nil
     end
 
     def application_submission_validity
@@ -1958,13 +1967,15 @@ module FinancialAssistance
       end
     end
 
+    # Removes all the eligibility determinations for the application and resets the eligibility determination identifier and tax_filer_kind for each applicant in the memory.
+    #
+    # @return [void]
     def delete_eligibility_determinations
-      eligibility_determinations.destroy_all
+      eligibility_determinations.clear
       applicants.each do |applicant|
         applicant.eligibility_determination_id = nil
         applicant.tax_filer_kind = nil
       end
-      self.save!
     end
 
     # Creates evidences V1.0 for each applicant when the QHP application feature is disabled.

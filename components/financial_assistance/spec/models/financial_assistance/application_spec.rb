@@ -47,8 +47,10 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
     application.build_relationship_matrix
     application.save!
   end
+  let(:qhp_enabled) { false }
 
   before do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(qhp_enabled)
     allow_any_instance_of(::FinancialAssistance::Locations::Address).to receive(:county_check).and_return true
     allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).and_return(false)
   end
@@ -1157,7 +1159,69 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
             application.save!
           end
 
-          context 'guard success' do
+          context 'guard success without bang method' do
+            let(:qhp_enabled) { true }
+
+            before do
+              application.workflow_state_transitions << WorkflowStateTransition.new(
+                from_state: 'renewal_draft',
+                to_state: 'submitted'
+              )
+              application.unsubmit
+            end
+
+            context 'without a reload to confirm the data changes' do
+              it 'transitions application to renewal_draft' do
+                expect(application.renewal_draft?).to be_truthy
+              end
+
+              it "resets applicants' eligibility determination references" do
+                expect(application.applicants.pluck(:eligibility_determination_id).compact).to be_empty
+              end
+
+              it "resets applicants' tax_filer_kind" do
+                expect(application.applicants.pluck(:tax_filer_kind).compact).to be_empty
+              end
+
+              it 'deletes all the eligibility determinations' do
+                expect(application.eligibility_determinations).to be_empty
+              end
+
+              it 'creates a workflow state transition record' do
+                expect(application.workflow_state_transitions.last).to have_attributes(
+                  event: 'unsubmit',
+                  from_state: 'submitted',
+                  to_state: 'renewal_draft'
+                )
+              end
+            end
+
+            context 'with a reload to confirm the data changes are in the memory only' do
+              before do
+                application.reload
+              end
+
+              it 'puts the application in submitted state' do
+                expect(application.submitted?).to be_truthy
+              end
+
+              it 'retains applicants eligibility determination references' do
+                expect(application.applicants.pluck(:eligibility_determination_id).compact.size).to eq(application.applicants.count)
+              end
+
+              it 'retains applicants tax_filer_kind' do
+                expect(application.applicants.pluck(:tax_filer_kind).compact.size).to eq(application.applicants.count)
+              end
+
+              it 'does not create a workflow state transition record' do
+                expect(
+                  application.workflow_state_transitions.where(event: 'unsubmit', from_state: 'submitted', to_state: 'renewal_draft').first
+                ).to be_nil
+              end
+            end
+          end
+
+          context 'guard success with bang method' do
             before do
               application.workflow_state_transitions << WorkflowStateTransition.new(
                 from_state: 'renewal_draft',

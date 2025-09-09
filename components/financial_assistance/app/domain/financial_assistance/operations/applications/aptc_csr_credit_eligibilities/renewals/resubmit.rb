@@ -52,9 +52,10 @@ module FinancialAssistance
                 if application.aasm_state == "submitted"
                   application.unsubmit
                   # the unsubmit method wipes out the assistance_year and effective_date, so they must be reset
-                  application.update_attributes({assistance_year: renewal_year, effective_date: Date.new(renewal_year)})
+                  application.assistance_year = renewal_year
+                  application.effective_date = Date.new(renewal_year)
                 end
-                result = ::FinancialAssistance::Operations::Applications::AptcCsrCreditEligibilities::Renewals::SubmitDeterminationRequest.new.call({application_id: application.id})
+                result = ::FinancialAssistance::Operations::Applications::AptcCsrCreditEligibilities::Renewals::SubmitDeterminationRequest.new.call({ application: application })
                 resubmission_details[:resubmission_result] = result.success? ? "success" : "failure"
                 resubmission_details[:result_message] = result.success? ? result.success : result.failure
 
