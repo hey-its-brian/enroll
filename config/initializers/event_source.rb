@@ -8,18 +8,6 @@ if ENV['SERVICE_POD_NAME'].present? || !Rails.env.production?
     config.app_name = :enroll
 
     config.servers do |server|
-      server.arn do |arn|
-        arn.url = "arn:aws:sns:{region}:enroll_sms_transmission_account:{options}"
-        arn.variables do |v|
-          v.region = ENV['ENROLL_APP_AWS_SNS_SMS_REGION'] || "us-east-1b"
-        end
-        arn.security do |s|
-          s.access_key_id = ENV['ENROLL_APP_AWS_SNS_SMS_ACCESS_KEY_ID'] || "access_key"
-          s.secret_access_key = ENV['ENROLL_APP_AWS_SNS_SMS_SECRET_ACCESS_KEY'] || "secret_access_key"
-          s.endpoint_url = ENV['ENROLL_LOCALSTACK_URL'] unless ENV['ENROLL_LOCALSTACK_URL'].blank?
-        end
-      end
-
       server.amqp do |rabbitmq|
         rabbitmq.ref = 'amqp://rabbitmq:5672/event_source'
         rabbitmq.host = ENV['RABBITMQ_HOST'] || 'amqp://localhost'
@@ -47,7 +35,6 @@ if ENV['SERVICE_POD_NAME'].present? || !Rails.env.production?
                           end
 
     async_api_resources = ::AcaEntities.async_api_config_find_by_service_name({ protocol: :amqp, service_name: nil }).success unless Rails.env.production?
-    async_api_resources += ::AcaEntities.async_api_config_find_by_service_name({ protocol: :arn, service_name: nil }).success
 
     config.async_api_schemas = async_api_resources.collect { |resource| EventSource.build_async_api_resource(resource) }
   end

@@ -25,7 +25,7 @@ module Operations
         return Failure(:no_message) unless message
 
         normalize_result = Try do
-          normalized_phone = ::ContactProfile::PhoneBlocklist.normalize_phone_number(p_number)
+          normalized_phone = ::ContactProfile::Phone.normalize_phone_number(p_number)
           {
             :phone_number => normalized_phone,
             :message => message
@@ -36,8 +36,6 @@ module Operations
       end
 
       def send_message(message_properties)
-        return Success(:ok) if ::ContactProfile::PhoneBlocklist.blocks?(message_properties[:phone_number])
-
         event = event("events.sms_message.transmit", attributes: {phone: message_properties[:phone_number], message: message_properties[:message]})
 
         event.success? ? Success(event.success.publish) : event

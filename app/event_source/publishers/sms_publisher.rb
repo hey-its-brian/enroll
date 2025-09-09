@@ -3,7 +3,7 @@
 module Publishers
   # Notify of new inbox notification publisher.
   class SmsPublisher
-    include ::EventSource::Publisher[arn: 'enroll.sms_message']
+    include ::EventSource::Publisher[amqp: 'contact_events.sms_message']
 
     register_event 'transmit'
   end

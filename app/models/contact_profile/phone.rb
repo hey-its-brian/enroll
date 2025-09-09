@@ -25,5 +25,11 @@ module ContactProfile
     # @!scope class
     # @return [Mongoid::Criteria] The most recent Phone based on creation timestamp
     scope :newest, -> { order_by(created_at: :desc).limit(1) }
+
+    # Normalize a phone number for inclusion or checking against the
+    # blocklist.
+    def self.normalize_phone_number(phone_number)
+      Phonelib.parse(phone_number).sanitized
+    end
   end
 end

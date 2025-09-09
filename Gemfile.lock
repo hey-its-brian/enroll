@@ -7,7 +7,7 @@ GIT
 
 GIT
   remote: https://github.com/ideacrew/aca_entities.git
-  revision: 44017077dedd1fa25b81d3e61e54bb6aa909e78c
+  revision: a6caf5daf53c10a89d4dba70a063a98d3e53c09d
   branch: trunk
   specs:
     aca_entities (0.10.0)
@@ -2150,7 +2150,7 @@ GEM
     jquery-ui-rails (8.0.0)
       railties (>= 3.2.16)
     json (2.5.1)
-    json-schema (5.1.1)
+    json-schema (5.2.2)
       addressable (~> 2.8)
       bigdecimal (~> 3.1)
     jsonapi-renderer (0.2.2)

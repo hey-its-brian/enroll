@@ -8,7 +8,7 @@ RSpec.describe Events::SmsMessage::Transmit do
 
   it "routes correctly" do
     published_event = event("events.sms_message.transmit", attributes: {})
-    expect(published_event).to route_to_publisher(:arn, "enroll.sms_message.transmit")
+    expect(published_event).to route_to_publisher(:amqp, "contact_events.sms_message.transmit")
   end
 
 end
