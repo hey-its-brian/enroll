@@ -15,6 +15,8 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AutoExtendIncome
     FactoryBot.create(:application,
                       family_id: family.id,
                       aasm_state: "determined",
+                      submitted_at: TimeKeeper.date_of_record,
+                      created_at: TimeKeeper.date_of_record,
                       effective_date: (TimeKeeper.date_of_record - 12.days))
   end
 
@@ -176,6 +178,47 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AutoExtendIncome
         end
       end
 
+      context 'when another, older application is submitted more recently' do
+        let(:person_hbx_id) { "new_person_hbx_id" }
+
+        let!(:more_recent_application) do
+          FactoryBot.create(:application,
+                            family_id: family.id,
+                            aasm_state: "determined",
+                            created_at: application.created_at - 1.day,
+                            submitted_at: application.submitted_at + 1.day)
+        end
+
+        let!(:applicant) do
+          FactoryBot.create(:applicant,
+                            application: more_recent_application,
+                            dob: TimeKeeper.date_of_record - 40.years,
+                            is_primary_applicant: true,
+                            family_member_id: family.family_members[0].id,
+                            person_hbx_id: person_hbx_id,
+                            addresses: [FactoryBot.build(:financial_assistance_address)])
+        end
+
+        let!(:income_evidence) do
+          applicant.create_income_evidence(key: :income,
+                                           title: 'Income',
+                                           aasm_state: 'outstanding',
+                                           due_on: TimeKeeper.date_of_record,
+                                           verification_outstanding: true,
+                                           is_satisfied: false)
+        end
+
+        before { @result = subject.call({}) }
+
+        it 'should return success ' do
+          expect(@result).to be_success
+        end
+
+        it 'should operate over the more recently submitted application' do
+          expect(@result.value!.length).to eq(1)
+          expect(@result.value!).to include(person_hbx_id)
+        end
+      end
     end
 
     context 'failure' do
@@ -228,6 +271,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AutoExtendIncome
         FactoryBot.create(:application,
                           family_id: family.id,
                           aasm_state: "determined",
+                          submitted_at: application.submitted_at + 1.day,
                           effective_date: (TimeKeeper.date_of_record - 12.days))
       end
 

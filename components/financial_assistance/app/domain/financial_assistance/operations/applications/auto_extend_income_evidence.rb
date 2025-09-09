@@ -63,12 +63,7 @@ module FinancialAssistance
         end
 
         def fetch_eligible_application(family_id, eligible_applications)
-          applications = FinancialAssistance::Application.where(
-            family_id: family_id,
-            aasm_state: 'determined'
-          )
-          return nil unless applications.any?
-          application = applications.max_by(&:created_at)
+          application = FinancialAssistance::Application.newest_determined_by_family_id(family_id).first
           return nil unless application.id.in? eligible_applications
           application
         end
