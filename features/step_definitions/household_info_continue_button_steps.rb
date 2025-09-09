@@ -163,7 +163,7 @@ When(/^primary applicant is in Info Completed state$/) do
   find(IvlIapHealthCoveragePage.has_enrolled_health_coverage_no_radiobtn, wait: 10).click
   find(IvlIapHealthCoveragePage.has_eligible_health_coverage_no_radiobtn).click
 
-  if  EnrollRegistry[:bs4_consumer_flow].enabled?
+  if  EnrollRegistry[:bs4_consumer_flow].enabled? && FinancialAssistanceRegistry[:has_medicare_cubcare_eligible].enabled?
     find(IvlIapHealthCoveragePage.has_eligible_medicaid_cubcare_false).click
     find(IvlIapHealthCoveragePage.has_eligibility_changed_false).click
   end
@@ -175,10 +175,11 @@ When(/^primary applicant is in Info Completed state$/) do
   find(IvlIapOtherQuestions.need_help_paying_bills_no_radiobtn).click
   find(IvlIapOtherQuestions.physically_disabled_no_radiobtn).click
   if  EnrollRegistry[:bs4_consumer_flow].enabled?
-    find('.interaction-choice-control-value-is-primary-caregiver-no').click
+    find('.interaction-choice-control-value-is-primary-caregiver-no').click if FinancialAssistanceRegistry[:primary_caregiver_other_question].enabled?
     find(IvlIapOtherQuestions.continue_to_next_step).click
+  else
+    find(IvlIapOtherQuestions.continue_btn).click
   end
-  find(IvlIapOtherQuestions.continue_btn).click
 end
 
 When(/^all applicants are in Info Completed state$/) do
@@ -340,6 +341,15 @@ When(/^user clicks continue to next step$/) do
   find(IvlIapFamilyInformation.continue_to_next_step_btn).click
 end
 
+When(/^user clicks on Continue to next step button$/) do
+  buttons = find_all(IvlIapHelpPayingForCoverage.continue_btn)
+  if buttons.count > 1
+    buttons.find(&:visible?).click
+  else
+    find(IvlIapHelpPayingForCoverage.continue_btn).click
+  end
+end
+
 Then(/^user should see income and coverage information page$/) do
   expect(page).to have_content(l10n('faa.nav.applicant_subheader'))
   expect(page).to have_content(l10n('add_income_coverage_info'))
@@ -356,6 +366,10 @@ end
 And(/^the user clicks on Start New Application$/) do
   find(IvlIapFamilyInformation.start_new_application_btn).click
   find_all(IvlIapFamilyInformation.start_new_application_btn).last.click
+end
+
+And(/^the user starts new application$/) do
+  visit "/insured/consumer_role/help_paying_coverage_response?is_applying_for_assistance=true"
 end
 
 When(/^Individual clicks on add new member to household$/) do

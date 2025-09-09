@@ -229,7 +229,7 @@ Given(/^the user has signed their name$/) do
   fill_in IvlConfirmYourPlanSelection.first_name, with: application.primary_applicant.first_name
   fill_in IvlConfirmYourPlanSelection.last_name, with: application.primary_applicant.last_name
   # Remove focus from the last name field by clicking on header text
-  find('.fa-darkblue').click
+  find('.fa-darkblue').click if page.has_css?('.fa-darkblue')
 end
 
 Then(/^the submit button will be enabled$/) do

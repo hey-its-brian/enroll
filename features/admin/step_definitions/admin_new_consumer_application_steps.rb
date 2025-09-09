@@ -179,5 +179,9 @@ end
 
 And(/^.+ returns to the applications page$/) do
   sleep 2
-  visit '/financial_assistance/applications?tab=cost_savings'
+  if qhp_application_feature_enabled?
+    visit '/insured/sbm/applications'
+  else
+    visit '/financial_assistance/applications?tab=cost_savings'
+  end
 end

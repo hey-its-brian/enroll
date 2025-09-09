@@ -1016,4 +1016,6 @@ now, your application will be saved as a draft and you can finish it later.',
   :'en.insured.evidences.select_application_year_text' => "Select an application year and choose which application you'd like to see history for",
   :'en.insured.evidences.no_applications' => 'No applications found for the selected year.',
   :'en.insured.evidences.expand_row' => 'Expand the row to see the payload for each event',
+  :'en.faa.getting_eligibility' => 'Waiting for your eligibility results...',
+  :'en.submit_application_header' => 'Submit Your Application',
 }.freeze

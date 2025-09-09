@@ -76,7 +76,7 @@ class IvlIapOtherIncomePage
   end
 
   def self.has_other_income_no_radiobtn
-    '#has_other_income_false' unless EnrollRegistry[:bs4_consumer_flow].enabled?
+    '#has_other_income_false'
   end
 
   def self.not_sure_has_other_income_link

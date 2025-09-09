@@ -1,4 +1,6 @@
 module UserWorld
+  include ResourceRegistryHelper
+
   def employee(employer = nil)
     if @employee
       @employee
