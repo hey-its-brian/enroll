@@ -58,7 +58,7 @@
     </div>
   <% end %>
   <% if qhp_application_feature_enabled? && display_application_id && evidence.evidence_group != 'ridp' %>
-    <% application = evidence.locate_evidence&.eligibility&.eligible&.application %>
+    <% application = application.present? ? application: evidence.locate_evidence&.eligibility&.eligible&.application %>
     <div class='d-flex align-items-center'>
       <dt class="px-0 col-4 col-lg-3 col-xl-2"><%= l10n("application_id") %>:</dt>
       <% link = application.is_a?(FinancialAssistance::Application) ? financial_assistance.review_application_path(application) : insured_individual_market_application_path(application) %>

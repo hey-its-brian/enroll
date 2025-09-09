@@ -44,12 +44,14 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
       end
 
       it 'successfully retrieves applications and returns success' do
-        result = operation.call(params: params, evidence: income_evidence)
+        result = operation.call(params: params, family_member: family.primary_applicant, evidence: income_evidence)
 
         expect(result).to be_success
         expect(result.success[:years]).to include(TimeKeeper.date_of_record.year)
         expect(result.success[:selected_year]).to eq(TimeKeeper.date_of_record.year)
         expect(result.success[:applications]).to include(faa_application)
+        expect(result.success[:application_evidence_mapping]).to be_a(Hash)
+        expect(result.success[:application_evidence_mapping]).to have_key(faa_application.hbx_id)
         expect(result.success[:bs4]).to be true
       end
     end
@@ -107,7 +109,7 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
       end
 
       it 'fetches all applications for the family' do
-        result = operation.call(params: params, evidence: income_evidence)
+        result = operation.call(params: params, family_member: family.primary_applicant, evidence: income_evidence)
 
         expect(result).to be_success
         expect(result.success[:applications]).to include(faa_application)
@@ -116,7 +118,7 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
       end
 
       it 'sorts years in descending order' do
-        result = operation.call(params: params, evidence: income_evidence)
+        result = operation.call(params: params, family_member: family.primary_applicant, evidence: income_evidence)
 
         expect(result).to be_success
         expect(result.success[:years]).to eq([TimeKeeper.date_of_record.year, TimeKeeper.date_of_record.year - 1].sort.reverse)
@@ -160,7 +162,7 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
       end
 
       it 'only returns applications for the selected year' do
-        result = operation.call(params: params, evidence: income_evidence)
+        result = operation.call(params: params, family_member: family.primary_applicant, evidence: income_evidence)
 
         expect(result).to be_success
         expect(result.success[:applications]).to include(previous_year_app)
@@ -230,7 +232,7 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
       end
 
       it 'sorts applications by submission date in descending order' do
-        result = operation.call(params: params, evidence: newer_evidence)
+        result = operation.call(params: params, family_member: family.primary_applicant, evidence: newer_evidence)
 
         expect(result).to be_success
         expect(result.success[:applications].first).to eq(newer_app)
@@ -248,7 +250,7 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
         end
 
         it 'returns failure with error message' do
-          result = operation.call(params: params, evidence: nil)
+          result = operation.call(params: params, family_member: family.primary_applicant, evidence: nil)
 
           expect(result).to be_failure
           expect(result.failure).to eq("Evidence not found")
@@ -264,7 +266,7 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
         end
 
         it 'returns failure with error message' do
-          result = operation.call(params: params, evidence: income_evidence)
+          result = operation.call(params: params, family_member: family.primary_applicant, evidence: income_evidence)
 
           expect(result).to be_failure
           expect(result.failure).to eq("Family ID is required")
@@ -285,7 +287,7 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
         end
 
         it 'returns failure when no applications exist' do
-          result = operation.call(params: params, evidence: income_evidence)
+          result = operation.call(params: params, family_member: family.primary_applicant, evidence: income_evidence)
 
           expect(result).to be_failure
           expect(result.failure).to eq("No applications found for family")
@@ -305,7 +307,7 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
       end
 
       it 'returns failure' do
-        result = operation.call(params: params, evidence: income_evidence)
+        result = operation.call(params: params, family_member: family.primary_applicant, evidence: income_evidence)
 
         expect(result).to be_failure
         expect(result.failure).to eq("No applications found for family")

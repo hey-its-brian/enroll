@@ -98,7 +98,7 @@ module Operations
                            id: app.id.to_s, type: app.class.to_s}
 
               app.applicants.each do |applicant|
-                eligibility = applicant.send(eligibility_key) if applicant.respond_to?(eligibility_key)
+                eligibility = applicant.eligibilities.where(key: eligibility_key).first
                 next unless eligibility&.evidences
 
                 matching_evidences = eligibility.evidences.select { |ev| ev.key.to_s == evidence_key }

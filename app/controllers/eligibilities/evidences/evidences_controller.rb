@@ -20,7 +20,7 @@ module Eligibilities
         authorize @family, :verification_detail?
 
         operation = Operations::Eligibilities::Evidences::Show.new
-        result = operation.call(params: params, evidence: @evidence)
+        result = operation.call(params: params, family_member: @member, evidence: @evidence)
 
         if result.success?
           # Assign all returned values to instance variables

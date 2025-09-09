@@ -171,7 +171,8 @@
             <% if @applications.present? %>
               <% @applications&.each do |application| %>
                 <tr>
-                  <td><%= link_to application.hbx_id, evidence_history_link(@evidence_delegator), class: 'primary-text' %></td>
+                  <% evidence = @application_evidence_mapping[application.hbx_id] %>
+                  <td><%= link_to application.hbx_id, evidence_history_link(@evidence_delegator, evidence), class: 'primary-text' %></td>
                   <td><%= fetch_program_eligibility(application) %></td>
                   <td><%= application_state_for_display(application) %></td>
                   <td><%= to_est application.created_at %></td>

@@ -637,30 +637,30 @@ module VerificationHelper
     end
   end
 
-  def evidence_document_history_link(evidence)
-    params = evidence_params(evidence)
+  def evidence_document_history_link(evidence_delegator)
+    params = evidence_params(evidence_delegator)
 
     eligibility_evidence_documents_path(params[:eligibility], params[:evidence], params)
   end
 
-  def evidence_details_link(evidence)
-    params = evidence_params(evidence)
+  def evidence_details_link(evidence_delegator)
+    params = evidence_params(evidence_delegator)
 
     eligibility_evidence_path(params[:eligibility], params[:evidence], params)
   end
 
-  def evidence_history_link(evidence)
-    params = evidence_params(evidence)
+  def evidence_history_link(evidence_delegator, evidence = nil)
+    params = evidence_params(evidence_delegator, evidence)
 
     history_eligibility_evidence_path(params[:eligibility], params[:evidence], params)
   end
 
-  def evidence_params(evidence)
-    located_evidence = evidence.locate_evidence
+  def evidence_params(evidence_delegator, evidence = nil)
+    located_evidence = evidence.present? ? evidence : evidence_delegator.locate_evidence
     eligibility = located_evidence&.eligibility
     applicant = eligibility&.eligible
     application = applicant&.application
-    person = evidence.person
+    person = evidence_delegator.person
 
     {
       eligibility: eligibility,
@@ -668,8 +668,8 @@ module VerificationHelper
       application_gid: application&.to_global_id&.uri&.to_s,
       applicant_id: applicant&.id,
       person_id: person.id,
-      eligibility_kind: evidence.evidence_group,
-      evidence_key: evidence.evidence_item_key,
+      eligibility_kind: evidence_delegator.evidence_group,
+      evidence_key: evidence_delegator.evidence_item_key,
       family_id: application.family.id
     }
   end
