@@ -31,6 +31,7 @@ module Forms
       validate :verify_unique_dependent
       validate :validate_nested_forms
       validate :relationship_validation
+      validate :check_same_ssn
 
       delegate :is_applying_coverage, :is_applying_coverage=, :existing_ssn, :existing_ssn=, :existing_no_ssn, :existing_no_ssn=,
                to: :demographics
@@ -530,6 +531,29 @@ module Forms
         applicant.mailing_address.destroy! if destroy_mailing_address?(applicant)
       end
 
+      def check_same_ssn
+        values = {
+          demographics: demographics.to_h,
+          person_name: person_name.to_h
+        }
+
+        result = ssn_is_taken?(values)
+        return if result[0]
+
+        ssn = self.demographics.ssn
+        return if ssn.blank?
+
+        matching_applicants = application.applicants.select {|s| s.demographics.ssn == ssn && s.id.to_s != self.id.to_s }
+
+        if applicant_id.present?
+          # Filter out the current applicant
+          matching_applicants = matching_applicants.reject {|a| a.id.to_s == applicant_id.to_s}
+        end
+
+        return unless matching_applicants.any?
+        errors.add(:base, 'The entered SSN is already taken by another applicant in this application.')
+      end
+
       # Checks if the SSN is already taken by a non-matching Person.
       # This method is used to prevent duplicate SSNs from being saved in the system.
       #
@@ -540,7 +564,7 @@ module Forms
 
         result = ::Operations::People::SsnTaken.new.call(
           {
-            dob: values[:demographics][:dob],
+            dob: values[:demographics][:dob].to_date,
             first_name: values[:person_name][:given_name],
             last_name: values[:person_name][:family_name],
             ssn: values[:demographics][:ssn]

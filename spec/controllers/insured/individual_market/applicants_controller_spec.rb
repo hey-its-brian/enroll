@@ -297,6 +297,249 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
               expect(flash[:error]).to include("Failed to create applicant due to response:")
             end
           end
+
+          context "SSN validation" do
+            let(:existing_person) { FactoryBot.create(:person, :with_consumer_role, first_name: "Jane", last_name: "Doe", dob: Date.new(1985, 5, 15)) }
+            let(:existing_ssn) { "123456789" }
+
+            before do
+              # Make sure the person is created with the correct encrypted SSN
+              existing_person.consumer_role.update!(encrypted_ssn: Person.encrypt_ssn(existing_ssn))
+              existing_person.update!(encrypted_ssn: Person.encrypt_ssn(existing_ssn))
+              existing_person.save!
+            end
+
+            let(:applicant_params_with_ssn) do
+              {
+                applicant: {
+                  is_dependent: 'true',
+                  is_primary_applicant: 'false',
+                  person_name_attributes: {
+                    given_name: "Test",
+                    family_name: "User"
+                  },
+                  demographics_attributes: {
+                    dob: "1990-01-01",  # Different DOB from existing person
+                    gender: "male",
+                    ssn: existing_ssn,
+                    no_ssn: 0,
+                    us_citizen: 'true',
+                    naturalized_citizen: 'false',
+                    eligible_immigration_status: 'false',
+                    indian_tribe_member: 'false',
+                    tribal_state: '',
+                    tribe_codes: [],
+                    is_incarcerated: 'false',
+                    ethnicity: []
+                  },
+                  relationship: "child",
+                  is_applying_coverage: 'true',
+                  age_off_excluded: "false",
+                  address_same_as_primary: 'true'
+                },
+                application_id: application.id
+              }
+            end
+
+            let(:applicant_params_same_person) do
+              {
+                applicant: {
+                  is_dependent: 'true',
+                  is_primary_applicant: 'false',
+                  person_name_attributes: {
+                    given_name: "Jane",  # Same first name as existing person
+                    family_name: "Doe"  # Same last name as existing person
+                  },
+                  demographics_attributes: {
+                    dob: "1985-05-15",  # Same DOB as existing person
+                    gender: "female",
+                    ssn: existing_ssn,
+                    no_ssn: 0,
+                    us_citizen: 'true',
+                    naturalized_citizen: 'false',
+                    eligible_immigration_status: 'false',
+                    indian_tribe_member: 'false',
+                    tribal_state: '',
+                    tribe_codes: [],
+                    is_incarcerated: 'false',
+                    ethnicity: []
+                  },
+                  relationship: "child",
+                  is_applying_coverage: 'true',
+                  age_off_excluded: "false",
+                  address_same_as_primary: 'true'
+                },
+                application_id: application.id
+              }
+            end
+
+            let(:duplicate_ssn_within_app_params) do
+              {
+                applicant: {
+                  is_dependent: 'true',
+                  is_primary_applicant: 'false',
+                  person_name_attributes: {
+                    given_name: "Another",
+                    family_name: "Person"
+                  },
+                  demographics_attributes: {
+                    dob: "1985-05-15",
+                    gender: "female",
+                    ssn: "263542644", # Same as primary applicant's SSN
+                    no_ssn: 0,
+                    us_citizen: 'true',
+                    naturalized_citizen: 'false',
+                    eligible_immigration_status: 'false',
+                    indian_tribe_member: 'false',
+                    tribal_state: '',
+                    tribe_codes: [],
+                    is_incarcerated: 'false',
+                    ethnicity: []
+                  },
+                  relationship: "child",
+                  is_applying_coverage: 'true',
+                  age_off_excluded: "false",
+                  address_same_as_primary: 'true'
+                },
+                application_id: application.id
+              }
+            end
+
+            context "when SSN is taken by a different person" do
+              before do
+                # Enable the person match policy feature for real SSN validation
+                allow(EnrollRegistry[:person_match_policy].feature).to receive(:is_enabled).and_return(true)
+                allow(EnrollRegistry[:person_match_policy]).to receive(:settings)
+                  .with(:ssn_present).and_return(double(item: [:ssn, :dob, :first_name, :last_name]))
+              end
+
+              it "fails to create applicant and shows SSN taken error" do
+                expect do
+                  post :create, params: applicant_params_with_ssn
+                end.not_to change(application.reload.applicants, :count)
+
+                expect(flash[:error]).to include("Failed to create applicant")
+                expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
+              end
+            end
+
+            context "when SSN belongs to the same person (matching demographics)" do
+              before do
+                # Enable the person match policy feature for real SSN validation
+                allow(EnrollRegistry[:person_match_policy].feature).to receive(:is_enabled).and_return(true)
+                allow(EnrollRegistry[:person_match_policy]).to receive(:settings)
+                  .with(:ssn_present).and_return(double(item: [:ssn, :dob, :first_name, :last_name]))
+              end
+
+              it "successfully creates applicant when all demographics match" do
+                expect do
+                  post :create, params: applicant_params_same_person
+                end.to change { application.reload.applicants.count }.by(1)
+
+                expect(flash[:error]).to be_nil
+                expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
+              end
+            end
+
+            context "when SSN is duplicated within the same application" do
+              before do
+                # Ensure the primary applicant has the SSN we're trying to duplicate
+                application.primary_applicant.demographics.update!(ssn: "263542644", no_ssn: false)
+                application.primary_applicant.save!
+              end
+
+              it "fails to create applicant and shows duplicate SSN error" do
+                expect do
+                  post :create, params: duplicate_ssn_within_app_params
+                end.not_to change(application.reload.applicants, :count)
+
+                expect(flash[:error]).to include("Failed to create applicant")
+                expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
+              end
+            end
+
+            context "when Operations::People::SsnTaken fails" do
+              before do
+                # Disable the person match policy feature to simulate operation failure
+                allow(EnrollRegistry[:person_match_policy].feature).to receive(:is_enabled).and_return(false)
+              end
+
+              it "fails to create applicant and shows operation failure error" do
+                expect do
+                  post :create, params: applicant_params_with_ssn
+                end.not_to change(application.reload.applicants, :count)
+
+                expect(flash[:error]).to include("Failed to create applicant")
+                expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
+              end
+            end
+
+            context "when Operations::People::SsnTaken raises an exception" do
+              before do
+                allow(EnrollRegistry[:person_match_policy].feature).to receive(:is_enabled).and_return(true)
+                allow(EnrollRegistry[:person_match_policy]).to receive(:settings)
+                  .with(:ssn_present).and_return(double(item: [:ssn, :dob, :first_name, :last_name]))
+
+                # Mock only to simulate an exception in the operation
+                ssn_taken_operation = instance_double(Operations::People::SsnTaken)
+                allow(Operations::People::SsnTaken).to receive(:new).and_return(ssn_taken_operation)
+                allow(ssn_taken_operation).to receive(:call)
+                  .and_raise(StandardError, "Unexpected error")
+              end
+
+              it "fails to create applicant and shows exception error" do
+                expect do
+                  post :create, params: applicant_params_with_ssn
+                end.not_to change(application.reload.applicants, :count)
+
+                expect(flash[:error]).to include("Failed to create applicant")
+                expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
+              end
+            end
+
+            context "when SSN is blank" do
+              let(:applicant_params_no_ssn) do
+                {
+                  applicant: {
+                    is_dependent: 'true',
+                    is_primary_applicant: 'false',
+                    person_name_attributes: {
+                      given_name: "Test",
+                      family_name: "User"
+                    },
+                    demographics_attributes: {
+                      dob: "1990-01-01",
+                      gender: "male",
+                      ssn: "",
+                      no_ssn: 1,
+                      us_citizen: 'true',
+                      naturalized_citizen: 'false',
+                      eligible_immigration_status: 'false',
+                      indian_tribe_member: 'false',
+                      tribal_state: '',
+                      tribe_codes: [],
+                      is_incarcerated: 'false',
+                      ethnicity: []
+                    },
+                    relationship: "child",
+                    is_applying_coverage: 'true',
+                    age_off_excluded: "false",
+                    address_same_as_primary: 'true'
+                  },
+                  application_id: application.id
+                }
+              end
+
+              it "successfully creates applicant when SSN is blank" do
+                expect do
+                  post :create, params: applicant_params_no_ssn
+                end.to change { application.reload.applicants.count }.by(1)
+
+                expect(flash[:error]).to be_nil
+                expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
+              end
+            end
+          end
         end
       end
     end
