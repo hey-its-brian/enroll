@@ -68,6 +68,7 @@ module Operations
             family = application.family
             existing_app = ::FinancialAssistance::Application.where(family_id: family.id, assistance_year: application.assistance_year, aasm_state: "determined", origin: :migration, generation_reason: :manual)
             return Failure("Application hbx id: #{application.hbx_id} with family id: #{application.family_id} is not eligible for migration") if existing_app.present?
+            return Failure("Family is invalid with family id: #{application.family_id}, error: #{family.errors.full_messages.join(', ')}") unless family.valid?
 
             Success(true)
           end
@@ -105,12 +106,11 @@ module Operations
               # Build individual_market_eligibility and its evidences
               # social security number verification type ---> social security number evidence
               # citizenship verification type ---> citizenship evidence
-              result = Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::GenerateEvidences.new.call(applicant: new_applicant)
+              result = Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::GenerateEvidences.new.call({applicant: new_applicant, check_ssn_rule: false})
               return Failure("Failed while generating applicant #{new_applicant.person_hbx_id} evidences, #{result.failure}") if result.failure?
 
-              # Migrate existing aptc csr eligibility evidences
-              old_aptc_csr_eligibility = old_applicant.aptc_csr_eligibility
-              raise "No APTC/CSR eligibility object found for old applicant #{old_applicant.person_hbx_id}" unless old_aptc_csr_eligibility
+              old_aptc_csr_eligibility = validate_and_fetch_old_aptc_csr_eligibility(old_applicant)
+
               new_aptc_csr_eligibility = new_applicant.build_aptc_csr_eligibility
               migrator.perform(old_aptc_csr_eligibility, new_aptc_csr_eligibility)
               old_aptc_csr_eligibility.evidences.each do |old_evidence|
@@ -123,6 +123,21 @@ module Operations
             Success(draft_application)
           rescue StandardError => e
             Failure("generation failed for the application: #{application.hbx_id} with error: #{e.message}")
+          end
+
+          def validate_and_fetch_old_aptc_csr_eligibility(old_applicant)
+            # Migrate existing aptc csr eligibility evidences
+            eligibility = old_applicant.aptc_csr_eligibility
+            raise "No APTC/CSR eligibility object found for old applicant #{old_applicant.person_hbx_id}" unless eligibility
+
+            if old_applicant.is_applying_coverage
+              evidences = eligibility.evidences
+              raise "Expected all 4 evidences when applying for coverage, got #{evidences.count}" if evidences.count < 4
+            elsif eligibility.income_evidence.blank?
+              raise "Expected atleast income evidence when not applying for coverage"
+            end
+
+            eligibility
           end
 
           def fetch_date_from_verification_histories(verification_histories)

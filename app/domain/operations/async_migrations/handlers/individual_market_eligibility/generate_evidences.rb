@@ -77,8 +77,8 @@ module Operations
           # @return [Dry::Monads::Result] Success with updated applicant or Failure with error message
           # @raise [StandardError] When evidence generation fails
           def call(params)
-            applicant = yield validate(params)
-            result = yield generate_evidences(applicant)
+            applicant, check_ssn_rule = yield validate(params)
+            result = yield generate_evidences(applicant, check_ssn_rule)
 
             Success(result)
           end
@@ -89,7 +89,7 @@ module Operations
             if params[:applicant].nil?
               Failure(:invalid_params)
             else
-              Success(params[:applicant])
+              Success([params[:applicant], params[:check_ssn_rule]])
             end
           end
 
@@ -128,7 +128,7 @@ module Operations
             end.compact
           end
 
-          def generate_evidences(applicant)
+          def generate_evidences(applicant, check_ssn_rule)
             @migrator = ::Migrations::DataModelMigrator.new
             # Build individual_market_eligibility evidences
             individual_market_eligibility = applicant.build_individual_market_eligibility
@@ -138,7 +138,7 @@ module Operations
             # Person with ssn but no verification type
             # This is a data integrity issue
             # raise error and stop the process for this family
-            valid_person?(person)
+            valid_person?(person) if check_ssn_rule
             lawful_presence_determination = person.consumer_role.lawful_presence_determination
             alive_status_responses = person.consumer_role.alive_status_responses
             responses = lawful_presence_determination.ssa_responses + lawful_presence_determination.vlp_responses + alive_status_responses

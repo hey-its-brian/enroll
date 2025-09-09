@@ -114,7 +114,7 @@ module Operations
           # @param member [FamilyMember] The family member associated with the eligibility
           # @return [void]
           def build_evidences(applicant)
-            Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::GenerateEvidences.new.call(applicant: applicant)
+            Operations::AsyncMigrations::Handlers::IndividualMarketEligibility::GenerateEvidences.new.call({applicant: applicant, check_ssn_rule: true})
           end
 
           # Builds eligibility records for an applicant

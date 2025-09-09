@@ -242,6 +242,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
                       application: application,
                       dob: TimeKeeper.date_of_record - 40.years,
                       is_primary_applicant: true,
+                      is_applying_coverage: is_applying_coverage,
                       family_member_id: family.family_members[0].id,
                       person_hbx_id: person.hbx_id,
                       addresses: [FactoryBot.build(:financial_assistance_address)],
@@ -275,7 +276,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
       allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
     end
 
-    let!(:aptc_csr_eligibility)  do
+    let(:aptc_csr_eligibility)  do
       eligibility = FactoryBot.create(:aptc_csr_eligibility, eligible: applicant)
       old_state = FactoryBot.build(:v3_state_history, created_at: 2.days.ago)
       new_state = FactoryBot.build(:v3_state_history, created_at: 1.day.ago)
@@ -285,20 +286,38 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
       eligibility
     end
 
-    let(:evidence) do
+    let(:income_evidence) do
       FactoryBot.create(:income_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::IncomeEvidence',key: :income_evidence, title: 'Income Evidence', determined_at: TimeKeeper.date_of_record,
                                           description: 'Income Evidence Description', current_state: :pending)
     end
-    let!(:old_state_history) { FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 2.days.ago) }
-    let!(:new_state_history) { FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 1.day.ago) }
-    let!(:v3_verification_history)  { FactoryBot.create(:v3_verification_history, evidence: evidence) }
-    let!(:v3_request_result)  { FactoryBot.create(:v3_request_result, evidence: evidence) }
 
-    let!(:document) do
-      evidence.documents.create(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
+    let(:esi_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::EsiMecEvidence',key: :esi_mec_evidence, title: 'Esi MEC Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'EsiMecEvidence', current_state: :pending)
+    end
+
+    let(:non_esi_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::NonEsiMecEvidence',key: :non_esi_mec_evidence, title: 'Non Esi MEC Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'NonEsiMecEvidence', current_state: :pending)
+    end
+
+    let(:local_mec_evidence) do
+      FactoryBot.create(:income_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::LocalMecEvidence',key: :local_mec_evidence, title: 'Local MEC Evidence', determined_at: TimeKeeper.date_of_record,
+                                          description: 'LocalMecEvidence', current_state: :pending)
     end
 
     context '#perform' do
+      let(:is_applying_coverage) { true }
+      let!(:create_embed_docs) do
+        evidence_array.each do |evidence|
+          FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 2.days.ago)
+          FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 1.day.ago)
+          FactoryBot.create(:v3_verification_history, evidence: evidence)
+          FactoryBot.create(:v3_request_result, evidence: evidence)
+          evidence.documents.create(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
+        end
+      end
+
       before do
         allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
@@ -324,6 +343,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
       end
 
       context 'when the application is created' do
+        let(:evidence_array) { [income_evidence, esi_evidence, non_esi_evidence, local_mec_evidence] }
+
         before do
           allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
           allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
@@ -408,6 +429,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
       end
 
       context 'should migrate individual_market_eligibility' do
+        let(:evidence_array) { [income_evidence, esi_evidence, non_esi_evidence, local_mec_evidence] }
+
         before do
           allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           @result = subject.call({document_id: application.id.to_s})
@@ -707,6 +730,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
       end
 
       context 'should migrate aptc csr eligibility' do
+        let(:evidence_array) { [income_evidence, esi_evidence, non_esi_evidence, local_mec_evidence] }
+
         before do
           allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           @result = subject.call({document_id: application.id.to_s})
@@ -804,6 +829,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
       end
 
       context 'do not sync applicants' do
+        let(:evidence_array) { [income_evidence, esi_evidence, non_esi_evidence, local_mec_evidence] }
+
         before do
           family_member
           family_member2
@@ -863,8 +890,9 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
       end
 
       context 'income evidence' do
-        let!(:v3_verification_history_auto_extended1)  { FactoryBot.create(:v3_verification_history, evidence: evidence, action: 'auto_extend_due_date', date_of_action: Time.current + 1.day) }
-        let!(:v3_verification_history_auto_extended2)  { FactoryBot.create(:v3_verification_history, evidence: evidence, action: 'auto_extend_due_date', date_of_action: Time.current) }
+        let(:evidence_array) { [income_evidence, esi_evidence, non_esi_evidence, local_mec_evidence] }
+        let!(:v3_verification_history_auto_extended1)  { FactoryBot.create(:v3_verification_history, evidence: aptc_csr_eligibility.income_evidence, action: 'auto_extend_due_date', date_of_action: Time.current + 1.day) }
+        let!(:v3_verification_history_auto_extended2)  { FactoryBot.create(:v3_verification_history, evidence: aptc_csr_eligibility.income_evidence, action: 'auto_extend_due_date', date_of_action: Time.current) }
 
         it 'should create family_determination and populate due_date_extended_at' do
           expect(family.eligibility_determination).not_to be_present
@@ -883,6 +911,26 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
         end
       end
 
+      context 'when applicant only have income evidence' do
+        let(:is_applying_coverage) { false }
+        let(:evidence_array) {[income_evidence]}
+
+        it 'should create family_determination and populate due_date_extended_at' do
+          expect(family.eligibility_determination).not_to be_present
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          result = subject.call({document_id: application.id.to_s})
+          new_application_hbx_id = result.value![1]
+          new_application = FinancialAssistance::Application.where(hbx_id: new_application_hbx_id).first
+          new_applicant = new_application.applicants.first
+          new_aptc_csr_eligibility = new_applicant.aptc_csr_eligibility
+          expect(new_aptc_csr_eligibility.evidences.count).to eq(1)
+          family.reload
+          expect(family.eligibility_determination).to be_present
+          expect(family.eligibility_determination.subjects.count).to eq(1)
+          expect(family.eligibility_determination.subjects.first.eligibility_states.first.evidence_states.count).to eq(1)
+        end
+      end
+
       context "esi evidence" do
         let!(:esi_evidence) do
           FactoryBot.create(:esi_mec_evidence, eligibility: aptc_csr_eligibility, _type: 'FinancialAssistance::Evidences::EsiMecEvidence',key: :esi_mec_evidence, title: 'Esi MEC Evidence', determined_at: TimeKeeper.date_of_record,
@@ -894,7 +942,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
         let!(:v3_request_result)  { FactoryBot.create(:v3_request_result, evidence: esi_evidence) }
         let!(:v3_verification_history_auto_extended1)  { FactoryBot.create(:v3_verification_history, evidence: esi_evidence, action: 'auto_extend_due_date', date_of_action: Time.current + 1.day) }
         let!(:v3_verification_history_auto_extended2)  { FactoryBot.create(:v3_verification_history, evidence: esi_evidence, action: 'auto_extend_due_date', date_of_action: Time.current) }
-
+        let(:evidence_array) { [income_evidence, esi_evidence, non_esi_evidence, local_mec_evidence] }
         it 'should create family_determination but not populate due_date_extended_at' do
           expect(family.eligibility_determination).not_to be_present
           allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
@@ -912,6 +960,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
       end
 
       context "when there are 2 applicants" do
+        let(:evidence_array) { [income_evidence, esi_evidence, non_esi_evidence, local_mec_evidence] }
         let(:dependent_person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true) }
         let(:dependent_family_member) { FactoryBot.create(:family_member, family: family, person: dependent_person) }
         let(:dependent_applicant) do
@@ -1022,6 +1071,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
       end
 
       context "when there are tax household groups" do
+        let(:evidence_array) { [income_evidence, esi_evidence, non_esi_evidence, local_mec_evidence] }
         let(:retro_tax_household_group) { FactoryBot.create(:tax_household_group, :active_previous_year, family: family) }
         let(:current_tax_household_group) { FactoryBot.create(:tax_household_group, :active_current_year, family: family) }
 
@@ -1044,6 +1094,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           tax_household_previous
           current_tax_household_member
           allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          allow(EnrollRegistry[:local_mec_evidence]).to receive(:enabled?).and_return(true)
           @result = subject.call({document_id: application.id.to_s})
           new_application_hbx_id = @result.value![1]
           @new_application = FinancialAssistance::Application.where(hbx_id: new_application_hbx_id).first
@@ -1065,13 +1116,14 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           expect(family.eligibility_determination.subjects.count).to eq(1)
           subject = family.eligibility_determination.subjects.first
           expect(subject.eligibility_states[0].eligibility_item_key).to eq("aptc_csr_credit")
-          expect(subject.eligibility_states[0].evidence_states.count).to eq(1)
+          expect(subject.eligibility_states[0].evidence_states.count).to eq(4)
           expect(subject.eligibility_states[1].eligibility_item_key).to eq("aca_individual_market_eligibility")
           expect(subject.eligibility_states[1].evidence_states.count).to eq(4)
         end
       end
 
       context "when applicant is indian tribe member" do
+        let(:evidence_array) { [income_evidence, esi_evidence, non_esi_evidence, local_mec_evidence] }
         context "and csr_eligibility_kind is nil and csr_percent_as_integer is -1" do
           before do
             allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
@@ -1116,6 +1168,7 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
       end
 
       context "when applicant is not indian tribe member" do
+        let(:evidence_array) { [income_evidence, esi_evidence, non_esi_evidence, local_mec_evidence] }
         context "- is_ia_eligible is true
         - csr_eligibility_kind is present" do
           before do
@@ -1163,10 +1216,21 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
     end
 
     context 'failed case' do
+      let(:is_applying_coverage) { true }
+
       context 'old applicant without aptc csr eligibility' do
+        let!(:create_embed_docs) do
+          [income_evidence, esi_evidence, non_esi_evidence, local_mec_evidence].each do |evidence|
+            FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 2.days.ago)
+            FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 1.day.ago)
+            FactoryBot.create(:v3_verification_history, evidence: evidence)
+            FactoryBot.create(:v3_request_result, evidence: evidence)
+            evidence.documents.create(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
+          end
+        end
+
         before do
           allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
-          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           consumer_role.save!
           person.verification_types.where(type_name: "DC Residency").delete_all
           person2.verification_types.where(type_name: "DC Residency").delete_all
@@ -1189,6 +1253,8 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           end
           family_member2
           applicant2
+          person.ensure_relationship_with(person2, 'spouse')
+          person.ensure_relationship_with(person3, 'child')
           allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
           @result = subject.call({document_id: application.id.to_s})
           @old_applicant = application.applicants.first
@@ -1214,7 +1280,75 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
         end
       end
 
+      context "when there are no relationships defined between members" do
+        let!(:create_embed_docs) do
+          [income_evidence, esi_evidence, non_esi_evidence, local_mec_evidence].each do |evidence|
+            FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 2.days.ago)
+            FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 1.day.ago)
+            FactoryBot.create(:v3_verification_history, evidence: evidence)
+            FactoryBot.create(:v3_request_result, evidence: evidence)
+            evidence.documents.create(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
+          end
+        end
+        let(:person2) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true) }
+        let(:person3) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true) }
+        let!(:family_member2) { FactoryBot.create(:family_member, family: family, person: person2) }
+        let!(:family_member3) { FactoryBot.create(:family_member, family: family, person: person3) }
+        let!(:applicant2) do
+          FactoryBot.create(:applicant,
+                            application: application,
+                            dob: TimeKeeper.date_of_record - 40.years,
+                            is_primary_applicant: true,
+                            family_member_id: family.family_members[1].id,
+                            person_hbx_id: person2.hbx_id,
+                            addresses: [FactoryBot.build(:financial_assistance_address)])
+        end
+
+        before do
+          allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+          consumer_role.save!
+          person.verification_types.where(type_name: "DC Residency").delete_all
+          person2.verification_types.where(type_name: "DC Residency").delete_all
+          person3.verification_types.where(type_name: "DC Residency").delete_all
+          person.verification_types.alive_status_type.each do |verification_type|
+            verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
+                                                       modifier: "external Hub",
+                                                       update_reason: "Hub response",
+                                                       event_response_record_id: response3.id,
+                                                       to_validation_status: "verified",
+                                                       from_validation_status: "unverified",
+                                                       created_at: DateTime.now)
+
+            verification_type.add_type_history_element(action: "call hub",
+                                                       modifier: "admin",
+                                                       update_reason: "Hub request",
+                                                       event_response_record_id: nil,
+                                                       created_at: DateTime.now - 5.minutes)
+            verification_type.save!
+          end
+          family_member2
+          applicant2
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          @result = subject.call({document_id: application.id.to_s})
+        end
+
+        it 'should fail' do
+          expect(@result.failure?).to be_truthy
+          expect(@result.failure.to_s).to eq("Family is invalid with family id: #{family.id}, error: Family members relationships between primary_family_member and all family_members must be defined")
+        end
+      end
+
       context 'person with ssn but no verification type' do
+        let!(:create_embed_docs) do
+          [income_evidence, esi_evidence, non_esi_evidence, local_mec_evidence].each do |evidence|
+            FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 2.days.ago)
+            FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 1.day.ago)
+            FactoryBot.create(:v3_verification_history, evidence: evidence)
+            FactoryBot.create(:v3_request_result, evidence: evidence)
+            evidence.documents.create(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
+          end
+        end
+
         let(:dependent_person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, age_off_excluded: true, ssn: "123-45-6789") }
         let(:dependent_family_member) { FactoryBot.create(:family_member, family: family, person: dependent_person) }
         let(:dependent_applicant) do
@@ -1285,9 +1419,89 @@ RSpec.describe Operations::AsyncMigrations::Handlers::FAApplication::CreateAppli
           @result = subject.call({document_id: application.id.to_s})
         end
 
-        it 'should fail' do
+        it 'should pass' do
+          expect(@result.failure?).to be_falsey
+          # expect(@result.failure.to_s).to match(/Data integrity issue for family: #{family.id} - Person with hbx_id: #{dependent_person.hbx_id} has SSN but no SSN verification type/i)
+        end
+      end
+
+      context "when one of the aptc csr evidence is missing for applying coverage" do
+        let!(:create_embed_docs) do
+          [income_evidence, esi_evidence, non_esi_evidence].each do |evidence|
+            FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 2.days.ago)
+            FactoryBot.create(:v3_state_history, status_trackable: evidence, created_at: 1.day.ago)
+            FactoryBot.create(:v3_verification_history, evidence: evidence)
+            FactoryBot.create(:v3_request_result, evidence: evidence)
+            evidence.documents.create(title: 'document.pdf', creator: 'mehl', subject: 'document.pdf', publisher: 'mehl', type: 'text', identifier: 'identifier', source: 'enroll_system', language: 'en')
+          end
+        end
+
+        before do
+          allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+          consumer_role.save!
+          update_type_history_elements
+          person.verification_types.where(type_name: "DC Residency").delete_all
+          person.verification_types.alive_status_type.each do |verification_type|
+            verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
+                                                       modifier: "external Hub",
+                                                       update_reason: "Hub response",
+                                                       event_response_record_id: response3.id,
+                                                       to_validation_status: "verified",
+                                                       from_validation_status: "unverified",
+                                                       created_at: DateTime.now)
+
+            verification_type.add_type_history_element(action: "call hub",
+                                                       modifier: "admin",
+                                                       update_reason: "Hub request",
+                                                       event_response_record_id: nil,
+                                                       created_at: DateTime.now - 5.minutes)
+            verification_type.save!
+          end
+
+          allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          draft_applicant
+          @result = subject.call({document_id: application.id.to_s})
+        end
+
+        it "should fail" do
           expect(@result.failure?).to be_truthy
-          expect(@result.failure.to_s).to match(/Data integrity issue for family: #{family.id} - Person with hbx_id: #{dependent_person.hbx_id} has SSN but no SSN verification type/i)
+          expect(@result.failure.to_s).to eq("generation failed for the application: #{application.hbx_id} with error: Expected all 4 evidences when applying for coverage, got 3")
+        end
+      end
+
+      context "when income evidence is not present for not applying for coverage" do
+        before do
+          allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+          consumer_role.save!
+          update_type_history_elements
+          person.verification_types.where(type_name: "DC Residency").delete_all
+          person.verification_types.alive_status_type.each do |verification_type|
+            verification_type.add_type_history_element(action: "FDSH alive status Hub Response",
+                                                       modifier: "external Hub",
+                                                       update_reason: "Hub response",
+                                                       event_response_record_id: response3.id,
+                                                       to_validation_status: "verified",
+                                                       from_validation_status: "unverified",
+                                                       created_at: DateTime.now)
+
+            verification_type.add_type_history_element(action: "call hub",
+                                                       modifier: "admin",
+                                                       update_reason: "Hub request",
+                                                       event_response_record_id: nil,
+                                                       created_at: DateTime.now - 5.minutes)
+            verification_type.save!
+          end
+          applicant
+          allow(application.family).to receive(:application_applicable_year).and_return(TimeKeeper.date_of_record.year)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          draft_applicant
+          @result = subject.call({document_id: application.id.to_s})
+        end
+
+        it "should fail" do
+          expect(@result.failure?).to be_truthy
+          expect(@result.failure.to_s).to eq("generation failed for the application: #{application.hbx_id} with error: No APTC/CSR eligibility object found for old applicant #{applicant.person_hbx_id}")
         end
       end
     end
