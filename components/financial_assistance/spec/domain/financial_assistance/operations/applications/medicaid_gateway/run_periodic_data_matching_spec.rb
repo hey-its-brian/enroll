@@ -207,5 +207,37 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
         expect(applicant.reload&.aptc_csr_eligibility&.local_mec_evidence).to be_present
       end
     end
+
+    context 'when there exists another, older, assistance-eligible application which is submitted more recently' do
+      let!(:more_recent_application) do
+        app = FactoryBot.create(
+          :financial_assistance_application,
+          family_id: application.family.id,
+          assistance_year: application.assistance_year,
+          created_at: application.created_at - 1.day,
+          submitted_at: application.submitted_at + 1.day
+        )
+        FactoryBot.create(:applicant, application: app, is_active: true, is_ia_eligible: true)
+        app
+      end
+
+      before do
+        expect(more_recent_application.applicants.map(&:local_mec_evidence).compact).to be_empty
+      end
+
+      it 'should operate over the more recent application' do
+        result = operation.call(assistance_year: TimeKeeper.date_of_record.year, transmittable_message_id: "f55bec40-98f1-4d1a-9336-63affe761a60")
+        expect(result).to be_success
+        expect(result.success).to eq({:total_applications_published => 1})
+        expect(more_recent_application.reload.applicants.map(&:local_mec_evidence)).to be_present
+      end
+
+      it 'should not operate over the older application' do
+        result = operation.call(assistance_year: TimeKeeper.date_of_record.year, transmittable_message_id: "f55bec40-98f1-4d1a-9336-63affe761a60")
+        expect(result).to be_success
+        expect(result.success).to eq({:total_applications_published => 1})
+        expect(application.reload.applicants.map(&:local_mec_evidence).compact).to be_empty
+      end
+    end
   end
 end

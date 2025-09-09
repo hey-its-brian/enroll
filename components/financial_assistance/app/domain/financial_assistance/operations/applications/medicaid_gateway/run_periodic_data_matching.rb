@@ -122,7 +122,7 @@ module FinancialAssistance
               aasm_state: 'determined',
               'applicants.is_ia_eligible' => true
             )
-            applications.max_by(&:created_at)
+            applications.max_by(&:submitted_at)
           end
 
           def eligible_for_mec_check?(enrollments)
