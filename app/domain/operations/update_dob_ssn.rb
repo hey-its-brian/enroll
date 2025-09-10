@@ -42,6 +42,7 @@ module Operations
         end
       else
         person.ssn = params[:person][:ssn]
+        person.no_ssn = person.ssn.present? ? '0' : '1'
       end
       person.save!
       # Updates the no_ssn field to indicate no_ssn and also to trigger the Hub Calls
