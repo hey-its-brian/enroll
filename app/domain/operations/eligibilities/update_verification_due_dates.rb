@@ -67,12 +67,7 @@ module Operations
       end
 
       def update_aptc_csr_eligibility_due_dates(values)
-        application =
-          ::FinancialAssistance::Application
-          .where(family_id: values[:family].id)
-          .by_year(values[:assistance_year])
-          .determined
-          .last
+        application = values[:family].latest_determined_faa_application
 
         if application
           results =

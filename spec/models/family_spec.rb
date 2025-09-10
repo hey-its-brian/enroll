@@ -1989,15 +1989,18 @@ describe Family, "update_due_dates_on_vlp_docs_and_evidences", dbclean: :after_e
     FactoryBot.create(:family_member, family: family, person: person2)
   end
 
-  let(:application) do
-    FactoryBot.create(:financial_assistance_application,
-                      family_id: family.id,
-                      aasm_state: 'determined',
-                      effective_date: DateTime.now.beginning_of_month)
-  end
+  def build_application_with_applicants(family:, submitted_at:, created_at:)
+    application = FactoryBot.create(
+      :financial_assistance_application,
+      family_id: family.id,
+      aasm_state: 'determined',
+      effective_date: DateTime.now.beginning_of_month,
+      created_at: created_at,
+      submitted_at: submitted_at
+    )
 
-  let!(:applicant1) do
-    FactoryBot.build(
+    primary = family.primary_applicant
+    FactoryBot.create(
       :financial_assistance_applicant,
       :with_work_phone,
       :with_work_email,
@@ -2006,23 +2009,22 @@ describe Family, "update_due_dates_on_vlp_docs_and_evidences", dbclean: :after_e
       :with_esi_evidence,
       :with_non_esi_evidence,
       :with_local_mec_evidence,
-      family_member_id: family.primary_applicant.id,
+      family_member_id: primary.id,
       application: application,
-      gender: person1.gender,
-      is_incarcerated: person1.is_incarcerated,
-      ssn: person1.ssn,
-      dob: person1.dob,
-      first_name: person1.first_name,
-      last_name: person1.last_name,
+      gender: primary.gender,
+      is_incarcerated: primary.is_incarcerated,
+      ssn: primary.ssn,
+      dob: primary.dob,
+      first_name: primary.first_name,
+      last_name: primary.last_name,
       is_primary_applicant: true,
-      person_hbx_id: person1.hbx_id,
+      person_hbx_id: primary.hbx_id,
       is_applying_coverage: true,
       citizen_status: 'us_citizen',
       indian_tribe_member: false
     )
-  end
 
-  let!(:applicant2) do
+    dependent = family.dependents.first
     FactoryBot.create(
       :financial_assistance_applicant,
       :with_work_phone,
@@ -2034,19 +2036,37 @@ describe Family, "update_due_dates_on_vlp_docs_and_evidences", dbclean: :after_e
       :with_non_esi_evidence,
       :with_local_mec_evidence,
       is_consumer_role: true,
-      family_member_id: family_member.id,
+      family_member_id: dependent.id,
       application: application,
-      gender: person2.gender,
-      is_incarcerated: person2.is_incarcerated,
-      ssn: person2.ssn,
-      dob: person2.dob,
-      first_name: person2.first_name,
-      last_name: person2.last_name,
+      gender: dependent.gender,
+      is_incarcerated: dependent.is_incarcerated,
+      ssn: dependent.ssn,
+      dob: dependent.dob,
+      first_name: dependent.first_name,
+      last_name: dependent.last_name,
       is_primary_applicant: false,
-      person_hbx_id: person2.hbx_id,
+      person_hbx_id: dependent.hbx_id,
       is_applying_coverage: true,
       citizen_status: 'us_citizen',
       indian_tribe_member: false
+    )
+
+    application
+  end
+
+  let(:application) do
+    build_application_with_applicants(
+      family: family,
+      submitted_at: TimeKeeper.date_of_record,
+      created_at: TimeKeeper.date_of_record
+    )
+  end
+
+  let!(:other_application) do
+    build_application_with_applicants(
+      family: family,
+      submitted_at: TimeKeeper.date_of_record - 1.day,
+      created_at: TimeKeeper.date_of_record + 1.day
     )
   end
 
@@ -2067,22 +2087,18 @@ describe Family, "update_due_dates_on_vlp_docs_and_evidences", dbclean: :after_e
 
   context 'when valid attributes passed' do
     before do
-      application.active_applicants.each do |applicant|
-        evidence_names.each do |evidence_name|
-          evidence = applicant.send(evidence_name)
-          applicant.set_evidence_outstanding(evidence)
+      [application, other_application].each do |app|
+        app.active_applicants.each do |applicant|
+          evidence_names.each do |evidence_name|
+            evidence = applicant.send(evidence_name)
+            applicant.set_evidence_outstanding(evidence)
+            evidence.update!(due_on: nil)
+          end
         end
       end
     end
 
-    it 'should set due on dates for applicant evidences' do
-      application.reload.active_applicants.each do |applicant|
-        evidence_names.each do |evidence_name|
-          evidence = applicant.send(evidence_name)
-          expect(evidence.outstanding?).to be_truthy
-        end
-      end
-
+    it 'should set due on dates for applicant evidences only on the latest submitted application' do
       family.update_due_dates_on_vlp_docs_and_evidences(assistance_year)
 
       application.reload.active_applicants.each do |applicant|
@@ -2092,12 +2108,19 @@ describe Family, "update_due_dates_on_vlp_docs_and_evidences", dbclean: :after_e
           expect(evidence.due_on).to eq due_on
         end
       end
+
+      other_application.reload.active_applicants.each do |applicant|
+        evidence_names.each do |evidence_name|
+          evidence = applicant.send(evidence_name)
+          expect(evidence.outstanding?).to be_truthy
+          expect(evidence.due_on).to be_nil
+        end
+      end
     end
 
     it 'should set due dates on individual verification types' do
       people.each do |person|
-        person.verification_types.each{ |vt| vt.update!(validation_status: 'outstanding') }
-        person.reload
+        person.reload.verification_types.each{ |vt| vt.update!(validation_status: 'outstanding', due_date: nil) }
         expect(person.verification_types.active.where(:validation_status.in => outstanding_types).present?).to be_truthy
         person.verification_types.active.each do |verification_type|
           if verification_type_names.include?(verification_type.type_name) &&
