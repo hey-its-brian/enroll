@@ -50,6 +50,8 @@ module Operations
           def check_if_family_is_eligible_for_migration(family)
             assistance_year = family.application_applicable_year
 
+            return Failure("Family is invalid with family id: #{family.id}, error: #{family.errors.full_messages.join(', ')}") unless family.valid?
+
             qhp_app = ::IndividualMarket::Application.newest_determined_by_family_id(family.id).only(
               :assistance_year, :current_state, :family_id, :id, :submitted_at
             ).first

@@ -205,7 +205,6 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
 
     let(:current_tax_household_member) { tax_household_current.first.tax_household_members.create(applicant_id: family.family_members[0].id, csr_percent_as_integer: 87, csr_eligibility_kind: "csr_87") }
 
-
     before do
       tax_household_previous
       current_tax_household_member
@@ -230,62 +229,82 @@ RSpec.describe Operations::AsyncMigrations::Handlers::IndividualMarketEligibilit
                                                    event_response_record_id: nil,
                                                    created_at: DateTime.now - 5.minutes)
         verification_type.save!
-        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      end
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+    end
+
+    context "success" do
+      before do
         result = subject.call({document_id: family.id})
         new_application_hbx_id = result.value![1]
         @new_application = IndividualMarket::Application.where(hbx_id: new_application_hbx_id).first
       end
-    end
 
-    it 'should create applicant determinations' do
-      expect(@new_application.attestation).to be_present
-      expect(@new_application.attestation.signer_role).to eq("system")
-      expect(@new_application.attestation.signed_at).to be_nil
-      expect(@new_application.attestation.signer_id).to be_nil
-      expect(@new_application.state_histories.count).to eq(2)
-      expect(@new_application.state_histories.last.reason).to eq("created first QHP application for individual_market eligibility")
-      applicant = @new_application.applicants.first
-      eligibility = applicant.individual_market_eligibility
-      expect(eligibility.determinations.count).to eq(2)
-      qhp_determination = eligibility.qhp_determination
-      expect(qhp_determination.bases.count).to eq(5)
-      expect(qhp_determination.is_eligible).to be_truthy
-      Eligibilities::V3::Determinations::IndividualMarketDetermination::BASIS_KINDS.each do |kind|
-        base = qhp_determination.bases.where(basis_kind: kind).first
-        expect(base).to be_present
-        expect(base.is_satisfied).to be_truthy
+      it 'should create applicant determinations' do
+        expect(@new_application.attestation).to be_present
+        expect(@new_application.attestation.signer_role).to eq("system")
+        expect(@new_application.attestation.signed_at).to be_nil
+        expect(@new_application.attestation.signer_id).to be_nil
+        expect(@new_application.state_histories.count).to eq(2)
+        expect(@new_application.state_histories.last.reason).to eq("created first QHP application for individual_market eligibility")
+        applicant = @new_application.applicants.first
+        eligibility = applicant.individual_market_eligibility
+        expect(eligibility.determinations.count).to eq(2)
+        qhp_determination = eligibility.qhp_determination
+        expect(qhp_determination.bases.count).to eq(5)
+        expect(qhp_determination.is_eligible).to be_truthy
+        Eligibilities::V3::Determinations::IndividualMarketDetermination::BASIS_KINDS.each do |kind|
+          base = qhp_determination.bases.where(basis_kind: kind).first
+          expect(base).to be_present
+          expect(base.is_satisfied).to be_truthy
+        end
+
+        csr_determination = eligibility.csr_determination
+        expect(csr_determination.bases.count).to eq(1)
+        expect(csr_determination.is_eligible).to be_falsey
+        Eligibilities::V3::Determinations::CsrDetermination::INDIVIDUAL_MARKET_BASIS_KINDS.each do |kind|
+          base = csr_determination.bases.where(basis_kind: kind).first
+          expect(base).to be_present
+          expect(base.is_satisfied).to be_falsey
+        end
       end
 
-      csr_determination = eligibility.csr_determination
-      expect(csr_determination.bases.count).to eq(1)
-      expect(csr_determination.is_eligible).to be_falsey
-      Eligibilities::V3::Determinations::CsrDetermination::INDIVIDUAL_MARKET_BASIS_KINDS.each do |kind|
-        base = csr_determination.bases.where(basis_kind: kind).first
-        expect(base).to be_present
-        expect(base.is_satisfied).to be_falsey
+      it 'should create family_determination' do
+        family = @new_application.family
+        expect(family.tax_household_groups.count).to eq(3)
+        expect(family.active_thhg(@new_application.effective_on.year)).to be_present
+        active_thhg = family.active_thhg(@new_application.effective_on.year)
+        expect(active_thhg.tax_households.count).to eq(1)
+        expect(active_thhg.tax_households.first.effective_starting_on).to eq(@new_application.effective_on)
+        expect(active_thhg.tax_households.first.effective_ending_on).to eq(nil)
+        expect(active_thhg.tax_households.first.max_aptc).to eq(nil)
+        tax_household = active_thhg.tax_households.first
+        expect(tax_household.tax_household_members.count).to eq(1)
+        expect(tax_household.tax_household_members.first.csr_percent_as_integer).to eq(-1)
+        expect(tax_household.tax_household_members.first.csr_eligibility_kind).to eq("csr_limited")
+
+        expect(family.eligibility_determination.subjects.count).to eq(1)
+        subject = family.eligibility_determination.subjects.first
+        expect(subject.eligibility_states[0].eligibility_item_key).to eq("aptc_csr_credit")
+        expect(subject.eligibility_states[0].evidence_states.count).to eq(0)
+        expect(subject.eligibility_states[1].eligibility_item_key).to eq("aca_individual_market_eligibility")
+        expect(subject.eligibility_states[1].evidence_states.count).to eq(4)
       end
     end
 
-    it 'should create family_determination' do
-      family = @new_application.family
-      expect(family.tax_household_groups.count).to eq(3)
-      expect(family.active_thhg(@new_application.effective_on.year)).to be_present
-      active_thhg = family.active_thhg(@new_application.effective_on.year)
-      expect(active_thhg.tax_households.count).to eq(1)
-      expect(active_thhg.tax_households.first.effective_starting_on).to eq(@new_application.effective_on)
-      expect(active_thhg.tax_households.first.effective_ending_on).to eq(nil)
-      expect(active_thhg.tax_households.first.max_aptc).to eq(nil)
-      tax_household = active_thhg.tax_households.first
-      expect(tax_household.tax_household_members.count).to eq(1)
-      expect(tax_household.tax_household_members.first.csr_percent_as_integer).to eq(-1)
-      expect(tax_household.tax_household_members.first.csr_eligibility_kind).to eq("csr_limited")
+    context "when there are duplicate family members" do
+      before do
+        member = family.family_members.first
+        duplicate_member = family.family_members.build(is_primary_applicant: true, is_coverage_applicant: true, is_consent_applicant: false, is_active: true, person_id: member.person_id)
+        duplicate_member.save!(validate: false)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        @result = subject.call({document_id: family.id})
+      end
 
-      expect(family.eligibility_determination.subjects.count).to eq(1)
-      subject = family.eligibility_determination.subjects.first
-      expect(subject.eligibility_states[0].eligibility_item_key).to eq("aptc_csr_credit")
-      expect(subject.eligibility_states[0].evidence_states.count).to eq(0)
-      expect(subject.eligibility_states[1].eligibility_item_key).to eq("aca_individual_market_eligibility")
-      expect(subject.eligibility_states[1].evidence_states.count).to eq(4)
+      it 'should fail' do
+        expect(@result.failure?).to be_truthy
+        expect(@result.failure.to_s).to match(/Family is invalid with family id: #{family.id}/)
+      end
     end
   end
 
