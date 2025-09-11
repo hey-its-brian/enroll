@@ -17,6 +17,7 @@ module FinancialAssistance
           # Operation receives the Application with renewal medicare determination values
           class DetermineAndStoreResponse
             include Dry::Monads[:do, :result]
+            include ::ResourceRegistryHelper
 
             # @param [Hash] opts The options to add pvc medicare determination to applicants
             # @option opts [Hash] :application_response_payload ::AcaEntities::MagiMedicaid::Application params
@@ -24,9 +25,11 @@ module FinancialAssistance
             def call(params)
               application_entity = yield validate_and_initialize_entity(params[:payload])
               application = yield find_application(application_entity)
-              result = update_applicant(application_entity, application, params[:applicant_identifier])
-              result = save_application(application, params[:applicant_identifier]) if result.success?
-              result
+              _result = yield update_applicant(application_entity, application, params[:applicant_identifier])
+              result = yield save_application(application, params[:applicant_identifier])
+              _determination = yield update_family_determination(application)
+
+              Success(result)
             end
 
             private
@@ -98,6 +101,15 @@ module FinancialAssistance
                 logger.error(error_msg)
                 Failure(error_msg)
               end
+            end
+
+            def update_family_determination(application)
+              return Success(true) unless qhp_application_feature_enabled?
+
+              family = application.family
+              return unless family.present?
+
+              ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family})
             end
           end
         end

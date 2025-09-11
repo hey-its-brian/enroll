@@ -22,6 +22,7 @@ module FinancialAssistance
               application_entity = yield initialize_application_entity(params[:payload])
               application = yield find_application(application_entity)
               result = yield update_applicant(application_entity, application, params[:call_type])
+              _determination = yield update_family_determination(application)
 
               Success(result)
             end
@@ -113,6 +114,15 @@ module FinancialAssistance
               end
 
               Success(applicant)
+            end
+
+            def update_family_determination(application)
+              return Success(true) unless qhp_application_feature_enabled?
+
+              family = application.family
+              return unless family.present?
+
+              ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family})
             end
           end
         end

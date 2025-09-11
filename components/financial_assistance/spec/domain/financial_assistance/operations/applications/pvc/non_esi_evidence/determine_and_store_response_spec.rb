@@ -32,6 +32,10 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Pvc::NonEsiEvide
   let(:aasm_state) { 'attested' }
   let(:enrollment) { nil }
 
+  before do
+    allow(::Operations::Eligibilities::BuildFamilyDetermination).to receive(:new).and_return(double(call: Dry::Monads::Success(true)))
+  end
+
   # Helper method to set up non-ESI MEC evidence through the eligibility system
   def setup_non_esi_evidence(applicant, state: 'attested', due_date: nil)
     # Build APTC/CSR eligibility if it doesn't exist

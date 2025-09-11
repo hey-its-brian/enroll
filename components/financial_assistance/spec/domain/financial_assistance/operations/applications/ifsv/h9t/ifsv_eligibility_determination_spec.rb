@@ -52,6 +52,10 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
 
     let(:enrollment) { nil }
 
+    before do
+      allow(subject).to receive(:qhp_application_feature_enabled?).and_return(false)
+    end
+
     context 'success' do
       context 'FTI Ifsv eligible response' do
         let(:payload) { response_payload }
@@ -341,6 +345,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
 
     before do
       allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      allow(::Operations::Eligibilities::BuildFamilyDetermination).to receive(:new).and_return(double(call: Dry::Monads::Success(true)))
     end
 
     context 'FTI Ifsv eligible response' do

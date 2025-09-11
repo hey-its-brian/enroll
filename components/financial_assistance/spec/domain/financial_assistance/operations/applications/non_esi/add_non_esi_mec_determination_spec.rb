@@ -29,6 +29,10 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::NonEsi::H31::Add
 
     let(:enrollment) { nil }
 
+    before do
+      allow(subject).to receive(:qhp_application_feature_enabled?).and_return(false)
+    end
+
     context 'success' do
       context 'FDSH ESI MEC' do
         include_context 'FDSH ESI MEC sample response'
@@ -219,6 +223,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::NonEsi::H31::Add
 
     before do
       allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      allow(::Operations::Eligibilities::BuildFamilyDetermination).to receive(:new).and_return(double(call: Dry::Monads::Success(true)))
     end
 
     context 'FDSH Non-Esi Mec eligible response' do

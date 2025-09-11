@@ -156,7 +156,7 @@ module FinancialAssistance
         #   # Eligibility state is updated
         #   # Application is saved to database
         def handle_successful_request(evidence, application)
-          evidence.move_to_pending
+          evidence.move_to_pending if evidence.can_move_to_pending?
           determine_eligibility_state(evidence)
           application.save!
           Success(true)

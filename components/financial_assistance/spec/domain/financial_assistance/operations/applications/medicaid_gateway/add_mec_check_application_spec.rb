@@ -213,6 +213,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
         before do
           allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:mec_check).and_return(true)
           allow(subject).to receive(:qhp_application_feature_enabled?).and_return(true)
+          allow(::Operations::Eligibilities::BuildFamilyDetermination).to receive(:new).and_return(double(call: Dry::Monads::Success(true)))
           enrollment
           @applicant = application.applicants.first
           @applicant.build_aptc_eligibilities_evidences

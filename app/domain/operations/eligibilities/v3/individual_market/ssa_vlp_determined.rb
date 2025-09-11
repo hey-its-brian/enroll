@@ -26,6 +26,7 @@ module Operations
         class SsaVlpDetermined
           include Dry::Monads[:do, :result]
           include ::Operations::Transmittable::TransmittableUtils
+          include ::ResourceRegistryHelper
 
           # Processes an SSA VLP verification response and updates the related application evidences
           #
@@ -44,6 +45,7 @@ module Operations
             @application = yield find_subject(validated_params[:application_hbx_id], validated_params[:app_type])
             @response_transaction = yield build_and_create_request_transaction(transmittable_params)
             @application_entity = yield validate_response(params[:response], validated_params[:app_type])
+            _determination = yield update_family_determination(@application)
             update_evidences
           end
 
@@ -285,6 +287,15 @@ module Operations
 
           def encrypt_ssn(ssn)
             AcaEntities::Operations::Encryption::Encrypt.new.call({ value: ssn }).value!
+          end
+
+          def update_family_determination(application)
+            return Success(true) unless qhp_application_feature_enabled?
+
+            family = application.family
+            return unless family.present?
+
+            ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family})
           end
         end
       end
