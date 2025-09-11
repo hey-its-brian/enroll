@@ -84,7 +84,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
 
       context 'when slcsp feature is disabled' do
         before do
-          allow(subject).to receive(:slcsp_feature_enabled?).with(renewal_coverage_start.year).and_return(false)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:atleast_one_silver_plan_donot_cover_pediatric_dental_cost).and_return(false)
         end
 
         it 'returns false as the feature is disabled' do
@@ -96,7 +96,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
 
       context 'when enrollment is of coverage_kind health' do
         before do
-          allow(subject).to receive(:slcsp_feature_enabled?).with(renewal_coverage_start.year).and_return(true)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:atleast_one_silver_plan_donot_cover_pediatric_dental_cost).and_return(true)
         end
 
         it 'returns false as the enrollment is health' do
@@ -113,7 +113,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
         end
 
         before do
-          allow(subject).to receive(:slcsp_feature_enabled?).with(renewal_coverage_start.year).and_return(true)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:atleast_one_silver_plan_donot_cover_pediatric_dental_cost).and_return(true)
           allow(subject).to receive(:dental_renewal_product).and_return(dental_renewal_product)
         end
 
@@ -131,7 +131,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
         end
 
         before do
-          allow(subject).to receive(:slcsp_feature_enabled?).with(renewal_coverage_start.year).and_return(true)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:atleast_one_silver_plan_donot_cover_pediatric_dental_cost).and_return(true)
           allow(subject).to receive(:dental_renewal_product).and_return(dental_renewal_product)
         end
 
@@ -153,7 +153,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
         end
 
         before do
-          allow(subject).to receive(:slcsp_feature_enabled?).with(renewal_coverage_start.year).and_return(true)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:atleast_one_silver_plan_donot_cover_pediatric_dental_cost).and_return(true)
           allow(subject).to receive(:dental_renewal_product).and_return(dental_renewal_product)
         end
 

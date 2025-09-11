@@ -80,7 +80,6 @@ ADMIN_ACTIONS_TRANSLATIONS = {
   'en.admin_actions.dry_run.benefits.renewals_creation_month' => "Renewals creation month",
   'en.admin_actions.dry_run.benefits.renewals_creation_day' => "Renewals creation day",
   'en.admin_actions.dry_run.benefits.atleast_one_silver_plan_donot_cover_pediatric_dental_cost_feature_enabled' => "Atleast one silver plan do not cover pediatric dental cost feature is enabled",
-  'en.admin_actions.dry_run.benefits.slcsapd_feature_enabled_for_year' => "slcsapd feature is enabled for year %{renewal_coverage_year}",
   'en.admin_actions.dry_run.enrollments.enrollment_states' => "Enrollment States",
   'en.admin_actions.dry_run.enrollments.type' => "Type",
   'en.admin_actions.dry_run.enrollments.category' => "Category",

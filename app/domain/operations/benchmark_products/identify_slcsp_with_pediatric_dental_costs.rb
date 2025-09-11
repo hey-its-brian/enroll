@@ -56,7 +56,7 @@ module Operations
       def identify_slcsapd(benchmark_product_model)
         bpm_params = benchmark_product_model.to_h
         bpm_params[:households].each_with_index do |household, ind|
-          next unless check_slcsapd_enabled?(household, benchmark_product_model)
+          next unless check_slcsapd_enabled?(household)
           result = ::Operations::BenchmarkProducts::IdentifySlcsapd.new.call(
             { benchmark_product_model: benchmark_product_model, household_params: household }
           )
@@ -68,12 +68,10 @@ module Operations
       end
 
       # If the registry is not found return false
-      def check_slcsapd_enabled?(household, benchmark_product_model)
+      def check_slcsapd_enabled?(household)
         return unless EnrollRegistry.feature_enabled?(:atleast_one_silver_plan_donot_cover_pediatric_dental_cost)
 
-        # Use RR configuration all_silver_plans_in_state_cover_pedicatric_dental
-        effective_year = benchmark_product_model.effective_date.year.to_s.to_sym
-        EnrollRegistry[:atleast_one_silver_plan_donot_cover_pediatric_dental_cost]&.settings(effective_year)&.item && household[:type_of_household] != 'adult_only'
+        household[:type_of_household] != 'adult_only'
       end
 
       def identify_slcsp(benchmark_product_model)

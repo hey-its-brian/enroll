@@ -8,6 +8,7 @@ RSpec.describe Operations::BenchmarkProducts::IdentifyRatingAndServiceAreas do
     before do
       allow(EnrollRegistry[:enroll_app].settings(:rating_areas)).to receive(:item).and_return('county')
       allow(EnrollRegistry[:service_area].settings(:service_area_model)).to receive(:item).and_return('county')
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:atleast_one_silver_plan_donot_cover_pediatric_dental_cost).and_return(true)
       benchmark_product_model = ::Operations::BenchmarkProducts::Initialize.new.call(input_params).success
       _family, @benchmark_product_model = ::Operations::BenchmarkProducts::IdentifyTypeOfHousehold.new.call(benchmark_product_model).success
     end

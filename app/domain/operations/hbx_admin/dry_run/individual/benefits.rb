@@ -45,7 +45,6 @@ module Operations
 
           def map_benefit_data(renewal_bcp, products, renewal_coverage_year)
             create_renewals_on_date_change_feature = FinancialAssistanceRegistry[:create_renewals_on_date_change]
-            atleast_one_silver_plan_donot_cover_pediatric_dental_cost_feature = EnrollRegistry[:atleast_one_silver_plan_donot_cover_pediatric_dental_cost]
 
             result = {
               l10n('admin_actions.dry_run.benefits.renewal_bcp_present') => renewal_bcp.present?,
@@ -59,9 +58,7 @@ module Operations
               l10n('admin_actions.dry_run.benefits.create_renewals_on_date_change_feature_enabled') => create_renewals_on_date_change_feature.enabled?,
               l10n('admin_actions.dry_run.benefits.renewals_creation_month') => create_renewals_on_date_change_feature&.settings(:renewals_creation_month)&.item,
               l10n('admin_actions.dry_run.benefits.renewals_creation_day') => create_renewals_on_date_change_feature&.settings(:renewals_creation_day)&.item,
-              l10n('admin_actions.dry_run.benefits.atleast_one_silver_plan_donot_cover_pediatric_dental_cost_feature_enabled') => atleast_one_silver_plan_donot_cover_pediatric_dental_cost_feature.enabled?,
-              l10n('admin_actions.dry_run.benefits.slcsapd_feature_enabled_for_year',
-                   renewal_coverage_year: renewal_coverage_year) => atleast_one_silver_plan_donot_cover_pediatric_dental_cost_feature&.settings(renewal_coverage_year.to_s.to_sym)&.item
+              l10n('admin_actions.dry_run.benefits.atleast_one_silver_plan_donot_cover_pediatric_dental_cost_feature_enabled') => EnrollRegistry[:atleast_one_silver_plan_donot_cover_pediatric_dental_cost].enabled?
             }
 
             Success(result)

@@ -287,14 +287,9 @@ class Enrollments::IndividualMarket::FamilyEnrollmentRenewal
     end
   end
 
-  def slcsp_feature_enabled?(renewal_year)
-    EnrollRegistry.feature_enabled?(:atleast_one_silver_plan_donot_cover_pediatric_dental_cost) &&
-      EnrollRegistry[:atleast_one_silver_plan_donot_cover_pediatric_dental_cost]&.settings(renewal_year.to_s.to_sym)&.item
-  end
-
   # Check if member turned 19 during renewal and has pediatric only Qualified Dental Plan
   def turned_19_during_renewal_with_pediatric_only_qdp?(member)
-    return false unless slcsp_feature_enabled?(renewal_coverage_start.year)
+    return false unless EnrollRegistry.feature_enabled?(:atleast_one_silver_plan_donot_cover_pediatric_dental_cost)
     return false if enrollment.is_health_enrollment?
     return false unless dental_renewal_product.allows_child_only_offering?
 

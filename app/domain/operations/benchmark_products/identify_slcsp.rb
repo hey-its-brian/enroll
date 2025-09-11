@@ -88,7 +88,7 @@ module Operations
 
         health_only_members_ehb_premium = BigDecimal(members_premium.to_s)
 
-        if check_slcsapd_enabled?(@household, benchmark_product_model) && !health_product.covers_pediatric_dental?
+        if check_slcsapd_enabled?(@household) && !health_product.covers_pediatric_dental?
           [health_only_members_ehb_premium, health_only_members_ehb_premium + @household[:household_dental_benchmark_ehb_premium]]
         else
           [health_only_members_ehb_premium, health_only_members_ehb_premium]
@@ -118,11 +118,10 @@ module Operations
         Success(household)
       end
 
-      def check_slcsapd_enabled?(household, benchmark_product_model)
+      def check_slcsapd_enabled?(household)
         return unless EnrollRegistry.feature_enabled?(:atleast_one_silver_plan_donot_cover_pediatric_dental_cost)
 
-        effective_year = benchmark_product_model.effective_date.year.to_s.to_sym
-        EnrollRegistry[:atleast_one_silver_plan_donot_cover_pediatric_dental_cost]&.settings(effective_year)&.item && household[:type_of_household] != 'adult_only'
+        household[:type_of_household] != 'adult_only'
       end
     end
   end
