@@ -19,7 +19,7 @@ module FinancialAssistance
             end
 
             def submitted_action
-              'RRV_Submitted'
+              'rrv_submitted'
             end
 
             def submitted_message
@@ -27,7 +27,7 @@ module FinancialAssistance
             end
 
             def submission_failed_action
-              'RRV_Submission_Failed'
+              'rrv_submission_failed'
             end
 
             def submission_failed_message(error)

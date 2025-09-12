@@ -163,7 +163,7 @@ module FinancialAssistance
             failure_message = "#{evidence.key.to_s.titleize} Determination Request Failed due to #{failure_message}"
 
             evidence.mark_as_attested
-            evidence.build_verification_history("Hub Request Failed", failure_message, "system")
+            evidence.build_verification_history('hub_request_failed', failure_message, "system")
           end
 
           # Handles invalid income evidence for all applicants in the application
@@ -180,7 +180,7 @@ module FinancialAssistance
               next unless income_evidence
 
               income_evidence.determine_income_evidence_current_state
-              income_evidence.build_verification_history("Hub Request Failed", failure_message, "system")
+              income_evidence.build_verification_history('hub_request_failed', failure_message, "system")
             end
           end
 

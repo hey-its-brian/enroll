@@ -224,11 +224,11 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
 
         # Check that we have both submitted and failed actions
         actions = evidence.verification_histories.map(&:action)
-        expect(actions).to include('RRV_Submitted')
-        expect(actions).to include('RRV_Submission_Failed')
+        expect(actions).to include('rrv_submitted')
+        expect(actions).to include('rrv_submission_failed')
 
         # Check the latest entry is the failure
-        expect(evidence.verification_histories.last.action).to eq('RRV_Submission_Failed')
+        expect(evidence.verification_histories.last.action).to eq('rrv_submission_failed')
         expect(evidence.verification_histories.last.update_reason).to include('RRV - Renewal verifications submission failed')
         expect(evidence.verification_histories.last.update_reason).to include('Payload validation failed')
         expect(evidence.current_state).to eq(:attested)
@@ -258,7 +258,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
           expect(non_esi_evidence).to be_present
           expect(non_esi_evidence.verification_histories).to be_present
           expect(non_esi_evidence.state_histories).to be_present
-          expect(non_esi_evidence.verification_histories.last.action).to eq('RRV_Submitted')
+          expect(non_esi_evidence.verification_histories.last.action).to eq('rrv_submitted')
           expect(non_esi_evidence.verification_histories.last.update_reason).to eq('RRV - Renewal verifications submitted')
         end
 
@@ -269,7 +269,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
           expect(non_esi_evidence.verification_histories).to be_present
           expect(non_esi_evidence.state_histories).to be_present
           expect(non_esi_evidence.current_state).to eq :pending
-          expect(non_esi_evidence.verification_histories.last.action).to eq('RRV_Submitted')
+          expect(non_esi_evidence.verification_histories.last.action).to eq('rrv_submitted')
           expect(non_esi_evidence.verification_histories.last.update_reason).to eq('RRV - Renewal verifications submitted')
         end
 
@@ -280,7 +280,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
           expect(non_esi_evidence.verification_histories).to be_present
           expect(non_esi_evidence.state_histories).to be_present
           expect(non_esi_evidence.current_state).to eq(:pending)
-          expect(non_esi_evidence.verification_histories.last.action).to eq('RRV_Submitted')
+          expect(non_esi_evidence.verification_histories.last.action).to eq('rrv_submitted')
           expect(non_esi_evidence.verification_histories.last.update_reason).to eq('RRV - Renewal verifications submitted')
         end
 
@@ -291,7 +291,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
           expect(non_esi_evidence.verification_histories).to be_present
           expect(non_esi_evidence.state_histories).to be_present
           expect(non_esi_evidence.current_state).to eq(:pending)
-          expect(non_esi_evidence.verification_histories.last.action).to eq('RRV_Submitted')
+          expect(non_esi_evidence.verification_histories.last.action).to eq('rrv_submitted')
           expect(non_esi_evidence.verification_histories.last.update_reason).to eq('RRV - Renewal verifications submitted')
         end
       end
@@ -325,7 +325,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
           application.reload
           non_esi_evidence = applicant.reload.aptc_csr_eligibility&.non_esi_mec_evidence
           expect(non_esi_evidence).to be_present
-          expect(non_esi_evidence.verification_histories.last.action).to eq('RRV_Submission_Failed')
+          expect(non_esi_evidence.verification_histories.last.action).to eq('rrv_submission_failed')
           expect(non_esi_evidence.verification_histories.last.update_reason).to eq('RRV - Renewal verifications submission failed due to ["No SSN for applicant"]')
           expect(non_esi_evidence.current_state).to eq(:attested)
         end
@@ -459,9 +459,9 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
           applicant == test_applicant ? test_evidence : nil
         end
 
-        expect(subject).to receive(:build_verification_history).with(test_evidence, 'RRV_Submitted', 'RRV - Renewal verifications submitted', 'system').once
+        expect(subject).to receive(:build_verification_history).with(test_evidence, 'rrv_submitted', 'RRV - Renewal verifications submitted', 'system').once
 
-        subject.send(:build_evidence_history, test_application, 'RRV_Submitted', 'RRV - Renewal verifications submitted', 'system')
+        subject.send(:build_evidence_history, test_application, 'rrv_submitted', 'RRV - Renewal verifications submitted', 'system')
       end
     end
 

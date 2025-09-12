@@ -95,7 +95,7 @@ RSpec.describe FinancialAssistance::Operations::Evidences::NonEsiMec::CallHub, d
           expect(result).to be_failure
           non_esi_evidence.reload
           expect(non_esi_evidence.verification_histories.count).to eq(2)
-          expect(non_esi_evidence.verification_histories.last.action).to eq('Hub Request Failed')
+          expect(non_esi_evidence.verification_histories.last.action).to eq('hub_request_failed')
           expect(non_esi_evidence.verification_histories.last.update_reason).to eq("Applicant validity: Non Esi Mec Evidence verification request failed due to [\"No SSN for applicant\"]")
           expect(non_esi_evidence.verification_histories.last.updated_by).to eq("system")
           expect(non_esi_evidence.current_state).to be(:attested)
@@ -122,7 +122,7 @@ RSpec.describe FinancialAssistance::Operations::Evidences::NonEsiMec::CallHub, d
           expect(result).to be_failure
           non_esi_evidence.reload
           expect(non_esi_evidence.verification_histories.count).to eq(2)
-          expect(non_esi_evidence.verification_histories.last.action).to eq('Hub Request Failed')
+          expect(non_esi_evidence.verification_histories.last.action).to eq('hub_request_failed')
           expect(non_esi_evidence.verification_histories.last.update_reason).to eq("Application validity: Non Esi Mec Evidence verification request failed due to Invalid application payload")
           expect(non_esi_evidence.verification_histories.last.updated_by).to eq("system")
           expect(non_esi_evidence.current_state).to be(:attested)

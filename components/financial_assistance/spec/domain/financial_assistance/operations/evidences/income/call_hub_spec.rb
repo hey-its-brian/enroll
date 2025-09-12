@@ -105,7 +105,7 @@ RSpec.describe FinancialAssistance::Operations::Evidences::Income::CallHub, dbcl
               expect(result).to be_failure
               income_evidence.reload
               expect(income_evidence.verification_histories.count).to eq(2)
-              expect(income_evidence.verification_histories.last.action).to eq('Hub Request Failed')
+              expect(income_evidence.verification_histories.last.action).to eq('hub_request_failed')
               expect(income_evidence.verification_histories.last.update_reason).to eq("Applicant validity: Income Evidence verification request failed due to [\"No SSN for applicant\"]")
               expect(income_evidence.current_state).to be(:outstanding)
               expect(aptc_csr_eligibility.current_state).to be(:verification_in_progress)
@@ -127,7 +127,7 @@ RSpec.describe FinancialAssistance::Operations::Evidences::Income::CallHub, dbcl
               expect(result).to be_failure
               income_evidence.reload
               expect(income_evidence.verification_histories.count).to eq(2)
-              expect(income_evidence.verification_histories.last.action).to eq('Hub Request Failed')
+              expect(income_evidence.verification_histories.last.action).to eq('hub_request_failed')
               expect(income_evidence.verification_histories.last.update_reason).to eq("Applicant validity: Income Evidence verification request failed due to [\"No SSN for applicant\"]")
               expect(income_evidence.current_state).to be(:negative_response_received)
             end

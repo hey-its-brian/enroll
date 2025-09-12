@@ -110,8 +110,8 @@ describe 'export_rrv_families' do
     applicant2.non_esi_evidence
   end
 
-  let!(:verification_history) { non_esi_evidence&.add_verification_history('PVC_Submitted', 'PVC - Renewal verifications submitted', 'system') }
-  let!(:verification_history2) { non_esi_evidence2&.add_verification_history('PVC_Submitted', 'PVC - Renewal verifications submitted', 'system') }
+  let!(:verification_history) { non_esi_evidence&.add_verification_history('pvc_submitted', 'PVC - Renewal verifications submitted', 'system') }
+  let!(:verification_history2) { non_esi_evidence2&.add_verification_history('pvc_submitted', 'PVC - Renewal verifications submitted', 'system') }
   let(:yesterday) { Time.now.getlocal.prev_day }
   let!(:application) do
     FactoryBot.create(

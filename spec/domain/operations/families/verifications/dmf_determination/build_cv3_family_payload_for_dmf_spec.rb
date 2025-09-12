@@ -131,7 +131,7 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::BuildCv3Fa
           dependent.reload
           element = dependent.alive_status.type_history_elements.last
 
-          expect(element.action).to eq 'DMF_Request_Failed'
+          expect(element.action).to eq 'dmf_request_failed'
           expect(element.update_reason).to eq "Family Member is not eligible for DMF Determination due to errors: [\"No states found for the given subject/member hbx_id: #{dependent.hbx_id} \"]"
         end
       end
@@ -152,7 +152,7 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::BuildCv3Fa
           dependent.reload
           element = dependent.alive_status.type_history_elements.last
 
-          expect(element.action).to eq 'DMF_Request_Failed'
+          expect(element.action).to eq 'dmf_request_failed'
           expect(element.update_reason).to eq "Family Member is not eligible for DMF Determination due to errors: [\"No SSN for member #{dependent.hbx_id}\"]"
         end
       end
@@ -313,7 +313,7 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::BuildCv3Fa
           evidence = non_eligible_applicant.individual_market_eligibility.alive_evidence
 
           expect(evidence.verification_histories.size).to eq 1
-          expect(evidence.verification_histories.first.action).to eq 'DMF_Request_Failed'
+          expect(evidence.verification_histories.first.action).to eq 'dmf_request_failed'
         end
       end
 
@@ -340,7 +340,7 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::BuildCv3Fa
 
           [evidence1, evidence2].each do |evidence|
             expect(evidence.verification_histories.size).to eq 1
-            expect(evidence.verification_histories.first.action).to eq 'DMF_Request_Failed'
+            expect(evidence.verification_histories.first.action).to eq 'dmf_request_failed'
           end
         end
       end

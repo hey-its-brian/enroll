@@ -25,7 +25,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Shared::NonEsiEvid
       end
 
       def submitted_message
-        'Evidence submitted for review'
+        'evidence_submitted_for_review'
       end
 
       def submission_failed_action
@@ -117,7 +117,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Shared::NonEsiEvid
       it 'calls all required steps in order' do
         expect(operation).to receive(:validate).with(params).and_call_original
         expect(operation).to receive(:fetch_application).and_call_original
-        expect(operation).to receive(:build_evidence_history).with(application, 'submitted', 'Evidence submitted for review', 'system')
+        expect(operation).to receive(:build_evidence_history).with(application, 'submitted', 'evidence_submitted_for_review', 'system')
         expect(operation).to receive(:transform_and_validate_application).with(application)
         expect(operation).to receive(:save_application).with(application).and_call_original
         expect(operation).to receive(:build_event).with(cv3_application)
@@ -558,9 +558,9 @@ RSpec.describe FinancialAssistance::Operations::Applications::Shared::NonEsiEvid
       end
 
       it 'adds verification history to all evidences and returns success' do
-        expect(evidence).to receive(:build_verification_history).with('submitted', 'Evidence submitted for review', 'system')
+        expect(evidence).to receive(:build_verification_history).with('submitted', 'evidence_submitted_for_review', 'system')
 
-        result = operation.send(:build_evidence_history, application, 'submitted', 'Evidence submitted for review', 'system')
+        result = operation.send(:build_evidence_history, application, 'submitted', 'evidence_submitted_for_review', 'system')
 
         expect(result).to be_success
         expect(result.value!).to eq(true)
@@ -574,7 +574,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Shared::NonEsiEvid
         it 'still returns success even when no evidence exists' do
           expect(evidence).not_to receive(:build_verification_history)
 
-          result = operation.send(:build_evidence_history, application, 'submitted', 'Evidence submitted for review', 'system')
+          result = operation.send(:build_evidence_history, application, 'submitted', 'evidence_submitted_for_review', 'system')
 
           expect(result).to be_success
           expect(result.value!).to eq(true)
@@ -595,10 +595,10 @@ RSpec.describe FinancialAssistance::Operations::Applications::Shared::NonEsiEvid
         end
 
         it 'adds verification history to all evidences' do
-          expect(evidence).to receive(:build_verification_history).with('submitted', 'Evidence submitted for review', 'system')
-          expect(evidence2).to receive(:build_verification_history).with('submitted', 'Evidence submitted for review', 'system')
+          expect(evidence).to receive(:build_verification_history).with('submitted', 'evidence_submitted_for_review', 'system')
+          expect(evidence2).to receive(:build_verification_history).with('submitted', 'evidence_submitted_for_review', 'system')
 
-          result = operation.send(:build_evidence_history, application, 'submitted', 'Evidence submitted for review', 'system')
+          result = operation.send(:build_evidence_history, application, 'submitted', 'evidence_submitted_for_review', 'system')
 
           expect(result).to be_success
           expect(result.value!).to eq(true)

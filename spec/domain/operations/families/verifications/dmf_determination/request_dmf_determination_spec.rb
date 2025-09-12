@@ -180,7 +180,7 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::RequestDmf
 
         expect(request_submitted_history_element.action).to eq 'DMF_Request_Submitted'
         expect(request_submitted_history_element.modifier).to eq 'System'
-        expect(request_failed_history_element.action).to eq 'DMF_Request_Failed'
+        expect(request_failed_history_element.action).to eq 'dmf_request_failed'
         expect(request_failed_history_element.modifier).to eq 'System'
       end
 
@@ -192,7 +192,7 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::RequestDmf
 
         expect(request_submitted_history_element.action).to eq 'DMF_Request_Submitted'
         expect(request_submitted_history_element.modifier).to eq 'System'
-        expect(request_failed_history_element.action).to eq 'DMF_Request_Failed'
+        expect(request_failed_history_element.action).to eq 'dmf_request_failed'
         expect(request_failed_history_element.modifier).to eq 'System'
       end
 
@@ -251,7 +251,7 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::RequestDmf
 
         expect(request_submitted_history_element.action).to eq 'DMF_Request_Submitted'
         expect(request_submitted_history_element.modifier).to eq 'System'
-        expect(request_failed_history_element.action).to eq 'DMF_Request_Failed'
+        expect(request_failed_history_element.action).to eq 'dmf_request_failed'
         expect(request_failed_history_element.modifier).to eq 'System'
       end
 

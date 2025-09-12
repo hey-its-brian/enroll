@@ -182,7 +182,7 @@ module FinancialAssistance
           error_message = "Error requesting determination for #{evidence.key} evidence: #{error.message}"
           Rails.logger.error("#{error_message}, backtrace: #{error.backtrace.join("\n")}")
 
-          record_history(evidence, 'Hub Request Failed', 'Error requesting determination', 'system')
+          record_history(evidence, 'hub_request_failed', 'Error requesting determination', 'system')
           Failure(false)
         end
 
@@ -193,7 +193,7 @@ module FinancialAssistance
         # audit trail for all evidence modifications.
         #
         # @param evidence [Evidence] The evidence object to record history for
-        # @param action_name [String] The action performed (e.g., 'Hub Request Failed', 'Verified')
+        # @param action_name [String] The action performed (e.g., 'hub_request_failed', 'Verified')
         # @param update_reason [String] The reason for the update or action
         # @param updated_by [String] The identifier of the user or system performing the action
         # @return [void]
@@ -237,7 +237,7 @@ module FinancialAssistance
         #   failure_reason = "Applicant not eligible: Missing required information"
         #   result = handle_failed_request(evidence, application, failure_reason)
         def handle_failed_request(evidence, application, failure_reason)
-          record_history(evidence, 'Hub Request Failed', failure_reason, 'system')
+          record_history(evidence, 'hub_request_failed', failure_reason, 'system')
           determine_eligibility_state(evidence)
           application.save!
           Failure(false)

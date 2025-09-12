@@ -23,7 +23,7 @@ module FinancialAssistance
             end
 
             def submitted_action
-              'PVC_Submitted'
+              'pvc_submitted'
             end
 
             def submitted_message
@@ -31,7 +31,7 @@ module FinancialAssistance
             end
 
             def submission_failed_action
-              'PVC_Submission_Failed'
+              'pvc_submission_failed'
             end
 
             def submission_failed_message(error)

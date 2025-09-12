@@ -55,7 +55,7 @@ module FinancialAssistance
             end
 
             def build_history_for_income_evidences(application)
-              record_histories(application, 'RRV Submitted', 'RRV - Renewal verifications submitted', 'system')
+              record_histories(application, 'rrv_submitted', 'RRV - Renewal verifications submitted', 'system')
               Success(true)
             end
 
@@ -88,7 +88,7 @@ module FinancialAssistance
             end
 
             def record_application_failure(application, error_messages)
-              record_histories(application, 'RRV Submission Failed', "RRV - Renewal verifications submission failed due to #{error_messages}", 'system')
+              record_histories(application, 'rrv_submission_failed', "RRV - Renewal verifications submission failed due to #{error_messages}", 'system')
               assign_default_evidence_state_for_all_applicants(application)
               application.save!
             end

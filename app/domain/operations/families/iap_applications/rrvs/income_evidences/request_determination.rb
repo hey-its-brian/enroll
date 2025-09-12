@@ -49,7 +49,7 @@ module Operations
                 applicant.create_eligibility_income_evidence
               end
 
-              create_evidence_history(application, 'RRV_Submitted', 'RRV - Renewal verifications submitted', 'system')
+              create_evidence_history(application, 'rrv_submitted', 'RRV - Renewal verifications submitted', 'system')
               Success(true)
             end
 
@@ -81,7 +81,7 @@ module Operations
             end
 
             def record_application_failure(application, error_messages)
-              create_evidence_history(application, 'RRV_Submission_Failed', "RRV - Renewal verifications submission failed due to #{error_messages}", 'system')
+              create_evidence_history(application, 'rrv_submission_failed', "RRV - Renewal verifications submission failed due to #{error_messages}", 'system')
               update_evidence_state_for_all_applicants(application)
             end
 

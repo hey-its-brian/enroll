@@ -94,7 +94,7 @@ RSpec.describe FinancialAssistance::Operations::Evidences::LocalMec::CallHub, db
           expect(result).to be_failure
           local_mec_evidence.reload
           expect(local_mec_evidence.verification_histories.count).to eq(2)
-          expect(local_mec_evidence.verification_histories.last.action).to eq('Hub Request Failed')
+          expect(local_mec_evidence.verification_histories.last.action).to eq('hub_request_failed')
           expect(local_mec_evidence.verification_histories.last.update_reason).to eq("Applicant validity: Local Mec Evidence verification request failed due to [\"No SSN for applicant\"]")
           expect(local_mec_evidence.verification_histories.last.updated_by).to eq("system")
           expect(local_mec_evidence.current_state).to be(:attested)
@@ -121,7 +121,7 @@ RSpec.describe FinancialAssistance::Operations::Evidences::LocalMec::CallHub, db
           expect(result).to be_failure
           local_mec_evidence.reload
           expect(local_mec_evidence.verification_histories.count).to eq(2)
-          expect(local_mec_evidence.verification_histories.last.action).to eq('Hub Request Failed')
+          expect(local_mec_evidence.verification_histories.last.action).to eq('hub_request_failed')
           expect(local_mec_evidence.verification_histories.last.update_reason).to eq("Application validity: Local Mec Evidence verification request failed due to Invalid application payload")
           expect(local_mec_evidence.verification_histories.last.updated_by).to eq("system")
           expect(local_mec_evidence.current_state).to be(:attested)

@@ -2022,7 +2022,7 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
           next unless evidence
           expect(evidence.verification_histories).to be_present
           history = evidence.verification_histories.first
-          expect(history.action).to eq 'RRV_Submitted'
+          expect(history.action).to eq 'rrv_submitted'
           expect(history.update_reason).to eq 'RRV - Renewal verifications submitted'
           expect(history.updated_by).to eq "system"
         end

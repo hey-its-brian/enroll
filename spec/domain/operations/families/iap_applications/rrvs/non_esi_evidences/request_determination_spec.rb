@@ -161,7 +161,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::NonEsiEvidences::Req
 
     it 'should record success for valid applicant1' do
       non_esi_evidence = application.applicants[0].non_esi_evidence
-      expect(non_esi_evidence.verification_histories.last.action).to eq 'RRV_Submitted'
+      expect(non_esi_evidence.verification_histories.last.action).to eq 'rrv_submitted'
     end
 
     it 'non_esi_evidence state for valid applicant1 is pending' do
@@ -171,7 +171,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::NonEsiEvidences::Req
 
     it 'should record success for invalid applicant' do
       non_esi_evidence = application.applicants[1].non_esi_evidence
-      expect(non_esi_evidence.verification_histories.last.action).to eq 'RRV_Submitted'
+      expect(non_esi_evidence.verification_histories.last.action).to eq 'rrv_submitted'
     end
 
     it 'non_esi_evidence for invalid applicant is pending' do
@@ -198,7 +198,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::NonEsiEvidences::Req
 
     it 'should record success for valid applicant1' do
       non_esi_evidence = application.applicants[0].non_esi_evidence
-      expect(non_esi_evidence.verification_histories.last.action).to eq 'RRV_Submitted'
+      expect(non_esi_evidence.verification_histories.last.action).to eq 'rrv_submitted'
     end
 
     it 'non_esi_evidence state for valid applicant1 is pending' do
@@ -230,7 +230,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::NonEsiEvidences::Req
 
     it 'should record success for valid applicant2' do
       non_esi_evidence = application.applicants[1].non_esi_evidence
-      expect(non_esi_evidence.verification_histories.last.action).to eq 'RRV_Submitted'
+      expect(non_esi_evidence.verification_histories.last.action).to eq 'rrv_submitted'
     end
 
     it 'non_esi_evidence state for valid applicant2 is pending' do
@@ -259,7 +259,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::NonEsiEvidences::Req
 
       it 'should record success for valid applicant1' do
         non_esi_evidence = application.applicants[0].non_esi_evidence
-        expect(non_esi_evidence.verification_histories.last.action).to eq 'RRV_Submitted'
+        expect(non_esi_evidence.verification_histories.last.action).to eq 'rrv_submitted'
       end
 
       it 'non_esi_evidence for valid applicant1 is pending' do
@@ -269,7 +269,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::NonEsiEvidences::Req
 
       it 'should record failure for invalid applicant' do
         non_esi_evidence = application.applicants[1].non_esi_evidence
-        expect(non_esi_evidence.verification_histories.last.action).to eq 'RRV_Submission_Failed'
+        expect(non_esi_evidence.verification_histories.last.action).to eq 'rrv_submission_failed'
       end
 
       it 'non_esi_evidence for invalid applicant is attested' do
@@ -294,7 +294,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::NonEsiEvidences::Req
 
       it 'should record success for valid applicant1' do
         non_esi_evidence = application.applicants[0].non_esi_evidence
-        expect(non_esi_evidence.verification_histories.last.action).to eq 'RRV_Submitted'
+        expect(non_esi_evidence.verification_histories.last.action).to eq 'rrv_submitted'
       end
 
       it 'non_esi_evidence for valid applicant1 is pending' do
@@ -326,7 +326,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::NonEsiEvidences::Req
 
       it 'should record failure for invalid applicant1' do
         non_esi_evidence = application.applicants[0].non_esi_evidence
-        expect(non_esi_evidence.verification_histories.last.action).to eq 'RRV_Submission_Failed'
+        expect(non_esi_evidence.verification_histories.last.action).to eq 'rrv_submission_failed'
       end
 
       it 'non_esi_evidence for invalid applicant1 is attested' do
@@ -336,7 +336,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::NonEsiEvidences::Req
 
       it 'should record failure for invalid applicant1' do
         non_esi_evidence = application.applicants[1].non_esi_evidence
-        expect(non_esi_evidence.verification_histories.last.action).to eq 'RRV_Submission_Failed'
+        expect(non_esi_evidence.verification_histories.last.action).to eq 'rrv_submission_failed'
       end
 
       it 'non_esi_evidence for invalid applicant1 is attested' do
@@ -365,7 +365,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::NonEsiEvidences::Req
 
       it 'should record failure for invalid applicant1' do
         non_esi_evidence = application.applicants[0].non_esi_evidence
-        expect(non_esi_evidence.verification_histories.last.action).to eq 'RRV_Submission_Failed'
+        expect(non_esi_evidence.verification_histories.last.action).to eq 'rrv_submission_failed'
       end
 
       it 'non_esi_evidence for invalid applicant1 is attested' do

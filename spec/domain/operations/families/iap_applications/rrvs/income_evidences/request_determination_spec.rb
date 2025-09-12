@@ -159,7 +159,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::IncomeEvidences::Req
 
     it 'should record failure for valid applicant1' do
       income_evidence = application.applicants[0].income_evidence
-      expect(income_evidence.verification_histories.last.action).to eq 'RRV_Submitted'
+      expect(income_evidence.verification_histories.last.action).to eq 'rrv_submitted'
     end
 
     it 'income_evidence state for valid applicant1 is pending' do
@@ -169,7 +169,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::IncomeEvidences::Req
 
     it 'should record failure for invalid applicant' do
       income_evidence = application.applicants[1].income_evidence
-      expect(income_evidence.verification_histories.last.action).to eq 'RRV_Submitted'
+      expect(income_evidence.verification_histories.last.action).to eq 'rrv_submitted'
     end
 
     it 'income_evidence for invalid applicant is pending' do
@@ -195,7 +195,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::IncomeEvidences::Req
 
       it 'should record failure for valid applicant1' do
         income_evidence = application.applicants[0].income_evidence
-        expect(income_evidence.verification_histories.last.action).to eq 'RRV_Submission_Failed'
+        expect(income_evidence.verification_histories.last.action).to eq 'rrv_submission_failed'
       end
 
       it 'income_evidence state for valid applicant1 is negative_response_received' do
@@ -205,7 +205,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::IncomeEvidences::Req
 
       it 'should record failure for invalid applicant' do
         income_evidence = application.applicants[1].income_evidence
-        expect(income_evidence.verification_histories.last.action).to eq 'RRV_Submission_Failed'
+        expect(income_evidence.verification_histories.last.action).to eq 'rrv_submission_failed'
       end
 
       it 'income_evidence for invalid applicant is negative_response_received' do
@@ -232,7 +232,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::IncomeEvidences::Req
 
       it 'should record failure for invalid applicant1' do
         income_evidence = application.applicants[0].income_evidence
-        expect(income_evidence.verification_histories.last.action).to eq 'RRV_Submission_Failed'
+        expect(income_evidence.verification_histories.last.action).to eq 'rrv_submission_failed'
       end
 
       it 'income_evidence for invalid applicant1 is negative_response_received' do
@@ -242,7 +242,7 @@ RSpec.describe Operations::Families::IapApplications::Rrvs::IncomeEvidences::Req
 
       it 'should record failure for invalid applicant1' do
         income_evidence = application.applicants[1].income_evidence
-        expect(income_evidence.verification_histories.last.action).to eq 'RRV_Submission_Failed'
+        expect(income_evidence.verification_histories.last.action).to eq 'rrv_submission_failed'
       end
 
       it 'income_evidence for invalid applicant1 is negative_response_received' do

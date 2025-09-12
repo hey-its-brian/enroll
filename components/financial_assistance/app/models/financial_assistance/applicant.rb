@@ -1423,7 +1423,7 @@ module FinancialAssistance
     def create_rrv_evidence_histories(rrv_evidences)
       rrv_evidences.each do |evidence_name|
         evidence_record = self.send(evidence_name)
-        evidence_record&.add_verification_history('RRV_Submitted', 'RRV - Renewal verifications submitted', 'system')
+        evidence_record&.add_verification_history('rrv_submitted', 'RRV - Renewal verifications submitted', 'system')
       end
 
       self.save

@@ -116,7 +116,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::IncomeEvide
     it 'should record failure for valid applicant1' do
       income_evidence = application.applicants[0].aptc_csr_eligibility.income_evidence
       expect(income_evidence.verification_histories.count).to eq 1
-      expect(income_evidence.verification_histories.last.action).to eq 'RRV Submitted'
+      expect(income_evidence.verification_histories.last.action).to eq 'rrv_submitted'
     end
 
     it 'income_evidence state for valid applicant1 is pending' do
@@ -127,7 +127,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::IncomeEvide
     it 'should record failure for invalid applicant' do
       income_evidence = application.applicants[1].aptc_csr_eligibility.income_evidence
       expect(income_evidence.verification_histories.count).to eq 1
-      expect(income_evidence.verification_histories.last.action).to eq 'RRV Submitted'
+      expect(income_evidence.verification_histories.last.action).to eq 'rrv_submitted'
     end
 
     it 'income_evidence for invalid applicant is pending' do
@@ -152,7 +152,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::IncomeEvide
       it 'should record failure for valid applicant1' do
         income_evidence = application.applicants[0].aptc_csr_eligibility.income_evidence
         expect(income_evidence.verification_histories.count).to eq 2
-        expect(income_evidence.verification_histories.last.action).to eq 'RRV Submission Failed'
+        expect(income_evidence.verification_histories.last.action).to eq 'rrv_submission_failed'
       end
 
       it 'income_evidence state for valid applicant1 is negative_response_received' do
@@ -163,7 +163,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::IncomeEvide
       it 'should record failure for invalid applicant' do
         income_evidence = application.applicants[1].aptc_csr_eligibility.income_evidence
         expect(income_evidence.verification_histories.count).to eq 2
-        expect(income_evidence.verification_histories.last.action).to eq 'RRV Submission Failed'
+        expect(income_evidence.verification_histories.last.action).to eq 'rrv_submission_failed'
       end
 
       it 'income_evidence for invalid applicant is negative_response_received' do
@@ -188,7 +188,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::IncomeEvide
 
       it 'should record failure for invalid applicant1' do
         income_evidence = application.applicants[0].aptc_csr_eligibility.income_evidence
-        expect(income_evidence.verification_histories.last.action).to eq 'RRV Submission Failed'
+        expect(income_evidence.verification_histories.last.action).to eq 'rrv_submission_failed'
       end
 
       it 'income_evidence for invalid applicant1 is negative_response_received' do
@@ -199,7 +199,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::IncomeEvide
 
       it 'should record failure for invalid applicant1' do
         income_evidence = application.applicants[1].aptc_csr_eligibility.income_evidence
-        expect(income_evidence.verification_histories.last.action).to eq 'RRV Submission Failed'
+        expect(income_evidence.verification_histories.last.action).to eq 'rrv_submission_failed'
       end
 
       it 'income_evidence for invalid applicant1 is negative_response_received' do

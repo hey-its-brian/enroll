@@ -49,7 +49,7 @@ module Operations
                 applicant.create_evidence(:non_esi_mec, "Non ESI MEC")
               end
 
-              create_evidence_history(application, 'RRV_Submitted', 'RRV - Renewal verifications submitted', 'system')
+              create_evidence_history(application, 'rrv_submitted', 'RRV - Renewal verifications submitted', 'system')
               Success(true)
             end
 
@@ -88,12 +88,12 @@ module Operations
             end
 
             def record_applicant_failure(evidence, result)
-              add_verification_history(evidence, 'RRV_Submission_Failed', "RRV - Renewal verifications submission failed due to #{result.failure}", 'system')
+              add_verification_history(evidence, 'rrv_submission_failed', "RRV - Renewal verifications submission failed due to #{result.failure}", 'system')
               update_evidence_to_default_state(evidence)
             end
 
             def record_application_failure(application, error_messages)
-              create_evidence_history(application, 'RRV_Submission_Failed', "RRV - Renewal verifications submission failed due to #{error_messages}", 'system')
+              create_evidence_history(application, 'rrv_submission_failed', "RRV - Renewal verifications submission failed due to #{error_messages}", 'system')
               update_evidence_state_for_all_applicants(application)
             end
 

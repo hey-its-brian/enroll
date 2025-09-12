@@ -59,7 +59,7 @@ module Operations
               else
                 error = result.failure
                 message = "Family Member is not eligible for DMF Determination due to errors: #{error}"
-                add_verification_history(family_member, "DMF_Request_Failed", message)
+                add_verification_history(family_member, 'dmf_request_failed', message)
                 { member_entity.hbx_id => { 'status' => false, 'error' => result.failure } }
               end
             end.compact
@@ -119,7 +119,7 @@ module Operations
 
           def update_verification_type_histories(message, family_members = @family.family_members)
             family_members.each do |member|
-              add_verification_history(member, "DMF_Request_Failed", message)
+              add_verification_history(member, "dmf_request_failed", message)
             end
           end
 

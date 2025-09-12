@@ -53,7 +53,7 @@ module FinancialAssistance
 
               applicant.create_evidence(:non_esi_mec, "Non ESI MEC")
             end
-            create_evidence_history(application, 'PVC_Submitted', 'PVC - Renewal verifications submitted', 'system')
+            create_evidence_history(application, 'pvc_submitted', 'PVC - Renewal verifications submitted', 'system')
 
             Success(true)
           rescue StandardError => e
@@ -119,7 +119,7 @@ module FinancialAssistance
           end
 
           def record_applicant_failure(evidence, error_messages)
-            add_verification_history(evidence, 'PVC_Submission_Failed', "PVC - Periodic verifications submission failed due to #{error_messages}", 'system')
+            add_verification_history(evidence, 'pvc_submission_failed', "PVC - Periodic verifications submission failed due to #{error_messages}", 'system')
             update_evidence_to_default_state(evidence)
           end
 

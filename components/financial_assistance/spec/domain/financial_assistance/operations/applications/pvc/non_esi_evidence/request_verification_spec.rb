@@ -197,7 +197,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
           expect(non_esi_evidence).to be_present
           expect(non_esi_evidence.verification_histories).to be_present
           expect(non_esi_evidence.state_histories).to be_present
-          expect(non_esi_evidence.verification_histories.last.action).to eq('PVC_Submitted')
+          expect(non_esi_evidence.verification_histories.last.action).to eq('pvc_submitted')
           expect(non_esi_evidence.verification_histories.last.update_reason).to eq('PVC - Renewal verifications submitted')
         end
 
@@ -208,7 +208,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
           expect(non_esi_evidence.verification_histories).to be_present
           expect(non_esi_evidence.state_histories).to be_present
           expect(non_esi_evidence.current_state).to eq :pending
-          expect(non_esi_evidence.verification_histories.last.action).to eq('PVC_Submitted')
+          expect(non_esi_evidence.verification_histories.last.action).to eq('pvc_submitted')
           expect(non_esi_evidence.verification_histories.last.update_reason).to eq('PVC - Renewal verifications submitted')
         end
 
@@ -219,7 +219,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
           expect(non_esi_evidence.verification_histories).to be_present
           expect(non_esi_evidence.state_histories).to be_present
           expect(non_esi_evidence.current_state).to eq(:pending)
-          expect(non_esi_evidence.verification_histories.last.action).to eq('PVC_Submitted')
+          expect(non_esi_evidence.verification_histories.last.action).to eq('pvc_submitted')
           expect(non_esi_evidence.verification_histories.last.update_reason).to eq('PVC - Renewal verifications submitted')
         end
 
@@ -230,7 +230,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
           expect(non_esi_evidence.verification_histories).to be_present
           expect(non_esi_evidence.state_histories).to be_present
           expect(non_esi_evidence.current_state).to eq(:pending)
-          expect(non_esi_evidence.verification_histories.last.action).to eq('PVC_Submitted')
+          expect(non_esi_evidence.verification_histories.last.action).to eq('pvc_submitted')
           expect(non_esi_evidence.verification_histories.last.update_reason).to eq('PVC - Renewal verifications submitted')
         end
       end
@@ -265,7 +265,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
           application.reload
           non_esi_evidence = applicant.reload.aptc_csr_eligibility&.non_esi_mec_evidence
           expect(non_esi_evidence).to be_present
-          expect(non_esi_evidence.verification_histories.last.action).to eq('PVC_Submission_Failed')
+          expect(non_esi_evidence.verification_histories.last.action).to eq('pvc_submission_failed')
           expect(non_esi_evidence.verification_histories.last.update_reason).to eq('PVC - Periodic verifications submission failed due to ["No SSN for applicant"]')
           expect(non_esi_evidence.current_state).to eq(:attested)
         end
@@ -374,9 +374,9 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
           applicant == test_applicant ? test_evidence : nil
         end
 
-        expect(subject).to receive(:build_verification_history).with(test_evidence, 'PVC_Submitted', 'PVC - Renewal verifications submitted', 'system').once
+        expect(subject).to receive(:build_verification_history).with(test_evidence, 'pvc_submitted', 'PVC - Renewal verifications submitted', 'system').once
 
-        subject.send(:build_evidence_history, test_application, 'PVC_Submitted', 'PVC - Renewal verifications submitted', 'system')
+        subject.send(:build_evidence_history, test_application, 'pvc_submitted', 'PVC - Renewal verifications submitted', 'system')
       end
     end
 
