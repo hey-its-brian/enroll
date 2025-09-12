@@ -137,7 +137,17 @@
             <div data-controller="immigration-documents">
               <div data-target="family-information.ConsumerFields">
                 <% if FinancialAssistanceRegistry.feature_enabled?(:optional_document_fields) %>
-                  <%= render :partial => 'shared/optional_field_warning' %>
+                  <div class="hidden" id="immigrationInfoWarning">
+                    <div class="alert alert-info d-flex" role="alert">
+                      <div>
+                        <div class="info-icon icon" alt="info" aria-hidden="true">&nbsp;</div>
+                      </div>
+                      <div>
+                        <strong><%= l10n("insured.consumer_roles.immigration_field_warning1") %></strong>
+                        <%= l10n("insured.consumer_roles.immigration_field_warning2") %>
+                      </div>
+                    </div>
+                  </div>
                 <% end %>
 
                 <div class="mb-4" data-target="family-information.UsCitizenshipFields">
@@ -216,7 +226,7 @@
                     <div id="immigration-checkbox">
                       <div>
                       <%= demographics.check_box :eligible_immigration_status,
-                          { data: { action: "change->immigration-documents#toggleDocumentSelect" } },
+                          { data: { action: "change->immigration-documents#toggleDocumentSelect", target: "immigration-documents.eligibleImmigrationStatusCheckbox" } },
                           "true",
                           "" %> <span class="ml-1"><%= l10n('yes') %></span>
                       </div>

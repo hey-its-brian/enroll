@@ -346,6 +346,45 @@ export default class extends Controller {
     }
   }
 
+  displayImmigrationFieldWarning() {
+    // is applying for coverage
+    // if not us citizen and not have eligible immigration status checked
+    // or if immigration status container is visible and fields left blank
+    const warning = document.getElementById('immigrationInfoWarning')
+    if (warning && warning.classList.contains('hidden')) {
+      const isApplyingCoverage = this.element.querySelector('#applicant_is_applying_coverage_true')?.checked
+      const isUsCitizen = this.element.querySelector('#us_citizen_true')?.checked
+      const isNaturalizedCitizen = this.element.querySelector('#naturalized_citizen_true')?.checked
+
+      if (isApplyingCoverage && (!isUsCitizen || isNaturalizedCitizen)) {
+        const eligibleImmigrationStatus = this.element.querySelector('#eligible_immigration_status_true')?.checked
+        if (eligibleImmigrationStatus) {
+          let immigrationStatusEmpty = this.emptyImmigrationStatusFields()
+          if (immigrationStatusEmpty) {
+            warning.classList.remove('hidden')
+            return true
+          } else {
+            warning.classList.add('hidden')
+            return false
+          }
+        } else {
+          warning.classList.remove('hidden')
+          return true
+        }
+      } else {
+        warning.classList.add('hidden')
+        return false
+      }
+    } else {
+      return false
+    }
+  }
+
+  emptyImmigrationStatusFields() {
+    const immigrationStatusFields = this.element.querySelectorAll('#immigration-checkbox-container select, #immigration-checkbox-container input')
+    return immigrationStatusFields.any(field => field.value == '' || field.value == null)
+  }
+
   toggleCitizenshipFields(event) {
     const isUsCitizen = event.target.value === 'true';
 
@@ -573,10 +612,18 @@ export default class extends Controller {
     let tribalStateValid = this.checkTribalStateValidation()
 
     let valid = ssnValid && tribalStateValid && form.checkValidity()
+    let immigrationFieldsNotFilled = this.displayImmigrationFieldWarning()
 
-    if (valid) {
+    if (valid && !immigrationFieldsNotFilled) {
       form.submit()
     } else {
+      if (immigrationFieldsNotFilled) {
+        //show warning and scroll to warning
+        const warning = document.getElementById('immigrationInfoWarning')
+        if (warning) {
+          warning.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }
       form.reportValidity()
     }
   }

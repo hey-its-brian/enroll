@@ -8,11 +8,13 @@ export default class extends Controller {
     "ImmigrationDocumentsContainer",
     "NewNaturalizedCitizenStatusTemplate",
     "immigrationDocStatus",
-    "CheckboxControlledSelectContainer"
+    "CheckboxControlledSelectContainer",
+    "eligibleImmigrationStatusCheckbox"
   ]
 
   connect() {
     this.hideDocumentFields()
+    this.initializeSelect()
     this.initializeImmigrationDocuments()
   }
 
@@ -156,6 +158,22 @@ export default class extends Controller {
     if (this.documentFieldsTargets.length > 0) {
       this.documentFieldsTarget.classList.add('hidden')
       this.documentFieldsTarget.innerHTML = ''
+    }
+  }
+
+  initializeSelect() {
+    const checkbox = this.eligibleImmigrationStatusCheckboxTarget
+    const existingSelect = this.hasImmigrationDocumentsContainerTarget && this.ImmigrationDocumentsContainerTarget.querySelector('select')
+
+    let showSelect = checkbox.checked && !existingSelect
+    if (showSelect) {
+      const template = document.querySelector('[data-target="immigration-documents.NewImmigrationStatusTemplate"]')
+      if (template && this.ImmigrationDocumentsContainerTarget) {
+        // For checkbox, append after the checkbox div
+        const checkboxContainer = this.CheckboxControlledSelectContainerTarget
+        checkboxContainer.innerHTML = this.sanitize(template.innerHTML)
+        this.ImmigrationDocumentsContainerTarget.classList.remove('hidden')
+      }
     }
   }
 
