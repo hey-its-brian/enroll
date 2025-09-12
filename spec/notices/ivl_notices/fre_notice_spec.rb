@@ -50,6 +50,19 @@ describe ::Notices::IvlNotices::FreNotice, dbclean: :after_each do
 
         subject.call(params)
       end
+
+      context "when primary person is not present" do
+        before do
+          family.primary_applicant.set(is_primary_applicant: nil)
+        end
+
+        it "should not trigger fre notice for family that did not receive notice already" do
+          expect(subject).not_to receive(:event).with('events.families.notices.fre_notice_generation.requested', attributes: { index: 0, family_id: family.id.to_s })
+          expect(subject).to receive(:event).with('events.families.notices.fre_notice_generation.requested', attributes: { index: 1, family_id: family_two.id.to_s })
+
+          subject.call(params)
+        end
+      end
     end
   end
 

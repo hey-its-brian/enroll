@@ -86,30 +86,35 @@ module Notices
         family_ids.each_with_index do |family_id, index|
           family = Family.where("id": family_id).first
           person = family&.primary_person
+          unless person.present?
+            puts "Processing index #{index} | No primary person found for family #{family_id}" unless Rails.env.test?
+            next
+          end
+
           message = person.inbox.messages.where(query_criteria).first
-          person_hbx_id = person&.hbx_id
+          person_hbx_id = person.hbx_id
 
           if message.present?
             log_message_present(index, family_id, person_hbx_id, csv)
           else
             case mode
             when 'trigger_notices'
-              publish_event(index, family_id)
+              publish_event(index, family_id, person_hbx_id)
             when 'notices_report'
-              csv << [family_id, person.hbx_id, false]
+              csv << [family_id, person_hbx_id, false]
             when 'failed_validation_report'
               check_validation_errors(index, family, person_hbx_id, csv)
             end
           end
         rescue StandardError => e
-          logger.error { "Unable to process for family #{family_id} - index #{index} due to #{e.backtrace}" } unless Rails.env.test?
+          logger.error { "Unable to process at index #{index} for family #{family_id} | primary hbx id: #{person_hbx_id} due to #{e.message} #{e.backtrace}" } unless Rails.env.test?
         end
       end
 
       def log_message_present(index, family_id, person_hbx_id, csv)
         case mode
-        when 'trigger_notices' || 'failed_validation_report'
-          p "Respective notice already present for the family #{index}| #{family_id} | #{person_hbx_id}" unless Rails.env.test?
+        when 'trigger_notices', 'failed_validation_report'
+          p "Processing index #{index} | respective notice already present for family #{family_id} | primary hbx id: #{person_hbx_id}" unless Rails.env.test?
         when 'notices_report'
           p "#{family_id} | #{person_hbx_id} | true" unless Rails.env.test?
           csv << [family_id, person_hbx_id, true]
@@ -117,8 +122,8 @@ module Notices
       end
 
       # used when mode is 'trigger_notices'
-      def publish_event(index, family_id)
-        p "Processing index #{index} for family #{family_id} | #{person_hbx_id}" unless Rails.env.test?
+      def publish_event(index, family_id, person_hbx_id)
+        p "Processing index #{index} for family #{family_id} | primary hbx id: #{person_hbx_id}" unless Rails.env.test?
         payload = { index: index, family_id: family_id.to_s }
         event = event('events.families.notices.fre_notice_generation.requested', attributes: payload).value!
         event.publish
@@ -138,7 +143,7 @@ module Notices
         else
           output = [person_hbx_id, 'failure', family_payload.failure]
         end
-        puts "processed #{index} | #{family_id}" unless Rails.env.test?
+        puts "processed index #{index} | family #{family.id} | primary hbx id: #{person_hbx_id}" unless Rails.env.test?
         csv << output
       end
 
