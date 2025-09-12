@@ -54,6 +54,7 @@ module FinancialAssistance
                   # the unsubmit method wipes out the assistance_year and effective_date, so they must be reset
                   application.assistance_year = renewal_year
                   application.effective_date = Date.new(renewal_year)
+                  rebuild_eligibilities(application)
                 end
                 result = ::FinancialAssistance::Operations::Applications::AptcCsrCreditEligibilities::Renewals::SubmitDeterminationRequest.new.call({ application: application })
                 resubmission_details[:resubmission_result] = result.success? ? "success" : "failure"
@@ -62,6 +63,22 @@ module FinancialAssistance
                 results << resubmission_details
               end
               Success(results)
+            end
+
+            # Resets the eligibilities and rebuilds them along with their evidences.
+            # We need to be very careful while calling this method as it will clear out all existing eligibilities and evidences.
+            # There is only one known use case of this method as of now - when an application is being attempted to be submitted but fails due to an error.
+            # In that case, we want to reset the eligibilities and evidences to ensure that they are rebuilt from scratch.
+            #
+            # @param application [FinancialAssistance::Application] the application object for which the eligibilities will be rebuit
+            #
+            # @return [void]
+            def rebuild_eligibilities(application)
+              application.applicants.each do |applicant|
+                applicant.eligibilities.clear
+                applicant.build_ivl_eligibility_with_evidences
+                applicant.build_aptc_eligibilities_evidences
+              end
             end
           end
         end

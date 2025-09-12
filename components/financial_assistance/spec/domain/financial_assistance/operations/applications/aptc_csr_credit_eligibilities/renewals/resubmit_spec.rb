@@ -121,18 +121,20 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
     )
   end
 
+  let(:qhp_enabled) { false }
+
   before do
     benefit_sponsorship
     applicant
-    renewal_applicant
     active_enrollment
     allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:skip_eligibility_redetermination).and_return(true)
-    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(qhp_enabled)
   end
 
   context 'success' do
     context 'with renewal draft application' do
       before do
+        renewal_applicant
         @result = subject.call({ renewal_year: renewal_year })
       end
 
@@ -149,6 +151,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
 
     context 'with submitted renewal application' do
       before do
+        renewal_applicant
         submitted_applicant
         @result = subject.call({ renewal_year: renewal_year })
       end
@@ -172,6 +175,38 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
         expect(submitted_application.effective_date).to eq(Date.new(renewal_year))
       end
     end
+
+    context 'with:
+      - qhp_application feature enabled
+      - applicant with income evidence in extended ROP state
+      ' do
+      let(:qhp_enabled) { true }
+
+      before do
+        [application, submitted_applicant.application].each do |app|
+          app.build_ivl_eligibility_with_evidences
+          app.build_aptc_eligibilities_evidences
+          app.applicants.each do |applicant|
+            income = applicant.aptc_csr_eligibility.income_evidence
+            income.current_state = :outstanding
+            income.due_on = Date.today + 10.days
+            income.due_date_extended_at = Date.today
+          end
+          app.save!
+        end
+
+        submitted_application.predecessor_id = application.id
+        submitted_application.save!
+      end
+
+      it 'successfully publishes an event for determination request' do
+        result = subject.call({ renewal_year: renewal_year })
+        expect(result.success?).to be_truthy
+        expect(
+          result.success.detect { |detail| detail[:application_hbx_id] == submitted_application.hbx_id }[:resubmission_result]
+        ).to eq('success')
+      end
+    end
   end
 
   context 'failure' do
@@ -179,6 +214,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
       let(:target_year) { renewal_year - 5 }
 
       before do
+        renewal_applicant
         @result = subject.call({ renewal_year: target_year })
       end
 
