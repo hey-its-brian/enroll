@@ -81,9 +81,31 @@ module Operations
     def has_continuous_coverage?(family_member, market_key, effective_on, cut_off_age)
       return true if family_member.person.age_on(effective_on) < cut_off_age # checks for dependent who turns 26 in the same effective on month.
       kind = (market_key == :aca_individual_dependent_age_off) ? :individual_market : :shop_market
-      enr = family_member.family.hbx_enrollments.enrolled_and_terminated.send(kind).where(:"hbx_enrollment_members.applicant_id" => family_member.id).effective_asc.last
+      enr = fetch_latest_enrollment(effective_on, family_member, kind)
       return false if enr.blank?
       enr.terminated_on.nil? || enr.terminated_on.next_day == effective_on
+    end
+
+    # Fetches the latest enrollment for the family member based on the market kind.
+    # For individual market, it fetches the latest enrollment in the same year as effective_on as continuous coverage is checked only for the same year.
+    # For shop market, it fetches the latest enrollment regardless of the year.
+    #
+    # @param effective_on [Date] The effective date of the enrollment.
+    # @param family_member [FamilyMember] The family member to fetch the enrollment for.
+    # @param kind [Symbol] The market kind (:shop_market or :individual_market).
+    #
+    # @return [HbxEnrollment, nil] The latest enrollment if found, otherwise nil.
+    def fetch_latest_enrollment(effective_on, family_member, kind)
+      case kind
+      when :shop_market
+        family_member.family.hbx_enrollments.enrolled_and_terminated.shop_market.where(
+          :'hbx_enrollment_members.applicant_id' => family_member.id
+        ).effective_asc.last
+      when :individual_market
+        family_member.family.hbx_enrollments.enrolled_and_terminated.individual_market.by_year(effective_on.year).where(
+          :'hbx_enrollment_members.applicant_id' => family_member.id
+        ).effective_asc.last
+      end
     end
   end
 end
