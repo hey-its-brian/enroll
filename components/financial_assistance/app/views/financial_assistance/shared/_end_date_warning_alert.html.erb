@@ -5,5 +5,10 @@
   <div class="mt-1 pl-0 pr-2 pt-1">
     <% translation_group = FinancialAssistance::Income::ALL_INCOME_KINDS_MAPPED[kind.to_sym].present? ? "" : "s" %>
     <p class="subtext" data-cuke="end-date-warning-text"><%= l10n('faa.note') %> <%= l10n('faa.incomes.income_note', subject: applicant.first_name, income_kind: l10n("faa.income#{translation_group}.#{kind.to_s}").downcase.gsub(" received", ""), end_date_field_label: l10n('end_date')) %></p>
+    <% if kind.to_s == 'alimony_and_maintenance' %>
+      <p class="subtext">
+        <%= l10n("faa.incomes.alimony_extra_note") %>
+      </p>
+    <% end %>
   </div>
 </div>
