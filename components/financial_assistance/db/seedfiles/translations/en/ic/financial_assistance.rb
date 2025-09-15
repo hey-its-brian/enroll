@@ -95,6 +95,7 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   'en.faa.tax.dependent' => 'Will this person be claimed as a tax dependent for %{assistance_year}?',
   'en.faa.tax.dependent_by' => 'This person will be claimed as a dependent by',
   'en.faa.incomes.income_note' => "For %{income_kind} %{subject} currently receives, do not enter an end date into the “%{end_date_field_label}” field. Only enter an end date if the %{income_kind} ended.",
+  'en.faa.incomes.alimony_extra_note' => "Do not enter Alimony received for divorces or separations finalized after January 1, 2019.",
   'en.faa.incomes.note_self_employment_income_field' => "self-employment income",
   'en.faa.incomes.job_income' => 'Job Income',
   'en.faa.incomes.income' => 'income',
