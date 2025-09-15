@@ -45,8 +45,9 @@ module Operations
             @application = yield find_subject(validated_params[:application_hbx_id], validated_params[:app_type])
             @response_transaction = yield build_and_create_request_transaction(transmittable_params)
             @application_entity = yield validate_response(params[:response], validated_params[:app_type])
+            evidences = yield update_evidences
             _determination = yield update_family_determination(@application)
-            update_evidences
+            Success(evidences)
           end
 
           private
