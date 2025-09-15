@@ -229,7 +229,7 @@ module FinancialAssistance
           def request_evidences_verification(payload_entity, application)
             return Success(true) unless qhp_application_feature_enabled?
             return Success(true) if all_hub_calls_turned_off?
-            return Success(true) if FinancialAssistanceRegistry.feature_enabled?(:renewal_eligibility_verification_using_rrv)
+            return Success(true) if application.previously_renewal_draft? && FinancialAssistanceRegistry.feature_enabled?(:renewal_eligibility_verification_using_rrv)
 
             ::FinancialAssistance::Operations::Application::Evidences::RequestVerification.new.call({application: application, payload_entity: payload_entity})
           rescue StandardError => e
