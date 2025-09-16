@@ -349,6 +349,8 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
       let(:secondary_family_member_id) { nil }
 
       before :each do
+        allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+
         relationship.application.build_aptc_eligibilities_evidences
         inverse_relationship
         application.build_ivl_eligibility_with_evidences
@@ -441,6 +443,11 @@ RSpec.describe Operations::FinancialAssistance::OnDetermination::Families::Creat
           area_code: secondary_phone.area_code,
           number: secondary_phone.number
         )
+      end
+
+      it 'creates a demographics group for the new person' do
+        expect(new_person.demographics_group).to be_present
+        expect(new_person.demographics_group.alive_status.is_deceased).to eq false
       end
 
       it 'updates applicants with family_member_id and person_hbx_id' do

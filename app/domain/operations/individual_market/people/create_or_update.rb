@@ -18,6 +18,7 @@ module Operations
           person = yield build_addresses(person, applicant)
           person = yield build_phones(person, applicant)
           person = yield build_emails(person, applicant)
+          person = yield build_or_update_demographics_group(person)
           person = yield persist(person)
 
           Success(person)
@@ -189,6 +190,16 @@ module Operations
         def build_or_update_lawful_presence_determination(consumer_role, applicant)
           lpd = consumer_role.lawful_presence_determination || consumer_role.build_lawful_presence_determination
           lpd.citizen_status = applicant.demographics.citizen_status
+        end
+
+        # Builds demographics group for a person
+        # @param person [Person] The person to update
+        # @return [Dry::Monads::Result] Success with updated person
+        # NOTE: calling this method will not overwrite an existing
+        # demographics group or alive status if they already exist
+        def build_or_update_demographics_group(person)
+          person.build_demographics_group
+          Success(person)
         end
 
         # Builds address records for a person based on applicant information

@@ -83,6 +83,18 @@ RSpec.describe Operations::IndividualMarket::People::CreateOrUpdate, type: :mode
   end
 
   describe '#call' do
+    context "when: secondary applicant is created" do
+      before do
+        allow(EnrollRegistry[:alive_status].feature).to receive(:is_enabled).and_return(true)
+      end
+
+      it 'should have a demographics group' do
+        result = subject.call(applicant: secondary_applicant).value!
+        expect(result.demographics_group?).to be_truthy
+        expect(result.demographics_group.alive_status.is_deceased).to eq false
+      end
+    end
+
     context "when: secondary applicant does have ssn and no person associated" do
       it 'should create a person with no ssn' do
         secondary_applicant.demographics.update!(no_ssn: true)

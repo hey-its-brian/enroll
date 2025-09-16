@@ -291,6 +291,27 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::BuildCv3Fa
           result = described_class.new.call(family, transmittable_params, application: current_application)
           expect(result).to be_success
         end
+
+        context 'with active tax_household_groups' do
+          before do
+            year = Date.today.year
+            thhg = family.tax_household_groups.create!(
+              assistance_year: year,
+              source: 'qhp',
+              start_on: Date.new(year),
+              tax_households: [FactoryBot.build(:tax_household, household: family.active_household)]
+            )
+            thhg.tax_households.first.tax_household_members.create!(
+              applicant_id: family.primary_applicant.id, is_ia_eligible: true
+            )
+            family.reload
+          end
+
+          it "should pass" do
+            result = described_class.new.call(family, transmittable_params, application: current_application)
+            expect(result).to be_success
+          end
+        end
       end
 
       context 'with some members with a valid enrollment' do
