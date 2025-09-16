@@ -81,7 +81,7 @@ module Operations
       def demographics_attributes(person)
         {
           encrypted_ssn: person.encrypted_ssn,
-          no_ssn: ActiveModel::Type::Boolean.new.cast(person.no_ssn),
+          no_ssn: person.encrypted_ssn.blank?,
           dob: person.dob,
           gender: person.gender,
           ethnicity: parse_ethnicity(person),

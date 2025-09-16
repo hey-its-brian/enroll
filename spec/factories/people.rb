@@ -43,6 +43,16 @@ FactoryBot.define do
       no_ssn { '0' }
     end
 
+    trait :with_ssn_and_no_ssn_blank do
+      sequence(:ssn) { |n| 222_222_220 + n }
+      no_ssn { nil }
+    end
+
+    trait :with_ssn_and_invalid_no_ssn do
+      sequence(:ssn) { |n| 222_222_220 + n }
+      no_ssn { '1' }
+    end
+
     trait :with_work_email do
       emails { [FactoryBot.build(:email, kind: "work") ] }
     end

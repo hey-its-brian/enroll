@@ -3,8 +3,6 @@
 require 'rails_helper'
 
 RSpec.describe Operations::IndividualMarket::ParseApplicant, dbclean: :after_each do
-  subject { described_class.new }
-
   describe '#call' do
     context 'with invalid params' do
       context 'when family_member is not provided' do
@@ -178,6 +176,68 @@ RSpec.describe Operations::IndividualMarket::ParseApplicant, dbclean: :after_eac
           payload = result.success
           expect(result).to be_success
           expect(payload.dig(:demographics,:indian_tribe_member)).to be_truthy
+        end
+      end
+    end
+
+    context 'for no_ssn' do
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+
+      context 'with:
+        - person has a valid SSN
+        - person does not have no_ssn value
+        ' do
+        let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, :with_ssn_and_no_ssn_blank) }
+
+        it 'sets no_ssn to false' do
+          result = subject.call({ family_member: family.primary_applicant })
+          expect(result).to be_success
+          expect(result.success.dig(:demographics, :no_ssn)).to eq(false)
+        end
+      end
+
+      context 'with:
+        - person does not have a valid SSN
+        - person does not have no_ssn value
+        ' do
+        let(:person) do
+          pr = FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role)
+          pr.encrypted_ssn = nil
+          pr.no_ssn = nil
+          pr.save!
+          pr
+        end
+
+        it 'sets no_ssn to true' do
+          result = subject.call({ family_member: family.primary_applicant })
+          expect(result).to be_success
+          expect(result.success.dig(:demographics, :no_ssn)).to eq(true)
+        end
+      end
+
+      context 'with:
+        - person has a valid SSN
+        - person has no_ssn value set incorrectly
+        ' do
+        let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, :with_ssn_and_invalid_no_ssn) }
+
+        it 'sets no_ssn to false' do
+          result = subject.call({ family_member: family.primary_applicant })
+          expect(result).to be_success
+          expect(result.success.dig(:demographics, :no_ssn)).to eq(false)
+        end
+      end
+
+      context 'with:
+        - person has a valid SSN
+        - person has no_ssn value set correctly
+        ' do
+        let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, :with_ssn) }
+
+        it 'sets no_ssn to false' do
+          result = subject.call({ family_member: family.primary_applicant })
+          expect(result).to be_success
+          expect(result.success.dig(:demographics, :no_ssn)).to eq(false)
         end
       end
     end
