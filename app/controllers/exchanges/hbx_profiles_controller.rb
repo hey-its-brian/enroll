@@ -866,7 +866,7 @@ class Exchanges::HbxProfilesController < ApplicationController
     begin
       setting_record.update(value: setting_params[:value]) if setting_record.present?
     rescue Exception => e
-      flash[:error] = "Failed to update setting, " + e.message
+      flash[:error] = "Failed to update setting, #{e.message}"
     end
     redirect_to exchanges_hbx_profiles_root_path
   end
@@ -928,29 +928,75 @@ class Exchanges::HbxProfilesController < ApplicationController
 
   def ivl_dry_run_dashboard
     authorize HbxProfile, :can_view_dry_run_dashboard?
-
-    result = ::Operations::HbxAdmin::DryRun::Individual::Analyzer.new.call
-
-    if result.failure?
-      flash[:error], skeleton = result.failure
-      eligible_families = {}
-      application_states = skeleton["mapped_application_states"]
-      benefit_coverage_values = {}
-      oe_determined_notices = skeleton["oe_determined_notices"]
-      enrollment_states = skeleton["enrollment_states"]
-    else
-      eligible_families, application_states, benefit_coverage_values, oe_determined_notices, enrollment_states = result.success
+    # Just render the HTML view - AJAX will load each section
+    respond_to do |format|
+      format.html { render 'dry_run_dashboard' }
     end
+  end
+
+  def dry_run_benefit_coverage
+    authorize HbxProfile, :can_view_dry_run_dashboard?
 
     respond_to do |format|
       format.html do
-        render 'dry_run_dashboard', locals: {
-          eligible_families: eligible_families,
-          application_states: application_states,
-          benefit_coverage_values: benefit_coverage_values,
-          oe_determined_notices: oe_determined_notices,
-          enrollment_states: enrollment_states
-        }
+        result = ::Operations::HbxAdmin::DryRun::Individual::Benefits.new.call
+
+        if result.success?
+          benefit_coverage_values, = result.value!
+          render partial: 'benefit_coverage', locals: { data: benefit_coverage_values }
+        else
+          render partial: 'benefit_coverage', locals: { error: result.failure.to_s }
+        end
+      rescue StandardError => e
+        render partial: 'benefit_coverage', locals: { error: "Internal server error: #{e.message}" }
+      end
+    end
+  end
+
+  def dry_run_application_states
+    authorize HbxProfile, :can_view_dry_run_dashboard?
+
+    respond_to do |format|
+      format.html do
+        result = ::Operations::HbxAdmin::DryRun::Individual::ApplicationStates.new.call
+
+        if result.success?
+          render partial: 'application_states', locals: { data: result.value! }
+        else
+          render partial: 'application_states', locals: { error: result.failure }
+        end
+      end
+    end
+  end
+
+  def dry_run_notices
+    authorize HbxProfile, :can_view_dry_run_dashboard?
+
+    respond_to do |format|
+      format.html do
+        result = ::Operations::HbxAdmin::DryRun::Individual::Notices.new.call
+
+        if result.success?
+          render partial: 'notices', locals: { data: result.value! }
+        else
+          render partial: 'notices', locals: { error: result.failure }
+        end
+      end
+    end
+  end
+
+  def dry_run_enrollment_states
+    authorize HbxProfile, :can_view_dry_run_dashboard?
+
+    respond_to do |format|
+      format.html do
+        result = ::Operations::HbxAdmin::DryRun::Individual::EnrollmentStates.new.call
+
+        if result.success?
+          render partial: 'enrollment_states', locals: { data: result.value! }
+        else
+          render partial: 'enrollment_states', locals: { error: result.failure }
+        end
       end
     end
   end

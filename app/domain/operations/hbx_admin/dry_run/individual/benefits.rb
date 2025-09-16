@@ -20,15 +20,24 @@ module Operations
           private
 
           def fetch_renewal_data
-            benefit_sponsorship = HbxProfile.current_hbx.benefit_sponsorship
+            current_hbx = HbxProfile.current_hbx
+            return Failure("No current HBX profile found") unless current_hbx.present?
+
+            benefit_sponsorship = current_hbx.benefit_sponsorship
+            return Failure("No benefit sponsorship found") unless benefit_sponsorship.present?
+
             renewal_bcp = benefit_sponsorship.renewal_benefit_coverage_period
             current_bcp = benefit_sponsorship.current_benefit_coverage_period
 
             if renewal_bcp.present?
               renewal_year = renewal_bcp.start_on.year
               coverage_years = [renewal_year, renewal_year - 1, renewal_year - 2]
-            else
+            elsif current_bcp.present?
               current_year = current_bcp.start_on.year
+              coverage_years = [current_year + 1, current_year, current_year - 1]
+            else
+              # Fallback to current year if no benefit coverage periods exist
+              current_year = Date.current.year
               coverage_years = [current_year + 1, current_year, current_year - 1]
             end
 
@@ -41,9 +50,11 @@ module Operations
             products = BenefitMarkets::Products::Product.by_year(year)
 
             Success(products)
+          rescue StandardError => e
+            Failure("Failed to fetch products for year #{year}: #{e.message}")
           end
 
-          def map_benefit_data(renewal_bcp, products, renewal_coverage_year)
+          def map_benefit_data(renewal_bcp, products, _renewal_coverage_year)
             create_renewals_on_date_change_feature = FinancialAssistanceRegistry[:create_renewals_on_date_change]
 
             result = {
@@ -62,6 +73,8 @@ module Operations
             }
 
             Success(result)
+          rescue StandardError => e
+            Failure("Failed to map benefit data: #{e.message}")
           end
         end
       end

@@ -1,0 +1,27 @@
+<% if local_assigns[:data].present? %>
+  <p class="alert alert-info">
+    <strong><%= l10n("admin_actions.dry_run.notices.note") %>:</strong> 
+    <%= l10n("admin_actions.dry_run.notices.note_info") %>
+  </p>
+  
+  <table class="table table-striped table-sm">
+    <thead>
+      <tr>
+        <th><%= l10n("admin_actions.dry_run.notice") %></th>
+        <th class="w-100px"><%= l10n("admin_actions.dry_run.count") %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% data.each do |notice, count| %>
+        <tr>
+          <td><%= notice %></td>
+          <td><%= count %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="alert alert-danger">
+    <strong>Error:</strong> <%= local_assigns[:error] || 'Failed to load notices data' %>
+  </div>
+<% end %>

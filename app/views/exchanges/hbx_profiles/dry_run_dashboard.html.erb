@@ -1,110 +1,86 @@
 <div class="<%= 'container px-0' unless @bs4 %>">
-<h1><%= l10n("admin_actions.dry_run.applications.title") %></h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1><%= l10n("admin_actions.dry_run.applications.title") %></h1>
+  
+  <!-- Auto-refresh controls -->
+  <div class="btn-group" role="group">
+    <button type="button" id="manual-refresh" class="btn btn-primary btn-sm" title="Refresh all data now">
+      <i class="fas fa-sync-alt"></i> Refresh Now
+    </button>
+    <button type="button" id="auto-refresh-toggle" class="btn btn-success btn-sm">
+      Disable Auto-Refresh
+    </button>
+    <div class="btn-group" role="group">
+      <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        Interval
+      </button>
+      <div class="dropdown-menu">
+        <select id="refresh-interval" class="form-control form-control-sm border-0 bg-transparent">
+          <option value="1">1 minute</option>
+          <option value="2">2 minutes</option>
+          <option value="5" selected>5 minutes</option>
+          <option value="10">10 minutes</option>
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
 <section class="my-3">
   <h2><%= l10n("admin_actions.dry_run.renewal_benefit_coverage_values") %></h2>
-  <table>
-    <thead>
-      <tr>
-        <th><%= l10n("admin_actions.dry_run.category") %></th>
-        <th class="w-100px"><%= l10n("admin_actions.dry_run.value") %></th>
-      </tr>
-    </thead>
-    <tbody>
-      <% benefit_coverage_values.each do |category, value| %>
-        <tr>
-          <td><%= category.humanize %></td>
-          <td><%= value.nil? ? '-' : value %></td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+  <div id="benefit-coverage-loading" class="text-center p-3">
+    <div class="spinner-border text-primary" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+    <p class="mt-2 text-muted">Loading benefit coverage values...</p>
+  </div>
+  <div id="benefit-coverage-content" class="d-none"></div>
 </section>
+
 <section class="my-3">
   <h2><%= l10n("admin_actions.dry_run.application_renewal_status") %></h2>
-  <dl class="parent">
-    <dt><%= l10n('admin_actions.dry_run.eligible_families', year: benefit_coverage_values["renewal benefit start date"]&.year) %></dt>
-    <dd><%= eligible_families.present? ? eligible_families["families_eligible_for_application_renewal"] : l10n("admin_actions.dry_run.errored") %></dd>
-  </dl>
-  <table>
-    <thead>
-      <tr>
-        <th><%= l10n("admin_actions.dry_run.status") %></th>
-        <% application_states.keys.each do |year| %>
-          <th class="w-100px"><%= year %></th>
-        <% end %>
-      </tr>
-    </thead>
-    <tbody>
-      <% statuses = ::Operations::HbxAdmin::DryRun::Individual::Analyzer::APPLICATION_STATES %>
-      <% statuses.each do |status| %>
-        <tr>
-          <td><%= status.humanize %></td>
-          <% application_states.each do |year, status_counts| %>
-            <td><%= status_counts[status] || 0 %></td>
-          <% end %>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+  <div id="application-states-loading" class="text-center p-3">
+    <div class="spinner-border text-primary" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+    <p class="mt-2 text-muted">Loading application renewal status...</p>
+  </div>
+  <div id="application-states-content" class="d-none"></div>
 </section>
+
 <section class="my-3">
   <h2><%= l10n("admin_actions.dry_run.oe_determined_notices") %></h2>
-  <p>
-    <strong><%= l10n("admin_actions.dry_run.notices.note") %></strong>
-    <%= l10n("admin_actions.dry_run.notices.note_info") %>
-  </p>
-  <table>
-    <thead>
-      <tr>
-        <th><%= l10n("admin_actions.dry_run.notice") %></th>
-        <th class="w-100px"><%= l10n("admin_actions.dry_run.count") %></th>
-      </tr>
-    </thead>
-    <tbody>
-      <% oe_determined_notices.each do |notice, value| %>
-        <tr>
-          <td><%= notice.upcase %></td>
-          <td><%= value %></td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+  <div id="notices-loading" class="text-center p-3">
+    <div class="spinner-border text-primary" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+    <p class="mt-2 text-muted">Loading notice information...</p>
+  </div>
+  <div id="notices-content" class="d-none"></div>
 </section>
+
 <section class="my-3">
   <h2><%= l10n('admin_actions.dry_run.enrollments.enrollment_states') %></h2>
-  <table>
-    <thead>
-      <tr>
-        <th><%= l10n('admin_actions.dry_run.enrollments.type') %></th>
-        <th><%= l10n('admin_actions.dry_run.enrollments.category') %></th>
-        <th><%= l10n('admin_actions.dry_run.enrollments.auto_renewing') %></th>
-        <th><%= l10n('admin_actions.dry_run.enrollments.coverage_selected') %></th>
-        <th class="w-256px"><%= l10n('admin_actions.dry_run.enrollments.renewing_coverage_selected') %></th>
-      </tr>
-    </thead>
-    <tbody>
-      <% enrollment_states.each do |type, categories| %>
-        <% if type == 'health' %>
-          <% categories.each do |category, values| %>
-            <tr>
-              <td><%= type.capitalize %></td>
-              <td><%= category.split('_').map(&:capitalize).join(' ') %></td>
-              <% values.each_value do |value| %>
-                <td><%= value%></td>
-              <% end %>
-            </tr>
-          <% end %>
-        <% else %>
-          <tr>
-            <td><%= type.capitalize %></td>
-            <td>Dental</td>
-              <% categories.each_value do |value| %>
-                <td><%= value%></td>
-              <% end %>
-          </tr>
-        <% end %>
-      <% end %>
-    </tbody>
-  </table>
+  <div id="enrollment-states-loading" class="text-center p-3">
+    <div class="spinner-border text-primary" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+    <p class="mt-2 text-muted">Loading enrollment states...</p>
+  </div>
+  <div id="enrollment-states-content" class="d-none"></div>
 </section>
+
 </div>
+
+<%= javascript_include_tag 'dry_run_dashboard' %>
+
+<script>
+window.dryRunEndpoints = {
+  benefitCoverage: '<%= dry_run_benefit_coverage_exchanges_hbx_profiles_path %>',
+  applicationStates: '<%= dry_run_application_states_exchanges_hbx_profiles_path %>',
+  notices: '<%= dry_run_notices_exchanges_hbx_profiles_path %>',
+  enrollmentStates: '<%= dry_run_enrollment_states_exchanges_hbx_profiles_path %>'
+};
+</script>

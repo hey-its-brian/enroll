@@ -10,4 +10,4 @@ Rails.application.config.assets.paths << Rails.root.join('node_modules')
 
 # Precompile additional assets.
 # application.js, application.css, and all non-JS/CSS in app/assets folder are already added.
-Rails.application.config.assets.precompile += %w[notifier/ckeditor/*]
+Rails.application.config.assets.precompile += %w[notifier/ckeditor/* dry_run_dashboard.js]

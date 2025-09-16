@@ -1,0 +1,40 @@
+<% if local_assigns[:data].present? %>
+  <table class="table table-striped table-sm">
+    <thead>
+      <tr>
+        <th><%= l10n("admin_actions.dry_run.enrollments.type") %></th>
+        <th><%= l10n("admin_actions.dry_run.category") %></th>
+        <th><%= l10n("admin_actions.dry_run.enrollments.auto_renewing") %></th>
+        <th><%= l10n("admin_actions.dry_run.enrollments.coverage_selected") %></th>
+        <th class="w-256px"><%= l10n("admin_actions.dry_run.enrollments.renewing_coverage_selected") %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% data.each do |type, categories| %>
+        <% if type == 'health' %>
+          <% categories.each do |category, values| %>
+            <tr>
+              <td><%= type.capitalize %></td>
+              <td><%= category.humanize %></td>
+              <td><%= values['auto_renewing'] || 0 %></td>
+              <td><%= values['coverage_selected'] || 0 %></td>
+              <td><%= values['renewing_coverage_selected'] || 0 %></td>
+            </tr>
+          <% end %>
+        <% elsif type == 'dental' %>
+          <tr>
+            <td><%= type.capitalize %></td>
+            <td>Dental</td>
+            <td><%= categories['auto_renewing'] || 0 %></td>
+            <td><%= categories['coverage_selected'] || 0 %></td>
+            <td><%= categories['renewing_coverage_selected'] || 0 %></td>
+          </tr>
+        <% end %>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="alert alert-danger">
+    <strong>Error:</strong> <%= local_assigns[:error] || 'Failed to load enrollment states data' %>
+  </div>
+<% end %>

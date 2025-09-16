@@ -1,0 +1,42 @@
+<% if local_assigns[:data].present? %>
+  <% eligible_families = data[:eligible_families] %>
+  <% application_states_array = data[:application_states] %>
+  <% renewal_year = data[:renewal_year] %>
+  
+  <dl class="parent">
+    <dt><%= l10n("admin_actions.dry_run.eligible_families", year: renewal_year) %></dt>
+    <dd><%= eligible_families.present? ? eligible_families["families_eligible_for_application_renewal"] : l10n("admin_actions.dry_run.errored") %></dd>
+  </dl>
+  
+  <table class="table table-striped table-sm">
+    <thead>
+      <tr>
+        <th><%= l10n("admin_actions.dry_run.status") %></th>
+        <% application_states_array.each do |year_data| %>
+          <th class="w-100px"><%= year_data["assistance_year"] %></th>
+        <% end %>
+      </tr>
+    </thead>
+    <tbody>
+      <% 
+        # Get all unique statuses across all years
+        all_statuses = application_states_array.flat_map { |year_data| year_data["application_states"].keys }.uniq.sort
+        years = application_states_array.map { |year_data| year_data["assistance_year"] }
+      %>
+      <% all_statuses.each do |status| %>
+        <tr>
+          <td><%= status.humanize %></td>
+          <% years.each do |year| %>
+            <% year_data = application_states_array.find { |yd| yd["assistance_year"] == year } %>
+            <% count = year_data["application_states"][status] || 0 %>
+            <td><%= count %></td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="alert alert-danger">
+    <strong>Error:</strong> <%= local_assigns[:error] || 'Failed to load application states data' %>
+  </div>
+<% end %>

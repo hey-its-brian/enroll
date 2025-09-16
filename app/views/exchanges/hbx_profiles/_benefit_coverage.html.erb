@@ -1,0 +1,22 @@
+<% if local_assigns[:data].present? %>
+  <table class="table table-striped table-sm">
+    <thead>
+      <tr>
+        <th><%= l10n("admin_actions.dry_run.category") %></th>
+        <th class="w-100px"><%= l10n("admin_actions.dry_run.value") %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% data.each do |category, value| %>
+        <tr>
+          <td><%= category.humanize %></td>
+          <td><%= value.present? ? value : '-' %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="alert alert-danger">
+    <strong>Error:</strong> <%= local_assigns[:error] || 'Failed to load benefit coverage data' %>
+  </div>
+<% end %>
