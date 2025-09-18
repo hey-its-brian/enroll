@@ -103,6 +103,55 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::NonEsi::H31::Add
                 end
               end
 
+              context "with an auto-renewal status enrollment" do
+                let(:enrollment) do
+                  FactoryBot.create(
+                    :hbx_enrollment,
+                    :with_enrollment_members,
+                    :with_health_product,
+                    family: family,
+                    enrollment_members: family.family_members,
+                    effective_on: Date.new(application.assistance_year),
+                    aasm_state: 'auto_renewing'
+                  )
+                end
+
+                it 'should return success' do
+                  expect(@result).to be_success
+                end
+
+                it 'should move evidence to outstanding' do
+                  @applicant.reload
+                  expect(@applicant.non_esi_evidence.aasm_state).to eq "outstanding"
+                  expect(@applicant.non_esi_evidence.request_results.present?).to eq true
+                  expect(@result.success).to eq('Successfully updated Applicant with evidences and verifications')
+                end
+              end
+
+              context 'when the enrollment year and application year do not match' do
+                let(:enrollment) do
+                  FactoryBot.create(
+                    :hbx_enrollment,
+                    :with_enrollment_members,
+                    :with_health_product,
+                    family: family,
+                    enrollment_members: family.family_members,
+                    effective_on: Date.new(application.assistance_year + 1)
+                  )
+                end
+
+                it 'should return success' do
+                  expect(@result).to be_success
+                end
+
+                it 'should move evidence to negative_response_received' do
+                  @applicant.reload
+                  expect(@applicant.non_esi_evidence.aasm_state).to eq "negative_response_received"
+                  expect(@applicant.non_esi_evidence.request_results.present?).to eq true
+                  expect(@result.success).to eq('Successfully updated Applicant with evidences and verifications')
+                end
+              end
+
               context 'without aptc and csr' do
                 let(:enrollment) do
                   FactoryBot.create(:hbx_enrollment, :with_enrollment_members, product: FactoryBot.create(:benefit_markets_products_health_products_health_product, csr_variant_id: '00'),

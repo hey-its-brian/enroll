@@ -158,6 +158,58 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
           end
         end
 
+        context "when an enrollment with a renewal status exists" do
+          let(:enrollment) do
+            FactoryBot.create(
+              :hbx_enrollment,
+              :with_enrollment_members,
+              :with_health_product,
+              family: family,
+              enrollment_members: family.family_members,
+              effective_on: Date.new(application.assistance_year),
+              aasm_state: 'auto_renewing'
+            )
+          end
+
+          it 'should return success' do
+            expect(@result).to be_success
+          end
+
+          it 'should update applicant verification' do
+            @applicant.reload
+            expect(@applicant.local_mec_evidence.aasm_state).to eq "outstanding"
+            expect(@applicant.local_mec_evidence.request_results.present?).to eq true
+            expect(@applicant.local_mec_evidence.due_on).not_to eq nil
+            expect(@result.success).to eq('Successfully updated Applicant with evidences and verifications')
+          end
+        end
+
+        context "when an enrollment with a renewal status exists with a different effective on date than the application year" do
+          let(:enrollment) do
+            FactoryBot.create(
+              :hbx_enrollment,
+              :with_enrollment_members,
+              :with_health_product,
+              family: family,
+              enrollment_members: family.family_members,
+              effective_on: Date.new(application.assistance_year + 1),
+              aasm_state: 'auto_renewing'
+            )
+          end
+
+          it 'should return success' do
+            expect(@result).to be_success
+          end
+
+          it 'should update applicant verification' do
+            @applicant.reload
+            expect(@applicant.local_mec_evidence.aasm_state).to eq "negative_response_received"
+            expect(@applicant.local_mec_evidence.request_results.present?).to eq true
+            expect(@applicant.local_mec_evidence.due_on).to eq nil
+            expect(@result.success).to eq('Successfully updated Applicant with evidences and verifications')
+          end
+        end
+
         context "Bulk Local Mec call and enrolled" do
           let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
           let(:request_result_hash) do

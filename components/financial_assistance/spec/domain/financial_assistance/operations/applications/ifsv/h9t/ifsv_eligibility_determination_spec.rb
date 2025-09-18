@@ -205,6 +205,60 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
               end
             end
           end
+
+          context "when enrolled in an assistance eligible enrollment for a different year" do
+            let(:enrollment) do
+              FactoryBot.create(
+                :hbx_enrollment,
+                :with_enrollment_members,
+                :with_health_product,
+                family: family,
+                applied_aptc_amount: 100,
+                enrollment_members: family.family_members,
+                effective_on: Date.new(application.assistance_year + 1)
+              )
+            end
+
+            it 'should return success' do
+              expect(@result).to be_success
+            end
+
+            it 'should move evidence to negative_response_received' do
+              @applicant.reload
+              income_evidence = @applicant.income_evidence
+
+              expect(income_evidence.verification_outstanding).to be_falsey
+              expect(income_evidence.negative_response_received?).to be_truthy
+            end
+          end
+
+          context "when enrolled with a renewal status" do
+            let(:enrollment) do
+              FactoryBot.create(
+                :hbx_enrollment,
+                :with_enrollment_members,
+                :with_health_product,
+                family: family,
+                applied_aptc_amount: 100,
+                enrollment_members: family.family_members,
+                effective_on: Date.new(application.assistance_year),
+                aasm_state: 'auto_renewing'
+              )
+            end
+
+            it 'should return success' do
+              expect(@result).to be_success
+            end
+
+            it 'returns outstanding' do
+              subject.call({payload: response_payload, call_type: nil})
+
+              @applicant.reload
+              income_evidence = @applicant.income_evidence
+              expect(income_evidence.outstanding?).to be_truthy
+              expect(income_evidence.verification_outstanding).to be_truthy
+            end
+          end
         end
       end
 

@@ -90,17 +90,77 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Esi::H14::AddEsi
           context 'when enrolled' do
             context 'health' do
               context 'with aptc' do
-                let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+                context "for plan year matching the application's assistance_year" do
+                  let(:enrollment) do
+                    FactoryBot.create(
+                      :hbx_enrollment,
+                      :with_enrollment_members,
+                      :with_health_product,
+                      family: family,
+                      enrollment_members: family.family_members,
+                      effective_on: Date.new(application.assistance_year)
+                    )
+                  end
 
-                it 'should return success' do
-                  expect(@result).to be_success
+                  it 'should return success' do
+                    expect(@result).to be_success
+                  end
+
+                  it 'should move evidence to outstanding' do
+                    @applicant.reload
+                    expect(@applicant.esi_evidence.aasm_state).to eq "outstanding"
+                    expect(@applicant.esi_evidence.request_results.present?).to eq true
+                    expect(@result.success).to eq('Successfully updated Applicant with evidences and verifications')
+                  end
                 end
 
-                it 'should move evidence to outstanding' do
-                  @applicant.reload
-                  expect(@applicant.esi_evidence.aasm_state).to eq "outstanding"
-                  expect(@applicant.esi_evidence.request_results.present?).to eq true
-                  expect(@result.success).to eq('Successfully updated Applicant with evidences and verifications')
+                context "when the enrollment has a renewal status" do
+                  let(:enrollment) do
+                    FactoryBot.create(
+                      :hbx_enrollment,
+                      :with_enrollment_members,
+                      :with_health_product,
+                      family: family,
+                      enrollment_members: family.family_members,
+                      effective_on: Date.new(application.assistance_year),
+                      aasm_state: 'auto_renewing'
+                    )
+                  end
+
+                  it 'should return success' do
+                    expect(@result).to be_success
+                  end
+
+                  it 'should move evidence to outstanding' do
+                    @applicant.reload
+                    expect(@applicant.esi_evidence.aasm_state).to eq "outstanding"
+                    expect(@applicant.esi_evidence.request_results.present?).to eq true
+                    expect(@result.success).to eq('Successfully updated Applicant with evidences and verifications')
+                  end
+                end
+
+                context "for plan year not matching the application's assistance year" do
+                  let(:enrollment) do
+                    FactoryBot.create(
+                      :hbx_enrollment,
+                      :with_enrollment_members,
+                      :with_health_product,
+                      family: family,
+                      enrollment_members: family.family_members,
+                      effective_on: Date.new(application.assistance_year + 1)
+                    )
+                  end
+
+                  it 'should return success' do
+                    expect(@result).to be_success
+                  end
+
+                  it 'should move evidence to negative_response_received' do
+                    @applicant.reload
+                    expect(@applicant.esi_evidence.aasm_state).to eq "negative_response_received"
+                    expect(@applicant.esi_evidence.request_results).to be_present
+                    expect(@result.success).to eq('Successfully updated Applicant with evidences and verifications')
+                  end
                 end
               end
 

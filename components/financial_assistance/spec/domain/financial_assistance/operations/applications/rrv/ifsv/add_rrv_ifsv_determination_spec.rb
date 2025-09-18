@@ -130,10 +130,21 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::Ifsv::AddRr
       end
     end
 
-    RSpec.shared_examples_for "enrollment with csr_variant_id" do |csr_variant_id, is_aptc_zero, expected_evidence_status|
+    RSpec.shared_examples_for "enrollment with csr_variant_id" do |csr_variant_id, is_aptc_zero, enrollment_state, is_enrollment_current_year, expected_evidence_status|
       before :each do
         product = FactoryBot.create(:benefit_markets_products_health_products_health_product, csr_variant_id: csr_variant_id)
-        FactoryBot.create(:hbx_enrollment, :with_enrollment_members, family: family, enrollment_members: family.family_members, product: product, applied_aptc_amount: is_aptc_zero ? 0.00 : 100.00)
+
+        FactoryBot.create(
+          :hbx_enrollment,
+          :with_enrollment_members,
+          family: family,
+          enrollment_members: family.family_members,
+          product: product,
+          applied_aptc_amount: is_aptc_zero ? 0.00 : 100.00,
+          aasm_state: enrollment_state,
+          effective_on: Date.new(application.assistance_year + (is_enrollment_current_year ? 0 : 1))
+        )
+
         @applicant = application.applicants.first
         @applicant.build_income_evidence(key: :income, title: "Income")
         @applicant.save!
@@ -157,28 +168,32 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::Ifsv::AddRr
       before do
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:ifsv_income_nrr).and_return(true)
       end
-      it_behaves_like "enrollment with csr_variant_id", "01", false, "outstanding"
-      it_behaves_like "enrollment with csr_variant_id", "01", true, "negative_response_received"
-      it_behaves_like "enrollment with csr_variant_id", "02", true, "outstanding"
-      it_behaves_like "enrollment with csr_variant_id", "03", false, "outstanding"
-      it_behaves_like "enrollment with csr_variant_id", "03", true, "negative_response_received"
-      it_behaves_like "enrollment with csr_variant_id", "04", true, "outstanding"
-      it_behaves_like "enrollment with csr_variant_id", "05", true, "outstanding"
-      it_behaves_like "enrollment with csr_variant_id", "06", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "01", false, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "01", true, "coverage_selected", true, "negative_response_received"
+      it_behaves_like "enrollment with csr_variant_id", "02", true, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "03", false, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "03", true, "coverage_selected", true, "negative_response_received"
+      it_behaves_like "enrollment with csr_variant_id", "04", true, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "05", true, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "06", true, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "01", false, "coverage_selected", false, "negative_response_received"
+      it_behaves_like "enrollment with csr_variant_id", "01", false, "auto_renewing", true, "outstanding"
     end
 
     context 'Negative Response Received logic update with flag off' do
       before do
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:ifsv_income_nrr).and_return(false)
       end
-      it_behaves_like "enrollment with csr_variant_id", "01", false, "outstanding"
-      it_behaves_like "enrollment with csr_variant_id", "01", true, "outstanding"
-      it_behaves_like "enrollment with csr_variant_id", "02", true, "outstanding"
-      it_behaves_like "enrollment with csr_variant_id", "03", false, "outstanding"
-      it_behaves_like "enrollment with csr_variant_id", "03", true, "outstanding"
-      it_behaves_like "enrollment with csr_variant_id", "04", true, "outstanding"
-      it_behaves_like "enrollment with csr_variant_id", "05", true, "outstanding"
-      it_behaves_like "enrollment with csr_variant_id", "06", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "01", false, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "01", true, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "02", true, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "03", false, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "03", true, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "04", true, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "05", true, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "06", true, "coverage_selected", true, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "01", false, "coverage_selected", false, "outstanding"
+      it_behaves_like "enrollment with csr_variant_id", "01", false, "auto_renewing", true, "outstanding"
     end
   end
 end

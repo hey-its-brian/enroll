@@ -37,7 +37,7 @@ module FinancialAssistance
             end
 
             def update_applicant(response_app_entity, application, applicant_identifier)
-              enrollments = HbxEnrollment.where(:aasm_state.in => HbxEnrollment::ENROLLED_STATUSES, family_id: application.family_id)
+              enrollments = HbxEnrollment.by_year(application.assistance_year).enrolled_and_renewing.where(family_id: application.family_id)
 
               response_applicant = response_app_entity.applicants.detect {|applicant| applicant.person_hbx_id == applicant_identifier}
               applicant = application.applicants.where(person_hbx_id: applicant_identifier).first
