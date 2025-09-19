@@ -31,11 +31,11 @@ Gem::Specification.new do |s|
   s.add_dependency 'config', '~> 4.2.1'
   s.add_dependency 'money-rails', '~> 1.13'
   s.add_dependency 'pundit', '~> 2.0'
-  s.add_dependency 'rexml', '>= 3.3.9'
+  s.add_dependency 'rexml', '>= 3.4.4'
 
   s.add_development_dependency 'rspec-rails',               '~> 5.0.1'
   s.add_development_dependency 'simplecov',                 '~> 0.22.0'
-  s.add_development_dependency 'simplecov-cobertura',       '~> 2.1.0'
+  s.add_development_dependency 'simplecov-cobertura',       '~> 3.1.0'
   s.add_development_dependency 'rspec-instafail',           '~> 1.0.0'
   s.add_development_dependency 'shoulda-matchers'
   s.add_development_dependency 'rspec'

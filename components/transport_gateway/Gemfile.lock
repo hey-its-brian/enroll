@@ -6,7 +6,7 @@ PATH
       net-sftp (~> 2.1, >= 2.1.2)
       net-ssh (= 4.2.0)
       rails (= 6.1.7.10)
-      rexml (>= 3.3.9)
+      rexml (>= 3.4.4)
 
 GEM
   remote: https://rubygems.org/
@@ -1690,7 +1690,7 @@ GEM
       rake (>= 12.2)
       thor (~> 1.0)
     rake (13.3.0)
-    rexml (3.3.9)
+    rexml (3.4.4)
     rspec (3.13.0)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -1720,7 +1720,7 @@ GEM
       docile (~> 1.1)
       simplecov-html (~> 0.11)
       simplecov_json_formatter (~> 0.1)
-    simplecov-cobertura (2.1.0)
+    simplecov-cobertura (3.1.0)
       rexml
       simplecov (~> 0.19)
     simplecov-html (0.12.3)
@@ -1756,7 +1756,7 @@ DEPENDENCIES
   rspec-rails (~> 5.0.1)
   shoulda-matchers (~> 4.5)
   simplecov (~> 0.22.0)
-  simplecov-cobertura (~> 2.1.0)
+  simplecov-cobertura (~> 3.1.0)
   transport_gateway!
   webmock
 

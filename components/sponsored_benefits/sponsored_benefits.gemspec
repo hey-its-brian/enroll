@@ -38,12 +38,13 @@ Gem::Specification.new do |s|
   s.add_dependency 'dry-struct'
   s.add_dependency 'dry-monads'
   s.add_dependency 'holidays', '~> 8.6'
+  s.add_dependency  'rexml', '>= 3.4.4'
 
   s.test_files = Dir["spec/**/*"]
 
   s.add_development_dependency "rspec-rails",                '5.0.1'
   s.add_development_dependency 'simplecov',                 '~> 0.22.0'
-  s.add_development_dependency 'simplecov-cobertura',       '~> 2.1.0'
+  s.add_development_dependency 'simplecov-cobertura',       '~> 3.1.0'
   s.add_development_dependency 'rspec-instafail',           '~> 1.0.0'
   s.add_development_dependency 'shoulda-matchers',          '~> 3'
   s.add_development_dependency 'database_cleaner-mongoid',  '~> 2.0'

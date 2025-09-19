@@ -21,10 +21,11 @@ Gem::Specification.new do |s|
   s.add_dependency 'transport_gateway'
   s.add_dependency 'symmetric-encryption', '~> 4.6.0'
   s.add_dependency 'rubyzip', '>= 1.3.0'
+  s.add_dependency 'rexml', '>= 3.4.4' 
 
   s.add_development_dependency 'rspec-rails',                '~> 5.0.1'
   s.add_development_dependency 'simplecov',                 '~> 0.22.0'
-  s.add_development_dependency 'simplecov-cobertura',       '~> 2.1.0'
+  s.add_development_dependency 'simplecov-cobertura',       '~> 3.1.0'
   s.add_development_dependency 'rspec-instafail',           '~> 1.0.0'
   s.add_development_dependency 'shoulda-matchers',          '~> 4.5'
   s.add_development_dependency 'webmock'

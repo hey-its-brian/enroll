@@ -31,7 +31,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'virtus',                    '~> 1.0'
   s.add_dependency "slim",                      "~> 3.0"
   s.add_dependency 'symmetric-encryption',      '~> 4.6.0'
-  s.add_dependency 'rexml',                     '>= 3.3.9'
+  s.add_dependency 'rexml',                     '>= 3.4.4'
 
   s.add_dependency 'dry-types'
   s.add_dependency 'dry-validation'
@@ -49,7 +49,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rails-perftest',            '~> 0.0.7'
   s.add_development_dependency "rspec-rails",               '~> 5.0.1'
   s.add_development_dependency 'simplecov',                 '~> 0.22.0'
-  s.add_development_dependency 'simplecov-cobertura',       '~> 2.1.0'
+  s.add_development_dependency 'simplecov-cobertura',       '~> 3.1.0'
   s.add_development_dependency 'rspec-instafail',           '~> 1.0.0'
   s.add_development_dependency 'rubocop-rspec',             '~> 1.31'
   s.add_development_dependency 'shoulda-matchers',          '~> 3'

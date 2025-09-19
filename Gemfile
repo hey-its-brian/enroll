@@ -93,7 +93,7 @@ gem "recaptcha",                '~> 4.13', require: 'recaptcha/rails'
 gem 'redis',                    '~> 4.0'
 gem 'redis-rails',              '~> 5.0.2'
 gem 'redis-store',              '~> 1.10'
-gem 'rexml',                    '>= 3.3.9'
+gem 'rexml',                    '>= 3.4.4'
 # Resque indirectly depends on Sinatra. We're aware of CVE-2024-21510 in Sinatra,
 # but it doesn't affect our usage. See .bundler-audit.yml for mitigation.
 gem 'resque',                   '~> 2.6.0'
@@ -182,7 +182,7 @@ group :test do
   gem 'ruby-progressbar',             '~> 1'
   gem 'shoulda-matchers',             '~> 3'
   gem 'simplecov',                    '~> 0.22.0',  :require => false
-  gem 'simplecov-cobertura'
+  gem 'simplecov-cobertura',          '~> 3.1.0'   
   gem 'test-prof',                    '~> 1.3'
   gem 'warden',                       '~> 1.2.7'
   gem 'watir',                        '~> 6.18.0'

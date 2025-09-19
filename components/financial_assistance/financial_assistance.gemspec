@@ -34,7 +34,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'dry-types'
   spec.add_dependency 'dry-validation'
   spec.add_dependency 'dry-monads'
-  spec.add_dependency 'rexml',                     '>= 3.3.9'
+  spec.add_dependency 'rexml',                     '>= 3.4.4'
 
   spec.add_development_dependency 'capybara',                  '~> 3.12'
   spec.add_development_dependency 'database_cleaner-mongoid'
@@ -46,7 +46,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec-rails",               '~> 5.0.1'
   spec.add_development_dependency 'rubocop-rspec',             '~> 1.31'
   spec.add_development_dependency 'simplecov',                 '~> 0.22.0'
-  spec.add_development_dependency 'simplecov-cobertura',       '~> 2.1.0'
+  spec.add_development_dependency 'simplecov-cobertura',       '~> 3.1.0'
   spec.add_development_dependency 'rspec-instafail',           '~> 1.0.0'
   spec.add_development_dependency 'shoulda-matchers',          '~> 3'
   spec.add_development_dependency 'test-prof',                 '~> 1.3'
