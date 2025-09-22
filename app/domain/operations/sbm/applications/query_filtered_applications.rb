@@ -92,11 +92,11 @@ module Operations
           qhp_applications.any?(&:is_renewal)
         end
 
-        # Returns the current assistance year
+        # Returns the application applicable year
         #
-        # @return [Integer] the current assistance year
+        # @return [Integer] the application applicable year
         def current_assistance_year
-          hbx_profile.current_oe_bcp.start_on.year.next
+          Family.application_applicable_year
         end
 
         # Finds renewal QHP application for the given assistance year
@@ -129,7 +129,7 @@ module Operations
 
         def fetch_qhp_applications(family_id, filter_year)
           query = ::IndividualMarket::Application.where(family_id: family_id).only(
-            :hbx_id, :assistance_year, :created_at, :submitted_at, :current_state, :is_renewal
+            :hbx_id, :assistance_year, :created_at, :submitted_at, :current_state, :is_renewal, :family_id
           )
 
           query = query.where(assistance_year: filter_year) if filter_year.present?
@@ -137,8 +137,9 @@ module Operations
         end
 
         def fetch_faa_applications(family_id, filter_year)
-          query = ::FinancialAssistance::Application.where(family_id: family_id)
-                                                    .only(:hbx_id, :assistance_year, :created_at, :submitted_at, :aasm_state)
+          query = ::FinancialAssistance::Application.where(family_id: family_id).only(
+            :hbx_id, :assistance_year, :created_at, :submitted_at, :aasm_state, :family_id
+          )
 
           query = query.where(assistance_year: filter_year) if filter_year.present?
           query.to_a
