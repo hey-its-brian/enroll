@@ -18,8 +18,4 @@ class IvlQhpSubmitPage
   def self.qhp_submit_application
     '.interaction-click-control-submit-application'
   end
-
-  def self.qhp_submit_previous_step
-    '#previous_button'
-  end
 end

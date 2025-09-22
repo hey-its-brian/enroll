@@ -91,7 +91,7 @@
             <div>
               <%= f.label :relationship, l10n("relationship_to_primary_member").titleize, class: "required" %>
               <%= f.select :relationship,
-                  relationship_options(f.object, request.referer),
+                  relationship_options(f.object, request.referrer),
                   { prompt: l10n("choose_relationship") },
                   { required: true } %>
               <a href="#relationship" data-toggle="modal" data-target="#relationship" class="d-block"><%= l10n("not_sure") %></a>
@@ -269,7 +269,6 @@
                   <%= render partial: 'shared/modal_support_text_household', locals: {key: "eligible_immigration_status"} %>
                 </div>
 
-
                 <%= f.fields_for :immigration_information, @immigration_information_form do |immigration| %>
                   <div data-target="immigration-documents.ImmigrationDocumentsContainer" class="<%= 'hidden' unless immigration.object.subject.present? %>">
                     <% subject_options = f.object.demographics.us_citizen ? VlpDocument::NATURALIZATION_DOCUMENT_TYPES : VlpDocument::VLP_DOCUMENT_KINDS %>
@@ -374,7 +373,14 @@
                     </div>
                   </div>
                 </div>
-                <%= demographics.select(:tribal_state, options_for_select(State::STATE_IDS, selected: demographics.object.tribal_state), {include_blank: l10n("insured.consumer_roles.select_state")}, id: "tribal-state", data: { target: "family-information.TribalState", action: "change->family-information#handleTribalStateChange" })  %>
+                <%= demographics.select(:tribal_state, options_for_select(State::STATE_IDS, selected: demographics.object.tribal_state),
+                  { include_blank: l10n("insured.consumer_roles.select_state") },
+                  id: "tribal-state",
+                  data: {
+                    target: "family-information.TribalState",
+                    action: "change->family-information#handleTribalStateChange"
+                  })  
+                %>
               </div>
 
               <% show_tribal_name = demographics.object.tribal_state == EnrollRegistry[:enroll_app].setting(:state_abbreviation).item || demographics.object.tribal_name.present? %>
@@ -594,17 +600,17 @@
           <%= l10n("cancel") %>
         </button>
         <% if !is_editing %>
-          <%= f.button(class: "btn btn-primary", data: { action: "family-information#checkValidations" }) do %>
+          <%= f.button(class: "btn btn-primary", data: { action: "family-information#checkValidations", cuke: "confirm-member" }) do %>
             <%= l10n("confirm_member") %>
           <% end %>
         <% else %>
           <% if is_dependent %>
             <div id="remove_confirm" class="hidden"></div>
-            <%= button_tag(type: "button", id: "delete_applicant_button_qhp", class: "btn button-error outline close2") do %>
+            <%= button_tag(type: "button", id: "delete_applicant_button_qhp", class: "btn button-error outline close2", data: { cuke: 'remove-dependent-applicant' }) do %>
               <%= l10n('remove_member') %>
             <% end %>
           <% end %>
-          <%= f.button(class: "btn btn-primary", data: { action: "family-information#checkValidations" }) do %>
+          <%= f.button(class: "btn btn-primary", data: { action: "family-information#checkValidations", cuke: 'save-changes' }) do %>
             <%= l10n("save_changes") %>
           <% end %>
         <% end %>
@@ -617,8 +623,8 @@
                 <strong><br /><%= l10n('faa.edit.remove_warning') %></strong>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-default pull-left" data-dismiss="modal">Cancel</button>
-                <button type="button" class="" id="destroy-confirm-qhp" data-url="<%=form_url%>">Confirm</button>
+                <button type="button" class="btn btn-default pull-left" data-dismiss="modal"><%= l10n('cancel') %></button>
+                <button type="button" class="" id="destroy-confirm-qhp" data-url="<%=form_url%>" data-cuke="confirm-remove-dependent-applicant"><%= l10n('confirm_selection') %></button>
 
               </div>
             </div>

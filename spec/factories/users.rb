@@ -131,11 +131,13 @@ FactoryBot.define do
 
   trait :with_consumer_role do
     after :create do |user|
-      if user.person.blank?
-        FactoryBot.create :person, :with_consumer_role, :with_family, :with_active_consumer_role, :user => user
-      else
-        create :consumer_role, person: user.person, dob: user.person.dob
-      end
+      ensure_consumer_person(user)
+    end
+  end
+
+  trait :with_consumer_role_and_ssn do
+    after :create do |user|
+      ensure_consumer_person(user, [:with_ssn])
     end
   end
 
@@ -164,4 +166,12 @@ FactoryBot.define do
   end
 
   factory :invalid_user, traits: [:without_email, :without_password, :without_password_confirmation]
+end
+
+def ensure_consumer_person(user, extra_traits = [])
+  if user.person.blank?
+    FactoryBot.create(:person, :with_consumer_role, :with_family, :with_active_consumer_role, *extra_traits, user: user)
+  else
+    create(:consumer_role, person: user.person, dob: user.person.dob)
+  end
 end

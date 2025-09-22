@@ -9,7 +9,7 @@ And(/^consumer edits the dependent of the application$/) do
   application.reload
   dependent = application.applicants.last
   FactoryBot.create(:person, hbx_id: dependent.person_hbx_id)
-  find(IvlIapFamilyInformation.edit_dependent_button).click
+  find(IvlIapFamilyInformation.edit_dependent_btn).click
 end
 
 Then(/^consumer should see today date and clicks continue$/) do

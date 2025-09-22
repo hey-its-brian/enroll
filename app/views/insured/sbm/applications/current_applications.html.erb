@@ -87,9 +87,9 @@
   </div>
 </section>
 <% if @prospective_application.present? %>
-  <%= render partial: 'insured/sbm/applications/application_card', locals: { application: @prospective_application, year: @prospective_year, renewal: true } %>
+  <%= render partial: 'insured/sbm/applications/application_card', locals: { application: @prospective_application, year: @prospective_year, renewal: true, card_label: 'prospective' } %>
 <% end %>
-<%= render partial: 'insured/sbm/applications/application_card', locals: { application: @family.application_for_year(@applicable_year), year: @applicable_year, alt_year: @previous_year, draft: @family.recent_draft_application_for_year(@applicable_year), renewal: false } %>
-<%= render partial: 'insured/sbm/applications/application_card', locals: { application: @family.application_for_year(@previous_year), year: @previous_year, alt_year: @applicable_year, draft: @family.recent_draft_application_for_year(@previous_year), renewal: false } %>
+<%= render partial: 'insured/sbm/applications/application_card', locals: { application: @family.application_for_year(@applicable_year), year: @applicable_year, alt_year: @previous_year, draft: @family.recent_draft_application_for_year(@applicable_year), renewal: false, card_label: 'applicable' } %>
+<%= render partial: 'insured/sbm/applications/application_card', locals: { application: @family.application_for_year(@previous_year), year: @previous_year, alt_year: @applicable_year, draft: @family.recent_draft_application_for_year(@previous_year), renewal: false, card_label: 'previous' } %>
 
 <%= link_to l10n("insured.sbm.applications.application_history"), insured_sbm_applications_path, class: "btn outline primary mt-4" %>

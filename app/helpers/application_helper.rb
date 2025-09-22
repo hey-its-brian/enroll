@@ -635,8 +635,8 @@ module ApplicationHelper
     end
   end
 
-  def relationship_options(dependent, referer)
-    relationships = if referer.include?("consumer_role_id") || @person.try(:is_consumer_role_active?)
+  def relationship_options(dependent, referrer)
+    relationships = if referrer.include?("consumer_role_id") || @person.try(:is_consumer_role_active?)
                       BenefitEligibilityElementGroup::Relationships_UI - ["self"]
                     else
                       PersonRelationship::Relationships_UI

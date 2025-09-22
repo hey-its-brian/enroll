@@ -9,7 +9,7 @@ document.addEventListener('click', function(e) {
     }
 
     if (e.target.matches('#destroy-confirm-qhp')) {
-        confirmDestoyApplicantQhp(e, e.target.dataset.url);
+        confirmDestroyApplicantQhp(e, e.target.dataset.url);
     }
 });
 
@@ -38,7 +38,7 @@ function closeModal() {
     if (backdrop) backdrop.remove();
 }
 
-function confirmDestoyApplicantQhp(event, url) {
+function confirmDestroyApplicantQhp(event, url) {
     const confirmButton = document.getElementById('destroy-confirm-qhp');
     confirmButton.disabled = true;
     event.preventDefault();
@@ -48,7 +48,9 @@ function confirmDestoyApplicantQhp(event, url) {
     document.querySelectorAll('.modal-backdrop').forEach(el => el.classList.remove('modal-backdrop'));
     document.querySelectorAll('.modal-open').forEach(el => el.classList.remove('modal-open'));
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    // Get CSRF token from meta tag --> not needed when running cucumber test
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
 
     fetch(url, {
         method: 'DELETE',

@@ -104,7 +104,7 @@ And(/the consumer only has one mobile phone number$/) do
   person.phones.create(kind: 'mobile', full_phone_number: '123-456-7890')
 end
 
-And(/user selects no for applicant's coverage requirement$/) do
+And(/user selects yes for applicant's coverage requirement$/) do
   find(:xpath, FinancialAssistance::ApplicantForm.is_applying_coverage_true).click
 end
 
@@ -170,12 +170,8 @@ Then(/(.*) (should|should not) see the pre-1957 alien number warning/) do |_, ca
   end
 end
 
-And(/user clicks comfirm member$/) do
+And(/the user clicks the confirm member button$/) do
   find(EnrollRegistry.feature_enabled?(:bs4_consumer_flow) ? '#confirm-dependent' : ".btn.applicant-confirm-member").click
-end
-
-Then(/form should not submit due to required relationship options popup$/) do
-  find(:xpath, "//div[@class='selectric-scroll']")
 end
 
 And(/user fills in the missing relationship$/) do
@@ -186,17 +182,27 @@ And(/user fills in the missing relationship$/) do
   end
 end
 
+Then(/form should not submit due to required relationship options popup$/) do
+  find(:xpath, "//div[@class='selectric-scroll']")
+end
+
+Then(/qhp applicant form should not create a new applicant due to required relationship$/) do
+  url_application_id = page.current_url.match(%r{applications/([^/]+)})[1]
+  qhp_app = IndividualMarket::Application.find(url_application_id)
+  expect(qhp_app.applicants.count).to eq 1
+end
+
 Given(/the user has a dependent$/) do
   steps %(
     And user clicks the Add Member button
     And user enters applicant name, ssn, gender and dob
-    And user selects no for applicant's coverage requirement
+    And user selects yes for applicant's coverage requirement
     And user selects no for applicant's incarcerated status
     And user selects no for applicant's indian_tribe_member status
     And user selects yes for applicant's us_citizen status
     And user selects no for applicant's naturalized_citizen status
     And user fills in the missing relationship
-    And user clicks comfirm member
+    And the user clicks the confirm member button
   )
 end
 
@@ -204,13 +210,13 @@ Given(/the user has a dependent with no ssn$/) do
   steps %(
     And user clicks the Add Member button
     And user enters applicant name, gender, dob and checks no ssn
-    And user selects no for applicant's coverage requirement
+    And user selects yes for applicant's coverage requirement
     And user selects no for applicant's incarcerated status
     And user selects no for applicant's indian_tribe_member status
     And user selects yes for applicant's us_citizen status
     And user selects no for applicant's naturalized_citizen status
     And user fills in the missing relationship
-    And user clicks comfirm member
+    And the user clicks the confirm member button
   )
 end
 
@@ -251,7 +257,7 @@ Given(/the user has a dependent with no ssn and modal handling$/) do
   steps %(
     And user clicks the Add Member button
     And user enters applicant name, gender, dob and checks no ssn
-    And user selects no for applicant's coverage requirement
+    And user selects yes for applicant's coverage requirement
     And user selects no for applicant's incarcerated status
     And user selects no for applicant's indian_tribe_member status
     And user selects yes for applicant's us_citizen status

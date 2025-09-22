@@ -8,7 +8,8 @@ Given(/^that the user is on FAA Household Info: Family Members page$/) do
     bcp.update_attributes!(slcsp_id: ivl_product.id)
   end
   visit root_path
-  click_link 'Assisted Consumer/Family Portal'
+  # click_link 'Assisted Consumer/Family Portal'
+  click_link 'Consumer/Family Portal'
   find('a[class*="interaction-click-control-continue"]').click
   sleep 2
   # Security Questions
@@ -295,13 +296,13 @@ end
 When(/^user completes the required fields$/) do
   steps %(
     And user enters applicant name, ssn, gender and dob
-    And user selects no for applicant's coverage requirement
+    And user selects yes for applicant's coverage requirement
     And user selects no for applicant's incarcerated status
     And user selects no for applicant's indian_tribe_member status
     And user selects yes for applicant's us_citizen status
     And user selects no for applicant's naturalized_citizen status
     And user fills in the missing relationship
-    And user clicks comfirm member
+    And the user clicks the confirm member button
   )
 end
 
@@ -312,7 +313,7 @@ end
 
 When(/^more than one member exists in the household$/) do
   step 'user clicks on add new member to household'
-  step 'user completes the required fields'
+  step "user completes the required fields"
 end
 
 Then(/^user should see Family Relationship included in the side navigation$/) do
@@ -325,7 +326,7 @@ Then(/^user should see Family Relationship included in the side navigation$/) do
 end
 
 When(/^user clicks on remove member from household$/) do
-  find(IvlIapFamilyInformation.edit_dependent_button).click
+  find(IvlIapFamilyInformation.edit_dependent_btn).click
   find(IvlIapFamilyInformation.remove_member_btn).click
   sleep 2
   find(IvlIapFamilyInformation.remove_member_confirm_btn).click
@@ -353,6 +354,11 @@ end
 Then(/^user should see income and coverage information page$/) do
   expect(page).to have_content(l10n('faa.nav.applicant_subheader'))
   expect(page).to have_content(l10n('add_income_coverage_info'))
+end
+
+Then(/^user should see contact preferences page$/) do
+  expect(page.current_url).to include('preferences')
+  expect(page).to have_content(l10n('insured.preferences.contact_preferences'))
 end
 
 Then(/^user should see family relationships page$/) do

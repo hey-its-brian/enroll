@@ -11,7 +11,7 @@
 <h1 data-cuke='eligibility_results'><%= @application.assistance_year %> <%= l10n("faa.results.eligibility_results") %></h1>
 
 <% if @application.qhp_eligible_applicants.any? %>
-<section class="my-4">
+<section class="my-4" data-cuke='determined-uqhp-eligible-section'>
   <h3><%= l10n("qhp_application.results.uqhp_title") %></h3>
   <p><%= l10n("qhp_application.results.uqhp_description", short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
   <ul class="b" >
@@ -26,8 +26,8 @@
 <% end %>
 
 <% if @application.csr_eligible_applicants.any? %>
-<section class="my-4">
-  <p data-cuke='csr_nal_text'><%= l10n("faa.results.csr_nal_text") %></p>
+<section class="my-4" data-cuke='determined-csr-eligible-section'>
+  <p><%= l10n("faa.results.csr_nal_text") %></p>
   <ul class="b">
   <% @application.csr_eligible_applicants.each do |applicant| %>
     <li>
@@ -40,9 +40,9 @@
 <% end %>
 
 <% if @application.totally_ineligible_applicants.any? %>
-<section class="my-4">
-  <h3 data-cuke='totally_ineligible_heading'><b><%= l10n("faa.results.totally_ineligible_heading") %></h3>
-  <p data-cuke='totally_ineligible_text'><%= l10n("qhp_application.results.ineligible_description", site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+<section class="my-4" data-cuke='determined-totally-ineligible-section'>
+  <h3><b><%= l10n("faa.results.totally_ineligible_heading") %></h3>
+  <p><%= l10n("qhp_application.results.ineligible_description", site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
   <ul class="b">
   <% @application.totally_ineligible_applicants.each do |applicant| %>
     <li>
@@ -55,9 +55,9 @@
 <% end %>
 
 <% if @application.non_applicants.any? %>
-<section class="my-4">
-  <h3 data-cuke='not_applying_coverage_heading'><%= l10n("faa.results.not_applying_coverage_heading") %></h3>
-  <p data-cuke='not_applying_coverage_text'><%= l10n("faa.results.not_applying_coverage_text") %></p>
+<section class="my-4" data-cuke='not-applying-coverage-section'>
+  <h3><%= l10n("faa.results.not_applying_coverage_heading") %></h3>
+  <p><%= l10n("faa.results.not_applying_coverage_text") %></p>
   <ul class="b">
   <% @application.non_applicants.each do |applicant| %>
     <li>

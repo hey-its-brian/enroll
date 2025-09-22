@@ -84,3 +84,8 @@ Then(/^the user will navigate to the FAA Family Information page$/) do
   expect(page).to have_css('[data-cuke="family_information"]')
   expect(page).to have_css('[data-cuke="add_new_member_to_household"]') unless EnrollRegistry.feature_enabled?(:qhp_application)
 end
+
+Then(/^the user will navigate to the QHP Family Information page$/) do
+  expect(page).to have_css('[data-cuke="family_information"]')
+  expect(page).to have_css('[data-cuke="add_new_member_to_household"]') unless EnrollRegistry.feature_enabled?(:qhp_application)
+end

@@ -570,7 +570,7 @@ When(/^Individual clicks on continue to next step on QHP Preferences page$/) do
 end
 
 When(/^Individual clicks on continue to next step on QHP Review page$/) do
-  find_all(IvlQhpReviewPage.qhp_review_continue_to_next_step)[1].click
+  find_all(IvlQhpCommonElements.qhp_continue_to_next_step)[1].click
 end
 
 When(/^Individual clicks on Edit Section button for personal information$/) do
@@ -581,9 +581,8 @@ When(/^Individual agrees and submits QHP application$/) do
   fill_in IvlQhpSubmitPage.qhp_submit_first_name, with: 'Patrick'
   fill_in IvlQhpSubmitPage.qhp_submit_last_name, with: 'Doe'
   find(IvlQhpSubmitPage.qhp_submit_i_agree).click
-  sleep 2
-  find('input[class*="interaction-click-control-submit-application"]').click
-  expect(page).to have_css(IvlQhpEligibilityResultsPage.qhp_continue_to_shop_for_plans)
+  find('input[class*="interaction-click-control-submit-application"]', visible: :visible, wait: 5).click
+  expect(page).to have_css(IvlQhpEligibilityResultsPage.qhp_continue_to_shop_for_plans, wait: 10)
 end
 
 Then(/^Individual is on the QHP Preferences page$/) do
@@ -1510,10 +1509,10 @@ When(/Individual clicks on None of the situations listed above apply checkbox$/)
   expect(page).to have_content 'To enroll before Open Enrollment'
 end
 
-Then(/Individual should land on Home page$/) do
+Then(/^(.+?) should land on Home page$/) do |_subject|
   sleep 1
   if EnrollRegistry[:bs4_consumer_flow].enabled?
-    expect(page).to have_content "My CoverME.gov"
+    expect(page).to have_content l10n('insured.my_coverme_header')
   else
     expect(page).to have_content "My #{EnrollRegistry[:enroll_app].setting(:short_name).item}"
   end

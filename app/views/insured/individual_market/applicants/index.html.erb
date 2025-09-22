@@ -28,7 +28,16 @@
       <div id="member-<%= primary_applicant.id %>-info-display" class="d-flex flex-row flex-wrap justify-content-between">
         <div>
           <label for="primary-name"><%= l10n("name")%></label>
-          <input id="primary-name" type="text" value="<%= "#{primary_applicant.person_name.given_name} #{primary_applicant.person_name.middle_name} #{primary_applicant.person_name.family_name}" %>" disabled >
+          <input 
+            id="primary-name"
+            type="text" 
+            value="<%= [
+                primary_applicant.person_name.given_name,
+                primary_applicant.person_name.middle_name,
+                primary_applicant.person_name.family_name
+              ].reject(&:blank?).join(' ') %>" 
+            disabled
+          >
         </div>
         <div>
           <label for="primary-age"><%= l10n("age")%></label>
@@ -50,6 +59,7 @@
                 data-action="qhp-application#editApplicant"
                 data-member-id="<%= primary_applicant.reference_id %>"
                 data-target="qhp-application.EditApplicantButton"
+                data-cuke="edit-primary-applicant"
                 data-qhp-application-url-value="<%= edit_insured_individual_market_application_applicant_path(@application, primary_applicant) %>">
           <%= l10n("edit_member") %>
         </button>
@@ -94,6 +104,7 @@
                       data-action="qhp-application#editApplicant"
                       data-member-id="<%= dependent.reference_id %>"
                       data-target="qhp-application.EditApplicantButton"
+                      data-cuke="edit-dependent-applicant"
                       data-qhp-application-url-value="<%= edit_insured_individual_market_application_applicant_path(@application, dependent) %>">
                 <%= l10n("edit_member") %>
               </button>
