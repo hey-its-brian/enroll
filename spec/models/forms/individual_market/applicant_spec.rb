@@ -449,6 +449,86 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
       expect(applicant_form.errors.full_messages).not_to include('The entered SSN is already taken by another applicant in this application.')
     end
 
+    context 'when checking ssn_is_taken operation for an existing person' do
+      let(:input_applicant) {applicant}
+      let(:ssn_taken_operation) { instance_double(Operations::People::SsnTaken) }
+
+      before do
+        applicant.update_attributes(family_member_id: application.family.family_members.first.id)
+        applicant.family_member.person.update(ssn: input_applicant.demographics.ssn, dob: input_applicant.demographics.dob, first_name: input_applicant.person_name.given_name, last_name: input_applicant.person_name.family_name)
+        params[:id] = applicant.id
+        params[:is_primary_applicant] = true
+        allow(Operations::People::SsnTaken).to receive(:new).and_return(ssn_taken_operation)
+      end
+
+      it 'calls operation with skipped_person when the first name has changed' do
+        params[:person_name_attributes][:given_name] = "Jojo"
+        expect(ssn_taken_operation).to receive(:call).with({
+                                                             dob: applicant.demographics.dob.to_date,
+                                                             first_name: "Jojo",
+                                                             last_name: applicant.person_name.family_name,
+                                                             ssn: applicant.demographics.ssn,
+                                                             skipped_person: applicant.family_member.person.hbx_id
+                                                           }).and_return(double(success?: true, success: false))
+
+        applicant_form = described_class.new(params)
+        applicant_form.valid?
+      end
+
+      it 'calls operation with skipped_person when the last name has changed' do
+        params[:person_name_attributes][:family_name] = "DoeDoe"
+        expect(ssn_taken_operation).to receive(:call).with({
+                                                             dob: applicant.demographics.dob.to_date,
+                                                             first_name: applicant.person_name.given_name,
+                                                             last_name: "DoeDoe",
+                                                             ssn: applicant.demographics.ssn,
+                                                             skipped_person: applicant.family_member.person.hbx_id
+                                                           }).and_return(double(success?: true, success: false))
+
+        applicant_form = described_class.new(params)
+        applicant_form.valid?
+      end
+
+      it 'calls operation with skipped_person when the dob has changed' do
+        params[:demographics_attributes][:dob] = applicant.demographics.dob + 1.day
+        expect(ssn_taken_operation).to receive(:call).with({
+                                                             dob: (applicant.demographics.dob + 1.day).to_date,
+                                                             first_name: applicant.person_name.given_name,
+                                                             last_name: applicant.person_name.family_name,
+                                                             ssn: applicant.demographics.ssn,
+                                                             skipped_person: applicant.family_member.person.hbx_id
+                                                           }).and_return(double(success?: true, success: false))
+
+        applicant_form = described_class.new(params)
+        applicant_form.valid?
+      end
+
+      it 'calls operation without skipped_person when the matching criteria has not changed' do
+        expect(ssn_taken_operation).to receive(:call).with({
+                                                             dob: applicant.demographics.dob.to_date,
+                                                             first_name: applicant.person_name.given_name,
+                                                             last_name: applicant.person_name.family_name,
+                                                             ssn: applicant.demographics.ssn
+                                                           }).and_return(double(success?: true, success: false))
+
+        applicant_form = described_class.new(params)
+        applicant_form.valid?
+      end
+
+      it "calls operation without skipped_person when the ssn has changed" do
+        params[:demographics_attributes][:ssn] = "555443333"
+        expect(ssn_taken_operation).to receive(:call).with({
+                                                             dob: applicant.demographics.dob.to_date,
+                                                             first_name: applicant.person_name.given_name,
+                                                             last_name: applicant.person_name.family_name,
+                                                             ssn: "555443333"
+                                                           }).and_return(double(success?: true, success: false))
+
+        applicant_form = described_class.new(params)
+        applicant_form.valid?
+      end
+    end
+
     context 'when checking ssn_is_taken operation' do
       let(:ssn_taken_operation) { instance_double(Operations::People::SsnTaken) }
 

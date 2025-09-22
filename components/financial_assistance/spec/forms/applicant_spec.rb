@@ -86,9 +86,82 @@ RSpec.describe FinancialAssistance::Forms::Applicant, type: :model do
         before do
           allow(subject).to receive(:qhp_application_feature_enabled?).and_return(true)
           subject.ssn = ssn
-          subject.dob = Date.new(1990, 1, 1)
+          subject.dob = "1999-01-01"
           subject.first_name = 'John'
           subject.last_name = 'Doe'
+        end
+
+        context 'when checking ssn_is_taken operation for an existing person' do
+          let(:ssn_taken_operation) { instance_double(Operations::People::SsnTaken) }
+
+          before do
+            subject.applicant_id = primary_applicant.id
+            primary_applicant.update_attributes(family_member_id: application.family.family_members.first.id)
+            primary_applicant.family_member.person.update(ssn: ssn, dob: "1999-01-01", first_name: 'John', last_name: 'Doe')
+            allow(Operations::People::SsnTaken).to receive(:new).and_return(ssn_taken_operation)
+          end
+
+          it 'calls operation with skipped_person when the first name has changed' do
+            subject.first_name = "Jojo"
+            expect(ssn_taken_operation).to receive(:call).with({
+                                                                 dob: subject.dob.to_date,
+                                                                 first_name: "Jojo",
+                                                                 last_name: subject.last_name,
+                                                                 ssn: subject.ssn,
+                                                                 skipped_person: primary_applicant.family_member.person.hbx_id
+                                                               }).and_return(double(success?: true, success: false))
+
+            subject.check_same_ssn
+          end
+
+          it 'calls operation with skipped_person when the last name has changed' do
+            subject.last_name = "DoeDoe"
+            expect(ssn_taken_operation).to receive(:call).with({
+                                                                 dob: subject.dob.to_date,
+                                                                 first_name: subject.first_name,
+                                                                 last_name: "DoeDoe",
+                                                                 ssn: subject.ssn,
+                                                                 skipped_person: primary_applicant.family_member.person.hbx_id
+                                                               }).and_return(double(success?: true, success: false))
+
+            subject.check_same_ssn
+          end
+
+          it 'calls operation with skipped_person when the dob has changed' do
+            subject.dob = "1999-01-02"
+            expect(ssn_taken_operation).to receive(:call).with({
+                                                                 dob: "1999-01-02".to_date,
+                                                                 first_name: subject.first_name,
+                                                                 last_name: subject.last_name,
+                                                                 ssn: subject.ssn,
+                                                                 skipped_person: primary_applicant.family_member.person.hbx_id
+                                                               }).and_return(double(success?: true, success: false))
+
+            subject.check_same_ssn
+          end
+
+          it 'calls operation without skipped_person when nothing has changed' do
+            expect(ssn_taken_operation).to receive(:call).with({
+                                                                 dob: subject.dob.to_date,
+                                                                 first_name: subject.first_name,
+                                                                 last_name: subject.last_name,
+                                                                 ssn: subject.ssn
+                                                               }).and_return(double(success?: true, success: false))
+
+            subject.check_same_ssn
+          end
+
+          it 'calls operation without skipped_person when the ssn has changed' do
+            subject.ssn = "555443333"
+            expect(ssn_taken_operation).to receive(:call).with({
+                                                                 dob: subject.dob.to_date,
+                                                                 first_name: subject.first_name,
+                                                                 last_name: subject.last_name,
+                                                                 ssn: "555443333"
+                                                               }).and_return(double(success?: true, success: false))
+
+            subject.check_same_ssn
+          end
         end
 
         context 'when ssn_is_taken? returns true' do

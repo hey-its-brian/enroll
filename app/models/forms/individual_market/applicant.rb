@@ -562,14 +562,19 @@ module Forms
       def ssn_is_taken?(values)
         return [false, nil] if values[:demographics][:ssn].blank?
 
-        result = ::Operations::People::SsnTaken.new.call(
-          {
-            dob: values[:demographics][:dob].to_date,
-            first_name: values[:person_name][:given_name],
-            last_name: values[:person_name][:family_name],
-            ssn: values[:demographics][:ssn]
-          }
-        )
+        matching_params = {
+          dob: values[:demographics][:dob].to_date,
+          first_name: values[:person_name][:given_name],
+          last_name: values[:person_name][:family_name],
+          ssn: values[:demographics][:ssn]
+        }
+
+        # if the matching criteria (dob, first name, last name) has changed for an existing person,
+        # we need to make sure the check isn't failing on the existing person
+        person = applicant&.family_member&.person
+        matching_params[:skipped_person] = person&.hbx_id if person.present? && matching_criteria_changed?(matching_params, person)
+
+        result = ::Operations::People::SsnTaken.new.call(matching_params)
 
         if result.success?
           if result.success
@@ -587,6 +592,12 @@ module Forms
         errors.add(:base, "Error raised checking SSN: #{e.message}")
         Rails.logger.error "QHP Application - SSN Taken Error: #{e.message}, backtrace: #{e.backtrace.join("\n")}"
         [true, "Error raised checking SSN: #{e.message}"]
+      end
+
+      def matching_criteria_changed?(matching_params, person)
+        # return true if the ssn has changed as still want to check in that case
+        return false unless matching_params[:ssn] == person.ssn
+        matching_params[:dob] != person.dob || matching_params[:first_name] != person.first_name || matching_params[:last_name] != person.last_name
       end
 
     end

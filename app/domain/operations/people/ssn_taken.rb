@@ -17,6 +17,7 @@ module Operations
       # @option params [Date] :dob Date of birth of the person
       # @option params [String] :first_name (optional) First name of the person
       # @option params [String] :last_name (optional) Last name of the person
+      # @option params [String] :skipped_person (optional) Hbx ID of the person to skip the check, used when updating the matching criteria of an existing person
       # @return [Dry::Monads::Result] Success(true) if SSN is taken, Success(false) if not taken,
       #                              or Failure with error message on invalid input
       def call(params)
@@ -49,6 +50,8 @@ module Operations
         failures = expected_params.map do |param|
           validate_param(param, params)
         end.compact
+
+        failures << validate_skipped_person(params[:skipped_person]) if params.key?(:skipped_person)
 
         return failures.first if failures.any?
         Success(params)
@@ -100,6 +103,14 @@ module Operations
         nil
       end
 
+      # Validates a string parameter.
+      #
+      # @param hbx_id [String] The Hbx ID of the person to skip the check.
+      def validate_skipped_person(hbx_id)
+        return Failure("skipped_person is not valid.") unless hbx_id.is_a?(String)
+        nil
+      end
+
       # Determines if an SSN is taken by checking for the existence of people with the same SSN
       # but different identifying information.
       #
@@ -128,6 +139,9 @@ module Operations
         end
 
         person = people.first
+
+        # if the person is the same person as the skipped person, we can skip the check
+        return Success(false) if valid_params[:skipped_person] && valid_params[:skipped_person] == person.hbx_id
 
         expected_params.each do |param|
           case param

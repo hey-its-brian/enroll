@@ -9,8 +9,9 @@ RSpec.describe Operations::People::SsnTaken, type: :model, dbclean: :after_each 
     DatabaseCleaner.clean
   end
 
-  let(:person) { FactoryBot.create(:person, :with_consumer_role, first_name: first_name, last_name: last_name, dob: dob, ssn: ssn) }
+  let(:person) { FactoryBot.create(:person, :with_consumer_role, first_name: first_name, last_name: last_name, dob: dob, ssn: ssn, hbx_id: hbx_id) }
   let(:enabled) { true }
+  let(:hbx_id) { 'hbx123456789' }
   let(:expected_param_result) { Success([:dob, :encrypted_ssn, :first_name, :last_name]) }
 
   before :each do
@@ -145,6 +146,22 @@ RSpec.describe Operations::People::SsnTaken, type: :model, dbclean: :after_each 
             end
           end
 
+          context 'when skipped_person is not valid, it is not a string' do
+            let(:params) do
+              {
+                dob: TimeKeeper.date_of_record,
+                ssn: '123456789',
+                first_name: 'John',
+                last_name: 'Smith',
+                skipped_person: 37_645
+              }
+            end
+
+            it 'returns a failure with an error message' do
+              expect(subject.call(params).failure).to eq('skipped_person is not valid.')
+            end
+          end
+
           context 'when all params are valid' do
             let(:params) do
               {
@@ -195,6 +212,56 @@ RSpec.describe Operations::People::SsnTaken, type: :model, dbclean: :after_each 
                 ssn: '123456789',
                 first_name: 'John',
                 last_name: 'Doe'
+              }
+            end
+            let(:first_name) { params[:first_name] }
+            let(:last_name) { 'DoeDoe' }
+            let(:dob) { params[:dob] }
+            let(:ssn) { params[:ssn] }
+
+            it 'returns a success with the params' do
+              person
+              expect(subject.call(params).success).to eq(true)
+            end
+          end
+
+          context 'when:
+            - all params are valid
+            - there is a person with different last_name but they are being skipped
+            ' do
+
+            let(:params) do
+              {
+                dob: TimeKeeper.date_of_record,
+                ssn: '123456789',
+                first_name: 'John',
+                last_name: 'Doe',
+                skipped_person: hbx_id
+              }
+            end
+            let(:first_name) { params[:first_name] }
+            let(:last_name) { 'DoeDoe' }
+            let(:dob) { params[:dob] }
+            let(:ssn) { params[:ssn] }
+
+            it 'returns a success with the params' do
+              person
+              expect(subject.call(params).success).to eq(false)
+            end
+          end
+
+          context 'when:
+            - all params are valid
+            - there is a person with different last_name but they are not the same person who is being skipped
+            ' do
+
+            let(:params) do
+              {
+                dob: TimeKeeper.date_of_record,
+                ssn: '123456789',
+                first_name: 'John',
+                last_name: 'Doe',
+                skipped_person: '123456789'
               }
             end
             let(:first_name) { params[:first_name] }

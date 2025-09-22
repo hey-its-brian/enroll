@@ -154,6 +154,7 @@ RSpec.describe FinancialAssistance::Forms::Applicant, type: :model, dbclean: :af
           end
 
           it 'returns false with errors' do
+            applicant_form.application.family_id = family.id
             expect(applicant_form.save[0]).to be_falsey
             expect(applicant_form.errors.full_messages).to include(
               'The entered SSN is already taken by another applicant in this application.'
