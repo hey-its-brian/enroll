@@ -865,6 +865,8 @@ class ConsumerRole
 
     inactive = verification_types.map(&:type_name) - live_types
     new_types = live_types - verification_types.active.map(&:type_name)
+    Rails.logger.info "Inactive types: #{inactive} for person: #{person.hbx_id}"
+    Rails.logger.info "New types: #{new_types} for person: #{person.hbx_id}"
     person.deactivate_types(inactive)
     new_types.each { |new_type| person.add_new_verification_type(new_type) }
   end
