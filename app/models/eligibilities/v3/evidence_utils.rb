@@ -236,9 +236,7 @@ module Eligibilities
         #
         # @return [void]
         def copied_verified(call_type)
-          return unless can_move_to_verified?
           pre_state = self.current_state
-
           mark_as_verified
           message = build_copied_message(pre_state, call_type)
           build_verification_history('copied_verified', message, 'system')
@@ -330,28 +328,22 @@ module Eligibilities
         end
 
         def copied_review(prev_evidence, call_type)
-          return unless can_move_to_review?
-
           prev_state = self.current_state
-          move_to_review
+          move_to_review if can_move_to_review?
           add_history_with_prev_due_on('copied_review', prev_evidence, prev_state, call_type)
         end
 
         def copied_outstanding(prev_evidence, call_type)
-          return unless can_move_to_outstanding?
-
           prev_state = self.current_state
           assign_attributes(verification_outstanding: true, is_satisfied: false)
-          move_to_outstanding
+          move_to_outstanding if can_move_to_outstanding?
           add_history_with_prev_due_on('copied_outstanding', prev_evidence, prev_state, call_type)
         end
 
         def copied_rejected(prev_evidence, call_type)
-          return unless can_move_to_rejected?
-
           prev_state = self.current_state
           assign_attributes(verification_outstanding: true, is_satisfied: false)
-          move_to_rejected
+          move_to_rejected if can_move_to_rejected?
           add_history_with_prev_due_on('copied_rejected', prev_evidence, prev_state, call_type)
         end
 
