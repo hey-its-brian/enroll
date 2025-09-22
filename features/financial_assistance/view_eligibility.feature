@@ -137,3 +137,27 @@ Feature: A dedicated page that visit the eligibility determination page
     And clicks the "Action" dropdown corresponding to the "determined" application
     And clicks the "View Eligibility Determination" link
     Then the user will navigate to the Eligibility Results page and should see not applying coverage heading
+
+  Scenario: QHP enabled FAA Eligibility results with combined eligibility results for Non-Applicants when QHP is enabled
+    Given bs4_consumer_flow feature is enabled
+    And qhp_application feature is enabled
+    And the user visits the portal outside OE
+    And that a user with a family has a Financial Assistance application with tax households
+    And FAA display_eligibility_results_per_tax_household feature is enabled
+    And the application has applicant with ineligible determination
+    And the user navigates to the "Help Paying For Coverage" portal
+    And clicks the "Action" dropdown corresponding to the "determined" application
+    And clicks the "View Eligibility Determination" link
+    Then the user will navigate to the Eligibility Results page and will find Ineligibility text
+
+  Scenario: QHP enabled FAA Eligibility results with combined eligibility results for Medicaid or CHIP
+    Given bs4_consumer_flow feature is enabled
+    And qhp_application feature is enabled
+    And the user visits the portal outside OE
+    And that a user with a family has a Financial Assistance application with tax households
+    And FAA display_eligibility_results_per_tax_household feature is enabled
+    And the application has applicant with medicaid_or_chip
+    And the user navigates to the "Help Paying For Coverage" portal
+    And clicks the "Action" dropdown corresponding to the "determined" application
+    And clicks the "View Eligibility Determination" link
+    Then the user will navigate to the Eligibility Results page and will find Medicaid or CHIP eligibility text
