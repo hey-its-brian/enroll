@@ -24,9 +24,8 @@ module FinancialAssistance
           filter_year = params[:filter_year]
           @applications = FinancialAssistance::Application.where("family_id" => family_id)
           @filtered_applications = filter_year.present? && !filter_year.nil? ? @applications.where(:assistance_year => filter_year) : @applications
-          @filtered_applications = @filtered_applications.desc(:created_at).without(:relationships,:applicants,:workflow_state_transitions)
-
-          determined_apps = @filtered_applications.where(:aasm_state => "determined")
+          @filtered_applications = @filtered_applications.without(:relationships,:applicants,:workflow_state_transitions)
+          determined_apps = @applications.determined
           most_recent_year = determined_apps.pluck(:assistance_year).max
           @recent_determined_hbx_id = determined_apps.where(:assistance_year => most_recent_year).desc(:submitted_at).pluck(:hbx_id).first
           Success(
