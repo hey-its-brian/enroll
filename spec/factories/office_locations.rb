@@ -14,5 +14,9 @@ FactoryBot.define do
       address { FactoryBot.build(:address, kind: "primary") }
     end
 
+    trait :with_primary_address do
+      is_primary { true }
+      address { FactoryBot.build(:address, :valid_county) }
+    end
   end
 end

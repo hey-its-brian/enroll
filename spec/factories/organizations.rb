@@ -13,6 +13,10 @@ FactoryBot.define do
                             :allow_special => false, :exactly => 9)
     end
 
+    trait :with_office_locations do
+      office_locations  { [FactoryBot.build(:office_location, :with_primary_address)] }
+    end
+
     trait :with_active_plan_year do
       before :create do |organization, evaluator|
         organization.employer_profile = FactoryBot.create :employer_profile, organization: organization, registered_on: Date.new(2015,12,1)

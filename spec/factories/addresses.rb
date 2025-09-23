@@ -16,6 +16,17 @@ FactoryBot.define do
       )
     end
 
+    trait :valid_county do
+      county do
+        county_record = ::BenefitMarkets::Locations::CountyZip.where(state: Settings.aca.state_abbreviation).first&.county_name
+        return county_record if county_record
+        ::BenefitMarkets::Locations::CountyZip.create!(
+          county_name: 'Hampden', zip: '01001', state: Settings.aca.state_abbreviation
+        )
+        ::BenefitMarkets::Locations::CountyZip.where(state: Settings.aca.state_abbreviation).first.county_name
+      end
+    end
+
     trait :work_kind do
       kind { 'work' }
     end

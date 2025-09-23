@@ -20,14 +20,6 @@ FactoryBot.define do
     origin { :user }
     generation_reason { :manual }
 
-    trait :renewal do
-      generation_reason { :renewal }
-      is_renewal { true }
-      origin { :system }
-      assistance_year { TimeKeeper.date_of_record.year.next }
-      effective_on { TimeKeeper.date_of_record.next_year.beginning_of_year }
-    end
-
     trait :with_primary do
       after(:build) do |application|
         application.applicants << FactoryBot.build(

@@ -969,6 +969,21 @@ class Exchanges::HbxProfilesController < ApplicationController
     end
   end
 
+  # GET endpoint is used to display the counts of QHP Applications in various states for QA review.
+  #
+  # @return [HTML] Renders a partial view with QHP application states data or error message.
+  def dry_run_qhp_application_states
+    authorize HbxProfile, :can_view_dry_run_dashboard?
+
+    result = ::Operations::HbxAdmin::DryRun::Individual::QhpApplicationStates.new.call
+
+    respond_to do |format|
+      format.html do
+        render partial: 'qhp_application_states', locals: { error: result.failure, data: result.success }
+      end
+    end
+  end
+
   def dry_run_notices
     authorize HbxProfile, :can_view_dry_run_dashboard?
 

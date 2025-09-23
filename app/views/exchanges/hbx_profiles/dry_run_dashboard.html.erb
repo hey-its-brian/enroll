@@ -12,24 +12,24 @@
     </button>
     <div class="btn-group" role="group">
       <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        Interval
+        <span id="current-interval">5 minutes</span>
       </button>
       <div class="dropdown-menu">
-        <select id="refresh-interval" class="form-control form-control-sm border-0 bg-transparent">
-          <option value="1">1 minute</option>
-          <option value="2">2 minutes</option>
-          <option value="5" selected>5 minutes</option>
-          <option value="10">10 minutes</option>
-          <option value="15">15 minutes</option>
-          <option value="30">30 minutes</option>
-        </select>
+        <a class="dropdown-item interval-option active" href="#" data-value="1">1 minute</a>
+        <a class="dropdown-item interval-option" href="#" data-value="2">2 minutes</a>
+        <a class="dropdown-item interval-option" href="#" data-value="5">5 minutes</a>
       </div>
     </div>
   </div>
 </div>
 
 <section class="my-3">
-  <h2><%= l10n("admin_actions.dry_run.renewal_benefit_coverage_values") %></h2>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2><%= l10n("admin_actions.dry_run.renewal_benefit_coverage_values") %></h2>
+    <button type="button" class="btn btn-outline-primary btn-sm section-refresh" data-section="benefit-coverage" title="Refresh benefit coverage data">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+  </div>
   <div id="benefit-coverage-loading" class="text-center p-3">
     <div class="spinner-border text-primary" role="status">
       <span class="sr-only">Loading...</span>
@@ -40,7 +40,12 @@
 </section>
 
 <section class="my-3">
-  <h2><%= l10n("admin_actions.dry_run.application_renewal_status") %></h2>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2><%= l10n("admin_actions.dry_run.application_renewal_status") %></h2>
+    <button type="button" class="btn btn-outline-primary btn-sm section-refresh" data-section="application-states" title="Refresh application states data">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+  </div>
   <div id="application-states-loading" class="text-center p-3">
     <div class="spinner-border text-primary" role="status">
       <span class="sr-only">Loading...</span>
@@ -51,7 +56,28 @@
 </section>
 
 <section class="my-3">
-  <h2><%= l10n("admin_actions.dry_run.oe_determined_notices") %></h2>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2><%= l10n("admin_actions.dry_run.qhp_application_renewal_status") %></h2>
+    <button type="button" class="btn btn-outline-primary btn-sm section-refresh" data-section="qhp-application-states" title="Refresh QHP application states data">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+  </div>
+  <div id="qhp-application-states-loading" class="text-center p-3">
+    <div class="spinner-border text-primary" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+    <p class="mt-2 text-muted">Loading QHP application renewal status...</p>
+  </div>
+  <div id="qhp-application-states-content" class="d-none"></div>
+</section>
+
+<section class="my-3">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2><%= l10n("admin_actions.dry_run.oe_determined_notices") %></h2>
+    <button type="button" class="btn btn-outline-primary btn-sm section-refresh" data-section="notices" title="Refresh notices data">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+  </div>
   <div id="notices-loading" class="text-center p-3">
     <div class="spinner-border text-primary" role="status">
       <span class="sr-only">Loading...</span>
@@ -62,7 +88,12 @@
 </section>
 
 <section class="my-3">
-  <h2><%= l10n('admin_actions.dry_run.enrollments.enrollment_states') %></h2>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2><%= l10n('admin_actions.dry_run.enrollments.enrollment_states') %></h2>
+    <button type="button" class="btn btn-outline-primary btn-sm section-refresh" data-section="enrollment-states" title="Refresh enrollment states data">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+  </div>
   <div id="enrollment-states-loading" class="text-center p-3">
     <div class="spinner-border text-primary" role="status">
       <span class="sr-only">Loading...</span>
@@ -80,6 +111,7 @@
 window.dryRunEndpoints = {
   benefitCoverage: '<%= dry_run_benefit_coverage_exchanges_hbx_profiles_path %>',
   applicationStates: '<%= dry_run_application_states_exchanges_hbx_profiles_path %>',
+  qhpApplicationStates: '<%= dry_run_qhp_application_states_exchanges_hbx_profiles_path %>',
   notices: '<%= dry_run_notices_exchanges_hbx_profiles_path %>',
   enrollmentStates: '<%= dry_run_enrollment_states_exchanges_hbx_profiles_path %>'
 };

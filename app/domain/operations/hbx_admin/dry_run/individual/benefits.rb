@@ -20,7 +20,7 @@ module Operations
           private
 
           def fetch_renewal_data
-            current_hbx = HbxProfile.current_hbx
+            current_hbx = ::HbxProfile.current_hbx
             return Failure("No current HBX profile found") unless current_hbx.present?
 
             benefit_sponsorship = current_hbx.benefit_sponsorship
@@ -47,7 +47,7 @@ module Operations
           end
 
           def fetch_products_for_year(year)
-            products = BenefitMarkets::Products::Product.by_year(year)
+            products = ::BenefitMarkets::Products::Product.by_year(year)
 
             Success(products)
           rescue StandardError => e
