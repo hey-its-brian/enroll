@@ -52,18 +52,25 @@ module Operations
                   values[:date_of_record] + offset_prior_due_date
                 )
 
+              Rails.logger.info "Found #{families.size} families with outstanding verifications expiring on #{values[:date_of_record] + offset_prior_due_date}"
+
               result_set =
                 families.reduce({ successes: [], failures: [] }) do |results, family|
+                  Rails.logger.debug "Processing family_id: #{family.id}, family_hbx_id: #{family.hbx_assigned_id} for document_reminder_key: #{document_reminder_key}"
+
                   begin
                     result = process_notice_request(family, document_reminder_key, values)
 
                     if result.success?
                       results[:successes].push({ family_hbx_id: family.hbx_assigned_id })
+                      Rails.logger.info "Successfully processed family_hbx_id: #{family.hbx_assigned_id}"
                     else
                       results[:failures].push({ family_hbx_id: family.hbx_assigned_id, error: result.failure })
+                      Rails.logger.error "Failed to process family_hbx_id: #{family.hbx_assigned_id}, error: #{result.failure}"
                     end
                   rescue StandardError => e
                     results[:failures].push({ family_hbx_id: family.hbx_assigned_id, error: "Failed due to unknown exception - #{e.inspect}" })
+                    Rails.logger.error "Exception processing family_hbx_id: #{family.hbx_assigned_id}, error: #{e.inspect}"
                   end
 
                   results
