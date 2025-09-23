@@ -323,8 +323,11 @@ module Eligibilities
           family = fetch_family
           prev_evidence = fetch_last_determined_evidence(call_type)
           return nil unless family && prev_evidence
-
-          prev_evidence.current_state
+          if prev_evidence == self
+            prev_evidence.state_histories.last.from_state
+          else
+            prev_evidence.current_state
+          end
         end
 
         def copied_review(prev_evidence, call_type)
