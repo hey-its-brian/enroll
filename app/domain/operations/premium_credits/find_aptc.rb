@@ -44,10 +44,15 @@ module Operations
         build_taxhousehold_enrollments
 
         result = ::Operations::PremiumCredits::FindAll.new.call({ family: @hbx_enrollment.family, year: @effective_on.year, kind: 'AdvancePremiumAdjustmentGrant' })
+
+        Rails.logger.info { "Invalid params when finding APTC grants for enrollment #{@hbx_enrollment.hbx_id}; Failure: #{result.failure}" } if result.failure?
         return true if result.failure?
 
         @aptc_grants = result.value!
         @current_enrolled_aptc_grants = @aptc_grants&.where(:member_ids.in => enrolled_family_member_ids)
+
+        Rails.logger.info { "No active APTC grants found for enrollment #{@hbx_enrollment.hbx_id}" } if tax_household_group.end_on.nil? && @current_enrolled_aptc_grants.blank?
+
         return true if @current_enrolled_aptc_grants.blank?
 
         false
