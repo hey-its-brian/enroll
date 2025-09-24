@@ -63,7 +63,6 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
 
     context 'with valid application' do
       before do
-
         @result = subject.call({call_type: 'application_determination', job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
                                 response: @application_hash.to_json, app_type: 'faa',
                                 determinations: {ssa: @determinations, vlp: @determinations}})

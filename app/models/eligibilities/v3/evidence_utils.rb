@@ -216,9 +216,9 @@ module Eligibilities
           prev_evidence = fetch_last_determined_evidence(call_type)
 
           if ivl_evidence_keys.include?(key.to_s) &&
-             prev_evidence&.verified? &&
+             evidence_verified?(prev_evidence) &&
              demographics_changed?(call_type)
-            copied_verified(call_type)
+            copied_verified(prev_evidence, call_type)
           else
             eligible_state(call_type)
           end
@@ -236,17 +236,6 @@ module Eligibilities
             applicant.identity_info_changed?(prev_applicant) ||
             applicant.citizen_status_changed?(prev_applicant) ||
             applicant.indian_tribe_changed?(prev_applicant)
-        end
-
-        # Moves evidence to verified state when copying from previous application.
-        # Used when previous evidence was verified and no demographics changes occurred.
-        #
-        # @return [void]
-        def copied_verified(call_type)
-          pre_state = self.current_state
-          mark_as_verified
-          message = build_copied_message(pre_state, call_type)
-          build_verification_history('copied_verified', message, 'system')
         end
 
         # Determines the appropriate state transition based on whether ROP is in progress.
@@ -275,9 +264,10 @@ module Eligibilities
 
         def rop_eligible_state(call_type)
           prev_evidence = fetch_last_determined_evidence(call_type)
-          return unless prev_evidence
+          prev_evidence_state = prev_evidence_state(call_type)
+          return unless prev_evidence_state
 
-          case prev_evidence.current_state.to_s
+          case prev_evidence_state.to_s
           when 'review'
             copied_review(prev_evidence, call_type)
           when 'outstanding'
@@ -327,31 +317,63 @@ module Eligibilities
         end
 
         def prev_evidence_state(call_type)
-          family = fetch_family
           prev_evidence = fetch_last_determined_evidence(call_type)
-          return nil unless family && prev_evidence
-          if prev_evidence == self
-            prev_evidence.state_histories.last.from_state
-          else
-            prev_evidence.current_state
-          end
+          return nil unless prev_evidence
+
+          fetch_evidence_prev_state(prev_evidence)
+        end
+
+        def fetch_evidence_prev_state(prev_evidence)
+          @fetch_evidence_prev_state ||= if prev_evidence == self
+            # since for call hub we move evidence into pending before the request, and
+            # prev state is needed to determine the current state.
+                                           prev_evidence.state_histories.last.from_state
+                                         else
+                                           prev_evidence.current_state
+                                         end
+        end
+
+        def evidence_verified?(prev_evidence)
+          return false unless prev_evidence
+          fetch_evidence_prev_state(prev_evidence).to_s == 'verified'
+        end
+
+        # should be used only for copied state methods
+        # since it has a different logic when prev_evidence is not self
+        def fetch_prev_state_for_history(prev_evidence)
+          @fetch_prev_state_for_history ||= if prev_evidence == self
+                                              prev_evidence.state_histories.last.from_state
+                                            else
+                                              current_state
+                                            end
+        end
+
+        # Moves evidence to verified state when copying from previous application.
+        # Used when previous evidence was verified and no demographics changes occurred.
+        #
+        # @return [void]
+        def copied_verified(prev_evidence, call_type)
+          prev_state = fetch_prev_state_for_history(prev_evidence)
+          mark_as_verified if can_move_to_verified?
+          message = build_copied_message(prev_state, call_type)
+          build_verification_history('copied_verified', message, 'system')
         end
 
         def copied_review(prev_evidence, call_type)
-          prev_state = self.current_state
+          prev_state = fetch_prev_state_for_history(prev_evidence)
           move_to_review if can_move_to_review?
           add_history_with_prev_due_on('copied_review', prev_evidence, prev_state, call_type)
         end
 
         def copied_outstanding(prev_evidence, call_type)
-          prev_state = self.current_state
+          prev_state = fetch_prev_state_for_history(prev_evidence)
           assign_attributes(verification_outstanding: true, is_satisfied: false)
           move_to_outstanding if can_move_to_outstanding?
           add_history_with_prev_due_on('copied_outstanding', prev_evidence, prev_state, call_type)
         end
 
         def copied_rejected(prev_evidence, call_type)
-          prev_state = self.current_state
+          prev_state = fetch_prev_state_for_history(prev_evidence)
           assign_attributes(verification_outstanding: true, is_satisfied: false)
           move_to_rejected if can_move_to_rejected?
           add_history_with_prev_due_on('copied_rejected', prev_evidence, prev_state, call_type)

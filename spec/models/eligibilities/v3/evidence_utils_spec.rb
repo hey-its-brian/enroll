@@ -388,7 +388,7 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
       describe "#copied_verified" do
         context "when can move to verified" do
           it "moves to verified and adds history" do
-            citizenship_evidence1.copied_verified("hub_call")
+            citizenship_evidence1.copied_verified(citizenship_evidence, "hub_call")
             expect(citizenship_evidence1.current_state).to eq(:verified)
           end
         end
@@ -398,7 +398,7 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
 
           it "does not move to verified" do
             present_state = citizenship_evidence1.current_state
-            citizenship_evidence1.copied_verified("hub_call")
+            citizenship_evidence1.copied_verified(citizenship_evidence, "hub_call")
             expect(citizenship_evidence1.current_state).to eq(present_state)
           end
         end
@@ -406,6 +406,8 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
 
       describe "#eligible_state" do
         before do
+          citizenship_evidence.current_state = :rejected
+          citizenship_evidence.save
           citizenship_evidence1.current_state = :outstanding
           citizenship_evidence1.save
         end
