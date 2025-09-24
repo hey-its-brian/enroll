@@ -31,6 +31,11 @@ Feature: Get Help in Signing Up from Assister/Broker
     And should be able to click on the Select This broker button
     Then should be able to see the success message
 
-
-
+    Scenario: Admin can view assisters and can select them
+    When create an IVL Assister Agency exists
+    When Admin clicks Families tab
+    Then the Admin is navigated to the Families screen
+    And I click the name of Patrick Doe from family list
+    And clicks on #help_me_sign_up
+    Then I should see Select an Expert link
 

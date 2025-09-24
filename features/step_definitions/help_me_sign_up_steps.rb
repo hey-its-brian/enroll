@@ -35,6 +35,10 @@ And("clicks on #help_me_sign_up") do
   find("#help_me_sign_up").click
 end
 
+Then("I should see Select an Expert link") do
+  expect(page).to have_content(l10n("broker_agencies.select_an_expert"))
+end
+
 And("clicks on #bottom_expert_assister_link") do
   find("#bottom_expert_assister_link").click
 end
