@@ -117,6 +117,22 @@ module Eligibilities
         non_esi_mec_evidence.retain_evidence_information(eligibility.non_esi_mec_evidence) if non_esi_mec_evidence.present?
       end
 
+      # This method is currently used in enrollment change context
+      # app/domain/operations/hbx_enrollments/update_application_evidences.rb
+      def update_evidences_for_enrollment_change
+        evidences.each do |evidence|
+          evidence.mark_as_outstanding if ['pending', 'negative_response_received'].include?(evidence.current_state.to_s)
+        end
+      end
+
+      # This method is currently used in enrollment change context
+      # app/domain/operations/hbx_enrollments/update_application_evidences.rb
+      def update_outstanding_evidences_for_non_enrolled
+        evidences.each do |evidence|
+          evidence.mark_as_negative_response_received if evidence.outstanding?
+        end
+      end
+
       private
 
       # Adds to errors collection if duplicate evidence types are found

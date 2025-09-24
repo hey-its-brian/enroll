@@ -164,6 +164,13 @@ module Eligibilities
           self.move_to_verified
         end
 
+        def mark_as_unverified
+          return unless self.can_move_to_unverified?
+
+          assign_attributes(verification_outstanding: true, is_satisfied: false, due_on: nil)
+          self.move_to_unverified
+        end
+
         def mark_as_attested
           return unless self.can_move_to_attested?
 

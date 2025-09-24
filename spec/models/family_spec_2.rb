@@ -552,6 +552,49 @@ RSpec.describe Family, dbclean: :around_each do
     end
   end
 
+  describe '#latest_determined_application_for_year' do
+    let(:family) { FactoryBot.create(:family, :with_primary_family_member) }
+    let(:year) { TimeKeeper.date_of_record.year }
+    let(:beginning_of_year) { TimeKeeper.date_of_record.beginning_of_year }
+    let(:one_month_from_beginning_of_year) { beginning_of_year + 1.month }
+    let(:determined_qhp_application) { FactoryBot.create(:individual_market_application, :determined, family: family, submitted_at: beginning_of_year, assistance_year: year) }
+    let(:determined_faa_application) do
+      FactoryBot.create(:financial_assistance_application,
+                        family_id: family.id,
+                        aasm_state: 'determined',
+                        submitted_at: one_month_from_beginning_of_year)
+    end
+    let(:draft_faa_application) do
+      FactoryBot.create(:financial_assistance_application,
+                        family_id: family.id,
+                        aasm_state: 'draft',
+                        created_at: beginning_of_year)
+    end
+    let(:draft_qhp_application) { FactoryBot.create(:individual_market_application, family: family, assistance_year: year, created_at: one_month_from_beginning_of_year) }
+
+    context 'when there are determined applications for the given year' do
+      before do
+        determined_qhp_application
+        determined_faa_application
+      end
+
+      it 'returns nil' do
+        expect(family.latest_determined_application_for_year(year).hbx_id).to eq(determined_faa_application.hbx_id)
+      end
+    end
+
+    context 'when there no determined applications for the given year' do
+      before do
+        draft_faa_application
+        draft_qhp_application
+      end
+
+      it 'returns nil' do
+        expect(family.latest_determined_application_for_year(year)).to be_nil
+      end
+    end
+  end
+
   describe '#application_for_year' do
     let(:family) { FactoryBot.create(:family, :with_primary_family_member) }
     let(:year) { TimeKeeper.date_of_record.year }

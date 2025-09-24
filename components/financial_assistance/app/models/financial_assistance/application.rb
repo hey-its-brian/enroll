@@ -457,7 +457,12 @@ module FinancialAssistance
 
       enrollment.hbx_enrollment_members.each do |enrollment_member|
         family_member_id =  enrollment_member.applicant_id
-        applicant = applicants.find_by(family_member_id: family_member_id)
+        begin
+          applicant = applicants.find_by(family_member_id: family_member_id)
+        rescue Mongoid::Errors::DocumentNotFound
+          applicant = nil
+        end
+
         applicant&.enrolled_with(enrollment)
       end
 

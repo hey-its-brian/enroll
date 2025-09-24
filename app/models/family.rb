@@ -1891,6 +1891,20 @@ class Family
     ::IndividualMarket::Application.for_year_and_family(year, id)
   end
 
+  def latest_determined_application_for_year(year)
+    return @latest_determined_application_for_year[year] if defined?(@latest_determined_application_for_year) && @latest_determined_application_for_year[year]
+
+    applications = fetch_all_applications_for_year(year)
+    result = applications[:determined]&.max_by(&:submitted_at)
+
+    if result.present?
+      @latest_determined_application_for_year ||= {}
+      @latest_determined_application_for_year[year] = result
+    end
+
+    result
+  end
+
   private
 
   def find_best_application_for_year(applications)

@@ -93,4 +93,71 @@ RSpec.describe Eligibilities::V3::IndividualMarketEligibility, type: :model do
       expect(eligibility.evidences.map(&:key)).to contain_exactly('citizenship', 'income')
     end
   end
+
+  describe "#enrollment_changes" do
+    let(:alive_evidence)   { FactoryBot.create(:alive_evidence, current_state: alive_evidence_state, eligibility: eligibility) }
+    let(:american_indian_evidence)   { FactoryBot.create(:american_indian_evidence, current_state: american_indian_evidence_state, eligibility: eligibility) }
+    let(:citizenship_evidence)   { FactoryBot.create(:citizenship_evidence, current_state: citizenship_evidence_state, eligibility: eligibility, due_on: Date.today + 5.days, verification_outstanding: true, is_satisfied: false) }
+    let(:social_security_number_evidence)   { FactoryBot.create(:social_security_number_evidence, current_state: social_security_number_evidence_state, eligibility: eligibility) }
+
+    context '#update_evidences_for_enrollment_change' do
+      let(:alive_evidence_state) {:pending}
+      let(:american_indian_evidence_state) {:outstanding}
+      let(:citizenship_evidence_state) {:negative_response_received}
+      let(:social_security_number_evidence_state) {:verified}
+      before do
+        alive_evidence
+        american_indian_evidence
+        citizenship_evidence
+        social_security_number_evidence
+        eligibility.update_evidences_for_enrollment_change
+      end
+
+      it 'should update alive evidence to outstanding' do
+        expect(alive_evidence.current_state).to eq(:outstanding)
+      end
+
+      it 'should not update american indian evidence' do
+        expect(american_indian_evidence.current_state).to eq(:outstanding)
+      end
+
+      it 'should update citizenship evidence' do
+        expect(citizenship_evidence.current_state).to eq(:outstanding)
+      end
+
+      it 'should not update social security number evidence' do
+        expect(social_security_number_evidence.current_state).to eq(:verified)
+      end
+    end
+
+    context '#update_outstanding_evidences_for_non_enrolled' do
+      let(:alive_evidence_state) {:pending}
+      let(:american_indian_evidence_state) {:outstanding}
+      let(:citizenship_evidence_state) {:negative_response_received}
+      let(:social_security_number_evidence_state) {:verified}
+      before do
+        alive_evidence
+        american_indian_evidence
+        citizenship_evidence
+        social_security_number_evidence
+        eligibility.update_outstanding_evidences_for_non_enrolled
+      end
+
+      it 'should update alive evidence to outstanding' do
+        expect(alive_evidence.current_state).to eq(:pending)
+      end
+
+      it 'should not update american indian evidence' do
+        expect(american_indian_evidence.current_state).to eq(:negative_response_received)
+      end
+
+      it 'should update citizenship evidence' do
+        expect(citizenship_evidence.current_state).to eq(:negative_response_received)
+      end
+
+      it 'should not update social security number evidence' do
+        expect(social_security_number_evidence.current_state).to eq(:verified)
+      end
+    end
+  end
 end

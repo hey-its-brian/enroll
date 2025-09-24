@@ -3046,6 +3046,10 @@ class HbxEnrollment
     save!
   end
 
+  def has_aptc_or_csr_applied?
+    has_aptc? || ['02', '04', '05', '06'].include?(product.csr_variant_id)
+  end
+
   private
 
   # Calculates sum of enrolled aptc member's of TaxHouseholdEnrollment ehb_premiums including Minimum Responsibility.

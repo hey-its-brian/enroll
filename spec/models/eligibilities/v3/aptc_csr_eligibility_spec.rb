@@ -94,7 +94,7 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
     end
   end
 
-  describe '#determine_eligibility_state' do
+  describe '#evidence setup' do
     let(:determined_family) { FactoryBot.create(:family, :with_primary_family_member)}
 
     let(:determined_application) do
@@ -140,22 +140,22 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
 
     let(:income_evidence) do
       FactoryBot.create(:income_evidence, eligibility: aptc_eligibility, _type: 'FinancialAssistance::Evidences::IncomeEvidence',key: :income_evidence, title: 'Income Evidence', determined_at: TimeKeeper.date_of_record,
-                                          description: 'Income Evidence Description', current_state: "pending")
+                                          description: 'Income Evidence Description', current_state: income_evidence_state)
     end
 
     let(:esi_evidence) do
       FactoryBot.create(:income_evidence, eligibility: aptc_eligibility, _type: 'FinancialAssistance::Evidences::EsiMecEvidence',key: :esi_mec_evidence, title: 'Esi MEC Evidence', determined_at: TimeKeeper.date_of_record,
-                                          description: 'EsiMecEvidence', current_state: "pending")
+                                          description: 'EsiMecEvidence', current_state: esi_evidence_state)
     end
 
     let(:non_esi_evidence) do
       FactoryBot.create(:income_evidence, eligibility: aptc_eligibility, _type: 'FinancialAssistance::Evidences::NonEsiMecEvidence',key: :non_esi_mec_evidence, title: 'Non Esi MEC Evidence', determined_at: TimeKeeper.date_of_record,
-                                          description: 'NonEsiMecEvidence', current_state: "pending")
+                                          description: 'NonEsiMecEvidence', current_state: non_esi_evidence_state)
     end
 
     let(:local_mec_evidence) do
       FactoryBot.create(:income_evidence, eligibility: aptc_eligibility, _type: 'FinancialAssistance::Evidences::LocalMecEvidence',key: :local_mec_evidence, title: 'Local MEC Evidence', determined_at: TimeKeeper.date_of_record,
-                                          description: 'LocalMecEvidence', current_state: "pending")
+                                          description: 'LocalMecEvidence', current_state: local_mec_evidence_state)
     end
 
     let(:create_embed_docs) do
@@ -167,33 +167,105 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
       end
     end
 
-    context 'when all evidences are verified' do
-      before do
-        income_evidence.mark_as_verified
-        esi_evidence.mark_as_verified
-        non_esi_evidence.mark_as_verified
-        local_mec_evidence.mark_as_verified
+    describe "#determine_eligibility_state" do
+      context 'when all evidences are verified' do
+        let(:income_evidence_state) {:pending}
+        let(:esi_evidence_state) {:pending}
+        let(:non_esi_evidence_state) {:pending}
+        let(:local_mec_evidence_state) {:pending}
+
+        before do
+          income_evidence.mark_as_verified
+          esi_evidence.mark_as_verified
+          non_esi_evidence.mark_as_verified
+          local_mec_evidence.mark_as_verified
+        end
+
+        it 'sets eligibility to satisfied' do
+          aptc_eligibility.determine_eligibility_state('All evidences verified')
+          expect(aptc_eligibility.is_satisfied).to be true
+          expect(aptc_eligibility.current_state).to eq(:satisfied)
+        end
       end
 
-      it 'sets eligibility to satisfied' do
-        aptc_eligibility.determine_eligibility_state('All evidences verified')
-        expect(aptc_eligibility.is_satisfied).to be true
-        expect(aptc_eligibility.current_state).to eq(:satisfied)
+      context 'when some evidences are pending' do
+        let(:income_evidence_state) {:pending}
+        let(:esi_evidence_state) {:pending}
+        let(:non_esi_evidence_state) {:pending}
+        let(:local_mec_evidence_state) {:pending}
+
+        before do
+          income_evidence.mark_as_verified
+          esi_evidence.mark_as_verified
+          non_esi_evidence.mark_as_verified
+          local_mec_evidence
+        end
+
+        it 'sets eligibility to pending' do
+          aptc_eligibility.determine_eligibility_state('Some evidences pending')
+          expect(aptc_eligibility.is_satisfied).to be false
+          expect(aptc_eligibility.current_state).to eq(:verification_in_progress)
+        end
       end
     end
 
-    context 'when some evidences are pending' do
+    context '#update_evidences_for_enrollment_change' do
+      let(:income_evidence_state) {:pending}
+      let(:esi_evidence_state) {:outstanding}
+      let(:non_esi_evidence_state) {:negative_response_received}
+      let(:local_mec_evidence_state) {:verified}
       before do
-        income_evidence.mark_as_verified
-        esi_evidence.mark_as_verified
-        non_esi_evidence.mark_as_verified
+        income_evidence
+        esi_evidence
+        non_esi_evidence
         local_mec_evidence
+        aptc_eligibility.update_evidences_for_enrollment_change
       end
 
-      it 'sets eligibility to pending' do
-        aptc_eligibility.determine_eligibility_state('Some evidences pending')
-        expect(aptc_eligibility.is_satisfied).to be false
-        expect(aptc_eligibility.current_state).to eq(:verification_in_progress)
+      it 'should update income evidence to outstanding' do
+        expect(income_evidence.current_state).to eq(:outstanding)
+      end
+
+      it 'should not update esi evidence' do
+        expect(esi_evidence.current_state).to eq(:outstanding)
+      end
+
+      it 'should update non esi evidence' do
+        expect(non_esi_evidence.current_state).to eq(:outstanding)
+      end
+
+      it 'should not update local mec evidence' do
+        expect(local_mec_evidence.current_state).to eq(:verified)
+      end
+    end
+
+    context '#update_outstanding_evidences_for_non_enrolled' do
+      let(:income_evidence_state) {:pending}
+      let(:esi_evidence_state) {:outstanding}
+      let(:non_esi_evidence_state) {:negative_response_received}
+      let(:local_mec_evidence_state) {:verified}
+      before do
+        income_evidence
+        esi_evidence
+        non_esi_evidence
+        local_mec_evidence
+        aptc_eligibility.update_outstanding_evidences_for_non_enrolled
+      end
+
+      it 'should update income evidence to outstanding' do
+        expect(income_evidence.current_state).to eq(:pending)
+      end
+
+      it 'should not update esi evidence' do
+        expect(esi_evidence.current_state).to eq(:negative_response_received)
+      end
+
+      it 'should update non esi evidence' do
+        expect(non_esi_evidence.current_state).to eq(:negative_response_received)
+      end
+
+      it 'should not update local mec evidence' do
+        expect(local_mec_evidence.current_state).to eq(:verified)
       end
     end
   end

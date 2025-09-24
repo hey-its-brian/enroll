@@ -152,6 +152,36 @@ module Eligibilities
         alive_evidence.retain_evidence_information(eligibility.alive_evidence) if alive_evidence.present?
       end
 
+      # This method is currently used in enrollment change context
+      # app/domain/operations/hbx_enrollments/update_application_evidences.rb
+      def update_evidences_for_enrollment_change
+        evidences.each do |evidence|
+          next unless ['pending', 'negative_response_received'].include?(evidence.current_state.to_s)
+
+          evidence.mark_as_outstanding
+        end
+      end
+
+      # This method is currently used in enrollment change context
+      # app/domain/operations/hbx_enrollments/update_application_evidences.rb
+      def update_outstanding_evidences_for_non_enrolled
+        evidences.each do |evidence|
+          evidence.mark_as_negative_response_received if evidence.outstanding?
+        end
+      end
+
+      def determine_eligibility_state(reason)
+        return unless evidences.present?
+
+        if evidences.all? { |evidence| %i[verified attested].include?(evidence.current_state.to_sym) }
+          assign_attributes(is_satisfied: true, determined_at: TimeKeeper.date_of_record)
+          satisfy(reason: reason) if can_satisfy?
+        elsif can_pend?
+          assign_attributes(is_satisfied: false, determined_at: TimeKeeper.date_of_record)
+          pend(reason: reason)
+        end
+      end
+
       private
 
       # Adds to errors collection if duplicate evidence types are found
