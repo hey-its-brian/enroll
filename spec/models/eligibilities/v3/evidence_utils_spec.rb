@@ -308,11 +308,11 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
       end
 
       describe "#determine_outstanding_state" do
-        context "when evidence is IVL, previous evidence is verified, and demographics changed" do
+        context "when evidence is IVL, previous evidence is verified, and Not demographics changed" do
           before do
             citizenship_evidence.current_state = :verified
             citizenship_evidence.save
-            allow(citizenship_evidence1).to receive(:demographics_changed?).and_return(true)
+            allow(citizenship_evidence1).to receive(:demographics_changed?).and_return(false)
           end
 
           it "calls copied_verified" do

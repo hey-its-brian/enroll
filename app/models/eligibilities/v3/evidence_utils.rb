@@ -217,7 +217,7 @@ module Eligibilities
 
           if ivl_evidence_keys.include?(key.to_s) &&
              evidence_verified?(prev_evidence) &&
-             demographics_changed?(call_type)
+             !demographics_changed?(call_type)
             copied_verified(prev_evidence, call_type)
           else
             eligible_state(call_type)
