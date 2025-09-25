@@ -13,109 +13,61 @@ module Operations
 
           # @return [Dry::Monads::Result]
           def call
-            coverage_years = yield fetch_coverage_years
-            year = coverage_years[0]
-            enrollment_states = yield fetch_enrollment_states(year)
+            enrollment_states = yield fetch_enrollment_states
 
             Success(enrollment_states)
           end
 
           private
 
-          def fetch_coverage_years
-            benefits_result = ::Operations::HbxAdmin::DryRun::Individual::Benefits.new.call
-            return Failure("Failed to get coverage years") if benefits_result.failure?
 
-            _, coverage_years = benefits_result.value!
-            Success(coverage_years)
+          def fetch_enrollment_states
+            year = Family.application_applicable_year
+            pipeline = ::Operations::HbxAdmin::DryRun::Individual::EnrollmentsPipeline.new.call(effective_on: Date.new(year, 1, 1), aasm_states: HbxEnrollment::ENROLLED_AND_RENEWAL_STATUSES)
+            return Success(skeleton_for_enrollments(year)) if pipeline.failure?
+
+            enrollment_states = aggregate_collection(HbxEnrollment.collection, pipeline.value!).to_a
+
+            if enrollment_states.present?
+              mapped_data = map_enrollment_kinds(enrollment_states)
+              # Debug: Log the structure to help identify issues
+              Rails.logger.info "Enrollment States Debug: #{mapped_data.inspect}"
+              Success(mapped_data)
+            else
+              Success(skeleton_for_enrollments(year))
+            end
           rescue StandardError => e
-            Failure("Coverage years error: #{e.message}")
+            Failure(["fetch_enrollment_states: error: #{e.message}", skeleton(year)])
           end
 
-          def fetch_enrollment_states(year)
-            effective_on = Date.new(year, 1, 1)
-            enrolled_states = HbxEnrollment::ENROLLED_AND_RENEWAL_STATUSES
+          def map_enrollment_kinds(enrollment_states)
+            # Start with skeleton data to ensure all rows are always shown
+            result = skeleton_for_enrollments(Family.application_applicable_year)
 
-            # Optimized aggregation pipeline
-            enrollment_pipeline = [
-              {
-                "$match" => {
-                  "kind" => "individual",
-                  "aasm_state" => {"$in" => enrolled_states},
-                  "effective_on" => {"$gte" => effective_on},
-                  "coverage_kind" => {"$in" => ["health", "dental"]}
-                }
-              },
-              {
-                "$addFields" => {
-                  "aptc_category" => {
-                    "$cond" => {
-                      "if" => {"$and" => [
-                        {"$eq" => ["$coverage_kind", "health"]},
-                        {"$gt" => ["$applied_aptc_amount", 0]}
-                      ]},
-                      "then" => "with_aptc",
-                      "else" => "without_aptc"
-                    }
-                  }
-                }
-              },
-              {
-                "$group" => {
-                  "_id" => {
-                    "coverage_kind" => "$coverage_kind",
-                    "aasm_state" => "$aasm_state",
-                    "aptc_category" => "$aptc_category"
-                  },
-                  "count" => {"$sum" => 1}
-                }
-              },
-              {
-                "$sort" => {
-                  "_id.coverage_kind" => 1,
-                  "_id.aptc_category" => 1,
-                  "_id.aasm_state" => 1
-                }
-              }
-            ]
-
-            # Execute optimized aggregation
-            enrollment_states_raw = HbxEnrollment.collection.aggregate(
-              enrollment_pipeline,
-              allow_disk_use: true,
-              batch_size: 1000
-            ).to_a
-
-            # Build enrollment states structure efficiently
-            enrollment_states = build_enrollment_states_structure(enrollment_states_raw)
-
-            Success(enrollment_states)
-          rescue StandardError
-            # Return default structure on error
-            Success(default_enrollment_states)
-          end
-
-          def build_enrollment_states_structure(enrollment_states_raw)
-            enrollment_states = default_enrollment_states
-
-            # Map results to structure
-            enrollment_states_raw.each do |result|
-              coverage_kind = result["_id"]["coverage_kind"]
-              aasm_state = result["_id"]["aasm_state"]
-              aptc_category = result["_id"]["aptc_category"]
-              count = result["count"]
+            enrollment_states.each do |hash|
+              coverage_kind = hash["coverage_kind"]
+              without_aptc = hash['without_aptc'] || {}
+              with_aptc = hash['with_aptc'] || {}
 
               if coverage_kind == "dental"
-                enrollment_states["dental"][aasm_state] = count
+                # For dental, merge both without_aptc and with_aptc into a single structure
+                # since dental doesn't have APTC, but we want to show all states
+                dental_data = without_aptc.merge(with_aptc)
+                result[coverage_kind] = dental_data
               else
-                enrollment_states["health"][aptc_category][aasm_state] = count
+                # For health, keep the nested structure
+                result[coverage_kind] = { "without_aptc" => without_aptc, "with_aptc" => with_aptc }
               end
             end
 
-            enrollment_states
+            result
           end
 
-          def default_enrollment_states
+          def aggregate_collection(collection, pipeline)
+            collection.aggregate(pipeline).to_a
+          end
+
+          def skeleton_for_enrollments(_year)
             {
               "health" => {
                 "without_aptc" => {"auto_renewing" => 0, "coverage_selected" => 0, "renewing_coverage_selected" => 0},
@@ -123,6 +75,10 @@ module Operations
               },
               "dental" => {"auto_renewing" => 0, "coverage_selected" => 0, "renewing_coverage_selected" => 0}
             }
+          end
+
+          def skeleton(year)
+            skeleton_for_enrollments(year)
           end
         end
       end
