@@ -53,6 +53,17 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
             value = result.value!
             expect(value[:recent_determined_hbx_id]).to eq(application.hbx_id)
           end
+
+          it 'returns the filitered applications in descending order of created at' do
+            result = FinancialAssistance::Operations::Applications::QueryFilteredApplications.new.query_filtered_records({
+                                                                                                                           family_id: family.id,
+                                                                                                                           filter_year: TimeKeeper.date_of_record.year
+                                                                                                                         })
+            expect(result).to be_success
+            value = result.value!
+            expect(value[:filtered_applications].first.id).to eq(application_2.id)
+            expect(value[:filtered_applications].second.id).to eq(application.id)
+          end
         end
 
         context "when the request type is invalid" do
@@ -83,5 +94,4 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       end
     end
   end
-
 end
