@@ -365,6 +365,7 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   "en.faa.transfer_history.column_header.source" => "Source",
   "en.faa.transfer_history" => "Transfer History",
   "en.faa.transfer_history_desc" => "Application transfers sent to or from %{site_short_name} related to this application are listed below.",
+  "en.faa.back_to_application_details" => "Back to Application Details",
   "en.faa.no_history_available" => "No history available.",
   # Flash error display
   "en.faa.errors.should_be_answered" => "should be answered",

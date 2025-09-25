@@ -220,6 +220,11 @@ And(/^qhp_application feature is enabled$/) do
   enable_feature :qhp_application
 end
 
+And(/^qhp_application feature is disabled$/) do
+  allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(false)
+  disable_feature :qhp_application
+end
+
 When(/^assister_agency feature is enabled$/) do
   allow(EnrollRegistry[:assister_agency].feature).to receive(:is_enabled).and_return(true)
   enable_feature :assister_agency

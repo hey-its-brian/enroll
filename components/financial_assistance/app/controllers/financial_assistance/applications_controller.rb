@@ -11,7 +11,7 @@ module FinancialAssistance
     before_action :enable_bs4_layout, only: [:application_year_selection, :application_checklist, :edit, :eligibility_results, :review_and_submit,
                                              :review, :submit_your_application, :wait_for_eligibility_response, :preferences,
                                              :application_publish_error, :eligibility_response_error, :index, :index_with_filter]
-    before_action :enable_admin_bs4_layout, only: [:transfer_history, :raw_application, :show] if EnrollRegistry.feature_enabled?(:bs4_admin_flow)
+    before_action :enable_admin_bs4_layout, only: [:transfer_history, :raw_application, :show]
 
     around_action :cache_current_hbx, :only => [:index_with_filter]
 
@@ -506,7 +506,7 @@ module FinancialAssistance
     end
 
     def enable_admin_bs4_layout
-      enable_bs4_layout
+      @bs4 = true if EnrollRegistry.feature_enabled?(:bs4_admin_flow)
     end
 
     def resolve_layout

@@ -264,6 +264,11 @@ module FinancialAssistance
       year_selection_enabled = FinancialAssistanceRegistry.feature_enabled?(:iap_year_selection) && (HbxProfile.current_hbx.under_open_enrollment? || FinancialAssistanceRegistry.feature_enabled?(:iap_year_selection_form))
       year_selection_enabled ? application.assistance_year.to_s : FinancialAssistanceRegistry[:enrollment_dates].setting(:application_year).item.constantize.new.call.value!.to_s
     end
+
+    def transfer_application
+      application = FinancialAssistance::Application.all.first
+      application.update_attributes!(account_transferred: true, transfer_requested: true)
+    end
   end
 end
 # rubocop:enable Metrics/ModuleLength

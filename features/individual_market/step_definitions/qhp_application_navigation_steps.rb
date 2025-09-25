@@ -25,6 +25,12 @@ Then(/^the user visits the current applications page$/) do
   visit '/insured/sbm/applications/current_applications'
 end
 
+Then(/^the (.*?) selects 'Applications' from the sidebar$/) do |_user_type|
+  within('.portal-nav') do
+    click_link(l10n('qhp_application.show.applications'))
+  end
+end
+
 When(/^the user clicks Back To My Account section on the left navigation$/) do
   find('a#back-button').click(wait: 10)
 end

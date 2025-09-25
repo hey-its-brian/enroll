@@ -469,6 +469,54 @@ Then(/^.+ clicks on Full application action$/) do
   click_link l10n('faa.applications.actions.full_application')
 end
 
+Then(/^the .+ should see text Transfer History$/) do
+  expect(page).to have_css('.interaction-click-control-transfer-history', text: l10n('faa.applications.actions.transfer_history'))
+end
+
+Then(/^.+ clicks on Transfer History action$/) do
+  click_link l10n('faa.applications.actions.transfer_history')
+end
+
+And(/^.+ is on the Transfer History page$/) do
+  expect(page).to have_css('[data-cuke="transfer-history-header"]')
+end
+
+And(/^.+ should see the back to application button$/) do
+  expect(page).to have_link(l10n('faa.back_to_application_details'))
+end
+
+And(/^.+ should see the transfer history table$/) do
+  expect(page).to have_css('[data-cuke="transfer-history-table"]')
+end
+
+And(/^.+ should see breadcrumbs$/) do
+  expect(page).to have_css('ul.breadcrumbs')
+end
+
+And(/^.+ should not see breadcrumbs$/) do
+  expect(page).to_not have_css('ul.breadcrumbs')
+end
+
+And(/^.+ should see the back to applications button$/) do
+  expect(page).to have_link(l10n('back_to_applications'))
+end
+
+And(/^.+ should not see the 'no history available' message$/) do
+  expect(page).to_not have_css('caption', text: l10n('faa.no_history_available').humanize)
+end
+
+And(/^.+ should see the 'no history available' message$/) do
+  expect(page).to have_css('caption', text: l10n('faa.no_history_available').humanize)
+end
+
+Given(/^the application has been transferred$/) do
+  transfer_application
+end
+
+And(/^.+ should see the transfer in the table$/) do
+  expect(page).to have_css('td', text: 'User request')
+end
+
 Then(/^the social security type - (.*) benefits should show$/) do |ssi_type|
   expect(page).to have_css('td', text: l10n("faa.income.social_security_benefit.#{ssi_type}"))
 end
