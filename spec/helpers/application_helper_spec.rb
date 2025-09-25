@@ -1280,6 +1280,12 @@ describe "Enabled/Disabled IVL market" do
       expect(helper.format_response_payload(payload)).to include("\n")
     end
 
+    it 'returns the formatted json if the payload is a stringified hash with a field containing colons, nils, arrays, etc.' do
+      payload = "{:RM=>{:RC=>\"HS000000\"}, :IVRS=>{:I=>[{:RM=>{:RC=>\"HS000000\"}, :IVIRSet=>{:CaseNumber=>\"0025\", :NonCitLastName=>\"Doe\", :NonCitFirstName=>\"Jane\", :NonCitBirthDate=>\"1988-11-01T00:00:00.000Z\"}}]}}"
+      expect(helper.format_response_payload(payload)).not_to eq(payload)
+      expect(helper.format_response_payload(payload)).to include("\n")
+    end
+
     it "does not add extra newlines if the payload is already formatted" do
       payload = JSON.pretty_generate(JSON.parse('{ "test": "test", "nested": { "test2": "test2" } }'))
       expect(helper.format_response_payload(payload)).to eq(payload)

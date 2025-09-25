@@ -1344,7 +1344,7 @@ XSL
   def parse_stringified_hash(string)
     return string unless string.is_a?(String)
     string
-      .gsub(/:(\w+)/){"\"#{Regexp.last_match(1)}\""}
+      .gsub(/:(\w+)(?=\s*=>)/){"\"#{Regexp.last_match(1)}\""}
       .gsub('=>', ':')
       .gsub("nil", "null")
   end
