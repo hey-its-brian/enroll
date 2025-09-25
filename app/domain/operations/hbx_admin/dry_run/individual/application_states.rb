@@ -41,13 +41,13 @@ module Operations
           end
 
           def fetch_eligible_families(renewal_year)
-            # Optimized aggregation for family IDs
+            # Families with renewal_year.pred active enrollments
             family_ids = ::HbxEnrollment.collection.aggregate([
               {
                 "$match" => {
                   "kind" => "individual",
                   "aasm_state" => {"$in" => %w[coverage_selected auto_renewing renewing_coverage_selected]},
-                  "effective_on" => {"$gte" => Date.new(Date.current.year, 1, 1)}
+                  "effective_on" => {"$gte" => Date.new(renewal_year.pred, 1, 1)}
                 }
               },
               {
@@ -57,14 +57,20 @@ module Operations
               }
             ], allow_disk_use: true, max_time_ms: 15_000).map { |doc| doc["_id"] }
 
-            # Count eligible families
-            eligible_count = ::FinancialAssistance::Application.where(
+            # Families with renewal_year.pred financial assistance applications
+            family_ids_with_prev_year_fa_apps = ::FinancialAssistance::Application.where(
               assistance_year: renewal_year.pred,
               aasm_state: "determined",
               :family_id.in => family_ids
+            ).distinct(:family_id)
+
+            # Families with latest_application_gid pointing to a FA application
+            eligible_count = ::Family.where(
+              :_id.in => family_ids_with_prev_year_fa_apps,
+              latest_application_gid: %r{gid://enroll/FinancialAssistance::Application/}
             ).count
 
-            Success({"families_eligible_for_application_renewal" => eligible_count})
+            Success({ 'families_eligible_for_application_renewal' => eligible_count })
           rescue StandardError => e
             Failure("Eligible families error: #{e.message}")
           end
