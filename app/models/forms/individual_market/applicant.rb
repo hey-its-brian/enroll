@@ -571,8 +571,10 @@ module Forms
 
         # if the matching criteria (dob, first name, last name) has changed for an existing person,
         # we need to make sure the check isn't failing on the existing person
-        person = applicant&.family_member&.person
-        matching_params[:skipped_person] = person&.hbx_id if person.present? && matching_criteria_changed?(matching_params, person)
+        if applicant&.family_member&.present?
+          person = applicant.family_member.person
+          matching_params[:skipped_person] = person&.hbx_id if person.present? && matching_criteria_changed?(matching_params, person)
+        end
 
         result = ::Operations::People::SsnTaken.new.call(matching_params)
 

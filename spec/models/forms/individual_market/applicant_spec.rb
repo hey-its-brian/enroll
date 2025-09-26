@@ -503,6 +503,20 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
         applicant_form.valid?
       end
 
+      it 'does not call operation with skipped_person when the dob has changed but no family member is present' do
+        params[:demographics_attributes][:dob] = applicant.demographics.dob + 1.day
+        applicant.update_attributes(family_member_id: nil)
+        expect(ssn_taken_operation).to receive(:call).with({
+                                                             dob: (applicant.demographics.dob + 1.day).to_date,
+                                                             first_name: applicant.person_name.given_name,
+                                                             last_name: applicant.person_name.family_name,
+                                                             ssn: applicant.demographics.ssn
+                                                           }).and_return(double(success?: true, success: false))
+
+        applicant_form = described_class.new(params)
+        applicant_form.valid?
+      end
+
       it 'calls operation without skipped_person when the matching criteria has not changed' do
         expect(ssn_taken_operation).to receive(:call).with({
                                                              dob: applicant.demographics.dob.to_date,
