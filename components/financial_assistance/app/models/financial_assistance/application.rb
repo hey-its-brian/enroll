@@ -1179,12 +1179,7 @@ module FinancialAssistance
     end
 
     def ready_for_attestation?
-      application_valid = is_application_ready_for_attestation?
-      # && chec.k for the validity of all applicants too.
-      self.active_applicants.each do |applicant|
-        return false unless applicant.applicant_validation_complete?
-      end
-      application_valid && relationships_complete?
+      valid_applicants? && is_application_ready_for_attestation? && relationships_complete?
     end
 
     def relationships_complete?
@@ -1223,16 +1218,32 @@ module FinancialAssistance
       CLOSED_STATUSES.include?(aasm_state)
     end
 
-    def incomplete_applicants?
-      active_applicants.each do |applicant|
-        return true unless applicant.applicant_validation_complete?
-      end
-      false
+    # Describes if the applicant data is valid.
+    # This method indicates that all applicants are considered complete, and that any spousal tax information is valid.
+    # @return [Boolean] true if application and all applicants are valid, false otherwise
+    def valid_applicants?
+      active_applicants.all?(&:information_complete?) && is_spousal_tax_info_valid?
+    end
+
+    # Helper method used to determine if tax information is valid when there is a primary spousal relationship.
+    # If the primary does not have a spouse, this validation is not applicable and will return true.
+    # Otherwise, then both must have the same joint filing status - either jointly or not jointly.
+    # Additionally, neither spouse can be claimed as a tax dependent by the other.
+    # @return [Boolean] true if tax information is valid, false otherwise
+    def is_spousal_tax_info_valid?
+      return true unless FinancialAssistanceRegistry.feature_enabled?(:spousal_tax_info_validation)
+
+      spouse_applicant = relationships.where(kind: 'spouse', applicant_id: primary_applicant.id).first&.then { |rel| applicants.find(rel.relative_id) if rel.relative_id.present? }
+      return true if spouse_applicant.blank?
+
+      return false unless (primary_applicant.is_required_to_file_taxes && primary_applicant.is_joint_tax_filing) == (spouse_applicant.is_required_to_file_taxes && spouse_applicant.is_joint_tax_filing)
+      return false if primary_applicant.claimed_as_tax_dependent_by == spouse_applicant.id || spouse_applicant.claimed_as_tax_dependent_by == primary_applicant.id
+      true
     end
 
     def next_incomplete_applicant
       active_applicants.each do |applicant|
-        return applicant if applicant.applicant_validation_complete? == false
+        return applicant if applicant.information_complete? == false
       end
     end
 

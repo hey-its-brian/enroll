@@ -237,7 +237,7 @@ end
 
 And(/^the info complete applicant has an attribute is_enrolled_on_medicaid that is set to true$/) do
   last_application = FinancialAssistance::Application.last
-  complete_applicant = last_application.applicants.detect { |applicant| applicant.applicant_validation_complete? }
+  complete_applicant = last_application.applicants.detect(&:information_complete?)
   expect(complete_applicant.is_enrolled_on_medicaid).to eq(true)
 end
 

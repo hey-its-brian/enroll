@@ -26,8 +26,10 @@ FINANCIAL_ASSISTANCE_TRANSLATIONS = {
   "en.faa.acdes_lookup" => "It looks like you're already covered by Medicaid. Please call DC Health Link at (855) 532-5465 to make updates to your case.
      If you keep going, we'll check to see if you qualify to enroll in a private health insurance plan on DC Health Link, but won't be able to tell you if you qualify for Medicaid or cost savings.",
   "en.faa.checklist.heading" => "Application Checklist",
+  "en.faa.family_info.spousal_filing_warning" => "You entered invalid information about the tax filing plans for people who are married. One spouse cannot be listed as filing jointly while the other files separately or does not file, and spouses cannot claim each other as tax dependents. To make updates, go to 'Tax info' for each person.",
   "en.faa.tax_info.header" => "Tax Info",
   "en.faa.tax_info.subheader" => "Tell us about tax information for %{person}, select “Continue to Next Step” when finished.",
+  "en.faa.tax_info.spousal_filing_info" => "If you list a spouse on your application, your tax filing information must be consistent. One spouse cannot be listed as filing jointly while the other files separately or does not file, and spouses cannot claim each other as tax dependents.",
   "en.faa.tax_info.question1" => "Will this person file taxes for %{year}?",
   "en.faa.tax_info.question2" => "Will this person be filing jointly?",
   "en.faa.tax_info.question4" => "Will this person be claimed as a tax dependent for %{year}?",

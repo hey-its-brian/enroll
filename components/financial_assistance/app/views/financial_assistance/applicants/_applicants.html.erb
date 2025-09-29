@@ -5,6 +5,17 @@
   <p><%= l10n('insured.family_members.index.continue_to_get_insurance') %></p>
   <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
 
+  <% unless @application.is_spousal_tax_info_valid? %>
+    <div class="alert alert-warning d-flex align-items-start" data-cuke="spousal-filing-warning" role="alert">
+      <div class="d-flex pl-1">
+        <div class="warning-icon icon" alt="warning">&nbsp;</div>
+      </div>
+      <div class="col mr-auto p-0 align-self-center">
+        <%= l10n('faa.family_info.spousal_filing_warning') %>
+      </div>
+    </div>
+  <% end %>
+
   <div id="dependent_buttons" class="d-flex flex-column flex-md-row my-md-4 <%= pundit_class Family, :updateable?%> <%= 'hidden' if @family.active_family_members.empty? %>">
     <%= hidden_field_tag 'origin_source', @source %>
     <%= h(link_to(new_application_applicant_path(@application, bs4: @bs4), :remote => true, :id => "household_info_add_member", class:"button secondary d-flex") do %>
@@ -49,7 +60,7 @@
     </div>
 
     <div class="mt-3 member-<%= primary_person.id %>-buttons">
-      <% if primary_person.applicant_validation_complete? %>
+      <% if primary_person.information_complete? %>
         <%= h(link_to l10n('edit_income_coverage_info'), financial_assistance.go_to_step_application_applicant_path(@application, @application.primary_applicant, 1), class: "btn button button-primary outline mr-3", data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
       <% else %>
         <%= h(link_to l10n('add_income_coverage_info'), financial_assistance.go_to_step_application_applicant_path(@application, @application.primary_applicant, 1), class: "btn button button-primary add mr-3", data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
@@ -77,13 +88,13 @@
   <div class="mt-md-5">
     <% if @change_plan.present? %>
       <% group_selection_url = main_app.new_insured_group_selection_path(person_id: @person.id, employee_role_id: @employee_role.try(:id), consumer_role_id: @consumer_role.try(:id), change_plan: @change_plan, market_kind: @market_kind, sep_id: @sep.try(:id), qle_id: @qle.try(:id), effective_on_option_selected: params[:effective_on_option]) %>
-      <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: group_selection_url, disable_link: @application.incomplete_applicants? } %>
+      <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: group_selection_url, disable_link: !@application.valid_applicants? } %>
     <% else %>
       <% if action_name == "edit" %>
         <% next_link = @application.is_draft? && @application.applicants.count > 1 ? financial_assistance.application_relationships_path(@application) : review_and_submit_application_path %>
-        <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_link, disable_link: @application.incomplete_applicants? } %>
+        <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_link, disable_link: !@application.valid_applicants? } %>
       <% else %>
-        <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: review_and_submit_application_path, disable_link: @application.incomplete_applicants? } %>
+        <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: review_and_submit_application_path, disable_link: !@application.valid_applicants? } %>
       <% end %>
     <% end %>
   </div>

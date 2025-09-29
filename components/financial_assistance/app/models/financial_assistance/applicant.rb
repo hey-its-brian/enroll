@@ -966,23 +966,31 @@ module FinancialAssistance
       tax_claimer_present
     end
 
-    def applicant_validation_complete?
-      if is_applying_coverage
-        valid?(:submission) &&
-          incomes.all? {|income| income.valid? :submission} &&
-          benefits.all? {|benefit| benefit.valid? :submission} &&
-          deductions.all? {|deduction| deduction.valid? :submission} &&
-          other_questions_complete? &&
-          covering_applicant_exists? &&
-          ssn_present? &&
-          (FinancialAssistanceRegistry.feature_enabled?(:has_medicare_cubcare_eligible) ? medicare_eligible_qns : true)
-      else
-        valid?(:submission) &&
-          incomes.all? {|income| income.valid? :submission} &&
-          deductions.all? {|deduction| deduction.valid? :submission} &&
-          other_questions_complete? &&
-          covering_applicant_exists?
-      end
+    # Describes if the applicant has provided sufficient information to process their application.
+    # Note that the basic checks on incomes, deductions, other question fields, and covering applicant are always required.
+    # If the applicant is applying for coverage, then additional checks are required on benefits, SSN, and Medicare questions (if the feature is enabled).
+    #
+    # @return [Boolean] true if the applicant has provided sufficient information, false otherwise
+    def information_complete?
+      not_applying_information_complete = base_information_complete?
+      return not_applying_information_complete unless is_applying_coverage
+
+      not_applying_information_complete &&
+        benefits.all? {|benefit| benefit.valid? :submission} &&
+        ssn_present? &&
+        (FinancialAssistanceRegistry.feature_enabled?(:has_medicare_cubcare_eligible) ? medicare_eligible_qns : true)
+    end
+
+    # Describes if the applicant has provided basic sufficient information to process their application on
+    # incomes, deductions, other question fields, and covering applicant.
+    #
+    # @return [Boolean] true if the applicant has provided basic sufficient information, false otherwise
+    def base_information_complete?
+      valid?(:submission) &&
+        incomes.all? {|income| income.valid? :submission} &&
+        deductions.all? {|deduction| deduction.valid? :submission} &&
+        other_questions_complete? &&
+        covering_applicant_exists?
     end
 
     def clean_conditional_params(model_params)

@@ -55,6 +55,23 @@ Then(/^the application shows the primary is not filing taxes$/) do
   expect(applicant.is_filing_as_head_of_household).to be_falsey
 end
 
+Then(/^the user should see the Tax Info title$/) do
+  expect(page).to have_css('h1', text: 'Tax Info')
+end
+
+Then(/^the user can (not )?see the spousal filing informational banner$/) do |should_not_see|
+  if should_not_see
+    expect(page).not_to have_css('.alert-info')
+  else
+    within '.alert-info' do
+      expect(page).to have_content(
+        "If you list a spouse on your application, your tax filing information must be consistent. " \
+        "One spouse cannot be listed as filing jointly while the other files separately or does not file, " \
+        "and spouses cannot claim each other as tax dependents."
+      )
+    end
+  end
+end
 
 And(/^the user lands on the Job Incomes Page$/) do
   find(".incomes")

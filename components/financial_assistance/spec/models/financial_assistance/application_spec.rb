@@ -444,7 +444,7 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
     end
   end
 
-  describe '.ready_for_attestation?' do
+  describe '#ready_for_attestation?' do
     let!(:valid_application) do
       FactoryBot.create(
         :financial_assistance_application,
@@ -471,37 +471,203 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
     end
     let(:family_member_id) { BSON::ObjectId.new }
 
-    it 'should returns true if application is ready_for_attestation' do
-      allow(applicant_primary).to receive(:applicant_validation_complete?).and_return(true)
-      allow(valid_application).to receive(:relationships_complete?).and_return(true)
-      expect(valid_application.ready_for_attestation?).to be_truthy
-    end
+    test_cases = [
+      { applicant_complete: true,  relationships_complete: true,  spousal_tax_valid: true,  expected: true,  desc: 'all applicants are complete, all relationships are complete, and spousal tax information is valid' },
+      { applicant_complete: false, relationships_complete: true,  spousal_tax_valid: true,  expected: false, desc: 'incomplete applicant information' },
+      { applicant_complete: true,  relationships_complete: false, spousal_tax_valid: true,  expected: false, desc: 'incomplete relationships' },
+      { applicant_complete: true,  relationships_complete: true,  spousal_tax_valid: false, expected: false, desc: 'invalid spousal tax info' }
+    ]
 
-    it 'should returns false if application is not ready_for_attestation' do
-      expect(valid_application.ready_for_attestation?).to be_falsey
+    test_cases.each do |test_case|
+      context "when #{test_case[:desc]}" do
+        before do
+          allow(applicant_primary).to receive(:information_complete?).and_return(test_case[:applicant_complete])
+          allow(valid_application).to receive(:relationships_complete?).and_return(test_case[:relationships_complete])
+          allow(valid_application).to receive(:is_spousal_tax_info_valid?).and_return(test_case[:spousal_tax_valid])
+        end
+
+        it "returns #{test_case[:expected]}" do
+          expect(valid_application.ready_for_attestation?).to eq(test_case[:expected])
+        end
+      end
     end
   end
 
-  describe '.incomplete_applicants?' do
-    it 'should return true if applicant with non existing claimed_as_tax_dependent_by id exists' do
-      allow(application.applicants.last).to receive(:claimed_as_tax_dependent_by).and_return("11111")
-      expect(application.incomplete_applicants?).to eq(true)
+  describe '#valid_applicants?' do
+    test_cases = [
+      {
+        desc: 'all applicants have complete applicant information the application has valid spousal tax information',
+        applicant_complete: true,
+        spousal_tax_valid: true,
+        expected: true
+      },
+      {
+        desc: 'at least one applicant has incomplete applicant information but the application has valid spousal tax information',
+        applicant_complete: false,
+        spousal_tax_valid: true,
+        expected: false
+      },
+      {
+        desc: 'all applicants have complete applicant information but the application has invalid spousal tax information',
+        applicant_complete: true,
+        spousal_tax_valid: false,
+        expected: false
+      }
+    ]
+
+    test_cases.each do |test_case|
+      context "when #{test_case[:desc]}" do
+        before do
+          if test_case[:applicant_complete]
+            allow_any_instance_of(FinancialAssistance::Applicant).to receive(:information_complete?).and_return(true)
+          else
+            allow(applicant1).to receive(:information_complete?).and_return(false)
+          end
+
+          allow(application).to receive(:is_spousal_tax_info_valid?).and_return(test_case[:spousal_tax_valid])
+        end
+
+        it "returns #{test_case[:expected] ? 'true' : 'false'}" do
+          expect(application.valid_applicants?).to be(test_case[:expected])
+        end
+      end
+    end
+  end
+
+  describe '#is_spousal_tax_info_valid?' do
+    let!(:primary_applicant) { FactoryBot.create(:financial_assistance_applicant, application: application, is_primary_applicant: true) }
+    let!(:dependent_applicant) { FactoryBot.create(:financial_assistance_applicant, application: application) }
+
+    context 'when feature flag is disabled' do
+      before do
+        allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:spousal_tax_info_validation).and_return(false)
+      end
+
+      it 'always returns true regardless of spousal tax configuration' do
+        # Set up an invalid scenario that would normally return false
+        application.ensure_relationship_with_primary(dependent_applicant, 'spouse')
+
+        [primary_applicant, dependent_applicant].each do |applicant|
+          is_primary = (applicant == primary_applicant)
+          applicant.update_attributes(
+            is_required_to_file_taxes: true,
+            is_joint_tax_filing: is_primary ? true : false # Mismatched filing status
+          )
+        end
+
+        expect(application.is_spousal_tax_info_valid?).to be(true)
+      end
     end
 
-    it 'should returns true if application has incomplete_applicants' do
-      allow(applicant1).to receive(:applicant_validation_complete?).and_return(false)
-      application.incomplete_applicants?
-      expect(application.incomplete_applicants?).to be_truthy
-    end
+    context 'when feature flag is enabled' do
+      before do
+        allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:spousal_tax_info_validation).and_return(true)
+      end
 
-    it 'should returns false if application has no incomplete_applicants' do
-      expect(application.ready_for_attestation?).to be_falsey
+      test_cases = [
+        {
+          desc: 'no spouse applicant exists',
+          has_spouse: false,
+          expected: true
+        },
+        {
+          desc: 'both spouses file jointly and are required to file taxes',
+          primary_required_to_file: true,
+          primary_joint_filing: true,
+          spouse_required_to_file: true,
+          spouse_joint_filing: true,
+          expected: true
+        },
+        {
+          desc: 'both spouses do not file jointly and are not required to file taxes',
+          primary_required_to_file: false,
+          primary_joint_filing: false,
+          spouse_required_to_file: false,
+          spouse_joint_filing: false,
+          expected: true
+        },
+        {
+          desc: 'primary files jointly but spouse does not',
+          primary_required_to_file: true,
+          primary_joint_filing: true,
+          spouse_required_to_file: true,
+          spouse_joint_filing: false,
+          expected: false
+        },
+        {
+          desc: 'spouse files jointly but primary does not',
+          primary_required_to_file: true,
+          primary_joint_filing: false,
+          spouse_required_to_file: true,
+          spouse_joint_filing: true,
+          expected: false
+        },
+        {
+          desc: 'primary required to file but spouse not required',
+          primary_required_to_file: true,
+          primary_joint_filing: false,
+          spouse_required_to_file: false,
+          spouse_joint_filing: false,
+          expected: true
+        },
+        {
+          desc: 'spouse required to file but primary not required',
+          primary_required_to_file: false,
+          primary_joint_filing: false,
+          spouse_required_to_file: true,
+          spouse_joint_filing: false,
+          expected: true
+        },
+        {
+          desc: 'primary is claimed as dependent by spouse',
+          primary_required_to_file: true,
+          primary_joint_filing: true,
+          claimed_by_spouse: true,
+          spouse_required_to_file: true,
+          spouse_joint_filing: true,
+          expected: false
+        },
+        {
+          desc: 'spouse is claimed as dependent by primary',
+          primary_required_to_file: true,
+          primary_joint_filing: true,
+          spouse_required_to_file: true,
+          spouse_joint_filing: true,
+          claimed_by_spouse: true,
+          expected: false
+        }
+      ]
+
+      test_cases.each do |test_case|
+        context "when #{test_case[:desc]}" do
+          before do
+            has_spouse = test_case[:has_spouse].nil? ? true : test_case[:has_spouse]
+
+            application.ensure_relationship_with_primary(dependent_applicant, has_spouse ? 'spouse' : 'child')
+            next unless has_spouse
+
+            [primary_applicant, dependent_applicant].each do |applicant|
+              is_primary = (applicant == primary_applicant)
+              applicant.update_attributes(
+                is_required_to_file_taxes: test_case["#{is_primary ? 'primary' : 'spouse'}_required_to_file".to_sym],
+                is_joint_tax_filing: test_case["#{is_primary ? 'primary' : 'spouse'}_joint_filing".to_sym],
+                claimed_as_tax_dependent_by: ((is_primary ? dependent_applicant.id : primary_applicant.id) if test_case[:claimed_by_spouse])
+              )
+              applicant.update_attributes!(is_primary_applicant: false)
+            end
+          end
+
+          it "returns #{test_case[:expected] ? 'true' : 'false'}" do
+            expect(application.is_spousal_tax_info_valid?).to be(test_case[:expected])
+          end
+        end
+      end
     end
   end
 
   describe '.next_incomplete_applicant' do
     it 'returns applicant primary if application has next_incomplete_applicant' do
-      allow(applicant1).to receive(:applicant_validation_complete?).and_return(false)
+      allow(applicant1).to receive(:information_complete?).and_return(false)
       expect(application.next_incomplete_applicant).to eq applicant1
     end
   end

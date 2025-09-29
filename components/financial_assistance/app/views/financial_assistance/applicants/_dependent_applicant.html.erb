@@ -27,7 +27,7 @@
       </div>
 
       <div class="mt-3 member-<%= dependent.id %>-buttons mb-3">
-        <% if dependent.applicant_validation_complete? %>
+        <% if dependent.information_complete? %>
           <%= h(link_to l10n('edit_income_coverage_info'), financial_assistance.go_to_step_application_applicant_path(@application, dependent, 1), class: "btn button button-primary mr-3") %>
         <% else %>
           <%= h(link_to l10n('add_income_coverage_info'), financial_assistance.go_to_step_application_applicant_path(@application, dependent, 1), class: "btn button button-primary add mr-3") %>

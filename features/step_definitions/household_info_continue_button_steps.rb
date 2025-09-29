@@ -75,7 +75,7 @@ end
 
 When(/^at least one applicant is in the Info Needed state$/) do
   sleep 5
-  expect(application.incomplete_applicants?).to be true
+  expect(application.valid_applicants?).to be false
   expect(page).to have_content('Info Needed')
 end
 

@@ -726,7 +726,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
       end
     end
 
-    context '#applicant_validation_complete?' do
+    context '#information_complete?' do
       before do
         applicant.update_attributes!({is_applying_coverage: true,
                                       is_required_to_file_taxes: false,
@@ -758,7 +758,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
         end
 
         it 'should validate applicant as complete' do
-          expect(applicant.applicant_validation_complete?).to eq true
+          expect(applicant.information_complete?).to eq true
         end
       end
 
@@ -774,7 +774,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
         end
 
         it 'should validate applicant as complete' do
-          expect(applicant.applicant_validation_complete?).to eq true
+          expect(applicant.information_complete?).to eq true
         end
 
         context 'has 0.00 income' do
@@ -791,7 +791,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
           end
 
           it "validates $0 incomes" do
-            expect(applicant.applicant_validation_complete?).to eq true
+            expect(applicant.information_complete?).to eq true
           end
         end
 
@@ -803,7 +803,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
           end
 
           it 'should return true as amount is negative for income with kind net_self_employment' do
-            expect(applicant.applicant_validation_complete?).to eq true
+            expect(applicant.information_complete?).to eq true
           end
         end
 
@@ -815,7 +815,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
           end
 
           it 'should return false as income amount is nil' do
-            expect(applicant.applicant_validation_complete?).to eq false
+            expect(applicant.information_complete?).to eq false
           end
         end
       end
@@ -836,7 +836,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
           end
 
           it 'should not validate applicant as complete' do
-            expect(applicant.applicant_validation_complete?).to eq false
+            expect(applicant.information_complete?).to eq false
           end
 
           context 'person_coverage_end_on not given after selecting yes to has_eligibility_changed' do
@@ -850,7 +850,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
             end
 
             it 'should not validate applicant as complete' do
-              expect(applicant.applicant_validation_complete?).to eq false
+              expect(applicant.information_complete?).to eq false
             end
           end
         end
@@ -866,7 +866,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
           end
 
           it 'should validate applicant as complete' do
-            expect(applicant.applicant_validation_complete?).to eq true
+            expect(applicant.information_complete?).to eq true
           end
         end
       end
@@ -877,7 +877,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
         end
 
         it 'should return true as ssn is not mandatory for non applicant' do
-          expect(applicant.applicant_validation_complete?).to eq true
+          expect(applicant.information_complete?).to eq true
         end
       end
 
@@ -888,7 +888,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
         end
 
         it 'should return false as ssn is mandatory for an applicant' do
-          expect(applicant.applicant_validation_complete?).to eq false
+          expect(applicant.information_complete?).to eq false
         end
       end
 
@@ -900,12 +900,12 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
 
         it 'should return false if non_ssn_apply_reason is not given' do
           applicant.update_attributes!(ssn: nil, no_ssn: '1', is_ssn_applied: false, is_applying_coverage: true)
-          expect(applicant.applicant_validation_complete?).to eq false
+          expect(applicant.information_complete?).to eq false
         end
 
         it 'should return true if non_ssn_apply_reason is given' do
           applicant.update_attributes!(ssn: nil, no_ssn: '1', is_ssn_applied: false, is_applying_coverage: true, non_ssn_apply_reason: 'test reason')
-          expect(applicant.applicant_validation_complete?).to eq true
+          expect(applicant.information_complete?).to eq true
         end
       end
     end

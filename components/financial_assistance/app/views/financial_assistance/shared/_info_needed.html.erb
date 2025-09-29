@@ -1,6 +1,6 @@
 <% if @bs4 %>
   <% qhp_enabled = qhp_application_feature_enabled? %>
-  <% if applicant.applicant_validation_complete? %>
+  <% if applicant.information_complete? %>
      <% if qhp_enabled %>
         <div class="alert alert-rounded alert-success-light alert-sm d-flex align-items-center p-2 mb-0 ml-4 mt-3" role="alert">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -25,7 +25,7 @@
     </div>
   <% end %>
 <% else %>
-  <% if applicant.applicant_validation_complete? %>
+  <% if applicant.information_complete? %>
     <span class="success-notice"><span class="glyphicon glyphicon-ok complete-icon success-status-hide"></span>&nbsp;<span class="complete-icon-text"><%=l10n("info_complete")%></span></span>
   <% else %>
     <span class="warning-notice"><span class="glyphicon glyphicon-refresh in-progress-icon warning-status-hide" alt="warning"></span>&nbsp;<span class="in-progress"><%=l10n("info_needed")%></span></span>

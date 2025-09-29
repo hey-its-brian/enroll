@@ -48,12 +48,12 @@
                    end
     %>
     <div class="mt-3 mb-4">
-      <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_link, disable_link: @application.incomplete_applicants? } %>
+      <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_link, disable_link: !@application.valid_applicants? } %>
     </div>
 
     <%= render partial: "summary" %>
 
-    <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_link, disable_link: @application.incomplete_applicants? } %>
+    <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_link, disable_link: !@application.valid_applicants? } %>
   </div>
   <% if qhp_application_feature_enabled? %>
     <%= render partial: 'shared/leaving_modal' %>
@@ -703,7 +703,7 @@
     </div>
 
     <div class='col-md-3'>
-      <%= render partial: 'financial_assistance/shared/right_nav', locals: {previous_url: @application.active_applicants.count > 1 ? financial_assistance.application_relationships_path(@application) : edit_application_path(@application), next_url: go_to_step_application_path(@application, 1), disabled: @application.incomplete_applicants? ? 'true' : false} %>
+      <%= render partial: 'financial_assistance/shared/right_nav', locals: {previous_url: @application.active_applicants.count > 1 ? financial_assistance.application_relationships_path(@application) : edit_application_path(@application), next_url: go_to_step_application_path(@application, 1), disabled: !@application.valid_applicants? ? 'true' : false} %>
     </div>
   </div>
 <% end %>

@@ -53,10 +53,10 @@ module FinancialAssistance
     end
 
     def find_next_application_path(application)
-      if application.incomplete_applicants?
-        go_to_step_application_applicant_path application, application.next_incomplete_applicant, 1
-      else
+      if application.valid_applicants?
         review_and_submit_application_path application
+      else
+        go_to_step_application_applicant_path application, application.next_incomplete_applicant, 1
       end
     end
 

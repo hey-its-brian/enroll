@@ -149,6 +149,9 @@ registry:
       - key: :other_income_end_date_warning
         item: :other_income_end_date_warning
         is_enabled: <%= ENV['OTHER_INCOME_END_DATE_WARNING_IS_ENABLED'] || false %>
+      - key: :spousal_tax_info_validation
+        item: :spousal_tax_info_validation
+        is_enabled: <%= ENV['SPOUSAL_TAX_INFO_VALIDATION_IS_ENABLED'] || false %>
   - namespace:
     - :request_determination
     features:

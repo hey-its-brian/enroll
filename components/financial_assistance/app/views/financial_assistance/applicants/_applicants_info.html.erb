@@ -65,7 +65,7 @@
 <div class="mt-md-5">
   <% if @change_plan.present? %>
     <% group_selection_url = main_app.new_insured_group_selection_path(person_id: @person.id, employee_role_id: @employee_role.try(:id), consumer_role_id: @consumer_role.try(:id), change_plan: @change_plan, market_kind: @market_kind, sep_id: @sep.try(:id), qle_id: @qle.try(:id), effective_on_option_selected: params[:effective_on_option]) %>
-    <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: group_selection_url, disable_link: @application.incomplete_applicants? } %>
+    <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: group_selection_url, disable_link: !@application.valid_applicants? } %>
   <% else %>
     <% next_link = @application.is_draft? && @application.applicants.count > 1 ? financial_assistance.application_relationships_path(@application) : edit_application_path(@application) %>
     <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_link } %>

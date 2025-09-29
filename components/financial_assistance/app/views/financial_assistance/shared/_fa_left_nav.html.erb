@@ -104,7 +104,7 @@
         <% end %>
       </li>
 
-      <% if @application && @application.incomplete_applicants? %>
+      <% if @application && !@application.valid_applicants? %>
         <% if @application.applicants.count > 1 %>
           <li class='list-box step-tabs <%= li_nav_classes_for(:relationships) %> indent-w no-hover-disable'>
             <a class="not-allowed">Family Relationships</a>
