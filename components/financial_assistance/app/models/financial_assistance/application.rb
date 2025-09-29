@@ -246,16 +246,6 @@ module FinancialAssistance
 
     index({"applicants.is_primary_applicant" => 1})
 
-    # verification_types index
-    index({"applicants.verification_types._id" => 1})
-    index({"applicants.verification_types.type_name" => 1})
-    index({"applicants.verification_types.validation_status" => 1})
-    index({"applicants.verification_types.update_reason" => 1})
-    index({"applicants.verification_types.rejected" => 1})
-    index({"applicants.verification_types.external_service" => 1})
-    index({"applicants.verification_types.due_date" => 1})
-    index({"applicants.verification_types.due_date_type" => 1})
-
     # incomes index
     index({"applicants.incomes._id" => 1})
     index({"applicants.incomes.kind" => 1})
@@ -276,13 +266,10 @@ module FinancialAssistance
     index({"applicants.benefits.submitted_at" => 1})
     index({"applicants.benefits.employer_id" => 1})
 
-    index({"applicants.evidences.eligibility_status" => 1})
-
-    # Applicant evidences
-    index({ "applicants.income_evidence.aasm_state" => 1 })
-    index({ "applicants.esi_evidence.aasm_state" => 1 })
-    index({ "applicants.non_esi_evidence.aasm_state" => 1 })
-    index({ "applicants.local_mec_evidence.aasm_state" => 1 })
+    index({"applicants.eligibilities.key" => 1 })
+    index({"applicants.eligibilities.current_state" => 1 })
+    index({"applicants.eligibilities.evidences.key" => 1 })
+    index({"applicants.eligibilities.evidences.current_state" => 1 })
 
     # @!index [Hash] Creates a compound index on aasm_state, family_id, assistance_year, and submitted_at fields.
     # @param aasm_state [Integer] The application state, with 1 indicating ascending order

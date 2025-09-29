@@ -127,6 +127,18 @@ module IndividualMarket
     # @note Used to track which applications failed to update their family successfully for debugging and refactoring purposes
     field :family_updated_at, type: DateTime
 
+    # indexes
+    index({ assistance_year: 1 })
+    index({ is_renewal: 1 })
+
+    #eligibilities indexes
+    index({"applicants.eligibilities.key" => 1 })
+    index({"applicants.eligibilities.current_state" => 1 })
+
+    #evidences indexes
+    index({"applicants.eligibilities.evidences.key" => 1 })
+    index({"applicants.eligibilities.evidences.current_state" => 1 })
+
     # @!scope class
     # @return [Mongoid::Criteria] The most recent determined IndividualMarket::Application based on assistance year and submitted_at
     scope :newest_determined_by_family_id, lambda { |family_id|
