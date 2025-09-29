@@ -561,24 +561,23 @@ class ConsumerRole
     vlp_documents.select{|doc| doc.subject == "Other (With I-94 Number)" && doc.i94_number.present? && doc.description.present? }.first
   end
 
+  def current_contact_methods
+    contact_method_list = []
+    contact_method_list << "Email" if can_receive_electronic_communication?
+    contact_method_list << "Mail" if can_receive_paper_communication?
+    contact_method_list << "Text" if can_receive_text_communication?
+    contact_method_list
+  end
+
   def can_receive_paper_communication?
-    if EnrollRegistry.feature_enabled?(:contact_method_via_dropdown)
-      ["Only Paper communication", "Paper and Electronic communications"].include?(contact_method)
-    else
-      CONTACT_METHOD_MAPPING.values.select { |value| value.include?('Paper') }.include?(contact_method)
-    end
+    CONTACT_METHOD_MAPPING.values.select { |value| value.include?('Paper') }.include?(contact_method)
   end
 
   def can_receive_electronic_communication?
-    if EnrollRegistry.feature_enabled?(:contact_method_via_dropdown)
-      ["Only Electronic communications", "Paper and Electronic communications"].include?(contact_method)
-    else
-      CONTACT_METHOD_MAPPING.values.select { |value| value.include?('Electronic') }.include?(contact_method)
-    end
+    CONTACT_METHOD_MAPPING.values.select { |value| value.include?('Electronic') }.include?(contact_method)
   end
 
   def can_receive_text_communication?
-    return false if EnrollRegistry.feature_enabled?(:contact_method_via_dropdown)
     return false unless EnrollRegistry.feature_enabled?(:enroll_sms_notifications)
     return false if mobile_phone.blank?
 
