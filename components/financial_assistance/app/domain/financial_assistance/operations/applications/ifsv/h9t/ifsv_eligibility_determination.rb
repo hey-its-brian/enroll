@@ -105,7 +105,7 @@ module FinancialAssistance
               when "verified"
                 income_evidence.mark_as_verified
               when "outstanding"
-                income_evidence.determine_outstanding_state(call_type: call_type)
+                income_evidence.determine_outstanding_state(call_type)
               end
             end
 

@@ -58,7 +58,7 @@ module FinancialAssistance
               return unless applicant_non_esi_evidence
 
               if response_non_esi_evidence.aasm_state == 'outstanding'
-                applicant_non_esi_evidence.determine_outstanding_state(call_type: 'hub_call')
+                applicant_non_esi_evidence.determine_outstanding_state('hub_call')
               else
                 applicant_non_esi_evidence.mark_as_attested
               end

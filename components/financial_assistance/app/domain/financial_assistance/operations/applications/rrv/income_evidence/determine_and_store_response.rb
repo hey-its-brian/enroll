@@ -71,7 +71,7 @@ module FinancialAssistance
                 unless EnrollRegistry.feature_enabled?(:ifsv_income_nrr) # rubocop:disable Style/UnlessElse, 'unless' more readable here than 'if !EnrollRegistry.feature_enabled?(:ifsv_income_nrr)'
                   income_evidence.mark_as_outstanding
                 else
-                  income_evidence.determine_outstanding_state(call_type: 'hub_call')
+                  income_evidence.determine_outstanding_state('hub_call')
                 end
               end
 

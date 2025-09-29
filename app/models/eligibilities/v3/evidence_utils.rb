@@ -67,6 +67,7 @@ module Eligibilities
         #
         # @note An ROP can span across multiple applications, so, this timestamp can be older than the evidence/application created_at timestamp.
         #       This field needs to be only used in auto due date extension scenarios and not for manual/admin due date extensions.
+        # @note This field is only applicable to income evidence.
         field :due_date_extended_at, type: DateTime
 
         # @!attribute [rw] is_active
@@ -327,7 +328,7 @@ module Eligibilities
           @fetch_evidence_prev_state ||= if prev_evidence == self
             # since for call hub we move evidence into pending before the request, and
             # prev state is needed to determine the current state.
-                                           prev_evidence.state_histories.last.from_state
+                                           prev_evidence.state_histories&.last&.from_state
                                          else
                                            prev_evidence.current_state
                                          end
@@ -407,6 +408,7 @@ module Eligibilities
           app_info = "from previous application #{app_hbx_id} application type #{app_type}"
 
           if due_on.present? && due_date_extended_at.present?
+            # Presently this is only applicable to income evidence, since income the only evidence that has auto due date extension feature
             "#{base_message}, due date of #{due_on} copied, and #{due_date_extended_at} automatic due date extended at copied #{app_info} due to active ROP."
           elsif due_on.present?
             "#{base_message} and due date of #{due_on} copied #{app_info} due to active ROP."

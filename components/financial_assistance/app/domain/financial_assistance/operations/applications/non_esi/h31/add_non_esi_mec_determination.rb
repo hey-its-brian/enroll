@@ -80,7 +80,7 @@ module FinancialAssistance
             def update_non_esi_mec_evidence(non_esi_mec_evidence, status, call_type)
               case status
               when "outstanding"
-                non_esi_mec_evidence.determine_outstanding_state(call_type: call_type)
+                non_esi_mec_evidence.determine_outstanding_state(call_type)
               else
                 non_esi_mec_evidence.mark_as_attested
               end
