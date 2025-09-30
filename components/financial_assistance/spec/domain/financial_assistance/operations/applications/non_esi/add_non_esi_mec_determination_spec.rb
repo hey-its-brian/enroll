@@ -342,6 +342,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::NonEsi::H31::Add
 
           context 'with aptc used' do
             before do
+              @applicant.update(is_ia_eligible: true)
               enrollment.update_attributes(applied_aptc_amount: 200)
             end
 
@@ -376,6 +377,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::NonEsi::H31::Add
 
           context 'with csr used' do
             it 'returns outstanding' do
+              @applicant.update(is_ia_eligible: true)
               enrollment.product.update(csr_variant_id: '02')
               enrollment.reload
               subject.call(payload: response_payload)

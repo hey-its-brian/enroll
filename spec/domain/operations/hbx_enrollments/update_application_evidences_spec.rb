@@ -130,12 +130,13 @@ RSpec.describe Operations::HbxEnrollments::UpdateApplicationEvidences, :type => 
     end
 
     context "when enrolled" do
-      context "when aptc is applied on enrolment member" do
+      context "when aptc is applied on enrollment member" do
         let(:applied_aptc_amount) { Money.new(44_500) }
 
         before do
           enrollment
           thhe
+          applicant.update!(is_ia_eligible: true)
           ::Operations::HbxEnrollments::UpdateApplicationEvidences.new.call({gid: enrollment.to_global_id.to_s})
           applicant.reload
           @aptc_csr_eligibility = applicant.aptc_csr_eligibility
@@ -197,7 +198,7 @@ RSpec.describe Operations::HbxEnrollments::UpdateApplicationEvidences, :type => 
         end
       end
 
-      context "when aptc is not applied on enrolment member" do
+      context "when aptc is not applied on enrollment member" do
         let(:applied_aptc_amount) { Money.new(0) }
 
         before do
@@ -327,13 +328,14 @@ RSpec.describe Operations::HbxEnrollments::UpdateApplicationEvidences, :type => 
         FactoryBot.create(:social_security_number_evidence, :pending, eligibility: ivl_eligibility, verification_outstanding: false, is_satisfied: true)
       end
 
-      context "when aptc is applied on enrolment member" do
+      context "when aptc is applied on enrollment member" do
         let(:applied_aptc_amount) { Money.new(400) }
 
         before do
           enrollment
           create_dependent_aptc_csr_evidences
           create_dependent_individual_market_evidences
+          applicant.update(is_ia_eligible: true)
           ::Operations::HbxEnrollments::UpdateApplicationEvidences.new.call({gid: enrollment.to_global_id.to_s})
           applicant.reload
           dependent_applicant.reload
@@ -404,6 +406,79 @@ RSpec.describe Operations::HbxEnrollments::UpdateApplicationEvidences, :type => 
             expect(local_mec_evidence.verification_outstanding).to be_truthy
             expect(local_mec_evidence.is_satisfied).to be_falsey
             expect(local_mec_evidence.state_histories.present?).to be_falsey
+          end
+        end
+
+        context "for individual market eligibility" do
+          it "should not move dependent citizenship evidence from rejected" do
+            citizenship_evidence = @dependent_individual_market_eligibility.citizenship_evidence
+            expect(citizenship_evidence).to be_rejected
+            expect(citizenship_evidence.due_on).to eq(Date.today + 5.days)
+            expect(citizenship_evidence.verification_outstanding).to be_truthy
+            expect(citizenship_evidence.is_satisfied).to be_falsey
+          end
+
+          it "should not move dependent social security evidence to outstanding state" do
+            social_security_evidence = @dependent_individual_market_eligibility.social_security_number_evidence
+            expect(social_security_evidence).to be_pending
+            expect(social_security_evidence.due_on).to be_nil
+            expect(social_security_evidence.verification_outstanding).to be_falsey
+            expect(social_security_evidence.is_satisfied).to be_truthy
+            expect(social_security_evidence.state_histories.present?).to be_falsey
+          end
+
+          it "should update dependent american_indian_evidence state" do
+            american_indian_evidence = @dependent_individual_market_eligibility.american_indian_evidence
+            expect(american_indian_evidence).to be_negative_response_received
+            expect(american_indian_evidence.state_histories.present?).to be_truthy
+            expect(american_indian_evidence.state_histories.last.from_state).to eq :outstanding
+            expect(american_indian_evidence.state_histories.last.to_state).to eq :negative_response_received
+          end
+        end
+      end
+
+      context "when aptc is applied on enrollment member but applicant is not ia_eligible" do
+        let(:applied_aptc_amount) { Money.new(400) }
+
+        before do
+          enrollment
+          create_dependent_aptc_csr_evidences
+          create_dependent_individual_market_evidences
+          applicant.update(is_ia_eligible: false)
+          applicant.aptc_csr_eligibility.income_evidence.update(current_state: :outstanding)
+          ::Operations::HbxEnrollments::UpdateApplicationEvidences.new.call({gid: enrollment.to_global_id.to_s})
+          applicant.reload
+          dependent_applicant.reload
+          @primary_aptc_csr_eligibility = applicant.aptc_csr_eligibility
+          @primary_individual_market_eligibility = applicant.individual_market_eligibility
+          @dependent_aptc_csr_eligibility = dependent_applicant.aptc_csr_eligibility
+          @dependent_individual_market_eligibility = dependent_applicant.individual_market_eligibility
+        end
+
+        context "for aptc_csr_eligibility evidences" do
+          it "should move primary income_evidence to NRR state" do
+            income_evidence = @primary_aptc_csr_eligibility.income_evidence
+            expect(income_evidence.current_state).to eq :negative_response_received
+            expect(income_evidence.due_on).to eq nil
+            expect(income_evidence.verification_outstanding).to be_falsey
+          end
+
+          it "should not move primary esi_mec_evidence to outstanding state" do
+            esi_mec_evidence = @primary_aptc_csr_eligibility.esi_mec_evidence
+            expect(esi_mec_evidence).not_to be_outstanding
+            expect(esi_mec_evidence.current_state).to eq :verified
+          end
+
+          it "should not update dependent income_evidence to outstanding state" do
+            income_evidence = @dependent_aptc_csr_eligibility.income_evidence
+            expect(income_evidence).to be_pending
+            expect(income_evidence.state_histories.present?).to be_falsey
+          end
+
+          it "should not update dependent esi_mec_evidence to outstanding state" do
+            esi_mec_evidence = @dependent_aptc_csr_eligibility.esi_mec_evidence
+            expect(esi_mec_evidence.current_state).to eq :verified
+            expect(esi_mec_evidence.state_histories.present?).to be_falsey
           end
         end
 

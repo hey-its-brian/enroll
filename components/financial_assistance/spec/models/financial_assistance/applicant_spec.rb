@@ -2162,6 +2162,70 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
     end
   end
 
+  describe 'enrolled_in_any_aptc_csr_enrollments?' do
+    context 'a product with csr_variant_id of 01' do
+      let(:person) { FactoryBot.create(:person, :with_consumer_role)}
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person)}
+      let(:product) {double(id: '123', csr_variant_id: '01')}
+
+      let!(:enrollment) do
+        FactoryBot.create(
+          :hbx_enrollment,
+          :with_enrollment_members,
+          :individual_assisted,
+          family: family,
+          applied_aptc_amount: Money.new(44_500),
+          consumer_role_id: person.consumer_role.id,
+          enrollment_members: family.family_members
+        )
+      end
+
+      let!(:applicant) do
+        FactoryBot.create(:financial_assistance_applicant,
+                          application: application,
+                          dob: Date.today - 38.years,
+                          is_primary_applicant: false,
+                          family_member_id: family.family_members.first.id)
+      end
+
+      before do
+        allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:ifsv_determination).and_return(true)
+        allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:mec_check).and_return(true)
+        allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:esi_mec_determination).and_return(true)
+        allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:non_esi_mec_determination).and_return(true)
+        allow(enrollment).to receive(:product).and_return(product)
+        applicant.create_evidences
+        applicant.create_eligibility_income_evidence
+        applicant.income_evidence.move_to_pending!
+      end
+
+      context "when aptc is applied on enrollment member and ia_eligible is true" do
+        before do
+          enrollment.hbx_enrollment_members.each {|hem| hem.applied_aptc_amount = 150 }
+          enrollment.save!
+          applicant.update!(is_ia_eligible: true)
+        end
+
+        it "should return true" do
+          result = applicant.enrolled_in_any_aptc_csr_enrollments?([enrollment])
+          expect(result).to eq true
+        end
+      end
+
+      context "when aptc is applied on enrollment member but applicant is not ia eligible" do
+        before do
+          enrollment.hbx_enrollment_members.each {|hem| hem.applied_aptc_amount = 150 }
+          enrollment.save!
+        end
+
+        it "should return false" do
+          result = applicant.enrolled_in_any_aptc_csr_enrollments?([enrollment])
+          expect(result).to eq false
+        end
+      end
+    end
+  end
+
   describe '#embedded_document_section_entry_complete?' do
     context 'other_income' do
       before do

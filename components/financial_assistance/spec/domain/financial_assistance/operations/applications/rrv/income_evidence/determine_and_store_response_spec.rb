@@ -31,6 +31,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::IncomeEvide
                       family_member_id: family.family_members.first.id,
                       person_hbx_id: '1629165429385938',
                       is_primary_applicant: true,
+                      is_ia_eligible: true,
                       first_name: 'Income',
                       last_name: 'evidence',
                       ssn: "111111111",

@@ -236,7 +236,15 @@ module Operations
       #   # => { is_enrolled: false, has_aptc_csr: false, enrollment_hbx_id: "12345" }
       def applicant_context(applicant, enrollment_context)
         is_enrolled = enrollment_context[:active_enrollments].map(&:hbx_enrollment_members).flatten.any? { |member| member.applicant_id == applicant.family_member_id }
-        has_aptc_csr = is_enrolled ? has_aptc_csr_enrollment?(applicant, enrollment_context[:active_enrollments]) : false
+        eligibility_check = if applicant.is_a?(::FinancialAssistance::Applicant)
+                              applicant.is_ia_eligible?
+                            else
+                              true
+                            end
+
+        has_aptc_csr = is_enrolled &&
+                       has_aptc_csr_enrollment?(applicant, enrollment_context[:active_enrollments]) &&
+                       eligibility_check
 
         {
           is_enrolled: is_enrolled,

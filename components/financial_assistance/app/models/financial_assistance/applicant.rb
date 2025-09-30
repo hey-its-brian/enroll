@@ -1720,6 +1720,7 @@ module FinancialAssistance
     end
 
     def enrolled_in_any_aptc_csr_enrollments?(enrollments)
+      is_ia_eligible? &&
       enrollments.any? do |enrollment|
         applicant_enrolled?(enrollment) &&
           enrollment.is_health_enrollment? &&
