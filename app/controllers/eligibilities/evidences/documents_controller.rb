@@ -112,12 +112,9 @@ module Eligibilities
           flash[:danger] = result.failure
         end
 
+        redirect_location = determine_redirect_location
         respond_to do |format|
-          if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
-            format.html { redirect_to main_app.verification_detail_insured_families_path(person_id: params['person_id'], eligibility_kind: params['eligibility_kind'], evidence_key: params['evidence_key']) }
-          else
-            format.html { redirect_to main_app.verification_insured_families_path }
-          end
+          format.html { redirect_to redirect_location }
           format.js
         end
       end

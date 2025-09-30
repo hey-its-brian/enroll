@@ -262,10 +262,15 @@ RSpec.describe Eligibilities::Evidences::DocumentsController, type: :controller 
       it 'redirects with success message' do
         delete :destroy, params: params
         expect(flash[:danger]).to be_present
-        expect(response).to redirect_to(verification_detail_insured_families_path(
+        expect(response).to redirect_to(eligibility_evidence_path(
+                                          eligibility_id: aptc_csr_eligibility.id,
+                                          id: income_evidence.id,
+                                          application_gid: params[:application_gid],
+                                          applicant_id: params[:applicant_id],
                                           person_id: params[:person_id],
                                           eligibility_kind: params[:eligibility_kind],
-                                          evidence_key: params[:evidence_key]
+                                          evidence_key: params[:evidence_key],
+                                          family_id: family.id
                                         ))
       end
     end
