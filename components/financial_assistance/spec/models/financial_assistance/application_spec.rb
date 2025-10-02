@@ -651,6 +651,7 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
               applicant.update_attributes(
                 is_required_to_file_taxes: test_case["#{is_primary ? 'primary' : 'spouse'}_required_to_file".to_sym],
                 is_joint_tax_filing: test_case["#{is_primary ? 'primary' : 'spouse'}_joint_filing".to_sym],
+                is_claimed_as_tax_dependent: test_case[:claimed_by_spouse],
                 claimed_as_tax_dependent_by: ((is_primary ? dependent_applicant.id : primary_applicant.id) if test_case[:claimed_by_spouse])
               )
               applicant.update_attributes!(is_primary_applicant: false)
