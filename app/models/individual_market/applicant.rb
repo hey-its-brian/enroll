@@ -98,6 +98,10 @@ module IndividualMarket
     # @!attribute age_off_excluded
     # @return [Boolean] Indicates if this applicant is should be kept on their parent's plan when they are 26+
     field :age_off_excluded, type: Boolean
+    field :five_year_bar_applies, type: Boolean
+    field :five_year_bar_met, type: Boolean
+    field :qualified_non_citizen, type: Boolean
+    field :citizenship_result, type: String
 
     field :contact_method, type: String,
                            default: if EnrollRegistry.feature_enabled?(:contact_method_via_dropdown) || EnrollRegistry.feature_enabled?(:enroll_sms_notifications)
@@ -472,33 +476,97 @@ module IndividualMarket
     end
 
     def name_changed?(prev_applicant)
-      return false unless prev_applicant&.person_name && person_name
+      return false unless prev_applicant
 
-      person_name.given_name != prev_applicant.person_name.given_name ||
-        person_name.family_name != prev_applicant.person_name.family_name
+      person_name.given_name != fetch_cross_app_given_name(prev_applicant) ||
+        person_name.family_name != fetch_cross_app_family_name(prev_applicant)
+    end
+
+    def fetch_cross_app_given_name(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.person_name&.given_name
+      else
+        prev_applicant.first_name
+      end
+    end
+
+    def fetch_cross_app_family_name(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.person_name&.family_name
+      else
+        prev_applicant.last_name
+      end
     end
 
     def identity_info_changed?(prev_applicant)
-      return false unless prev_applicant&.demographics && demographics
+      return false unless prev_applicant
 
-      demographics.dob != prev_applicant.demographics.dob ||
-        demographics.encrypted_ssn != prev_applicant.demographics.encrypted_ssn
+      demographics.dob != fetch_cross_app_dob(prev_applicant) ||
+        demographics.encrypted_ssn != fetch_cross_app_encrypted_ssn(prev_applicant)
+    end
+
+    def fetch_cross_app_dob(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.demographics&.dob
+      else
+        prev_applicant.dob
+      end
+    end
+
+    def fetch_cross_app_encrypted_ssn(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.demographics&.encrypted_ssn
+      else
+        prev_applicant.encrypted_ssn
+      end
     end
 
     def citizen_status_changed?(prev_applicant)
-      return false unless prev_applicant&.demographics && demographics
-      return false if demographics.citizen_status == prev_applicant.demographics.citizen_status
+      return false unless prev_applicant
+      return false if demographics.citizen_status == fetch_cross_app_citizen_status(prev_applicant)
 
       citizen_statuses = EnrollRegistry[:consumer_role_hub_call].setting(:citizen_statuses).item
       citizen_statuses.include?(demographics.citizen_status)
     end
 
-    def indian_tribe_changed?(prev_applicant)
-      return false unless prev_applicant&.demographics && demographics
+    def fetch_cross_app_citizen_status(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.demographics&.citizen_status
+      else
+        prev_applicant.citizen_status
+      end
+    end
 
-      demographics.tribal_state != prev_applicant.demographics.tribal_state ||
-        demographics.tribal_name != prev_applicant.demographics.tribal_name ||
-        demographics.tribal_id != prev_applicant.demographics.tribal_id
+    def indian_tribe_changed?(prev_applicant)
+      return false unless prev_applicant
+
+      demographics.tribal_state != fetch_cross_app_tribal_state(prev_applicant) ||
+        demographics.tribal_name != fetch_cross_app_tribal_name(prev_applicant) ||
+        demographics.tribal_id != fetch_cross_app_tribal_id(prev_applicant)
+    end
+
+    def fetch_cross_app_tribal_id(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.demographics&.tribal_id
+      else
+        prev_applicant.tribal_id
+      end
+    end
+
+    def fetch_cross_app_tribal_name(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.demographics&.tribal_name
+      else
+        prev_applicant.tribal_name
+      end
+    end
+
+    def fetch_cross_app_tribal_state(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.demographics&.tribal_state
+      else
+        prev_applicant.tribal_state
+      end
     end
 
     private

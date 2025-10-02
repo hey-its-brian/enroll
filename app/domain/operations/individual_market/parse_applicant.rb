@@ -35,15 +35,20 @@ module Operations
       end
 
       def parse_family_member(family_member)
+        consumer_role = family_member.person.consumer_role
         Try do
           applicant_params = person_attributes(family_member).merge(
             family_member_id: family_member.id,
             is_primary_applicant: family_member.is_primary_applicant,
             address_same_as_primary: address_same_as_primary?(family_member),
-            is_applying_coverage: family_member.person.consumer_role&.is_applying_coverage,
+            is_applying_coverage: consumer_role&.is_applying_coverage,
             age_off_excluded: family_member.person&.age_off_excluded,
-            contact_method: family_member.person.consumer_role&.contact_method,
-            language_preference: family_member.person.consumer_role&.language_preference
+            contact_method: consumer_role&.contact_method,
+            language_preference: consumer_role&.language_preference,
+            five_year_bar_applies: consumer_role&.five_year_bar_applies,
+            five_year_bar_met: consumer_role&.five_year_bar_met,
+            qualified_non_citizen: consumer_role&.lawful_presence_determination&.qualified_non_citizenship_result,
+            citizenship_result: consumer_role&.lawful_presence_determination&.citizenship_result
           )
           applicant_params
         end.or(Failure("Could not build applicant params for family member with id: #{family_member&.id}"))

@@ -140,7 +140,9 @@ module Operations
             is_applicant: applicant.is_primary_applicant,
             contact_method: applicant.contact_method,
             is_applying_coverage: applicant.is_applying_coverage,
-            language_preference: applicant.language_preference
+            language_preference: applicant.language_preference,
+            five_year_bar_applies: applicant.five_year_bar_applies,
+            five_year_bar_met: applicant.five_year_bar_met
           )
 
           build_or_update_vlp_document(consumer_role, applicant)
@@ -190,6 +192,8 @@ module Operations
         def build_or_update_lawful_presence_determination(consumer_role, applicant)
           lpd = consumer_role.lawful_presence_determination || consumer_role.build_lawful_presence_determination
           lpd.citizen_status = applicant.demographics.citizen_status
+          lpd.citizenship_result = applicant.citizenship_result
+          lpd.qualified_non_citizenship_result = applicant.qualified_non_citizen
         end
 
         # Builds demographics group for a person

@@ -17,12 +17,27 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
       code_description: 'SSA VLP Determined',
       raw_payload: "{\"ResponseMetadata\":{\"ResponseCode\":\"HS000000\",\"ResponseText\":\"Success\"},\"SSACompositeIndividualResponses\":[{\"SSAResponse\":{\"SSNVerificationIndicator\":true,\"PersonUSCitizenIndicator\":false}}]}"}
   end
+
+  let(:immigration_rr) do
+    { result: 'test_state',
+      source: "FDSH VLP",
+      code: 'HS000000',
+      code_description: 'SSA VLP Determined',
+      raw_payload: "{\"ResponseMetadata\":{\"ResponseCode\":\"HS000000\",\"ResponseDescriptionText\":\"Successful.\"},
+      \"InitialVerificationResponseSet\":{\"InitialVerificationIndividualResponses\":[{\"ResponseMetadata\":{\"ResponseCode\":\"HS000000\",
+      \"ResponseDescriptionText\":\"Successful.\"},\"LawfulPresenceVerifiedCode\":\"P\",\"InitialVerificationIndividualResponseSet\":{\"CaseNumber\":\"0000000000000AA\",\"NonCitLastName\":\"NonCitLastName1\",
+      \"NonCitFirstName\":\"NonCitFirstName1\",\"NonCitMiddleName\":null,\"NonCitBirthDate\":\"2006-05-04T00:00:00.000Z\",\"NonCitEntryDate\":null,\"AdmittedToDate\":null,\"AdmittedToText\":null,
+      \"NonCitCountryBirthCd\":null,\"NonCitCountryCitCd\":null,\"NonCitCoaCode\":null,\"NonCitProvOfLaw\":null,\"NonCitEadsExpireDate\":null,\"EligStatementCd\":5,\"EligStatementTxt\":\"EligStatementTxt1\",
+      \"IAVTypeCode\":null,\"IAVTypeTxt\":null,\"WebServSftwrVer\":\"WebServSftwrVer1\",\"GrantDate\":null,\"GrantDateReasonCd\":null,\"SponsorDataFoundIndicator\":null,\"ArrayOfSponsorshipData\":null,
+      \"SponsorshipReasonCd\":null,\"AgencyAction\":\"AgencyAction1\",\"FiveYearBarApplyCode\":\"N\",\"QualifiedNonCitizenCode\":\"N\",\"FiveYearBarMetCode\":\"N\",\"USCitizenCode\":\"N\"}}]}}"}
+  end
+
   let(:eligibility_hash) do
     {:key => "individual_market_eligibility",
      :evidences => [{:key => "social_security_number_evidence",
                      :request_results => [rr],:current_state => :attested},
                     {:key => "citizenship_evidence", :request_results => [rr], :current_state => :outstanding},
-                    {:key => "immigration_evidence", :request_results => [rr], :current_state => :outstanding}]}
+                    {:key => "immigration_evidence", :request_results => [immigration_rr], :current_state => :outstanding}]}
   end
 
   let!(:job) do
@@ -102,6 +117,16 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
         expect(ssn_evidence.request_results.first.code).to eq('HS000000')
 
         expect(citizenship_evidence.request_results.count).to eq(1)
+      end
+
+      it 'updates consumer role lawful presence determination' do
+        application.reload
+        applicant = application.applicants.first
+        expect(applicant.five_year_bar_applies).to eq false
+        expect(applicant.five_year_bar_met).to eq false
+        expect(applicant.qualified_non_citizen).to eq false
+        expect(applicant.citizenship_result).to eq 'non_native_citizen'
+
       end
     end
 

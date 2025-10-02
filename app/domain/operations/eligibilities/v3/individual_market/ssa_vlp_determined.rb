@@ -65,6 +65,7 @@ module Operations
             return Failure("Determined applicants are required") unless params[:determinations]
             return Failure('type of call not specified') unless params[:call_type]
             @call_type = params[:call_type]
+            @app_type = params[:app_type]
 
             Success(params)
           end
@@ -204,17 +205,121 @@ module Operations
             eligibility_entity.evidences.each do |evidence_entity|
               evidence = eligibility.evidences.detect { |e| e.key.to_sym == evidence_entity.key.to_sym }
               next unless evidence
-              record_request_result(evidence, evidence_entity) if evidence_entity.request_results.present?
+              record_request_result(evidence, evidence_entity, applicant) if evidence_entity.request_results.present?
               record_verification_result(evidence, evidence_entity) if evidence_entity.verification_histories.present?
             end
-            eligibility.save
+            applicant.save
           end
 
-          def record_request_result(evidence, evidence_entity)
+          def record_request_result(evidence, evidence_entity, applicant)
             update_evidence(evidence, evidence_entity)
-            evidence.request_results.new(evidence_entity.request_results.first.to_h)
+            result_result_entity = evidence_entity.request_results.first
+            evidence.request_results.new(result_result_entity.to_h)
+            assign_citizen_status(evidence_entity, applicant) if result_result_entity.source.to_s == "FDSH SSA"
+            assign_five_year_bar_citizenship_result(evidence_entity, applicant) if result_result_entity.source.to_s == "FDSH VLP"
           rescue StandardError => e
             record_ingestion_result(evidence, e)
+          end
+
+          def assign_citizen_status(evidence_entity, applicant)
+            json_raw_payload = evidence_entity.request_results.first.raw_payload
+            response = JSON.parse(json_raw_payload, symbolize_names: true)
+            response_code = response.dig(:ResponseMetadata, :ResponseCode)
+            ssa_response = response.dig(:SSACompositeIndividualResponses, 0, :SSAResponse)
+            return applicant.citizenship_result = ::ConsumerRole::NOT_LAWFULLY_PRESENT_STATUS unless response_code == "HS000000" && ssa_response.present?
+
+            ssn_indicator = ssa_response[:SSNVerificationIndicator]
+            citizenship_indicator = ssa_response[:PersonUSCitizenIndicator]
+            applicant.citizenship_result = ::ConsumerRole::US_CITIZEN_STATUS if ssn_indicator && citizenship_indicator
+            applicant.citizenship_result = ::ConsumerRole::NOT_LAWFULLY_PRESENT_STATUS if ssn_indicator && !citizenship_indicator
+            applicant.citizenship_result = ::ConsumerRole::NOT_LAWFULLY_PRESENT_STATUS unless ssn_indicator
+          end
+
+          # update applicant only for vlp payloads
+          def assign_five_year_bar_citizenship_result(evidence_entity, applicant)
+            json_raw_payload = evidence_entity.request_results.first.raw_payload
+            raw_payload = JSON.parse(json_raw_payload, symbolize_names: true)
+            initial_responses = raw_payload.dig(:InitialVerificationResponseSet, :InitialVerificationIndividualResponses)
+            return unless initial_responses
+
+            individual_response = initial_responses[0]
+            return unless individual_response
+            individual_response_set = individual_response[:InitialVerificationIndividualResponseSet]
+            return unless individual_response_set
+            applicant.five_year_bar_applies = vlp_response_code_to_boolean(individual_response_set[:FiveYearBarApplyCode]) if individual_response_set.key?(:FiveYearBarApplyCode)
+            applicant.five_year_bar_met = vlp_response_code_to_boolean(individual_response_set[:FiveYearBarMetCode]) if individual_response_set.key?(:FiveYearBarMetCode)
+            applicant.qualified_non_citizen = qualified_non_citizen_result(raw_payload, applicant)
+            applicant.citizenship_result = get_citizen_status(applicant, individual_response)
+          end
+
+          def get_citizen_status(applicant, individual_response)
+            ::ConsumerRole::NOT_LAWFULLY_PRESENT_STATUS unless ['Y', 'X'].include?(individual_response[:LawfulPresenceVerifiedCode])
+            status = individual_response.dig(:InitialVerificationIndividualResponseSet, :EligStatementTxt)
+
+            return "us_citizen" if status.eql? "UNITED STATES CITIZEN"
+            return "lawful_permanent_resident" if status.eql? "LAWFUL PERMANENT RESIDENT - EMPLOYMENT AUTHORIZED"
+            return "alien_lawfully_present" if ::ConsumerRole::VLP_RESPONSE_ALIEN_LEGAL_STATES.include?(status)
+            return "us_citizen" if is_us_citizen?(applicant)
+
+            "non_native_citizen"
+          end
+
+          def qualified_non_citizen_result(raw_payload, applicant)
+            return unless raw_payload.dig(:ResponseMetadata, :ResponseCode) == "HS000000"
+            individual_response = raw_payload.dig(:InitialVerificationResponseSet, :InitialVerificationIndividualResponses).first
+            if individual_response.dig(:ResponseMetadata, :ResponseCode) == "HS000000"
+              parse_qnc_code(applicant, individual_response)
+            else
+              individual_response.dig(:InitialVerificationIndividualResponseSet, :QualifiedNonCitizenCode)
+            end
+          end
+
+          def parse_qnc_code(applicant, individual_response)
+            qnc_code = individual_response.dig(:InitialVerificationIndividualResponseSet, :QualifiedNonCitizenCode)
+
+            parse_qnc_code = case qnc_code&.upcase
+                             when 'Y', 'P'
+                               'Y'
+                             when 'X'
+                               is_us_citizen?(applicant) ? 'N' : 'Y'
+                             else
+                               'N'
+                             end
+            construct_qualified_non_citizen(applicant, parse_qnc_code)
+          end
+
+          def construct_qualified_non_citizen(applicant, parse_qnc_code)
+            case parse_qnc_code
+            when 'Y'
+              true
+            when 'N'
+              false
+            else
+              eligible_immigration_status(applicant)
+            end
+          end
+
+          def eligible_immigration_status(applicant)
+            if @app_type == 'faa'
+              applicant.eligible_immigration_status
+            else
+              applicant.demographics.eligible_immigration_status
+            end
+          end
+
+          def vlp_response_code_to_boolean(code_value)
+            case code_value
+            when 'P', nil, 'Y' then true
+            when 'X', 'N' then false
+            end
+          end
+
+          def is_us_citizen?(applicant)
+            if @app_type == 'faa'
+              applicant.us_citizen
+            else
+              applicant.demographics.us_citizen
+            end
           end
 
           def record_verification_result(evidence, evidence_entity)

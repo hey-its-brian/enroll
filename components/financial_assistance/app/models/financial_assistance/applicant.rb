@@ -335,6 +335,7 @@ module FinancialAssistance
     field :five_year_bar_applies, type: Boolean
     field :five_year_bar_met, type: Boolean
     field :qualified_non_citizen, type: Boolean
+    field :citizenship_result, type: String
 
     # @!attribute [rw] benchmark_premiums
     #   @return [Hash] the SLCSP and LCSP premiums information calculated for Financial Assistance determination process
@@ -1854,17 +1855,55 @@ module FinancialAssistance
     end
 
     def name_changed?(prev_applicant)
-      !(first_name == prev_applicant.first_name ||
-      last_name == prev_applicant.last_name)
+      return false unless prev_applicant
+
+      first_name != fetch_cross_app_first_name(prev_applicant) ||
+        last_name != fetch_cross_app_last_name(prev_applicant)
+    end
+
+    def fetch_cross_app_first_name(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.first_name
+      else
+        prev_applicant.person_name&.given_name
+      end
+    end
+
+    def fetch_cross_app_last_name(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.last_name
+      else
+        prev_applicant.person_name&.family_name
+      end
     end
 
     def identity_info_changed?(prev_applicant)
-      !(encrypted_ssn == prev_applicant.encrypted_ssn ||
-      dob == prev_applicant.dob)
+      return false unless prev_applicant
+
+      encrypted_ssn != fetch_cross_app_encrypted_ssn(prev_applicant) ||
+        dob != fetch_cross_app_dob(prev_applicant)
+    end
+
+    def fetch_cross_app_dob(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.dob
+      else
+        prev_applicant.demographics&.dob
+      end
+    end
+
+    def fetch_cross_app_encrypted_ssn(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.encrypted_ssn
+      else
+        prev_applicant.demographics&.encrypted_ssn
+      end
     end
 
     def citizen_status_changed?(prev_applicant)
-      if citizen_status == prev_applicant.citizen_status
+      return false unless prev_applicant
+
+      if citizen_status == fetch_cross_app_citizen_status(prev_applicant)
         false
       else
         citizen_statuses = EnrollRegistry[:consumer_role_hub_call].setting(:citizen_statuses).item
@@ -1872,10 +1911,44 @@ module FinancialAssistance
       end
     end
 
+    def fetch_cross_app_citizen_status(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.citizen_status
+      else
+        prev_applicant.demographics&.citizen_status
+      end
+    end
+
     def indian_tribe_changed?(prev_applicant)
-      !(tribal_state == prev_applicant.tribal_state ||
-      tribal_name == prev_applicant.tribal_name ||
-      tribal_id == prev_applicant.tribal_id)
+      return false unless prev_applicant
+
+      tribal_state != fetch_cross_app_tribal_state(prev_applicant) ||
+        tribal_name != fetch_cross_app_tribal_name(prev_applicant) ||
+        tribal_id != fetch_cross_app_tribal_id(prev_applicant)
+    end
+
+    def fetch_cross_app_tribal_id(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.tribal_id
+      else
+        prev_applicant.demographics&.tribal_id
+      end
+    end
+
+    def fetch_cross_app_tribal_name(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.tribal_name
+      else
+        prev_applicant.demographics&.tribal_name
+      end
+    end
+
+    def fetch_cross_app_tribal_state(prev_applicant)
+      if prev_applicant.instance_of?(self.class)
+        prev_applicant.tribal_state
+      else
+        prev_applicant.demographics&.tribal_state
+      end
     end
 
     private
