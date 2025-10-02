@@ -956,6 +956,15 @@ module FinancialAssistance
       eligibility_determination
     end
 
+    # Returns the applicant who is claiming this applicant as a tax dependent.
+    # If the applicant has attested false to being claimed, or there is no claiming applicant, returns nil.
+    # @return [FinancialAssistance::Applicant] the applicant who is claiming this applicant
+    def covering_applicant
+      return nil unless is_claimed_as_tax_dependent && claimed_as_tax_dependent_by.present?
+
+      application.applicants.where(_id: claimed_as_tax_dependent_by).first
+    end
+
     # If there is no claimed_as_tax_dependent_by, return true
     # if there is a claimed_as_tax_dependent_by, make sure that the application
     # has an applicant with that id

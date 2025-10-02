@@ -1236,8 +1236,11 @@ module FinancialAssistance
       spouse_applicant = relationships.where(kind: 'spouse', applicant_id: primary_applicant.id).first&.then { |rel| applicants.find(rel.relative_id) if rel.relative_id.present? }
       return true if spouse_applicant.blank?
 
+      # joint attestations conflict
       return false unless (primary_applicant.is_required_to_file_taxes && primary_applicant.is_joint_tax_filing) == (spouse_applicant.is_required_to_file_taxes && spouse_applicant.is_joint_tax_filing)
-      return false if primary_applicant.claimed_as_tax_dependent_by == spouse_applicant.id || spouse_applicant.claimed_as_tax_dependent_by == primary_applicant.id
+      # claiming each other as tax dependents
+      return false if primary_applicant.covering_applicant&.id == spouse_applicant.id || spouse_applicant.covering_applicant&.id == primary_applicant.id
+
       true
     end
 

@@ -976,6 +976,45 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
     end
   end
 
+  describe '#covering_applicant' do
+    let(:other_applicant) do
+      FactoryBot.create(:financial_assistance_applicant, application: application)
+    end
+
+    context 'when is_claimed_as_tax_dependent is true and claimed_as_tax_dependent_by is present' do
+      before do
+        allow(applicant).to receive(:is_claimed_as_tax_dependent).and_return(true)
+        allow(applicant).to receive(:claimed_as_tax_dependent_by).and_return(other_applicant.id)
+      end
+
+      it 'returns the covering applicant' do
+        expect(applicant.covering_applicant).to eq other_applicant
+      end
+    end
+
+    context 'when is_claimed_as_tax_dependent is false but claimed_as_tax_dependent_by is present' do
+      before do
+        allow(applicant).to receive(:is_claimed_as_tax_dependent).and_return(false)
+        allow(applicant).to receive(:claimed_as_tax_dependent_by).and_return(other_applicant.id)
+      end
+
+      it 'returns nil' do
+        expect(applicant.covering_applicant).to be_nil
+      end
+    end
+
+    context 'when is_claimed_as_tax_dependent is false but claimed_as_tax_dependent_by is nil' do
+      before do
+        allow(applicant).to receive(:is_claimed_as_tax_dependent).and_return(false)
+        allow(applicant).to receive(:claimed_as_tax_dependent_by).and_return(nil)
+      end
+
+      it 'returns nil' do
+        expect(applicant.covering_applicant).to be_nil
+      end
+    end
+  end
+
   context 'propagate_applicant' do
     before do
       allow(FinancialAssistance::Operations::Families::CreateOrUpdateMember).to receive(:new).and_call_original
