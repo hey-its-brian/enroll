@@ -47,9 +47,8 @@ module Operations
 
         verification_type.assign_attributes(validation_status: "verified")
 
-        actor = "Script"
-        action = "Data Migration - Evidence Records"
-        params = {action: action, modifier: actor, from_validation_status: "unverified", to_validation_status: "verified"}
+        update_reason = "Data Migration - Evidence Records"
+        params = {action: "Data Migration", update_reason: update_reason, modifier: "Script", from_validation_status: "unverified", to_validation_status: "verified"}
         verification_type.type_history_elements.build(params)
         verification_type.save!
 

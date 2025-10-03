@@ -37,7 +37,8 @@ RSpec.describe ::Operations::DataFixes::CreateSsaVerificationType, dbclean: :aft
       expect(person.verification_types.ssn_type.first.validation_status).to eq("verified")
       type_history_elements = person.verification_types.ssn_type.first.type_history_elements
       expect(type_history_elements.count).to eq(1)
-      expect(type_history_elements.first.action).to eq("Data Migration - Evidence Records")
+      expect(type_history_elements.first.action).to eq("Data Migration")
+      expect(type_history_elements.first.update_reason).to eq("Data Migration - Evidence Records")
       expect(type_history_elements.first.modifier).to eq("Script")
       expect(type_history_elements.first.from_validation_status).to eq("unverified")
       expect(type_history_elements.first.to_validation_status).to eq("verified")
