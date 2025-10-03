@@ -63,6 +63,7 @@ module FinancialAssistance
                   application.auto_extend_income_evidence_due_date('auto_extend_due_date', extend_by, modified_by)
                   application.save!
 
+                  build_determination(application.family)
                   results[family.id] = "Income evidence due date extended for family #{family.id}"
                 else
                   results[family.id] = "The latest application is not of type 'faa' for family #{family.id}"
@@ -74,6 +75,12 @@ module FinancialAssistance
                 results
               end
             )
+          end
+
+          def build_determination(family)
+            return if family.blank?
+
+            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
           end
         end
       end

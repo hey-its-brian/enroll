@@ -13,6 +13,7 @@ module FinancialAssistance
           # Operation receives the Application with renewal ifsv determination values
           class DetermineAndStoreResponse
             include Dry::Monads[:do, :result]
+            include ::ResourceRegistryHelper
 
             # @param [Hash] opts The options to add rrv ifsv determination to applicants
             # @option opts [Hash] :application_response_payload ::AcaEntities::MagiMedicaid::Application params
@@ -21,6 +22,7 @@ module FinancialAssistance
               application_entity = yield initialize_application_entity(params[:payload])
               application = yield find_application(application_entity)
               result = yield update_applicant(application_entity, application)
+              _determination = yield update_family_determination(application)
 
               Success(result)
             end
@@ -87,6 +89,15 @@ module FinancialAssistance
                 result_hash = request_result.to_h.merge(action: "RRV Response")
                 income_evidence.request_results << Eligibilities::V3::RequestResult.new(result_hash)
               end
+            end
+
+            def update_family_determination(application)
+              return Success(true) unless qhp_application_feature_enabled?
+
+              family = application.family
+              return unless family.present?
+
+              ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family}) if family.latest_application_gid == application.to_global_id&.uri&.to_s
             end
           end
         end

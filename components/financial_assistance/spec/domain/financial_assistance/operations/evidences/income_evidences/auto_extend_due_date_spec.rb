@@ -103,6 +103,14 @@ RSpec.describe FinancialAssistance::Operations::Evidences::IncomeEvidences::Auto
         updated_by: 'system'
       )
     end
+
+    it "should build family determination and update due date of income evidence" do
+      income_evidence.reload
+      family.reload
+      eligibility_state = family.eligibility_determination.subjects.first.eligibility_states.by_type("aptc_csr_credit").first
+      evidence_state = eligibility_state.evidence_states.detect{|evi_state| evi_state.evidence_item_key == :income_evidence }
+      expect(income_evidence.due_on).to eq(evidence_state.due_on)
+    end
   end
 
   context 'when:
