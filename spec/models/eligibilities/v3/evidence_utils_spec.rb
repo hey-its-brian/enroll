@@ -158,10 +158,13 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
 
   describe "#mark_as_negative_response_received" do
     it "marks the evidence as negative_response_received" do
+      dummy_evidence.due_on = TimeKeeper.date_of_record
+      dummy_evidence.save
       dummy_evidence.mark_as_negative_response_received
       expect(dummy_evidence.negative_response_received?).to be true
       expect(dummy_evidence.is_satisfied).to be true
       expect(dummy_evidence.verification_outstanding).to be false
+      expect(dummy_evidence.due_on).to eq nil
     end
 
     it "does not mark as negative_response_received if cannot move to negative_response_received" do

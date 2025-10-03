@@ -154,7 +154,7 @@ module Eligibilities
         def mark_as_negative_response_received
           return unless self.can_move_to_negative_response_received?
 
-          assign_attributes(verification_outstanding: false, is_satisfied: true)
+          assign_attributes(verification_outstanding: false, is_satisfied: true, due_on: nil)
           self.move_to_negative_response_received
         end
 
