@@ -173,6 +173,61 @@ class FamilyMember
     family.family_members.detect { |member| member._id.to_s == family_member_id.to_s } unless family.blank?
   end
 
+  def latest_determined_evidence_pipeline(evidence_key)
+    [
+      { '$match' => { 'family_id' => family.id } },
+      { '$unwind' => '$applicants' },
+      { '$match' => { 'applicants.family_member_id' => id } },
+      { '$unwind' => '$applicants.eligibilities' },
+      { '$unwind' => '$applicants.eligibilities.evidences' },
+      { '$match' => { 'applicants.eligibilities.evidences.key' => evidence_key } },
+      { '$sort' => { 'applicants.eligibilities.evidences.created_at' => -1 } },
+      { '$limit' => 1 },
+      { '$project' => {
+        'evidence_id' => '$applicants.eligibilities.evidences._id',
+        'evidence_created_at' => '$applicants.eligibilities.evidences.created_at',
+        'application_id' => '$_id',
+        'application_type' => '$_type',
+        '_id' => 0
+      } }
+    ]
+  end
+
+  def find_latest_determined_application_with_evidence_key(evidence_key)
+    # Single aggregation pipeline that searches both collections efficiently
+    pipeline = latest_determined_evidence_pipeline(evidence_key)
+
+    # Individual Market Applications
+    individual_result = IndividualMarket::Application.collection.aggregate([
+      { '$match' => { 'current_state' => :determined } }
+    ] + pipeline).first
+
+    # Financial Assistance Applications
+    fa_result = FinancialAssistance::Application.collection.aggregate([
+      { '$match' => { 'aasm_state' => 'determined' } }
+    ] + pipeline).first
+
+    # Find the most recent evidence
+    latest_result = [individual_result, fa_result].compact.max_by { |result| result['evidence_created_at'] }
+    return nil if latest_result.nil?
+
+    # Use the evidence ID to directly query for the evidence object
+    evidence_id = latest_result['evidence_id']
+    application_id = latest_result['application_id']
+    application_type = latest_result['application_type']
+
+    # Single targeted query to get just the evidence
+    application = if application_type == 'IndividualMarket::Application'
+                    IndividualMarket::Application.find(application_id)
+                  else
+                    FinancialAssistance::Application.find(application_id)
+                  end
+
+    return nil unless application
+
+    application.fetch_evidence(evidence_id, id)
+  end
+
   private
 
   def family_member_created

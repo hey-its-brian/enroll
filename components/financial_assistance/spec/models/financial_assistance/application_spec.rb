@@ -3091,6 +3091,54 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
       expect(application.all_applicants_medicaid_or_chip_eligible?).to eq(true)
     end
   end
+
+  describe '#fetch_evidence' do
+    let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+    let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+    let(:family_member) { family.family_members.first }
+    let(:primary_applicant) { family.primary_applicant }
+    let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+    let(:alive_evidence) { FactoryBot.create(:alive_evidence, :pending, eligibility: ivl_eligibility) }
+    let(:ai_an_evidence) { FactoryBot.create(:american_indian_evidence, :with_verification_histories, :verified, eligibility: ivl_eligibility) }
+
+    let(:faa_application) do
+      FactoryBot.create(
+        :financial_assistance_application,
+        family_id: family.id,
+        aasm_state: 'determined',
+        submitted_at: Time.now,
+        assistance_year: TimeKeeper.date_of_record.year
+      )
+    end
+
+    let(:applicant) do
+      FactoryBot.create(
+        :financial_assistance_applicant,
+        family_member_id: family_member.id,
+        person_hbx_id: person.hbx_id,
+        application: faa_application
+      )
+    end
+
+    before do
+      applicant
+      ivl_eligibility
+      alive_evidence
+      ai_an_evidence
+    end
+
+    it 'returns the evidence' do
+      expect(faa_application.fetch_evidence(alive_evidence.id, primary_applicant.id)).to eq(alive_evidence)
+    end
+
+    it 'does not return the evidence if the id does not match' do
+      expect(faa_application.fetch_evidence(alive_evidence.id, primary_applicant.id)).not_to eq(ai_an_evidence)
+    end
+
+    it 'does not return the evidence if the family member id does not match' do
+      expect(faa_application.fetch_evidence(alive_evidence.id, BSON::ObjectId.new)).to be_nil
+    end
+  end
 end
 
 RSpec.describe ::FinancialAssistance::Application, "with correct index definitions", type: :model, dbclean: :after_each do

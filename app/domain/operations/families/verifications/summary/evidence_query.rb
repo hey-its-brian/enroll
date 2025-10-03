@@ -63,10 +63,21 @@ module Operations
             Success(::Adapters::EvidenceAdapter.new(verification))
           end
 
+          def find_inactive_evidence(subject, evidence_key)
+            return Failure("Inactive evidence display is not enabled") unless EnrollRegistry.feature_enabled?(:show_inactive_verifications)
+            family_member = GlobalID::Locator.locate(subject.gid)
+            evidence = family_member&.find_latest_determined_application_with_evidence_key(evidence_key)
+            return Failure("Inactive evidence \"#{evidence_key.gsub(/\W+/, '')&.titleize}\" not found for #{subject.full_name}") unless evidence.present?
+
+            Success(::Adapters::EvidenceAdapter.new(evidence))
+          end
+
           def find_evidence(valid_params, subject)
             case valid_params[:eligibility_kind]
             when 'ridp'
               yield find_identity_verification(subject)
+            when 'individual_market_eligibility'
+              yield find_inactive_evidence(subject, valid_params[:evidence_key])
             when 'aca_individual_market_eligibility', 'aptc_csr_credit'
               if valid_params[:inactive] == "true"
                 yield find_inactive_verification(subject, valid_params[:evidence_key])

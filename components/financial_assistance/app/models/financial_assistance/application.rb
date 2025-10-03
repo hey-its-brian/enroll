@@ -270,6 +270,7 @@ module FinancialAssistance
     index({"applicants.eligibilities.current_state" => 1 })
     index({"applicants.eligibilities.evidences.key" => 1 })
     index({"applicants.eligibilities.evidences.current_state" => 1 })
+    index({ "applicants.eligibilities.evidences.key" => 1, "applicants.eligibilities.evidences.created_at" => -1 })
 
     # @!index [Hash] Creates a compound index on aasm_state, family_id, assistance_year, and submitted_at fields.
     # @param aasm_state [Integer] The application state, with 1 indicating ascending order
@@ -472,6 +473,15 @@ module FinancialAssistance
           matrix[yi][xi] = find_existing_relationship(id_map[yi], id_map[xi])
         end
       end
+    end
+
+    def fetch_evidence(evidence_id, family_member_id)
+      applicant = applicants.detect { |app| app.family_member_id == family_member_id }
+      return nil unless applicant
+
+      applicant.eligibilities
+               .flat_map(&:evidences)
+               .find { |ev| ev.id.to_s == evidence_id.to_s }
     end
 
     def find_existing_relationship(member_a_id, member_b_id)

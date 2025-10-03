@@ -42,7 +42,16 @@ module Operations
 
             person = subject.person
 
-            unless qhp_application_feature_enabled?
+            if qhp_application_feature_enabled? && EnrollRegistry.feature_enabled?(:show_inactive_verifications)
+              possible_ivl_evidences = ["citizenship_evidence", "immigration_evidence", "american_indian_evidence", "social_security_number_evidence", "alive_evidence"]
+              evidence_class_names = evidences.map{|evidence| "#{evidence.evidence_item_key&.to_s&.gsub('_status', '')&.gsub('_evidence', '')&.to_s}_evidence"}
+              inactive_evidences = possible_ivl_evidences - evidence_class_names
+              family_member = GlobalID::Locator.locate(subject.gid)
+              inactive_evidences.each do |evidence_type|
+                evidence = family_member&.find_latest_determined_application_with_evidence_key(evidence_type)
+                evidences << ::Adapters::EvidenceAdapter.new(evidence) if evidence.present?
+              end
+            else
               # Inactive verifications are not available from the determination, fetch them directly
               inactive_verifications = person.verification_types.inactive.map do |verification|
                 ::Adapters::EvidenceAdapter.new(verification)

@@ -138,6 +138,8 @@ module IndividualMarket
     #evidences indexes
     index({"applicants.eligibilities.evidences.key" => 1 })
     index({"applicants.eligibilities.evidences.current_state" => 1 })
+    index({ "family_id" => 1, "current_state" => 1, "applicants.family_member_id" => 1 })
+    index({ "applicants.eligibilities.evidences.key" => 1, "applicants.eligibilities.evidences.created_at" => -1 })
 
     # @!scope class
     # @return [Mongoid::Criteria] The most recent determined IndividualMarket::Application based on assistance year and submitted_at
@@ -313,6 +315,15 @@ module IndividualMarket
       return nil unless predecessor_id.present?
 
       self.class.where(id: predecessor_id).first
+    end
+
+    def fetch_evidence(evidence_id, family_member_id)
+      applicant = applicants.detect { |app| app.family_member_id == family_member_id }
+      return nil unless applicant
+
+      applicant.eligibilities
+               .flat_map(&:evidences)
+               .find { |ev| ev.id.to_s == evidence_id.to_s }
     end
 
     private

@@ -694,4 +694,30 @@ RSpec.describe IndividualMarket::Application, type: :model do
       expect(application.effective_on).to be_present
     end
   end
+
+  describe '#fetch_evidence' do
+    let(:application) { FactoryBot.create(:individual_market_application, :with_primary) }
+    let(:applicant) { application.primary_applicant }
+    let(:family_member) { application.family.family_members.first }
+    let(:ivl_eligibility) { applicant.individual_market_eligibility }
+    let(:alive_evidence) { FactoryBot.create(:alive_evidence, :pending, eligibility: ivl_eligibility) }
+    let(:ai_an_evidence) { FactoryBot.create(:american_indian_evidence, :with_verification_histories, :verified, eligibility: ivl_eligibility) }
+
+    before do
+      alive_evidence
+      ai_an_evidence
+    end
+
+    it 'returns the evidence' do
+      expect(application.fetch_evidence(alive_evidence.id, family_member.id)).to eq(alive_evidence)
+    end
+
+    it 'does not return the evidence if the id does not match' do
+      expect(application.fetch_evidence(alive_evidence.id, family_member.id)).not_to eq(ai_an_evidence)
+    end
+
+    it 'does not return the evidence if the family member id does not match' do
+      expect(application.fetch_evidence(alive_evidence.id, BSON::ObjectId.new)).to be_nil
+    end
+  end
 end

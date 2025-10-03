@@ -95,5 +95,22 @@ RSpec.describe Adapters::EvidenceAdapter, dbclean: :after_each do
         expect(adapter.person.hbx_id).to eq person.hbx_id
       end
     end
+
+    context 'aca_individual_credit inactive evidence' do
+      it 'initializes and sets the adapter' do
+        result
+        evidence = ai_an_evidence
+        adapter = Adapters::EvidenceAdapter.new(evidence)
+        expect(adapter.history).to be_present
+        expect(adapter.person.hbx_id).to eq person.hbx_id
+        expect(adapter.inactive).to be true
+        expect(adapter.locate_evidence).to eq evidence
+        expect(adapter.evidence_group).to eq :individual_market_eligibility
+        expect(adapter.evidence_item_key).to eq "american_indian_evidence"
+        expect(adapter.status).to eq :verified
+        expect(adapter.due_on).to be nil
+        expect(adapter.update_reason).to be nil
+      end
+    end
   end
 end
