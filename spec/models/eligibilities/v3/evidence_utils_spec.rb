@@ -1078,5 +1078,26 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
         end
       end
     end
+
+    describe "#type_verified?" do
+      it "returns true when current_state is verified" do
+        dummy_evidence.current_state = :verified
+        expect(dummy_evidence.type_verified?).to be true
+      end
+
+      it "returns true when current_state is attested" do
+        dummy_evidence.current_state = :attested
+        expect(dummy_evidence.type_verified?).to be true
+      end
+
+      it "returns false when current_state is not verified or attested" do
+        [:pending, :outstanding, :rejected, :review, :unverified,
+         :negative_response_received, :determined, :expired,
+         :denied, :errored, :closed, :corrected].each do |state|
+          dummy_evidence.current_state = state
+          expect(dummy_evidence.type_verified?).to be false
+        end
+      end
+    end
   end
 end

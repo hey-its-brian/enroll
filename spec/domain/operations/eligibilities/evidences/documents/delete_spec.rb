@@ -199,7 +199,7 @@ RSpec.describe Operations::Eligibilities::Evidences::Documents::Delete, type: :o
 
       before do
         document
-        allow(income_evidence).to receive(:type_unverified?).and_return(false)
+        income_evidence.update!(current_state: :verified)
       end
 
       it 'returns failure with verification error message' do

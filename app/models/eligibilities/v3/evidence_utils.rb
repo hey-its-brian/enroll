@@ -203,7 +203,7 @@ module Eligibilities
         end
 
         def type_verified?
-          %w[verified attested].include? current_state
+          [:verified, :attested].include? current_state
         end
 
         # Determines the appropriate state for evidence based on previous evidence and demographics changes.
