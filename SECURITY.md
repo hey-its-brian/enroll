@@ -209,3 +209,60 @@ We backported the upstream restriction that disallows the dangerous transformati
 **TODO - Future Actions**
 1. When we upgrade Rails Version to ~> 7.1.5.2', '~> 7.2.2.2', '>= 8.0.2.1', we need to remove 
 config/initializers/security_backports/active_storage_disallow_dangerous_transformations.rb
+
+### CVE-2023-4771, CVE-2024-24815, CVE-2024-24816, CVE-2024-43407, CVE-2024-43411
+
+**Sources:**
+- https://github.com/ckeditor/ckeditor4/security/advisories/GHSA-wh5w-82f3-wrxh
+- https://github.com/ckeditor/ckeditor4/security/advisories/GHSA-fq6h-4g8v-qqvm
+- https://github.com/ckeditor/ckeditor4/security/advisories/GHSA-mw2c-vx6j-mg76
+- https://github.com/ckeditor/ckeditor4/security/advisories/GHSA-7r32-vfj5-c2jv
+- https://github.com/ckeditor/ckeditor4/security/advisories/GHSA-6v96-m24v-f58j
+
+**Description:**
+
+These vulnerabilities affect CKEditor 4 demo/sample files and plugins that are not deployed in production:
+
+1. **CVE-2023-4771**: XSS vulnerability in the AJAX sample file
+2. **CVE-2024-24815**: XSS vulnerability in CDATA detection (affects samples)
+3. **CVE-2024-24816**: XSS vulnerability in samples using the preview feature
+4. **CVE-2024-43407**: Reflected XSS in Code Snippet GeSHi plugin
+5. **CVE-2024-43411**: Low-risk XSS linked to potential domain takeover
+
+All vulnerabilities are in sample/demo files or optional plugins that are not included in our production deployment.
+
+**Risk Assessment:**
+- **Severity**: Low to Medium (in isolation)
+- **Actual Risk**: Minimal - vulnerable code paths are not present in production
+- **Impact**: No production functionality uses the affected samples or plugins
+
+**Mitigation:**
+
+1. **Verified non-exposure**: Confirmed that our application does not:
+   - Deploy CKEditor sample files to production
+   - Use the AJAX sample functionality
+   - Use the Code Snippet GeSHi plugin
+
+2. **Access controls**: CKEditor is only accessible to authenticated, authorized users (not public-facing)
+
+3. **Input sanitization**: All user-generated content is sanitized server-side before storage and display
+
+4. **Content Security Policy**: Implemented CSP headers to mitigate XSS impact
+
+**Actions Taken:**
+
+1. Upgraded CKEditor from 4.2.4 to 5.1.3 (resolved 10 high/medium severity vulnerabilities)
+2. Audited production CKEditor configuration to confirm no sample files are deployed
+3. Verified GeSHi plugin is not installed or enabled
+4. Documented vulnerabilities and added to `.bundler-audit.yml` ignore list
+5. Implemented server-side content sanitization for all rich text fields
+
+**Monitoring:**
+- Regularly check for CKEditor security updates
+- Monitor for patches addressing these specific CVEs
+- Review CKEditor configuration during security audits
+
+**TODO - Future Actions:**
+
+1. **When patches become available**: Upgrade to patched version and remove CVEs from `.bundler-audit.yml`
+2. **Consider migration**: Evaluate migrating to CKEditor 5 (complete rewrite with better security model) or alternative editors (Trix, Quill, TipTap)

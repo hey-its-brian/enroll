@@ -19,3 +19,10 @@ ignore:
   # should be removed when we upgrade rails version to ~> 7.1.5.2', '~> 7.2.2.2', '>= 8.0.2.1'
   - GHSA-76r7-hhxj-r776  # CVE-2025-55193 – Active Record logging ANSI escape injection
   - GHSA-r4mg-4433-c7g3  # CVE-2025-24293 – Active Storage unsafe transforms
+  # CKEditor4 vulnerabilities that affect sample/demo files not used in production
+  # Further information available in the SECURITY.md file
+  - CVE-2023-4771   # GHSA-wh5w-82f3-wrxh – XSS in AJAX sample
+  - CVE-2024-24815  # GHSA-fq6h-4g8v-qqvm – XSS in CDATA detection
+  - CVE-2024-24816  # GHSA-mw2c-vx6j-mg76 – XSS in preview feature sample
+  - CVE-2024-43407  # GHSA-7r32-vfj5-c2jv – XSS in GeSHi plugin sample
+  - CVE-2024-43411  # GHSA-6v96-m24v-f58j – Low-risk XSS via domain takeover
