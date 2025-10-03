@@ -18,8 +18,8 @@ module Insured
         self.sep_id        = args[:sep_id] || nil
       end
 
-      def self.find(enrollment_id, family_id)
-        new({enrollment_id: enrollment_id, family_id: family_id}).build_form_params
+      def self.find(enrollment_id, family_id, change_tax_credit)
+        new({enrollment_id: enrollment_id, family_id: family_id}).build_form_params(change_tax_credit: change_tax_credit)
       end
 
       def validate_rating_address
@@ -52,12 +52,12 @@ module Insured
         )
       end
 
-      def self.update_aptc(enrollment_id, applied_aptc_amount, exclude_enrollments_list: nil, elected_aptc_pct: nil)
+      def self.update_aptc(enrollment_id, applied_aptc_amount, exclude_enrollments_list: nil, elected_aptc_pct: nil, change_tax_credit: false)
         # field :elected_aptc_pct, type: Float, default: 0.0
         # field :applied_aptc_amount, type: Money, default: 0.0
         enrollment = HbxEnrollment.find(BSON::ObjectId.from_string(enrollment_id))
 
-        new_effective_date = Insured::Factories::SelfServiceFactory.find_enrollment_effective_on_date(TimeKeeper.date_of_record.in_time_zone('Eastern Time (US & Canada)'), enrollment.effective_on).to_date
+        new_effective_date = Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date(enrollment, change_tax_credit)
         reinstatement = Enrollments::Replicator::Reinstatement.new(enrollment, new_effective_date, applied_aptc_amount).build
 
         drop_invalid_enrollment_members(reinstatement) if EnrollRegistry[:check_enrollment_member_eligibility].feature.is_enabled
@@ -180,9 +180,9 @@ module Insured
         end
       end
 
-      def build_form_params
+      def build_form_params(change_tax_credit: false)
         enrollment                = HbxEnrollment.find(BSON::ObjectId.from_string(enrollment_id))
-        new_effective_on          = Insured::Factories::SelfServiceFactory.find_enrollment_effective_on_date(TimeKeeper.date_of_record.in_time_zone('Eastern Time (US & Canada)'), enrollment.effective_on).to_date
+        new_effective_on          = Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date(enrollment, change_tax_credit)
         family                    = Family.find(BSON::ObjectId.from_string(family_id))
         sep                       = SpecialEnrollmentPeriod.find(BSON::ObjectId.from_string(family.latest_active_sep.id)) if family.latest_active_sep.present?
         qle                       = QualifyingLifeEventKind.find(BSON::ObjectId.from_string(sep.qualifying_life_event_kind_id))  if sep.present?
@@ -221,6 +221,40 @@ module Insured
           return float_fix(max_aptc)
         end
         0.0
+      end
+
+      # Calculates the new effective date for a new enrollment based on the current enrollment and tax credit change context.
+      #
+      # @param enrollment [HbxEnrollment] The current enrollment object
+      # @param change_tax_credit [Boolean] Flag indicating if this is a tax credit change (default: false)
+      # @return [Date] The effective date for the new enrollment
+      #
+      # @see #find_enrollment_effective_on_date_for_change_tax_credit For tax credit change logic
+      # @see #find_enrollment_effective_on_date For standard enrollment change logic
+      def self.new_enrollment_effective_on_date(enrollment, change_tax_credit)
+        hbx_created_datetime = TimeKeeper.date_of_record.in_time_zone('Eastern Time (US & Canada)')
+        current_enrollment_effective_on = enrollment.effective_on
+        new_enrollment_effective_on = if change_tax_credit
+                                        find_enrollment_effective_on_date_for_change_tax_credit(hbx_created_datetime, current_enrollment_effective_on.in_time_zone('Eastern Time (US & Canada)'))
+                                      else
+                                        find_enrollment_effective_on_date(hbx_created_datetime, current_enrollment_effective_on)
+                                      end
+        new_enrollment_effective_on.to_date
+      end
+
+      # Calculates the new enrollment effective date given the system date and current enrollment effective date.
+      # If the update is occurring on or after the current enrollment's effective date, the new effective date will be the first of the following month.
+      # Otherwise, the new effective date should remain as is.
+      #
+      # @param hbx_created_datetime [ActiveSupport::TimeWithZone] The system time in EST
+      # @param current_enrollment_effective_on [ActiveSupport::TimeWithZone] The effective date of the current enrollment
+      # @return [Date] The effective date for the new enrollment
+      def self.find_enrollment_effective_on_date_for_change_tax_credit(hbx_created_datetime, current_enrollment_effective_on)
+        if hbx_created_datetime < current_enrollment_effective_on
+          current_enrollment_effective_on
+        else
+          hbx_created_datetime.next_month.beginning_of_month
+        end
       end
 
       def self.find_enrollment_effective_on_date(hbx_created_datetime, current_enrollment_effective_on)

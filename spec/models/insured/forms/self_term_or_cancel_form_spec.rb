@@ -380,6 +380,16 @@ module Insured
           end
         end
       end
+
+      context 'when change_tax_credit is passed' do
+        let(:change_tax_credit) { '1' }
+
+        it 'calls Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date with change_tax_credit' do
+          attrs = { enrollment_id: enrollment.id, change_tax_credit: '1' }
+          expect(Insured::Factories::SelfServiceFactory).to receive(:new_enrollment_effective_on_date).with(enrollment, change_tax_credit).and_call_original
+          described_class.check_to_enable_tax_credit_btn(attrs)
+        end
+      end
     end
   end
 end

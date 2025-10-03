@@ -1059,6 +1059,13 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
         expect(response).to render_template(:edit_plan)
       end
 
+      it 'creates a SelfTermOrCancelForm in view context with change_tax_credit as true' do
+        sign_in @user
+        expect(Insured::Forms::SelfTermOrCancelForm).to receive(:for_view).with(hash_including(change_tax_credit: true)).and_call_original
+        attrs = {hbx_enrollment_id: @enrollment.id.to_s, family_id: @family.id}
+        get :edit_plan, params: attrs
+      end
+
       it 'raises error if find the HBX enrollment does not belong to the current user' do
         sign_in user
         error_message = "HBX enrollment ID does not belong to the user"
@@ -1588,18 +1595,9 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
       post :edit_aptc, params: params
     end
 
-    # as per self_service_factory #update_aptc, we create reinstatement with effective_date two months in the future when the current date is greater than the 15th of the month
-    # ie. today is 3/16, then reinstatement effective_date will be 5/1
-    # ie. if today is 3/15, then reinstatement effective_date will be 4/1
-    it 'should update current enrollment(cancel/terminate)' do
+    it 'should cancel the current enrollment' do
       hbx_enrollment_14.reload
-      if TimeKeeper.date_of_record.day > HbxProfile::IndividualEnrollmentDueDayOfMonth
-        expect(hbx_enrollment_14.aasm_state).to eq 'coverage_terminated'
-        new_enrollment = family_14.hbx_enrollments.coverage_selected.first
-        expect(hbx_enrollment_14.terminated_on.to_date).to eq new_enrollment.effective_on.prev_day.to_date
-      else
-        expect(hbx_enrollment_14.aasm_state).to eq 'coverage_canceled'
-      end
+      expect(hbx_enrollment_14.aasm_state).to eq 'coverage_canceled'
     end
 
     it 'should create new enrollment' do
@@ -1631,7 +1629,8 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
 
     context 'Overlapping plan year enrollments' do
       before do
-        allow(TimeKeeper).to receive(:date_of_record).and_return(Date.new(current_year, 11, 17))
+        allow(TimeKeeper).to receive(:date_of_record).and_return(Date.new(current_year, 12))
+        hbx_enrollment_14.update!(effective_on: Date.new(current_year, 12))
         sign_in user_14
         post :edit_aptc, params: params
       end

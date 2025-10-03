@@ -252,7 +252,7 @@ class Insured::GroupSelectionController < ApplicationController
     # @todo Refactor GroupSelectionController to implement the ideal solution. This is a temporary fix.
     # Redirects to root path unless RIDP is verified for the given market kind and family.
     (redirect_to(root_path) and return) unless ridp_verified?(hbx_enrollment.kind, hbx_enrollment.family)
-    @self_term_or_cancel_form = ::Insured::Forms::SelfTermOrCancelForm.for_view({enrollment_id: params.require(:hbx_enrollment_id), family_id: params.require(:family_id)})
+    @self_term_or_cancel_form = ::Insured::Forms::SelfTermOrCancelForm.for_view({enrollment_id: params.require(:hbx_enrollment_id), family_id: params.require(:family_id), change_tax_credit: true})
     flash[:error] = @self_term_or_cancel_form.errors.full_messages
     redirect_to family_account_path if @self_term_or_cancel_form.errors.present?
   end
@@ -289,7 +289,7 @@ class Insured::GroupSelectionController < ApplicationController
     (redirect_to(root_path) and return) unless ridp_verified?(hbx_enrollment.kind, hbx_enrollment.family)
     aptc_applied_total = revise_aptc_applied_total(params, enrollment_id)
     applied_aptc_pct = calculate_elected_aptc_pct(aptc_applied_total.to_f, params[:max_aptc].to_f)
-    attrs = {enrollment_id: enrollment_id, elected_aptc_pct: applied_aptc_pct, aptc_applied_total: aptc_applied_total}
+    attrs = {enrollment_id: enrollment_id, elected_aptc_pct: applied_aptc_pct, aptc_applied_total: aptc_applied_total, change_tax_credit: true}
     begin
       message = ::Insured::Forms::SelfTermOrCancelForm.for_aptc_update_post(attrs)
       if params[:bs4]

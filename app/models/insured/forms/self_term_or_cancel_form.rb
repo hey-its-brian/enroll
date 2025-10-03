@@ -40,7 +40,7 @@ module Insured
 
       def self.check_to_enable_tax_credit_btn(attrs)
         enrollment = HbxEnrollment.find(attrs[:enrollment_id])
-        new_effective_date = Insured::Factories::SelfServiceFactory.find_enrollment_effective_on_date(TimeKeeper.date_of_record.in_time_zone('Eastern Time (US & Canada)'), enrollment.effective_on).to_date
+        new_effective_date = Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date(enrollment, attrs[:change_tax_credit])
 
         # Can't create a corresponding enrollment during the end of the year due to overlapping plan year issue and hence disabling the change tax credit button
         new_effective_date.year == enrollment.effective_on.year

@@ -26,6 +26,7 @@ module Insured
       FactoryBot.create(:hbx_enrollment_member, applicant_id: family.family_members[1].id, eligibility_date: TimeKeeper.date_of_record, coverage_start_on: TimeKeeper.date_of_record, hbx_enrollment: enrollment, tobacco_use: 'N')
     end
     let!(:hbx_profile) {FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period)}
+    let(:change_tax_credit) { false }
 
     subject { Insured::Factories::SelfServiceFactory }
 
@@ -48,22 +49,40 @@ module Insured
         end
 
         it "returns a hash of valid params" do
-          @form_params = subject.find(@enrollment_id, @family_id)
+          @form_params = subject.find(@enrollment_id, @family_id, change_tax_credit)
           expect(@form_params[:enrollment]).to eq enrollment
           expect(@form_params[:family]).to eq family
           expect(@form_params[:qle]).to eq @qle
         end
 
         it "returns a falsey is_aptc_eligible if latest_active_tax_household does not exist" do
-          @form_params = subject.find(@enrollment_id, @family_id)
+          @form_params = subject.find(@enrollment_id, @family_id, change_tax_credit)
           expect(@form_params[:is_aptc_eligible]).to be_falsey
         end
 
         it "returns a truthy is_aptc_eligible if tax household and valid aptc members exist" do
           tax_household = FactoryBot.create(:tax_household, household: family.active_household)
           FactoryBot.create(:tax_household_member, tax_household: tax_household)
-          form_params = subject.find(@enrollment_id, @family_id)
+          form_params = subject.find(@enrollment_id, @family_id, change_tax_credit)
           expect(form_params[:is_aptc_eligible]).to be_truthy
+        end
+
+        context 'when change_tax_credit is passed as false' do
+          let(:change_tax_credit) { false }
+
+          it "calls build_form_params with change_tax_credit as false" do
+            expect_any_instance_of(subject).to receive(:build_form_params).with(change_tax_credit: change_tax_credit).and_call_original
+            subject.find(@enrollment_id, @family_id, change_tax_credit)
+          end
+        end
+
+        context 'when change_tax_credit is passed as true' do
+          let(:change_tax_credit) { true }
+
+          it "calls build_form_params with change_tax_credit as true" do
+            expect_any_instance_of(subject).to receive(:build_form_params).with(change_tax_credit: change_tax_credit).and_call_original
+            subject.find(@enrollment_id, @family_id, change_tax_credit)
+          end
         end
       end
     end
@@ -477,6 +496,21 @@ module Insured
         end
       end
 
+      context 'when change_tax_credit is not provided' do
+        it 'calls new_enrollment_effective_on_date with change_tax_credit defaulted to false' do
+          expect(Insured::Factories::SelfServiceFactory).to receive(:new_enrollment_effective_on_date).with(enrollment, false).and_call_original
+          subject.update_aptc(enrollment.id, 1000)
+        end
+      end
+
+      context 'when change_tax_credit is true' do
+        let(:change_tax_credit) { true }
+        it 'calls new_enrollment_effective_on_date with change_tax_credit as true' do
+          expect(Insured::Factories::SelfServiceFactory).to receive(:new_enrollment_effective_on_date).with(enrollment, change_tax_credit).and_call_original
+          subject.update_aptc(enrollment.id, 1000, change_tax_credit: change_tax_credit)
+        end
+      end
+
       after do
         TimeKeeper.set_date_of_record_unprotected!(Date.today)
       end
@@ -509,7 +543,7 @@ module Insured
       it 'should return default_tax_credit_value' do
         # monthly aggregate should be applied for enrollments within the same coverage year
         if future_effective_date.year == enrollment.effective_on.year
-          params = subject.find(enrollment.id, family.id)
+          params = subject.find(enrollment.id, family.id, change_tax_credit)
           expect(params[:default_tax_credit_value]).to eq applied_aptc_amount
         end
       end
@@ -517,7 +551,7 @@ module Insured
       it 'should return available_aptc' do
         # monthly aggregate should be applied for enrollments within the same coverage year
         if future_effective_date.year == enrollment.effective_on.year
-          params = subject.find(enrollment.id, family.id)
+          params = subject.find(enrollment.id, family.id, change_tax_credit)
           expect(params[:available_aptc]).to eq 1274.44
         end
       end
@@ -525,13 +559,14 @@ module Insured
       it 'should return elected_aptc_pct' do
         # monthly aggregate should be applied for enrollments within the same coverage year
         if future_effective_date.year == enrollment.effective_on.year
-          params = subject.find(enrollment.id, family.id)
+          params = subject.find(enrollment.id, family.id, change_tax_credit)
           expect(params[:elected_aptc_pct]).to eq 0.09
         end
       end
 
       context "when MTHH is enabled" do
         let(:max_aptc) { 1700.0 }
+        let(:change_tax_credit) { true }
 
         before do
           allow(EnrollRegistry[:temporary_configuration_enable_multi_tax_household_feature].feature).to receive(:is_enabled).and_return(true)
@@ -548,25 +583,61 @@ module Insured
         end
 
         it 'should return minimum value between max aptc and total ehb premium of enrollment as available aptc' do
-          params = subject.find(enrollment.id, family.id)
+          params = subject.find(enrollment.id, family.id, change_tax_credit)
           expect(params[:available_aptc]).to eq 1500.0
         end
 
         it 'should return max tax credit' do
-          params = subject.find(enrollment.id, family.id)
+          params = subject.find(enrollment.id, family.id, change_tax_credit)
           expect(params[:max_tax_credit]).to eq 1700.0
         end
 
         context 'calculate_elected_aptc_pct' do
           it 'should calculate elected aptc pct based on the available aptc' do
             enrollment.set(applied_aptc_amount: 1500.0)
-            params = subject.find(enrollment.id, family.id)
+            params = subject.find(enrollment.id, family.id, change_tax_credit)
             elected_pct_using_max_tax_credit = enrollment.applied_aptc_amount.to_f / params[:max_tax_credit]
             elected_pct_using_available_aptc = enrollment.applied_aptc_amount.to_f / params[:available_aptc]
 
             expect(params[:elected_aptc_pct]).to eq elected_pct_using_available_aptc
             expect(params[:elected_aptc_pct]).not_to eq elected_pct_using_max_tax_credit
           end
+        end
+      end
+
+      context 'when change_tax_credit is not provided' do
+        it 'calls new_enrollment_effective_on_date with change_tax_credit defaulted to false' do
+          expect(Insured::Factories::SelfServiceFactory).to receive(:new_enrollment_effective_on_date).with(enrollment, false).and_call_original
+          subject.update_aptc(enrollment.id, 1000)
+        end
+      end
+
+      context 'when change_tax_credit is true' do
+        let(:change_tax_credit) { true }
+        it 'calls new_enrollment_effective_on_date with change_tax_credit as true' do
+          expect(Insured::Factories::SelfServiceFactory).to receive(:new_enrollment_effective_on_date).with(enrollment, change_tax_credit).and_call_original
+          subject.update_aptc(enrollment.id, 1000, change_tax_credit: change_tax_credit)
+        end
+      end
+    end
+
+    describe "new_enrollment_effective_on_date" do
+      context "when change_tax_credit is false" do
+        let(:change_tax_credit) { false }
+        it 'should call using find_enrollment_effective_on_date using system date and enrollment effective on' do
+          expect(Insured::Factories::SelfServiceFactory).to receive(:find_enrollment_effective_on_date).with(TimeKeeper.date_of_record.in_time_zone('Eastern Time (US & Canada)'), enrollment.effective_on).and_call_original
+          described_class.new_enrollment_effective_on_date(enrollment, change_tax_credit)
+        end
+      end
+
+      context "when change_tax_credit is true" do
+        let(:change_tax_credit) { true }
+        it 'should call using find_enrollment_effective_on_date_for_change_tax_credit using system date and timezone-normalized enrollment effective on' do
+          expect(Insured::Factories::SelfServiceFactory).to receive(:find_enrollment_effective_on_date_for_change_tax_credit).with(
+            TimeKeeper.date_of_record.in_time_zone('Eastern Time (US & Canada)'),
+            enrollment.effective_on.in_time_zone('Eastern Time (US & Canada)')
+          ).and_call_original
+          described_class.new_enrollment_effective_on_date(enrollment, change_tax_credit)
         end
       end
     end
@@ -755,6 +826,102 @@ module Insured
 
         it 'should return start of as 3/1' do
           expect(@effective_date).to eq(Date.new(Date.today.year, 2, 1))
+        end
+      end
+    end
+
+    describe "find_enrollment_effective_on_date_for_change_tax_credit" do
+      test_cases = [
+        {
+          system_date: Date.new(Date.today.year, 12, Settings.aca.individual_market.monthly_enrollment_due_on - 2),
+          effective_date: ->(sd) { sd.next_year.beginning_of_year },
+          expected: :original_effective_date,
+          description: "within OE prior to IndividualEnrollmentDueDayOfMonth of the last month of the year with effective date in the first month of next year"
+        },
+        {
+          system_date: Date.new(Date.today.year, 12, Settings.aca.individual_market.monthly_enrollment_due_on - 2),
+          effective_date: ->(sd) { sd.next_year.beginning_of_year.next_month },
+          expected: :original_effective_date,
+          description: "within OE prior to IndividualEnrollmentDueDayOfMonth of the last month of the year with effective date in the second month of next year"
+        },
+        {
+          system_date: Date.new(Date.today.year, 12, Settings.aca.individual_market.monthly_enrollment_due_on + 2),
+          effective_date: ->(sd) {  sd.next_year.beginning_of_year },
+          expected: :original_effective_date,
+          description: "within OE after IndividualEnrollmentDueDayOfMonth of the last month of the year with effective date in the first month of next year"
+        },
+        {
+          system_date: Date.new(Date.today.year, 12, Settings.aca.individual_market.monthly_enrollment_due_on + 2),
+          effective_date: ->(sd) { sd.next_year.beginning_of_year.next_month },
+          expected: :original_effective_date,
+          description: "within OE after IndividualEnrollmentDueDayOfMonth of the last month of the year with effective date in the second month of next year"
+        },
+        {
+          system_date: Date.new(Date.today.year, 12, Settings.aca.individual_market.monthly_enrollment_due_on + 2),
+          effective_date: ->(sd) { sd.next_year.beginning_of_year.next_month.next_month },
+          expected: :original_effective_date,
+          description: "within OE after IndividualEnrollmentDueDayOfMonth of the last month of the year with effective date in the third month of next year"
+        },
+        {
+          system_date: Date.new(Date.today.next_year.year),
+          effective_date: ->(sd) { sd },
+          expected: :next_month,
+          description: "within OE in the first month of the next year with effective date in the first month of next year"
+        },
+        {
+          system_date: Date.new(Date.today.next_year.year),
+          effective_date: ->(sd) { sd.next_month },
+          expected: :original_effective_date,
+          description: "within OE in the first month of the next year with effective date in the second month of next year"
+        },
+        {
+          system_date: Date.new(Date.today.next_year.year),
+          effective_date: ->(sd) { sd.next_month.next_month },
+          expected: :original_effective_date,
+          description: "within OE in the first month of the next year with effective date in the third month of next year"
+        },
+        {
+          system_date: Date.new(Date.today.year, 6),
+          effective_date: ->(sd) { sd },
+          expected: :next_month,
+          description: "outside OE in the middle of the year with effective date in the same month"
+        },
+        {
+          system_date: Date.new(Date.today.year, 6),
+          effective_date: ->(sd) { sd.next_month },
+          expected: :original_effective_date,
+          description: "outside OE in the middle of the year with effective date in the following month"
+        },
+        {
+          system_date: Date.new(Date.today.year, 6),
+          effective_date: ->(sd) { sd.prev_month },
+          expected: :next_month,
+          description: "outside OE in the middle of the year with effective date in a prior month"
+        }
+      ]
+
+      test_cases.each do |test_case|
+        context test_case[:description] do
+          let(:system_date) { test_case[:system_date] }
+          let(:effective_date) { test_case[:effective_date].call(system_date) }
+
+          before do
+            allow(TimeKeeper).to receive(:date_of_record).and_return(system_date)
+            @effective_date = described_class.find_enrollment_effective_on_date_for_change_tax_credit(
+              TimeKeeper.date_of_record.in_time_zone('Eastern Time (US & Canada)'), effective_date
+            ).to_date
+          end
+
+          case test_case[:expected]
+          when :original_effective_date
+            it 'should return effective date as the original effective date' do
+              expect(@effective_date).to eq(effective_date)
+            end
+          when :next_month
+            it 'should return effective date forwarded as system date forwarded by one month' do
+              expect(@effective_date).to eq(system_date.next_month)
+            end
+          end
         end
       end
     end
