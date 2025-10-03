@@ -47,6 +47,7 @@ module Eligibilities
 
         update_reason = params[:verification_reason]
         admin_action = params[:admin_action]
+        application_reference = params[:application_reference]
         reasons_list = fetch_reasons_list
         if reasons_list.include?(update_reason)
           result = Operations::Eligibilities::Evidences::Update.new.call(
@@ -54,7 +55,8 @@ module Eligibilities
             application: @application,
             admin_action: admin_action,
             update_reason: update_reason,
-            current_user: current_user
+            current_user: current_user,
+            application_reference: application_reference
           )
 
           if result.success?

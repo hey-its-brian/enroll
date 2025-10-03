@@ -101,6 +101,21 @@ RSpec.describe Eligibilities::Evidences::EvidencesController, type: :controller 
         end
       end
 
+      context 'with valid params, and application reference is present' do
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(true)
+        end
+
+        it 'updates evidence verification status and populate application reference in the reason' do
+          valid_params = params.merge!(application_reference: faa_application.hbx_id)
+
+          put :update, params: valid_params
+          expect(flash[:success]).to eq("Income evidence successfully verified.")
+          income_evidence.reload
+          expect(income_evidence.verification_histories.last.update_reason).to eq("Document in EnrollApp: #{faa_application.hbx_id}")
+        end
+      end
+
       context 'with valid params but failed operation' do
         before do
           allow(Operations::Eligibilities::Evidences::Update).to receive_message_chain(:new, :call)

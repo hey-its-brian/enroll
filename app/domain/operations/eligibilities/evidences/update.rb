@@ -30,10 +30,18 @@ module Operations
           @evidence = params[:evidence]
           @application = params[:application]
           @admin_action = params[:admin_action]
-          @update_reason = params[:update_reason]
+          @update_reason = fetch_update_reason(params[:update_reason], params[:application_reference])
           @current_user = params[:current_user]
 
           Success(params)
+        end
+
+        def fetch_update_reason(reason, reference_id)
+          if reason == "Document in EnrollApp" && reference_id.present?
+            "Document in EnrollApp: #{reference_id}"
+          else
+            reason
+          end
         end
 
         # Processes the verification action based on admin_action

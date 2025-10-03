@@ -10,8 +10,14 @@
       <label>
         <%= l10n('admin.verifications.verify_reason') %>
         <% reasons = application.is_a?(FinancialAssistance::Application) ? ::Eligibilities::Evidence::VERIFY_REASONS : ::VlpDocument::VERIFICATION_REASONS %>
-        <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(reasons), {prompt: ' Select Reason', required: true, class: 'col'}%></div>
+        <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(reasons), {prompt: "#{l10n('select_reason')}", required: true, class: 'col'}%></div>
       </label>
+      <div id="document-dropdown" class="col-md-4 px-0 mt-2 hidden">
+        <label>
+          <%= l10n('application_reference') %>
+          <%= select_tag :application_reference, options_for_select(@current_and_previous_application_ids || []), {prompt: "#{l10n('select_application_reference')}", class: 'col'}%>
+        </label>
+      </div>
     </div>
     <div>
       <%= submit_tag "Confirm", class: "button v-type-confirm-button" %>
@@ -30,7 +36,7 @@
     <div class='mb-2'>
       <label>
         <%= l10n('admin.verifications.reject_reason') %>
-        <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(evidences_v3_reject_reasons_list(evidence_key)), {prompt: ' Select Reason', required: true, class: 'col'}%></div>
+        <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(evidences_v3_reject_reasons_list(evidence_key)), {prompt: "#{l10n('select_reason')}", required: true, class: 'col'}%></div>
       </label>
     </div>
     <div>
@@ -80,3 +86,28 @@
     </div>
   <% end %>
 </div>
+
+<script>
+  document.addEventListener('turbolinks:load', function() {
+    const verificationSelect = document.querySelector('#verification_reason');
+    const documentDropdown = document.getElementById('document-dropdown');
+    const applicationReferenceSelect = document.querySelector('#application_reference');
+
+    // Function to check and update dropdown visibility
+    function updateDocumentDropdownVisibility() {
+      if (verificationSelect.value === 'Document in EnrollApp') {
+        documentDropdown.classList.remove('hidden');
+        applicationReferenceSelect.setAttribute('required', true);
+      } else {
+        documentDropdown.classList.add('hidden');
+        applicationReferenceSelect.removeAttribute('required');
+      }
+    }
+
+    // Check on page load
+    updateDocumentDropdownVisibility();
+
+    // Check on change
+    verificationSelect.addEventListener('change', updateDocumentDropdownVisibility);
+  });
+</script>

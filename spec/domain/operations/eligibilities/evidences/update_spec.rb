@@ -64,6 +64,13 @@ RSpec.describe Operations::Eligibilities::Evidences::Update, type: :operation do
           operation.call(params)
         end
 
+        it 'adds verification history with application reference' do
+          valid_params = params.merge(application_reference: faa_application.hbx_id)
+          _result = operation.call(valid_params)
+          history = income_evidence.verification_histories.last
+          expect(history.update_reason).to eq("Document in EnrollApp: #{faa_application.hbx_id}")
+        end
+
         it 'saves the application' do
           expect(faa_application).to receive(:save!).and_return(true)
           operation.call(params)

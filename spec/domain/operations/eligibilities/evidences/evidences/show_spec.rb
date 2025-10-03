@@ -51,7 +51,8 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
         expect(result.success[:selected_year]).to eq(TimeKeeper.date_of_record.year)
         expect(result.success[:applications]).to include(faa_application)
         expect(result.success[:application_evidence_mapping]).to be_a(Hash)
-        expect(result.success[:application_evidence_mapping]).to have_key(faa_application.hbx_id)
+        expect(result.success[:current_and_previous_application_ids]).to include(faa_application.hbx_id)
+        expect(result.success[:bs4]).to be true
         expect(result.success[:bs4]).to be true
       end
     end
