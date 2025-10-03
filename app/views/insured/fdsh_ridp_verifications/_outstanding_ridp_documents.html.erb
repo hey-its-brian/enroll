@@ -52,7 +52,7 @@
           </div>
           <div class="w-100 px-0">
             <% if (ridp_type == "Identity" && pundit_allow(HbxProfile, :can_access_accept_reject_identity_documents?)) || (ridp_type == "Application" &&  pundit_allow(HbxProfile, :can_access_accept_reject_paper_application_documents?)) %>
-              <%= render :partial => "insured/interactive_identity_verifications/admin_ridp_verification_actions", locals: { person: @person, ridp_type: ridp_type} %>
+              <%= render :partial => "insured/fdsh_ridp_verifications/admin_ridp_verification_actions", locals: { person: @person, ridp_type: ridp_type} %>
             <% end %>
           </div>
           <div>
