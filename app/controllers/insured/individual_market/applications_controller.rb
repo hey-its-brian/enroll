@@ -11,7 +11,7 @@ module Insured
       before_action :set_family
       before_action :find_application
       before_action :check_for_non_editable_application, only: [:eligibility_criteria]
-      before_action :check_for_editable_application, only: [:review, :preferences, :attestation, :submit]
+      before_action :check_for_editable_application, only: [:review, :preferences, :attestation, :submit, :year_selection, :update_application_year]
       before_action :set_consumer_bookmark_url, except: [:submit, :copy]
       before_action :enable_bs4_layout
 
@@ -113,6 +113,21 @@ module Insured
         respond_to :html
       end
 
+      def year_selection
+        authorize @application, :application_year_selection?
+
+        respond_to :html
+      end
+
+      def update_application_year
+        authorize @application, :update_application_year?
+        new_year = params[:individual_market_application][:assistance_year]
+
+        @application.update_attributes(assistance_year: new_year) if new_year && new_year != @application.assistance_year
+
+        redirect_to insured_individual_market_application_applicants_path(@application)
+      end
+
       private
 
       # Prepares parameters for copying an existing Individual Market application
@@ -138,6 +153,8 @@ module Insured
         elsif params[:preferences]
           preferences_insured_individual_market_application_path(application)
         else
+          year_selection = EnrollRegistry.feature_enabled?(:iap_year_selection) && HbxProfile.current_hbx.under_open_enrollment? && !params[:assistance_year].present?
+          return year_selection_insured_individual_market_application_path(application) if year_selection
           insured_individual_market_application_applicants_path(application)
         end
       end

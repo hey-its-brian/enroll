@@ -129,4 +129,20 @@ class QhpApplicationPolicy < ApplicationPolicy
   def submit_and_determine_error?
     edit?
   end
+
+  # Determines if the current user has permission to view the application year selection of the application.
+  # The user can view the application year selection if they have permission to edit it.
+  #
+  # @return [Boolean] Returns true if the user has permission to view the application year selection of the application, false otherwise.
+  def application_year_selection?
+    edit?
+  end
+
+  # Determines if the current user has permission to update the application year of the application.
+  # The user can update the application year if they have permission to edit it.
+  #
+  # @return [Boolean] Returns true if the user has permission to update the application year of the application, false otherwise.
+  def update_application_year?
+    edit?
+  end
 end

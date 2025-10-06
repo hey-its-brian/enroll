@@ -144,8 +144,53 @@ RSpec.describe Insured::ConsumerRolesController, dbclean: :after_each, type: :co
           allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
         end
 
-        it 'redirects to insured_individual_market_application_applicants_path' do
-          expect(subject).to redirect_to(insured_individual_market_application_applicants_path(individual_market_application))
+        context 'when under open enrollment' do
+          before do
+            allow(HbxProfile).to receive(:current_hbx).and_return(hbx_profile)
+            allow(hbx_profile).to receive(:under_open_enrollment?).and_return(true)
+          end
+
+          context 'when iap year selection is enabled' do
+            before do
+              allow(EnrollRegistry).to receive(:feature_enabled?).with(:iap_year_selection).and_return(true)
+            end
+
+            it 'redirects to year_selection_insured_individual_market_application_path' do
+              expect(subject).to redirect_to(year_selection_insured_individual_market_application_path(individual_market_application))
+            end
+          end
+
+          context 'when iap year selection is enabled and params[:assistance_year] is present' do
+            before do
+              allow(EnrollRegistry).to receive(:feature_enabled?).with(:iap_year_selection).and_return(true)
+              params[:assistance_year] = 2025
+            end
+
+            it 'redirects to insured_individual_market_application_applicants_path' do
+              expect(subject).to redirect_to(insured_individual_market_application_applicants_path(individual_market_application))
+            end
+          end
+
+          context 'when iap year selection is disabled' do
+            before do
+              allow(EnrollRegistry).to receive(:feature_enabled?).with(:iap_year_selection).and_return(false)
+            end
+
+            it 'redirects to insured_individual_market_application_applicants_path' do
+              expect(subject).to redirect_to(insured_individual_market_application_applicants_path(individual_market_application))
+            end
+          end
+        end
+
+        context 'when not under open enrollment' do
+          before do
+            allow(HbxProfile).to receive(:current_hbx).and_return(hbx_profile)
+            allow(hbx_profile).to receive(:under_open_enrollment?).and_return(false)
+          end
+
+          it 'redirects to insured_individual_market_application_applicants_path' do
+            expect(subject).to redirect_to(insured_individual_market_application_applicants_path(individual_market_application))
+          end
         end
       end
 

@@ -376,7 +376,7 @@ class Insured::ConsumerRolesController < ApplicationController
       begin
         result = Operations::IndividualMarket::GenerateApplication.new.call(apply_params(@person, current_user))
         if result.success? && result.success.save!
-          redirect_to insured_individual_market_application_applicants_path(result.success)
+          redirect_to qhp_redirect_path(result)
         else
           flash[:error] = get_error_messages(result)
           redirect_back fallback_location: '/'
@@ -506,6 +506,15 @@ class Insured::ConsumerRolesController < ApplicationController
     return financial_assistance.application_year_selection_application_path(id: result.success) if year_selection_enabled && !year_already_selected
 
     financial_assistance.application_checklist_application_path(id: result.success)
+  end
+
+  def qhp_redirect_path(result)
+    year_selection_enabled = EnrollRegistry.feature_enabled?(:iap_year_selection) && HbxProfile.current_hbx.under_open_enrollment?
+    year_already_selected = @for_year.present?
+
+    return year_selection_insured_individual_market_application_path(id: result.success) if year_selection_enabled && !year_already_selected
+
+    insured_individual_market_application_applicants_path(application_id: result.success)
   end
 
   def get_error_messages(result)

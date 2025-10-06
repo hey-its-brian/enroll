@@ -293,6 +293,8 @@ Rails.application.routes.draw do
           get :copy
           get :eligibility_criteria
           get :submit_and_determine_error
+          get :year_selection
+          patch :update_application_year
         end
 
         resources :applicants do

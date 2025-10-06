@@ -5,6 +5,7 @@ Feature: User adds new dependent to a qhp application
     Given the FAA feature configuration is enabled
     Given the date is within open enrollment
     Given qhp_application feature is enabled
+    Given the date is after open enrollment
     And AI AN Details feature is enabled
     When the user is eligible for a qhp application
     Given the user opts out of IAP

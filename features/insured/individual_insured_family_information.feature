@@ -6,6 +6,9 @@ Feature: Insured QHP Family Information Page
     Given the FAA feature configuration is enabled
     Given bs4_consumer_flow feature is enabled
     Given qhp_application feature is enabled
+    Given the iap year selection feature is disabled
+    Given the date is after open enrollment
+    And current hbx is not under open enrollment
     When Individual visits the Consumer portal during open enrollment
     Then Individual creates a new HBX account
     Then Individual should see a successful sign up message
@@ -20,10 +23,10 @@ Feature: Insured QHP Family Information Page
     Then Individual is on the Help Paying for Coverage page
     When Individual does not apply for assistance and clicks continue
 
-  Scenario: New insured user navigates to QHP familly information page 
+  Scenario: New insured user navigates to QHP family information page
     Then Individual is on the QHP Family Information page
-    
-  Scenario: New insured user navigates to QHP prefrences page   
+
+  Scenario: New insured user navigates to QHP preferences page
     When Individual clicks on continue to next step
     Then Individual is on the QHP Preferences page
 
@@ -44,4 +47,3 @@ Feature: Insured QHP Family Information Page
     And Individual clicks on continue to next step on QHP Preferences page
     And Individual clicks on continue to next step on QHP Review page
     And Individual agrees and submits QHP application
-    

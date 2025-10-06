@@ -558,7 +558,11 @@ Then(/^.+ does not apply for assistance and clicks continue/) do
 end
 
 Then(/^.+ is on the QHP Family Information page/) do
-  expect(page).to have_content(l10n('faa.nav.family_info'))
+  expect(page).to have_css('[data-cuke="family-information-header"]')
+end
+
+Then(/^.+ is on the QHP Year Selection page/) do
+  expect(page).to have_css('[data-cuke="year-selection-header"]')
 end
 
 When(/^Individual clicks on continue to next step on QHP Family Information page$/) do
@@ -595,6 +599,10 @@ end
 
 Then(/^Individual should be on the QHP Family Information page$/) do
   expect(page).to have_content(l10n('faa.nav.family_info'))
+end
+
+Then(/^Individual should be on the QHP Year Selection page$/) do
+  expect(page).to have_content(l10n('faa.year_selection_header'))
 end
 
 When(/^Individual clicks on continue to next step$/) do

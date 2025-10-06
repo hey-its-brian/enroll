@@ -1,6 +1,6 @@
 <%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(1, @application, show_account_button: @family.eligibility_determination.present?  )} %>
 <%= javascript_pack_tag 'benefit_sponsors', 'data-turbolinks-track': 'reload' %>
-<h1><%= l10n("family_information") %></h1>
+<h1 data-cuke="family-information-header"><%= l10n("family_information") %></h1>
 <h2><%= l10n("application_for_coverage", year: @application.assistance_year )%></h2>
 <p><%= l10n('qhp_application.nav.family_info_details') %></p>
 
@@ -28,14 +28,14 @@
       <div id="member-<%= primary_applicant.id %>-info-display" class="d-flex flex-row flex-wrap justify-content-between">
         <div>
           <label for="primary-name"><%= l10n("name")%></label>
-          <input 
+          <input
             id="primary-name"
-            type="text" 
+            type="text"
             value="<%= [
                 primary_applicant.person_name.given_name,
                 primary_applicant.person_name.middle_name,
                 primary_applicant.person_name.family_name
-              ].reject(&:blank?).join(' ') %>" 
+              ].reject(&:blank?).join(' ') %>"
             disabled
           >
         </div>

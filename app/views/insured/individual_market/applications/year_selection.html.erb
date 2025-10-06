@@ -1,0 +1,24 @@
+<%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(1, @application, show_account_button: @family.eligibility_determination.present?)} %>
+<%= form_for @application, url: {action: "update_application_year", params: {id: @application.id}} do |f| %>
+  <% calendar_year = Family.application_applicable_year %>
+  <% previous_year = calendar_year - 1 %>
+  <h1 data-cuke="year-selection-header"><%= l10n("faa.year_selection_header") %></h1>
+  <p><%= l10n("faa.year_selection_subheader") %></p>
+  <p><b><%= calendar_year %></b><br> <%= l10n("faa.non_oe_see_if_you_qualify_1", year: calendar_year) %><br><%= h(link_to l10n("faa.non_oe_learn_more"), FinancialAssistanceRegistry[:iap_year_selection_form].setting(:iap_year_sep_link).item, target: "_blank") %>.</p>
+  <p><b><%= previous_year %></b><br> <%= l10n("faa.non_oe_see_if_you_qualify_2", calendar_year: calendar_year, previous_year: previous_year, site_short_name: EnrollRegistry[:enroll_app].setting(:short_name).item) %></p>
+  <fieldset class="mb-4">
+    <legend><%= l10n("faa.choose_a_plan_year") %></legend>
+    <div class="focus">
+      <label class="weight-n"><%= f.radio_button :assistance_year, calendar_year %> <%= calendar_year %></label>
+      <label class="weight-n"><%= f.radio_button :assistance_year, previous_year %> <%= previous_year %></label>
+    </div>
+  </fieldset>
+  <% content_for :submit_button do %>
+    <%= f.submit l10n("continue_next"), class: 'btn btn-continue', id: 'continue_button' %>
+  <% end %>
+  <%= render partial: "shared/progress_navigation_buttons",
+      locals: {
+        next_link: insured_individual_market_application_applicants_path(@application)
+      } %>
+<% end %>
+<%= render partial: 'shared/leaving_modal' %>
