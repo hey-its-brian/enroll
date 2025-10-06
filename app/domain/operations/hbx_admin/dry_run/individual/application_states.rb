@@ -76,39 +76,27 @@ module Operations
           end
 
           def fetch_application_states(coverage_years)
-            # Optimized aggregation pipeline
-            application_pipeline = [
-              {"$match" => {
-                "assistance_year" => {"$in" => coverage_years},
-                "predecessor_id" => {"$exists" => true, "$ne" => nil}
-              }},
-              {"$group" => {
-                "_id" => {"assistance_year" => "$assistance_year", "aasm_state" => "$aasm_state"},
-                "count" => {"$sum" => 1}
-              }},
-              {"$sort" => {"_id.assistance_year" => -1}}
-            ]
+            # Fetch all matching applications in a single query
+            applications = ::FinancialAssistance::Application.where(
+              :assistance_year.in => coverage_years,
+              generation_reason: :renewal,
+              origin: :system
+            ).only(:assistance_year, :aasm_state)
 
-            application_states_raw = ::FinancialAssistance::Application.collection.aggregate(
-              application_pipeline,
-              allow_disk_use: true,
-              batch_size: 1000,
-              max_time_ms: 20_000
-            ).to_a
+            # Group by year and state in memory
+            grouped_data = applications.each_with_object(Hash.new { |h, k| h[k] = Hash.new(0) }) do |app, hash|
+              hash[app.assistance_year][app.aasm_state.to_s] += 1
+            end
 
-            # Map states to years
-            mapped_states = coverage_years.map do |year|
-              year_states = application_states_raw.select { |state| state['_id']['assistance_year'] == year }
-              states_hash = year_states.each_with_object({}) do |state, hash|
-                hash[state['_id']['aasm_state']] = state['count']
+            # Build response structure
+            mapped_states = coverage_years.map do |assistance_year|
+              states_hash = {}
+
+              ::FinancialAssistance::Application.aasm.states.map(&:name).each do |state_name|
+                states_hash[state_name.to_s] = grouped_data.dig(assistance_year, state_name.to_s) || 0
               end
 
-              # Ensure all states are represented
-              APPLICATION_STATES.each do |state|
-                states_hash[state] ||= 0
-              end
-
-              {"assistance_year" => year, "application_states" => states_hash}
+              {"assistance_year" => assistance_year, "application_states" => states_hash}
             end
 
             Success(mapped_states)

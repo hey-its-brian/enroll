@@ -53,7 +53,9 @@ RSpec.describe ::Operations::HbxAdmin::DryRun::Individual::ApplicationStates, db
                       family_id: family.id,
                       aasm_state: "draft",
                       assistance_year: Date.current.year,
-                      predecessor_id: application.id)
+                      predecessor_id: application.id,
+                      origin: :system,
+                      generation_reason: :renewal)
   end
 
   before do
@@ -275,7 +277,9 @@ RSpec.describe ::Operations::HbxAdmin::DryRun::Individual::ApplicationStates, db
                         family_id: additional_family.id,
                         assistance_year: Date.current.year,
                         aasm_state: "draft",
-                        predecessor_id: BSON::ObjectId.new)
+                        predecessor_id: BSON::ObjectId.new,
+                        origin: :system,
+                        generation_reason: :renewal)
     end
 
     let(:benefits_operation) { instance_double(::Operations::HbxAdmin::DryRun::Individual::Benefits) }
