@@ -48,9 +48,13 @@ module Operations
         verification_type.assign_attributes(validation_status: "verified")
 
         update_reason = "Data Migration - Evidence Records"
-        params = {action: "Data Migration", update_reason: update_reason, modifier: "Script", from_validation_status: "unverified", to_validation_status: "verified"}
-        verification_type.type_history_elements.build(params)
+        params = {action: "Data Migration", update_reason: update_reason, modifier: "Admin", from_validation_status: "unverified", to_validation_status: "verified"}
         verification_type.save!
+        verification_type.type_history_elements.create(params)
+
+        person.families.each do |family|
+          ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
+        end
 
         Success("Successfully created verification type")
       rescue StandardError => e

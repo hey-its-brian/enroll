@@ -39,15 +39,15 @@ def generate_csv_file(array_collection)
   file_name = []
 
   array_collection.each_slice(500_000).with_index do |limited_array, index|
-    FileUtils.touch("ssa verification type report_collection_#{index}.csv") unless File.exist?("ssa verification type report_collection_#{index}.csv")
+    FileUtils.touch("ssa_verification_type_report_collection_#{index}.csv") unless File.exist?("ssa_verification_type_report_collection_#{index}.csv")
 
     csv_content = CSV.generate(force_quotes: true) do |csv|
       csv << ["person_hbx_id", "Verification Type", "From Status", "To Status", "Message"]
       limited_array.each { |row| csv << row }
     end
 
-    File.write("ssa verification type report_collection_#{index}.csv", csv_content)
-    file_name << "ssa verification type report_collection_#{index}.csv"
+    File.write("ssa_verification_type_report_collection_#{index}.csv", csv_content)
+    file_name << "ssa_verification_type_report_collection_#{index}.csv"
   end
   file_name
 end

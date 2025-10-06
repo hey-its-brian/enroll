@@ -54,15 +54,15 @@ def generate_csv_file(array_collection)
   file_name = []
 
   array_collection.each_slice(500_000).with_index do |limited_array, index|
-    FileUtils.touch("evidences report #{index}.csv") unless File.exist?("evidences report #{index}.csv")
+    FileUtils.touch("evidences_report_#{index}.csv") unless File.exist?("evidences_report_#{index}.csv")
 
     csv_content = CSV.generate(force_quotes: true) do |csv|
       csv << ["family_id", "application_hbx_id", "application_state", "application_created_at", "primary_person_hbx_id", "applicant_person_hbx_id", "is_applying_coverage", "evidence_type", "evidence_state", "message"]
       limited_array.each { |row| csv << row }
     end
 
-    File.write("evidences report #{index}.csv", csv_content)
-    file_name << "evidences report #{index}.csv"
+    File.write("evidences_report_#{index}.csv", csv_content)
+    file_name << "evidences_report_#{index}.csv"
   end
   file_name
 end
@@ -82,8 +82,7 @@ elapsed_time = Caches::BenchmarkCache.with_benchmark do
 
   array_collection = []
   application_hbx_ids.each do |application_hbx_id|
-    # NOTE: Parameter key still named :person_hbx_id in the operation signature.
-    # result = ::Operations::DataFixes::CreateAptcCsrEvidences.new.call({ person_hbx_id: application_hbx_id })
+    result = ::Operations::DataFixes::CreateAptcCsrEvidences.new.call({ application_hbx_id: application_hbx_id })
 
     if result.success?
       array_collection.push(*result.value!)

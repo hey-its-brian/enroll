@@ -91,7 +91,7 @@ module Operations
                    end
 
         update_reason = "Data Migration - Evidence Records"
-        evidence.verification_histories.build(action: "Data Migration", update_reason: update_reason, updated_by: "Script")
+        evidence.verification_histories.build(action: "Data Migration", update_reason: update_reason, updated_by: "Admin")
         evidence.move_to_verified
         evidence.save!
         evidence

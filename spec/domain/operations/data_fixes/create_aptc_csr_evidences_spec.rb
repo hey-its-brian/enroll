@@ -25,7 +25,7 @@ RSpec::Matchers.define :have_verification_history do
     history = evidence.verification_histories.first
     history.action == 'Data Migration' &&
       history.update_reason == 'Data Migration - Evidence Records' &&
-      history.updated_by == 'Script'
+      history.updated_by == 'Admin'
   end
 end
 
