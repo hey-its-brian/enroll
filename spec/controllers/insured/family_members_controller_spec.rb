@@ -623,6 +623,19 @@ RSpec.describe Insured::FamilyMembersController, dbclean: :after_each do
       end
 
       context ':show_ssn' do
+        context ' when QHP feature is enabled' do
+          it 'should be able to view own ssn' do
+            allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(true)
+            get :show_ssn, params: { id: test_family.primary_person.id, family_id: test_family.id }
+
+            expect(response).to have_http_status(:success)
+
+            parsed_response = JSON.parse(response.body)
+            sanitized_response = parsed_response["payload"].gsub('-', '')
+            expect(test_family.primary_person.ssn).to eq(sanitized_response)
+          end
+        end
+
         it 'should be able to view own ssn' do
           get :show_ssn, params: { id: test_family.primary_person.id, family_id: test_family.id }
 
