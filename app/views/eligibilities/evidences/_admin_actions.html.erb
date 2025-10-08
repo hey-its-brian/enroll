@@ -1,4 +1,4 @@
-<div class="verification-update-reason" id=<%="#{applicant.id}-#{evidence_key.split.join('-')}"%>>
+<div data-controller="evidence-dropdown" class="verification-update-reason" id=<%="#{applicant.id}-#{evidence_key.split.join('-')}"%>>
   <%= form_tag eligibility_evidence_path(eligibility.id, evidence.id), method: :patch do %>
     <%= hidden_field_tag 'person_id', person_id  %>
     <%= hidden_field_tag 'application_gid', application&.to_global_id&.uri&.to_s  %>
@@ -10,7 +10,7 @@
       <label>
         <%= l10n('admin.verifications.verify_reason') %>
         <% reasons = application.is_a?(FinancialAssistance::Application) ? ::Eligibilities::Evidence::VERIFY_REASONS : ::VlpDocument::VERIFICATION_REASONS %>
-        <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(reasons), {prompt: "#{l10n('select_reason')}", required: true, class: 'col'}%></div>
+        <div class="col-md-4 px-0"><%= select_tag :verification_reason, options_for_select(reasons), {prompt: "#{l10n('select_reason')}", required: true, class: 'col', data: { action: "change->evidence-dropdown#updateDocumentDropdownVisibility" }}%></div>
       </label>
       <div id="document-dropdown" class="col-md-4 px-0 mt-2 hidden">
         <label>
@@ -86,28 +86,3 @@
     </div>
   <% end %>
 </div>
-
-<script>
-  document.addEventListener('turbolinks:load', function() {
-    const verificationSelect = document.querySelector('#verification_reason');
-    const documentDropdown = document.getElementById('document-dropdown');
-    const applicationReferenceSelect = document.querySelector('#application_reference');
-
-    // Function to check and update dropdown visibility
-    function updateDocumentDropdownVisibility() {
-      if (verificationSelect.value === 'Document in EnrollApp') {
-        documentDropdown.classList.remove('hidden');
-        applicationReferenceSelect.setAttribute('required', true);
-      } else {
-        documentDropdown.classList.add('hidden');
-        applicationReferenceSelect.removeAttribute('required');
-      }
-    }
-
-    // Check on page load
-    updateDocumentDropdownVisibility();
-
-    // Check on change
-    verificationSelect.addEventListener('change', updateDocumentDropdownVisibility);
-  });
-</script>
