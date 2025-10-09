@@ -244,11 +244,11 @@ module FinancialAssistance
 
     def review
       return redirect_to application_path(@application) if qhp_application_feature_enabled?
+      authorize @application, :review?
 
       save_faa_bookmark(request.original_url)
       return redirect_to applications_path if @application.blank?
 
-      authorize @application, :review?
       build_applicants_name_by_hbx_id_hash
 
       respond_to :html
@@ -265,12 +265,7 @@ module FinancialAssistance
     end
 
     def raw_application
-      unless current_user.has_hbx_staff_role?
-        flash[:error] = 'You are not authorized to access'
-        redirect_to applications_path
-        return
-      end
-
+      authorize @application, :raw_application?
       return redirect_to application_path(@application) if qhp_application_feature_enabled?
 
       if @application.nil? || (@application.is_draft? && !qhp_application_feature_enabled?)
@@ -301,13 +296,7 @@ module FinancialAssistance
     end
 
     def transfer_history
-      unless current_user.has_hbx_staff_role?
-        flash[:error] = 'You are not authorized to access'
-        redirect_to applications_path
-        return
-      end
-
-      @application = FinancialAssistance::Application.where(id: params['id'], family_id: get_current_person.financial_assistance_identifier).first
+      authorize @application, :transfer_history?
 
       @transfers = []
       if @application.account_transferred || !@application.transfer_id.nil?

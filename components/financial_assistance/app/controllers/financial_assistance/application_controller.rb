@@ -24,11 +24,7 @@ module FinancialAssistance
 
     def find_application
       application_id = params[:application_id] || params[:id]
-      @application = if current_user.try(:person).try(:agent?)
-                       FinancialAssistance::Application.find_by(id: application_id)
-                     else
-                       FinancialAssistance::Application.find_by(id: application_id, family_id: get_current_person.financial_assistance_identifier)
-                     end
+      @application = FinancialAssistance::Application.find(application_id)
     end
 
     def verify_financial_assistance_enabled

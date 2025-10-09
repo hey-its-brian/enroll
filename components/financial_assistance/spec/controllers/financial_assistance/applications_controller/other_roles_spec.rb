@@ -207,7 +207,7 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       allow(application).to receive_message_chain('errors.full_messages').and_return(
         ["Hbx id can't be blank", "fake errors can't be blank"]
       )
-      allow(FinancialAssistance::Application).to receive(:find_by).and_return(application)
+      allow(FinancialAssistance::Application).to receive(:find).and_return(application)
       allow(application).to receive(:save).and_return(false)
       allow(application).to receive(:save!).with(validate: false).and_return(false)
       allow(application).to receive(:valid?).and_return(false)
@@ -217,7 +217,7 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
 
     it "shows errors when @model does not save and errors blank" do
       # to give errors
-      allow(FinancialAssistance::Application).to receive(:find_by).and_return(application)
+      allow(FinancialAssistance::Application).to receive(:find).and_return(application)
       allow(application).to receive(:save).and_return(false)
       allow(application).to receive(:save!).with(validate: false).and_return(false)
       allow(application).to receive(:valid?).and_return(false)
@@ -257,7 +257,7 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
         application.update_attributes!(aasm_state: 'draft')
         allow(application).to receive(:complete?).and_return(false)
         allow(application).to receive(:save).and_return(true)
-        allow(FinancialAssistance::Application).to receive(:find_by).and_return(application)
+        allow(FinancialAssistance::Application).to receive(:find).and_return(application)
         allow(controller).to receive(:build_error_messages)
 
         post :submit_your_application_save, params: { id: application.id, application: application_valid_params.merge!("parent_living_out_of_home_terms" => "false") }
@@ -282,7 +282,7 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
         allow(application).to receive(:may_submit?).and_return(true)
         allow(application).to receive(:submit!).and_return(true)
         allow(application).to receive(:save).and_return(true)
-        allow(FinancialAssistance::Application).to receive(:find_by).and_return(application)
+        allow(FinancialAssistance::Application).to receive(:find).and_return(application)
         allow(controller).to receive(:determination_request_class).and_return(operation)
 
         post :submit_your_application_save, params: { id: application.id, application: application_valid_params }
@@ -405,7 +405,7 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
         allow(application).to receive(:may_submit?).and_return(true)
         allow(application).to receive(:submit!).and_return(true)
         allow(FinancialAssistance::Operations::Application::RequestDetermination).to receive_message_chain(:new, :call).and_return(success_result)
-        allow(FinancialAssistance::Application).to receive(:find_by).and_return(application)
+        allow(FinancialAssistance::Application).to receive(:find).and_return(application)
         post :submit_your_application_save, params: { id: application.id, application: application_valid_params }
         expect(response).to redirect_to(wait_for_eligibility_response_application_path(application))
       end

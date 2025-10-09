@@ -31,7 +31,7 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
   describe 'GET #new' do
     context 'when application is in renewal_draft state' do
       it 'redirects to applications index page' do
-        get :new, params: { application_id: application.id }
+        get :new, params: { application_id: application.id, id: applicant.id }
         expect(response).to redirect_to(applications_path)
         expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
       end
@@ -41,7 +41,7 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
       let(:application_aasm_state) { 'cancelled' }
 
       it 'redirects to applications index page' do
-        get :new, params: { application_id: application.id }
+        get :new, params: { application_id: application.id, id: applicant.id }
         expect(response).to redirect_to(applications_path)
         expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
       end
@@ -52,7 +52,7 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
   describe 'POST #create' do
     context 'when application is in renewal_draft state' do
       it 'redirects to applications index page' do
-        post :create, params: { application_id: application.id }
+        post :create, params: { application_id: application.id, id: applicant.id }
         expect(response).to redirect_to(applications_path)
         expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
       end
@@ -62,7 +62,7 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
       let(:application_aasm_state) { 'cancelled' }
 
       it 'redirects to applications index page' do
-        post :create, params: { application_id: application.id }
+        post :create, params: { application_id: application.id, id: applicant.id }
         expect(response).to redirect_to(applications_path)
         expect(flash[:alert]).to eq(l10n('faa.flash_alerts.uneditable_application'))
       end
@@ -180,7 +180,7 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
       it 'redirects to applications index page' do
         get :age_of_applicant, params: {
           application_id: application.id,
-          applicant_id: applicant.id,
+          id: applicant.id,
           format: :js
         }, xhr: true
         expect(response).to redirect_to(applications_path)
@@ -194,7 +194,7 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
       it 'redirects to applications index page' do
         get :age_of_applicant, params: {
           application_id: application.id,
-          applicant_id: applicant.id,
+          id: applicant.id,
           format: :js
         }, xhr: true
         expect(response).to redirect_to(applications_path)
@@ -209,7 +209,7 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
       it 'redirects to applications index page' do
         get :applicant_is_eligible_for_joint_filing, params: {
           application_id: application.id,
-          applicant_id: applicant.id,
+          id: applicant.id,
           format: :text
         }
         expect(response).to redirect_to(applications_path)
@@ -223,7 +223,7 @@ RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
       it 'redirects to applications index page' do
         get :applicant_is_eligible_for_joint_filing, params: {
           application_id: application.id,
-          applicant_id: applicant.id,
+          id: applicant.id,
           format: :text
         }
         expect(response).to redirect_to(applications_path)

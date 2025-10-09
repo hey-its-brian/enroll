@@ -4,7 +4,7 @@ module FinancialAssistance
   class IncomesController < FinancialAssistance::ApplicationController
     include NavigationHelper
 
-    before_action :find_application_and_applicant
+    before_action :find_applicant
     before_action :set_cache_headers, only: [:index, :other]
     before_action :enable_bs4_layout, only: [:other, :index]
     before_action :conditionally_enable_bs4_layout, only: [:create, :update] if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
@@ -119,9 +119,9 @@ module FinancialAssistance
       @model.employer_address.assign_attributes(permit_params(params[:employer_address]))
     end
 
-    def find_application_and_applicant
-      @application = FinancialAssistance::Application.find(params[:application_id])
-      @applicant = @application.active_applicants.find(params[:applicant_id])
+    def find_applicant
+      find_application
+      @applicant = @application.active_applicants.find(params[:applicant_id]) if @application.present?
     end
 
     def permit_params(attributes)

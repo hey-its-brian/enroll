@@ -46,8 +46,8 @@ FinancialAssistance::Engine.routes.draw do
       get 'evidences/view_history', to: 'evidences#view_history'
 
       delete 'verification_documents/destroy', to: 'verification_documents#destroy'
-      get :age_of_applicant
-      get :applicant_is_eligible_for_joint_filing
+      get :age_of_applicant, on: :member
+      get :applicant_is_eligible_for_joint_filing, on: :member
       get 'other_questions', on: :member, action: 'other_questions', as: 'other_questions'
       get 'save_questions', on: :member, action: 'save_questions', as: 'save_questions'
       get 'tax_info', on: :member, action: 'tax_info', as: 'tax_info'

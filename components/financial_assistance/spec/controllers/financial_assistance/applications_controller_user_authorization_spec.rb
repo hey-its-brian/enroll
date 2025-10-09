@@ -210,7 +210,7 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
         context 'with invalid params' do
           let!(:params) {{ id: "test" }}
 
-          it 'returns application not found error' do
+          it 'redirects to the root path with a policy error flash' do
             expect do
               get :copy, params: params
             end.to raise_error(
@@ -257,13 +257,11 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
           let!(:params) {{ id: application.id }}
 
 
-          it 'returns application not found error for unauthorized user' do
-            expect do
-              get :copy, params: params
-            end.to raise_error(
-              Mongoid::Errors::DocumentNotFound,
-              /#{params[:id]}/
-            )
+          it 'redirects the user with copy policy error' do
+            get :copy, params: params
+            expect(flash[:error]).to eq("Access not allowed for financial_assistance/application_policy.copy?, (Pundit policy)")
+            redirect_path = Rails.application.class.routes.url_helpers.root_path
+            expect(response).to redirect_to(redirect_path)
           end
         end
       end
@@ -272,14 +270,11 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
         context 'with valid params' do
           let!(:params) {{ id: application.id }}
 
-          it 'returns application not found error for unauthorized user' do
-            application.update_attributes(:aasm_state => "draft")
-            expect do
-              get :review_and_submit, params: params
-            end.to raise_error(
-              Mongoid::Errors::DocumentNotFound,
-              /#{params[:id]}/
-            )
+          it 'redirects the user with review_and_submit policy error' do
+            get :review_and_submit, params: params
+            expect(flash[:error]).to eq("Access not allowed for financial_assistance/application_policy.review_and_submit?, (Pundit policy)")
+            redirect_path = Rails.application.class.routes.url_helpers.root_path
+            expect(response).to redirect_to(redirect_path)
           end
         end
       end
@@ -287,13 +282,11 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       context 'GET #review' do
         let!(:params) {{ id: application.id }}
 
-        it 'raises an error as the application is not related to the family' do
-          expect do
-            get :review, params: params
-          end.to raise_error(
-            Mongoid::Errors::DocumentNotFound,
-            /#{application.id}/
-          )
+        it 'redirects the user with review policy error' do
+          get :review, params: params
+          expect(flash[:error]).to eq("Access not allowed for financial_assistance/application_policy.review?, (Pundit policy)")
+          redirect_path = Rails.application.class.routes.url_helpers.root_path
+          expect(response).to redirect_to(redirect_path)
         end
       end
 
@@ -301,13 +294,11 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
         context "With missing family id" do
           let(:params) { { id: application.id } }
 
-          it 'should find application and it is not authorized to view' do
-            expect do
-              get :application_publish_error, params: params
-            end.to raise_error(
-              Mongoid::Errors::DocumentNotFound,
-              /#{application.id}/
-            )
+          it 'redirects the user with application_publish_error policy error' do
+            get :application_publish_error, params: params
+            expect(flash[:error]).to eq("Access not allowed for financial_assistance/application_policy.application_publish_error?, (Pundit policy)")
+            redirect_path = Rails.application.class.routes.url_helpers.root_path
+            expect(response).to redirect_to(redirect_path)
           end
         end
       end

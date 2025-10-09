@@ -6,6 +6,11 @@ Given(/^that a family has a Financial Assistance application in the (.*?) state$
   application.update_attributes(aasm_state: state)
 end
 
+When(/^the user navigates to the application review page without authorization$/) do
+  allow_any_instance_of(FinancialAssistance::ApplicationPolicy).to receive(:review?).and_return(false)
+  visit financial_assistance.application_path(application.id)
+end
+
 And(/^the primary applicant age greater than (.*?)$/) do |age|
   @application.primary_applicant.update_attributes(dob: (age.to_i + 1).years.ago)
 end

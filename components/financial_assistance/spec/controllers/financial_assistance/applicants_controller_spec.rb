@@ -69,7 +69,6 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
 
   context "GET index" do
     before do
-      allow_any_instance_of(FinancialAssistance::ApplicantsController).to receive(:authorize).and_return(true)
       allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
     end
 
@@ -108,7 +107,7 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
 
   context "GET show" do
     before do
-      allow_any_instance_of(FinancialAssistance::ApplicantsController).to receive(:authorize).and_return(true)
+      allow_any_instance_of(FinancialAssistance::ApplicantPolicy).to receive(:show?).and_return(true)
       allow(controller).to receive(:set_summary_helpers).and_return(true)
     end
 
@@ -141,29 +140,6 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
       it "should use the financial_assistance_nav layout" do
         get :show, params: { application_id: application.id, id: applicant.id  }
         expect(response).to render_template(layout: "layouts/financial_assistance_nav")
-      end
-    end
-
-    context 'pundit authorization' do
-      context 'when invalid application id is provided' do
-        it 'should raise Pundit::NotAuthorizedError' do
-          get :show, params: { application_id: BSON::ObjectId.new, id: applicant.id }
-          expect(flash[:error]).to eq('Access not allowed for financial_assistance/applicant.show?, (Pundit policy)')
-        end
-      end
-
-      context 'when invalid applicant id is provided' do
-        it 'should raise Pundit::NotAuthorizedError' do
-          get :show, params: { application_id: BSON::ObjectId.new, id: applicant.id }
-          expect(flash[:error]).to eq('Access not allowed for financial_assistance/applicant.show?, (Pundit policy)')
-        end
-      end
-
-      context 'when valid application id applicant id is provided' do
-        it 'should not raise Pundit::NotAuthorizedError' do
-          get :show, params: { application_id: application.id, id: applicant.id }
-          expect(flash[:error]).to eq nil
-        end
       end
     end
   end
@@ -213,13 +189,13 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
     end
 
     it "should render plain text" do
-      get :applicant_is_eligible_for_joint_filing, params: {"application_id" => application.id, "applicant_id" => applicant2.id}, format: :text
+      get :applicant_is_eligible_for_joint_filing, params: {"application_id" => application.id, "id" => applicant2.id}, format: :text
       expect(response.status).to be 200
       expect(response.content_type).to eq("text/plain; charset=utf-8")
     end
 
     it "should render plain text" do
-      get :applicant_is_eligible_for_joint_filing, params: {"application_id" => application.id, "applicant_id" => applicant2.id}, format: :js
+      get :applicant_is_eligible_for_joint_filing, params: {"application_id" => application.id, "id" => applicant2.id}, format: :js
       expect(response.status).to be 406
     end
   end
@@ -1109,31 +1085,44 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
 
   context "GET age of applicant" do
     it "should return age of applicant", dbclean: :after_each do
-      get :age_of_applicant, params: { application_id: application.id, applicant_id: applicant.id }, format: :js
+      get :age_of_applicant, params: { application_id: application.id, id: applicant.id }, format: :js
       expect(response.body).to eq person.age_on(TimeKeeper.date_of_record).to_s
     end
 
     it "should not return age of applicant if the format is not js", dbclean: :after_each do
-      get :age_of_applicant, params: { application_id: application.id, applicant_id: applicant.id }, format: :json
+      get :age_of_applicant, params: { application_id: application.id, id: applicant.id }, format: :json
       expect(response.body).not_to eq person.age_on(TimeKeeper.date_of_record).to_s
     end
   end
 
   context "GET immigration_document_options" do
-    it "should return age of applicant", dbclean: :after_each do
-      get :immigration_document_options, params: { application_id: application.id,
-                                                   target_type: "FinancialAssistance::Applicant",
-                                                   applicant_id: applicant.id,
-                                                   vlp_doc_target: "test"}, format: :js
-      expect(response.status).to eq 200
+    let(:params) do
+      {
+        application_id: application.id,
+        target_type: "FinancialAssistance::Applicant",
+        applicant_id: applicant.id,
+        vlp_doc_target: "test"
+      }
     end
 
-    it "should not return age of applicant if the format is not js", dbclean: :after_each do
-      get :immigration_document_options, params: { application_id: application.id,
-                                                   target_type: "FinancialAssistance::Applicant",
-                                                   applicant_id: applicant.id,
-                                                   vlp_doc_target: "test"}
-      expect(response.status).not_to eq 200
+    context 'when the request format is js' do
+      before do
+        get :immigration_document_options, params: params, format: :js
+      end
+
+      it "should return 200 code", dbclean: :after_each do
+        expect(response.status).to eq 200
+      end
+    end
+
+    context "should not return age of applicant if the format is not js", dbclean: :after_each do
+      before do
+        get :immigration_document_options, params: params
+      end
+
+      it "should not return 200 code", dbclean: :after_each do
+        expect(response.status).not_to eq 200
+      end
     end
   end
 

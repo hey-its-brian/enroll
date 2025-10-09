@@ -89,3 +89,7 @@ Feature: My Financial Assistance Applications page that visit the Review Applica
     And clicks the “Review Application” link
     Then the user will navigate to the Review Application page
     Then the caretaker questions should show
+
+  Scenario: User navigates to Review page for an unauthorized Application
+    When the user navigates to the application review page without authorization
+    Then access will be denied for the user

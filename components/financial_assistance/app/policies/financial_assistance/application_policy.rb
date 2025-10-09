@@ -199,6 +199,22 @@ module FinancialAssistance
       edit?
     end
 
+    # Determines if the current user has permission to view the transfer history of the application.
+    # The user can review the application if they have permission to edit it.
+    #
+    # @return [Boolean] Returns true if the user has permission to view the transfer history of the application, false otherwise.
+    def transfer_history?
+      user.has_hbx_staff_role?
+    end
+
+    # Determines if the current user has permission to view the raw application.
+    # The user can view the raw application if they have permission to edit it.
+    #
+    # @return [Boolean] Returns true if the user has permission to view the raw application, false otherwise.
+    def raw_application?
+      user.has_hbx_staff_role?
+    end
+
     # Determines whether the SSN field can be displayed to the user.
     #
     # This method returns `true` only if the `:mask_ssn_ui_fields` feature flag is enabled

@@ -478,5 +478,87 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
         end
       end
     end
+
+    permissions :raw_application? do
+      context 'when the user is a consumer' do
+        let(:user_of_family) { FactoryBot.create(:user, person: person) }
+        let(:logged_in_user) { user_of_family }
+
+        it 'denies access' do
+          expect(subject).not_to permit(logged_in_user, application)
+        end
+      end
+
+      context 'when the user is a hbx staff' do
+        let(:hbx_profile) do
+          FactoryBot.create(
+            :hbx_profile,
+            :normal_ivl_open_enrollment,
+            us_state_abbreviation: EnrollRegistry[:enroll_app].setting(:state_abbreviation).item,
+            cms_id: "#{EnrollRegistry[:enroll_app].setting(:state_abbreviation).item.upcase}0"
+          )
+        end
+        let(:hbx_staff_person) { FactoryBot.create(:person) }
+        let(:permission) { FactoryBot.create(:permission, :developer) }
+        let(:hbx_staff_role) do
+          hbx_staff_person.create_hbx_staff_role(
+            permission_id: permission.id,
+            subrole: permission.name,
+            hbx_profile: hbx_profile
+          )
+        end
+        let(:hbx_admin_user) do
+          FactoryBot.create(:user, person: hbx_staff_person)
+          hbx_staff_role.person.user
+        end
+
+        let(:logged_in_user) { hbx_admin_user }
+
+        it 'grants access' do
+          expect(subject).to permit(logged_in_user, application)
+        end
+      end
+    end
+
+    permissions :transfer_history? do
+      context 'when the user is a consumer' do
+        let(:user_of_family) { FactoryBot.create(:user, person: person) }
+        let(:logged_in_user) { user_of_family }
+
+        it 'denies access' do
+          expect(subject).not_to permit(logged_in_user, application)
+        end
+      end
+
+      context 'when the user is a hbx staff' do
+        let(:hbx_profile) do
+          FactoryBot.create(
+            :hbx_profile,
+            :normal_ivl_open_enrollment,
+            us_state_abbreviation: EnrollRegistry[:enroll_app].setting(:state_abbreviation).item,
+            cms_id: "#{EnrollRegistry[:enroll_app].setting(:state_abbreviation).item.upcase}0"
+          )
+        end
+        let(:hbx_staff_person) { FactoryBot.create(:person) }
+        let(:permission) { FactoryBot.create(:permission, :developer) }
+        let(:hbx_staff_role) do
+          hbx_staff_person.create_hbx_staff_role(
+            permission_id: permission.id,
+            subrole: permission.name,
+            hbx_profile: hbx_profile
+          )
+        end
+        let(:hbx_admin_user) do
+          FactoryBot.create(:user, person: hbx_staff_person)
+          hbx_staff_role.person.user
+        end
+
+        let(:logged_in_user) { hbx_admin_user }
+
+        it 'grants access' do
+          expect(subject).to permit(logged_in_user, application)
+        end
+      end
+    end
   end
 end

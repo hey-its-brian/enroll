@@ -37,7 +37,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
     end
 
     describe '#age_of_applicant' do
-      let(:params) { { application_id: application.id, applicant_id: applicant.id } }
+      let(:params) { { application_id: application.id, id: applicant.id } }
 
       context 'logged in user has developer role' do
         it 'denies access and redirects to a different path' do
@@ -51,7 +51,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
     end
 
     describe '#applicant_is_eligible_for_joint_filing' do
-      let(:params) { { application_id: application.id, applicant_id: applicant.id } }
+      let(:params) { { application_id: application.id, id: applicant.id } }
 
       context 'logged in user has developer role' do
         it 'denies access and redirects to a different path' do
@@ -170,7 +170,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
     end
 
     describe '#create' do
-      let(:params) { { application_id: application.id } }
+      let(:params) { { application_id: application.id, id: applicant.id } }
 
       context 'logged in user has developer role' do
         it 'denies access and redirects to a different path' do

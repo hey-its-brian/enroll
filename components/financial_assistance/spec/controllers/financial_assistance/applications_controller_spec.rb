@@ -888,7 +888,7 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       allow(application).to receive_message_chain('errors.full_messages').and_return(
         ["Hbx id can't be blank", "fake errors can't be blank"]
       )
-      allow(FinancialAssistance::Application).to receive(:find_by).and_return(application)
+      allow(FinancialAssistance::Application).to receive(:find).and_return(application)
       allow(application).to receive(:save).and_return(false)
       allow(application).to receive(:save!).with(validate: false).and_return(false)
       allow(application).to receive(:valid?).and_return(false)
@@ -898,7 +898,7 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
 
     it "shows errors when @model does not save and errors blank" do
       # to give errors
-      allow(FinancialAssistance::Application).to receive(:find_by).and_return(application)
+      allow(FinancialAssistance::Application).to receive(:find).and_return(application)
       allow(application).to receive(:save).and_return(false)
       allow(application).to receive(:save!).with(validate: false).and_return(false)
       allow(application).to receive(:valid?).and_return(false)

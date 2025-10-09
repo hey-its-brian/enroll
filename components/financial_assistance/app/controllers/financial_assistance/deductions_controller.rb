@@ -4,7 +4,7 @@ module FinancialAssistance
   class DeductionsController < FinancialAssistance::ApplicationController
     include NavigationHelper
 
-    before_action :find_application_and_applicant
+    before_action :find_applicant
     before_action :set_cache_headers, only: [:index]
     before_action :enable_bs4_layout, only: [:index]
     before_action :conditionally_enable_bs4_layout, only: [:create, :update] if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
@@ -88,9 +88,9 @@ module FinancialAssistance
       model.valid?("step_#{@current_step.to_i}".to_sym) ? nil : model.errors.messages.first[1][0].titleize
     end
 
-    def find_application_and_applicant
-      @application = FinancialAssistance::Application.find(params[:application_id])
-      @applicant = @application.applicants.find(params[:applicant_id])
+    def find_applicant
+      find_application
+      @applicant = @application.active_applicants.find(params[:applicant_id]) if @application.present?
     end
 
     def permit_params(attributes)
