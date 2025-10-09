@@ -3,8 +3,12 @@
 RSpec.describe Operations::Eligibilities::Evidences::Documents::Index, type: :operation do
   let(:user) { FactoryBot.create(:user, person: person) }
   let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+  let(:person_2) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
   let(:primary_applicant) { family.primary_family_member }
+  let(:dependent_family_member) do
+    FactoryBot.create(:family_member, family: family, person: person_2)
+  end
 
   let(:faa_application) do
     FactoryBot.create(
@@ -25,9 +29,22 @@ RSpec.describe Operations::Eligibilities::Evidences::Documents::Index, type: :op
     )
   end
 
+  let(:applicant_2) do
+    FactoryBot.create(
+      :financial_assistance_applicant,
+      family_member_id: dependent_family_member.id,
+      person_hbx_id: person_2.hbx_id,
+      application: faa_application
+    )
+  end
+
   let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
   let(:income_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories, :outstanding, eligibility: aptc_csr_eligibility) }
   let(:aptc_ssn_evidence) { FactoryBot.create(:social_security_number_evidence, :with_verification_histories, :outstanding, eligibility: aptc_csr_eligibility) }
+
+  let(:aptc_csr_eligibility_2) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant_2) }
+  let(:income_evidence_2) { FactoryBot.create(:income_evidence, :with_verification_histories, :outstanding, eligibility: aptc_csr_eligibility_2) }
+  let(:aptc_ssn_evidence_2) { FactoryBot.create(:social_security_number_evidence, :with_verification_histories, :outstanding, eligibility: aptc_csr_eligibility_2) }
 
 
   let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: qhp_applicant) }
@@ -47,11 +64,13 @@ RSpec.describe Operations::Eligibilities::Evidences::Documents::Index, type: :op
       end
 
       before do
-        income_evidence.documents.create!(identifier: "test#sample-key",
+        income_evidence.documents.create!(identifier: "test-1#sample-key",
+                                          title: "sample-document.pdf", subject: "sample-document.pdf")
+        income_evidence_2.documents.create!(identifier: "test-2#sample-key",
                                           title: "sample-document.pdf", subject: "sample-document.pdf")
       end
 
-      it 'successfully retrieves documents and returns success' do
+      it 'successfully retrieves documents only related to primary applicant and returns success' do
         result = operation.call(params: params, evidence: income_evidence)
 
         expect(result).to be_success
@@ -60,6 +79,21 @@ RSpec.describe Operations::Eligibilities::Evidences::Documents::Index, type: :op
         expect(result.success[:page]).to eq(1)
         expect(result.success[:per_page]).to eq(10)
         expect(result.success[:applications]).to include(faa_application)
+        expect(result.success[:all_documents].count).to eq(1)
+        expect(result.success[:all_documents].first.identifier).to eq("test-1#sample-key")
+      end
+
+      it 'successfully retrieves documents only related to dependent applicant and returns success' do
+        result = operation.call(params: params, evidence: income_evidence_2)
+
+        expect(result).to be_success
+        expect(result.success[:years]).to include(TimeKeeper.date_of_record.year)
+        expect(result.success[:selected_year]).to eq(TimeKeeper.date_of_record.year)
+        expect(result.success[:page]).to eq(1)
+        expect(result.success[:per_page]).to eq(10)
+        expect(result.success[:applications]).to include(faa_application)
+        expect(result.success[:all_documents].count).to eq(1)
+        expect(result.success[:all_documents].first.identifier).to eq("test-2#sample-key")
       end
     end
 

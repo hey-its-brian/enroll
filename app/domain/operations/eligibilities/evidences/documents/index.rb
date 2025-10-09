@@ -92,12 +92,14 @@ module Operations
             document_app_map = {}
             evidence_key = evidence.key.to_s
             eligibility_key = evidence.eligibility.key
+            family_member_id = evidence.eligibility&.eligible&.family_member_id.to_s
 
             applications.each do |app|
               app_info = { hbx_id: app.hbx_id, assistance_year: app.assistance_year,
                            id: app.id.to_s, type: app.class.to_s}
 
-              app.applicants.each do |applicant|
+              applicants = app.applicants.select { |applicant| applicant.family_member_id.to_s == family_member_id }
+              applicants.each do |applicant|
                 eligibility = applicant.eligibilities.where(key: eligibility_key).first
                 next unless eligibility&.evidences
 
