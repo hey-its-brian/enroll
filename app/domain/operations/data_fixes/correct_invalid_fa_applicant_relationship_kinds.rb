@@ -82,7 +82,7 @@ module Operations
           applications.each do |application|
             application.relationships.where(:kind.nin => PersonRelationship::Relationships_UI).each do |relationship|
               family = Family.only(:family_members, :id).where(id: application.family_id).first
-              primary_person = Person.only(:hbx_id, :id).where(id: family.primary_applicant.person_id).first
+              primary_person = Person.only(:hbx_id, :id, :is_tobacco_user).where(id: family.primary_applicant.person_id).first
 
               csv << [
                 primary_person.hbx_id,
@@ -126,7 +126,7 @@ module Operations
           applications.each do |application|
             application.relationships.where(:kind.nin => PersonRelationship::Relationships_UI).each do |relationship|
               family = Family.only(:family_members, :id).where(id: application.family_id).first
-              primary_person = Person.only(:hbx_id, :id).where(id: family.primary_applicant.person_id).first
+              primary_person = Person.only(:hbx_id, :id, :is_tobacco_user).where(id: family.primary_applicant.person_id).first
 
               if relationship.kind == 'self'
                 relationship.delete
