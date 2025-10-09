@@ -187,6 +187,8 @@ module Operations
         def trigger_notifications(application)
           if application.is_renewal
             Success('No notifications for renewals.')
+          elsif application.non_applicants.count == application.applicants.count
+            Success('No notifications for applications with only non-applicants.')
           else
             params = { application: application, application_entity: @application_entity }
             Operations::IndividualMarket::Application::TriggerQhpEligibilityNotices.new.call(params)

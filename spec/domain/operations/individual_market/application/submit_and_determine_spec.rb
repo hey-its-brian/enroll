@@ -119,6 +119,24 @@ RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, db
           expect(result.success).to eq('No notifications for renewals.')
         end
       end
+
+      context 'when attempting to send qhp notifications for a non-applicant only application' do
+        before do
+          # remove cached var
+          application.remove_instance_variable(:@non_applicants)
+
+          # simulate non-applicant only application determination
+          application.applicants.each { |applicant| applicant.update_attributes(is_applying_coverage: false) }
+          subject.send(:determine_applicants, application)
+
+          @notification_trigger = subject.send(:trigger_notifications, application)
+        end
+
+        it 'returns Success with no notifications message' do
+          expect(@notification_trigger).to be_success
+          expect(@notification_trigger.success).to eq('No notifications for applications with only non-applicants.')
+        end
+      end
     end
 
     context 'with an existing aptc enrollment' do
