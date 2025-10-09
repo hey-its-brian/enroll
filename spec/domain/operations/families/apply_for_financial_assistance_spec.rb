@@ -230,6 +230,17 @@ RSpec.describe Operations::Families::ApplyForFinancialAssistance, type: :model, 
     end
   end
 
+  describe 'contact_method information' do
+    let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, :with_ssn) }
+    let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+
+    it "return contact method information from consumer_role" do
+      person.consumer_role.update!(contact_method: 'Paper, Electronic and Text Message communications')
+      result = subject.call(family_id: family.id)
+      expect(result.success.first[:contact_method]).to eq('Paper, Electronic and Text Message communications')
+    end
+  end
+
   describe 'active vlp fields' do
     let(:document) { FactoryBot.build(:vlp_document, **doc_attrs) }
     let(:consumer_role) { FactoryBot.create(:consumer_role, vlp_documents: [document], active_vlp_document_id: document.id) }

@@ -245,6 +245,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
 
     context 'should copy contact_method and language_preference field' do
       before do
+        person1.consumer_role.update!(contact_method: 'Paper, Electronic and Text Message communications')
         @copied_application = subject.call(application_id: application.id).success
       end
 

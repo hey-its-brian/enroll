@@ -56,6 +56,7 @@ module Operations
                              five_year_bar_met: consumer_role.five_year_bar_met,
                              qualified_non_citizen: construct_qualified_non_citizen(consumer_role),
                              citizen_status: person.citizen_status,
+                             contact_method: consumer_role.contact_method,
                              relationship: get_relationship_kind(family, person),
                              is_consumer_role: true,
                              same_with_primary: false,

@@ -266,7 +266,8 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
     let(:new_application) { FinancialAssistance::Application.where(family_id: new_family.id, :id.ne => application.id).first }
 
     before :each do
-      primary_person.consumer_role.update_attributes!(identity_validation: 'valid')
+      primary_person.consumer_role.update_attributes!(contact_method: "Paper, Electronic and Text Message communications",
+                                                      identity_validation: 'valid')
       sign_in user
       allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
       hbx_profile.benefit_sponsorship.benefit_coverage_periods.each {|bcp| bcp.update_attributes!(slcsp_id: ivl_product.id)}
@@ -290,6 +291,10 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
         expect(new_application).to be_present
         expect(new_application.origin).to eq(:user)
         expect(new_application.generation_reason).to eq(:manual)
+      end
+
+      it 'should copy the valid contact method from person' do
+        expect(new_application.applicants.first.contact_method).to eq(primary_person.consumer_role.contact_method)
       end
     end
 
