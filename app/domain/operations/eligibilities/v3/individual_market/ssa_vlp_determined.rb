@@ -253,7 +253,7 @@ module Operations
           end
 
           def get_citizen_status(applicant, individual_response)
-            ::ConsumerRole::NOT_LAWFULLY_PRESENT_STATUS unless ['Y', 'X'].include?(individual_response[:LawfulPresenceVerifiedCode])
+            return ::ConsumerRole::NOT_LAWFULLY_PRESENT_STATUS unless ['Y', 'X'].include?(individual_response[:LawfulPresenceVerifiedCode])
             status = individual_response.dig(:InitialVerificationIndividualResponseSet, :EligStatementTxt)
 
             return "us_citizen" if status.eql? "UNITED STATES CITIZEN"

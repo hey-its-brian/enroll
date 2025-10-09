@@ -125,8 +125,7 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
         expect(applicant.five_year_bar_applies).to eq false
         expect(applicant.five_year_bar_met).to eq false
         expect(applicant.qualified_non_citizen).to eq false
-        expect(applicant.citizenship_result).to eq 'non_native_citizen'
-
+        expect(applicant.citizenship_result).to eq 'not_lawfully_present_in_us'
       end
     end
 
