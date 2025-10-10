@@ -28,7 +28,7 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
         family_name: input_applicant.person_name.family_name
       },
       demographics_attributes: {
-        dob: input_applicant.demographics.dob,
+        dob: input_applicant.demographics.dob.strftime("%Y-%m-%d"),
         gender: input_applicant.demographics.gender,
         ssn: "263542644",
         encrypted_ssn: input_applicant.demographics.encrypted_ssn,
@@ -225,7 +225,7 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
       params.delete(:id)
       @applicant_form = described_class.new(params)
       expect(@applicant_form.valid?).to be_falsey
-      expect(@applicant_form.errors.full_messages.first).to include("Cannot add the duplicate members as they are present on enrollments/tax households.")
+      expect(@applicant_form.errors.full_messages.first).to include("Cannot add the duplicate applicant as they are already present on the application.")
     end
 
     it 'should allow matching dependents with different dobs' do

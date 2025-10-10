@@ -419,17 +419,13 @@ module Forms
       def matches_existing_applicant?(existing_applicant)
         existing_applicant&.person_name&.given_name == person_name&.given_name &&
           existing_applicant&.person_name&.family_name == person_name&.family_name &&
-          existing_applicant&.demographics&.dob == demographics&.dob
+          existing_applicant&.demographics&.dob&.to_date == demographics&.dob&.to_date
       end
 
       # Adds a duplicate error message to the errors collection
       # @return [void]
       def add_duplicate_error
-        duplicate_message = l10n(
-          'insured.family_members.duplicate_error_message',
-          action: "add",
-          contact_center_phone_number: EnrollRegistry[:enroll_app].settings(:contact_center_short_number).item
-        )
+        duplicate_message = l10n('qhp_application.duplicate_applicant_error_message')
         errors.add(:base, duplicate_message)
       end
 

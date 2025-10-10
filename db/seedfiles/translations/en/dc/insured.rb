@@ -951,6 +951,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.qhp_application.attestation.title' => "Submit Your Application",
   :'en.qhp_application.attestation.attestation_info' => "This is the last step. Carefully read the information below. Select 'I agree' after each statement to acknowledge your agreement. Then, enter your name to electronically sign the application. When you're finished, select ‘",
   :'en.qhp_application.attestation.attestation_info_2' => "Submit Application",
+  :'en.qhp_application.duplicate_applicant_error_message' => "Cannot add the duplicate applicant as they are already present on the application.",
   :'en.insured.preferences.title' => 'Preferences',
   :'en.insured.preferences.contact_preferences' => 'Contact Preferences',
   :'en.insured.preferences.contact_update_info' => 'Confirm your contact preferences.',
