@@ -14,7 +14,8 @@ gem 'globalid'
 gem 'effective_datatables', path: './project_gems/effective_datatables-2.6.14'
 
 # Verify this gem git reference is necessary.  Otherwise point it to release level
-gem 'prawn', :git => 'https://github.com/prawnpdf/prawn.git', :ref => '8028ca0cd2'
+gem 'prawn', '2.4'
+gem 'prawn-table', '~> 0.2.2'
 
 ## Fix this dependency -- bring into project
 gem 'simple_calendar', :git => 'https://github.com/harshared/simple_calendar.git'
@@ -88,7 +89,7 @@ gem 'nokogiri',                 '~> 1.18.8'
 gem 'nokogiri-happymapper',     '~> 0.8.0', :require => 'happymapper'
 gem 'non-stupid-digest-assets'
 gem 'pundit',                   '~> 2.0'
-gem 'rack',                     '>= 2.2.18'
+gem 'rack',                     '>= 2.2.19'
 gem "recaptcha",                '~> 4.13', require: 'recaptcha/rails'
 gem 'redis',                    '~> 4.0'
 gem 'redis-rails',              '~> 5.0.2'
