@@ -16,6 +16,26 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
     )
   end
 
+  let(:previous_application) do
+    FactoryBot.create(
+      :financial_assistance_application,
+      family_id: family.id,
+      aasm_state: 'determined',
+      submitted_at: Time.now,
+      assistance_year: TimeKeeper.date_of_record.year - 1
+    )
+  end
+
+  let(:renewal_application) do
+    FactoryBot.create(
+      :financial_assistance_application,
+      family_id: family.id,
+      aasm_state: 'determined',
+      submitted_at: Time.now,
+      assistance_year: TimeKeeper.date_of_record.year + 1
+    )
+  end
+
   let(:applicant) do
     FactoryBot.create(
       :financial_assistance_applicant,
@@ -25,8 +45,30 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
     )
   end
 
+  let(:previous_applicant) do
+    FactoryBot.create(
+      :financial_assistance_applicant,
+      family_member_id: primary_applicant.id,
+      person_hbx_id: person.hbx_id,
+      application: previous_application
+    )
+  end
+
+  let(:renewal_applicant) do
+    FactoryBot.create(
+      :financial_assistance_applicant,
+      family_member_id: primary_applicant.id,
+      person_hbx_id: person.hbx_id,
+      application: renewal_application
+    )
+  end
+
   let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
   let(:income_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories, :outstanding, eligibility: aptc_csr_eligibility) }
+  let(:prior_aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: previous_applicant) }
+  let(:prior_income_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories, :outstanding, eligibility: prior_aptc_csr_eligibility) }
+  let(:renewal_aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: renewal_applicant) }
+  let(:renewal_income_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories, :outstanding, eligibility: renewal_aptc_csr_eligibility) }
   let(:aptc_ssn_evidence) { FactoryBot.create(:social_security_number_evidence, :with_verification_histories, :outstanding, eligibility: aptc_csr_eligibility) }
 
   let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: qhp_applicant) }
@@ -44,14 +86,17 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
       end
 
       it 'successfully retrieves applications and returns success' do
+        prior_income_evidence
+        renewal_income_evidence
         result = operation.call(params: params, family_member: family.primary_applicant, evidence: income_evidence)
 
+        application_ids = [faa_application.hbx_id, previous_application.hbx_id, renewal_application.hbx_id]
         expect(result).to be_success
         expect(result.success[:years]).to include(TimeKeeper.date_of_record.year)
         expect(result.success[:selected_year]).to eq(TimeKeeper.date_of_record.year)
         expect(result.success[:applications]).to include(faa_application)
         expect(result.success[:application_evidence_mapping]).to be_a(Hash)
-        expect(result.success[:current_and_previous_application_ids]).to include(faa_application.hbx_id)
+        expect(result.success[:renewal_current_and_previous_application_ids]).to match_array(application_ids)
         expect(result.success[:bs4]).to be true
         expect(result.success[:bs4]).to be true
       end

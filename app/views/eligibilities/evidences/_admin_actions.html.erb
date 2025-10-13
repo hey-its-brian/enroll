@@ -15,7 +15,7 @@
       <div id="document-dropdown" class="col-md-4 px-0 mt-2 hidden">
         <label>
           <%= l10n('application_reference') %>
-          <%= select_tag :application_reference, options_for_select(@current_and_previous_application_ids || []), {prompt: "#{l10n('select_application_reference')}", class: 'col'}%>
+          <%= select_tag :application_reference, options_for_select(@renewal_current_and_previous_application_ids || []), {prompt: "#{l10n('select_application_reference')}", class: 'col'}%>
         </label>
       </div>
     </div>

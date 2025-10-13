@@ -20,7 +20,7 @@ module Operations
           filtered_applications = yield filter_applications(all_applications, validated_params[:selected_year], years)
           matching_applications = yield fetch_matching_applications(filtered_applications, evidence)
           application_evidence_mapping = yield fetch_matching_evidence_for_applications(matching_applications[:applications], family_member, evidence)
-          current_and_previous_application_ids = yield fetch_current_and_previous_application_ids(all_applications)
+          renewal_current_and_previous_application_ids = yield fetch_renewal_current_and_previous_application_ids(all_applications)
 
           Success(
             years: years,
@@ -28,7 +28,7 @@ module Operations
             applications: matching_applications[:applications],
             application_evidence_mapping: application_evidence_mapping,
             bs4: true,
-            current_and_previous_application_ids: current_and_previous_application_ids
+            renewal_current_and_previous_application_ids: renewal_current_and_previous_application_ids
           )
         end
 
@@ -114,10 +114,11 @@ module Operations
           Success(mapping)
         end
 
-        def fetch_current_and_previous_application_ids(all_applications)
+        def fetch_renewal_current_and_previous_application_ids(all_applications)
+          renewal_year = TimeKeeper.date_of_record.year + 1
           current_year = TimeKeeper.date_of_record.year
           previous_year = current_year - 1
-          current_and_previous_application_ids = all_applications.select do |app|
+          renewal_current_and_previous_application_ids = all_applications.select do |app|
             is_determined = case app
                             when ::FinancialAssistance::Application
                               app.aasm_state.to_s == 'determined'
@@ -125,15 +126,14 @@ module Operations
                               app.current_state.to_s == 'determined'
                             end
 
-            # Check if application is for current or previous year
-            is_recent_year = (app.assistance_year == current_year ||
-              app.assistance_year == previous_year)
+            # Check if application is for renewal, current or previous year
+            is_recent_year = [renewal_year, current_year, previous_year].include?(app.assistance_year)
 
             # Only keep applications that satisfy both conditions
             is_determined && is_recent_year
           end.map(&:hbx_id)
 
-          Success(current_and_previous_application_ids)
+          Success(renewal_current_and_previous_application_ids)
         end
       end
     end
