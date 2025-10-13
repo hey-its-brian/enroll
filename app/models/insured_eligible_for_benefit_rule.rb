@@ -92,7 +92,13 @@ class InsuredEligibleForBenefitRule
       @errors << [l10n('insured.group_selection.no_application_submitted')]
       return false
     end
-    shopping_eligible_member_ids = @eligibility_determination.shopping_eligible_member_ids
+
+    shopping_eligible_member_ids = @eligibility_determination.shopping_eligible_member_ids(@benefit_package.effective_year)
+    if shopping_eligible_member_ids.blank?
+      @errors << [l10n('insured.group_selection.no_application_submitted')]
+      return false
+    end
+
     return status if shopping_eligible_member_ids.include?(@family_member_id)
     # if the member is over 26 and has age_off_excluded set to true, the state residency criteria can be overridden, allowing them to shop
     # this logic is fragile, and should be refactored when FAA has basis implemented.

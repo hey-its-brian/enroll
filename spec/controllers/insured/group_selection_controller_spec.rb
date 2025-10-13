@@ -569,7 +569,8 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
             }
           )
           fm_hash = assigns(:fm_hash)
-          expect(fm_hash.values.flatten.any?{|err| err.to_s.match(/Ineligible for Plan shopping/)}).to be_truthy
+          translation = l10n('insured.group_selection.no_application_submitted')
+          expect(fm_hash.values.flatten.any? { |err| err.to_s.include?(translation) }).to be_truthy
           expect(response).to have_http_status("200")
         end
       end
@@ -607,7 +608,8 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
             }
           )
           fm_hash = assigns(:fm_hash)
-          expect(fm_hash.values.flatten.any?{|err| err.to_s.match(/Ineligible for Plan shopping/)}).to be_truthy
+          translation = l10n('insured.group_selection.no_application_submitted')
+          expect(fm_hash.values.flatten.any? { |err| err.to_s.include?(translation) }).to be_truthy
           expect(response).to have_http_status("200")
         end
       end
@@ -684,7 +686,8 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
             }
           )
           fm_hash = assigns(:fm_hash)
-          expect(fm_hash.values.flatten.any?{|err| err.to_s.match(/Ineligible for Plan shopping/)}).to be_truthy
+          translation = l10n('insured.group_selection.no_application_submitted')
+          expect(fm_hash.values.flatten.any? { |err| err.to_s.include?(translation) }).to be_truthy
           expect(response).to have_http_status("200")
         end
       end
@@ -908,8 +911,7 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
             dependent.update_attributes!(dob: TimeKeeper.date_of_record - 30.years, age_off_excluded: true)
           end
 
-          it 'should not have any errors' do
-            sign_in user_2
+          it 'should have errors' do
             sign_in user_2
             get(
               :new,
@@ -923,8 +925,9 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
             )
             fm_hash = assigns(:fm_hash)
             expect(response).to have_http_status("200")
-            expect(fm_hash[dependent_fm_id].first).to be_truthy
-            expect(fm_hash[dependent_fm_id].third).to be_empty
+            translation = l10n('insured.group_selection.no_application_submitted')
+            expect(fm_hash[dependent_fm_id].first).to be_falsey
+            expect(fm_hash[dependent_fm_id].third.flatten).to eq([translation])
           end
         end
 
@@ -966,6 +969,45 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
         end
 
         it "family member should no application submitted errors" do
+          sign_in user_2
+          get(
+            :new,
+            params: {
+              person_id: person_2.id,
+              consumer_role_id: person_2.consumer_role.id,
+              change_plan: "",
+              coverage_kind: hbx_enrollment.coverage_kind,
+              market_kind: "individual"
+            }
+          )
+          fm_hash = assigns(:fm_hash)
+          translation = l10n('insured.group_selection.no_application_submitted')
+          expect(fm_hash.values.flatten.any? { |err| err.to_s.include?(translation) }).to be_truthy
+          expect(response).to have_http_status("200")
+        end
+      end
+
+      context 'family has aptc grants present but not present for eligible assistance year' do
+        let(:grants_config) do
+          {
+            'aptc_csr_credit' => [
+              { key: 'AdvancePremiumAdjustmentGrant' }
+            ]
+          }
+        end
+        let(:family) do
+          FactoryBot.create(:family,
+                            :with_primary_family_member,
+                            :with_eligibility_determination_and_subjects,
+                            person: person_2,
+                            outstanding_verification_status: 'not_enrolled',
+                            eligibility_item_keys: ['aptc_csr_credit'],
+                            use_family_member_ids: true,
+                            grants_config: grants_config,
+                            assistance_year: TimeKeeper.date_of_record.year - 1)
+        end
+
+        it "family member should have errors" do
           sign_in user_2
           get(
             :new,

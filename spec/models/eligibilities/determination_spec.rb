@@ -170,7 +170,7 @@ RSpec.describe Eligibilities::Determination, type: :model do
 
     context "when family member is eligible for shopping" do
       it "returns an array with the family member's id" do
-        result = determination.shopping_eligible_member_ids
+        result = determination.shopping_eligible_member_ids(TimeKeeper.date_of_record.year)
         expect(result).to include(family_member.id.to_s)
       end
     end
@@ -182,7 +182,7 @@ RSpec.describe Eligibilities::Determination, type: :model do
       end
 
       it "returns an empty array" do
-        expect(determination.shopping_eligible_member_ids).to be_empty
+        expect(determination.shopping_eligible_member_ids(TimeKeeper.date_of_record.year)).to be_empty
       end
     end
 
@@ -195,7 +195,7 @@ RSpec.describe Eligibilities::Determination, type: :model do
       end
 
       it "returns an empty array" do
-        expect(determination.shopping_eligible_member_ids).to be_empty
+        expect(determination.shopping_eligible_member_ids(TimeKeeper.date_of_record.year)).to be_empty
       end
     end
 
@@ -208,7 +208,7 @@ RSpec.describe Eligibilities::Determination, type: :model do
       end
 
       it "returns an empty array" do
-        expect(determination.shopping_eligible_member_ids).to be_empty
+        expect(determination.shopping_eligible_member_ids(TimeKeeper.date_of_record.year)).to be_empty
       end
     end
 
@@ -223,7 +223,7 @@ RSpec.describe Eligibilities::Determination, type: :model do
       end
 
       it "returns an empty array" do
-        expect(determination.shopping_eligible_member_ids).to be_empty
+        expect(determination.shopping_eligible_member_ids(TimeKeeper.date_of_record.year)).to be_empty
       end
     end
   end

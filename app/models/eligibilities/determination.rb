@@ -56,8 +56,8 @@ module Eligibilities
     end
 
     # APTC eligible member IDs
-    def aptc_eligible_member_ids
-      grants.flat_map(&:member_ids)
+    def aptc_eligible_member_ids(year)
+      grants.select{|grant| grant.assistance_year == year }.flat_map(&:member_ids)
     end
 
     # Returns an array of family member IDs that are eligible for plan shopping
@@ -65,7 +65,7 @@ module Eligibilities
     # aca_individual_market_eligibility) with qualifying grants (AdvancePremiumAdjustmentGrant,
     # QhpGrant or MagiMedicaidGrant)
     # @return [Array<String>] Array of family member IDs eligible for shopping
-    def shopping_eligible_member_ids
+    def shopping_eligible_member_ids(year)
       eligible_ids = subjects.flat_map do |subject|
         # Get relevant eligibility states
         eligibility_states = subject.eligibility_states.select do |state|
@@ -78,7 +78,7 @@ module Eligibilities
         # Get member IDs from grants in eligible states
         eligibility_states.flat_map do |state|
           grants = state.grants.select do |grant|
-            %w[AdvancePremiumAdjustmentGrant QhpGrant MagiMedicaidGrant].include?(grant.key)
+            grant.assistance_year == year && %w[AdvancePremiumAdjustmentGrant QhpGrant MagiMedicaidGrant].include?(grant.key)
           end
 
           next [] if grants.empty?
@@ -87,7 +87,7 @@ module Eligibilities
         end
       end
       # Combine with APTC eligible members and ensure uniqueness
-      (eligible_ids + aptc_eligible_member_ids).flatten.compact.uniq
+      (eligible_ids + aptc_eligible_member_ids(year)).flatten.compact.uniq
     end
   end
 end
