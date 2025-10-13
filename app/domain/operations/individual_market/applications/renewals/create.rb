@@ -19,7 +19,6 @@ module Operations
           # @return [Dry::Monads::Result] Success with the created application or Failure with an error message
           def call(family_id:, renewal_year:)
             family, renewal_year  = yield validate_inputs(family_id, renewal_year)
-            _eligible             = yield check_eligibility(family, renewal_year)
             application           = yield build(family, renewal_year)
             application           = yield persist(application)
             event                 = yield build_event(application, family)
@@ -42,26 +41,6 @@ module Operations
             return Failure("Invalid renewal year: #{renewal_year}") unless renewal_year.is_a?(Integer)
 
             Success([family, renewal_year])
-          end
-
-          # Checks if the family is eligible for a renewal application
-          #
-          # @param family [Family] the family for which to check eligibility
-          # @param renewal_year [Integer] the year for which the renewal application is created
-          #
-          # @return [Dry::Monads::Result] Success if eligible, Failure with an error message otherwise
-          def check_eligibility(family, renewal_year)
-            fa_applications = ::FinancialAssistance::Application.only(
-              :assistance_year, :family_id, :aasm_state
-            ).where(assistance_year: renewal_year, family_id: family.id)
-            return Failure("Family with #{family.id} already has Financial Assistance application for the renewal year #{renewal_year}") if fa_applications.any? { |app| FA_APP_STATES.exclude?(app.aasm_state) }
-
-            enrollments = HbxEnrollment.only(
-              :aasm_state, :effective_on, :family_id, :kind
-            ).individual_market.enrolled.current_year.where(family_id: family.id)
-            return Failure("Family with #{family.id} does not have any effectuated enrollments") if enrollments.empty?
-
-            Success(true)
           end
 
           # Finds or creates a renewal application for the family for the renewal year
