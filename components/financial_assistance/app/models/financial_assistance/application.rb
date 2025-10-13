@@ -309,6 +309,7 @@ module FinancialAssistance
 
     scope :submitted, ->{ any_in(aasm_state: SUBMITTED_STATUS) }
     scope :determined, ->{ any_in(aasm_state: "determined") }
+    scope :non_determined, ->{ where(:aasm_state.ne => 'determined') }
     scope :closed, ->{ any_in(aasm_state: CLOSED_STATUSES) }
     scope :by_hbx_id, ->(hbx_id) { where(hbx_id: hbx_id) }
     scope :for_verifications, -> { where(:aasm_state.in => STATES_FOR_VERIFICATIONS)}

@@ -58,7 +58,28 @@ RSpec.describe Operations::HbxEnrollments::DetermineOeNoticeRecipients, dbclean:
   let(:family1) { FactoryBot.create(:family, :with_primary_family_member, person: person1) }
 
   let(:person2) { FactoryBot.create(:person, :with_consumer_role, :with_ssn) }
-  let(:family2) { FactoryBot.create(:family, :with_primary_family_member, person: person2) }
+  let(:family2) do
+    fam = FactoryBot.create(:family, :with_primary_family_member, person: person2)
+    thhg = fam.tax_household_groups.build(
+      source: 'qhp',
+      application_gid: nil,
+      start_on: TimeKeeper.date_of_record.next_year.beginning_of_year,
+      end_on: nil,
+      assistance_year: TimeKeeper.date_of_record.next_year.year
+    )
+
+    thh = thhg.tax_households.build(effective_starting_on: TimeKeeper.date_of_record.next_year.beginning_of_year)
+
+    thh.tax_household_members.build(
+      applicant_id: fam.primary_applicant.id,
+      is_without_assistance: true,
+      is_totally_ineligible: false,
+      is_csr_eligible: false,
+      csr_percent_as_integer: 0
+    )
+    fam.save!
+    fam
+  end
 
   let(:faa1) do
     FactoryBot.create(
@@ -113,20 +134,20 @@ RSpec.describe Operations::HbxEnrollments::DetermineOeNoticeRecipients, dbclean:
   end
 
   it "returns failure for invalid enrollment_type" do
-    result = described_class.new.call(notice_type: "invalid_type")
+    result = subject.call(notice_type: "invalid_type")
     expect(result).to be_failure
     expect(result.failure).to match(/Not a valid NoticeType/)
   end
 
   it "processes OEG families when 'oeg' is passed" do
     expect(logger_double).to receive(:info).with(/Triggered OE event for family_id: #{family1.id}, index: 0/)
-    result = described_class.new.call(notice_type: "oeg")
+    result = subject.call(notice_type: "oeg")
     expect(result).to be_success
   end
 
   it "processes OEQ families when 'oeq' is passed" do
     expect(logger_double).to receive(:info).with(/Triggered OE event for family_id: #{family2.id}, index: 0/)
-    result = described_class.new.call(notice_type: "oeq")
+    result = subject.call(notice_type: "oeq")
     expect(result).to be_success
   end
 
@@ -134,7 +155,7 @@ RSpec.describe Operations::HbxEnrollments::DetermineOeNoticeRecipients, dbclean:
     it "processes both OEG and OEQ families when 'oeg_oeq' is passed" do
       expect(logger_double).to receive(:info).with(/Triggered OE event for family_id: #{family1.id}, index: 0/)
       expect(logger_double).to receive(:info).with(/Triggered OE event for family_id: #{family2.id}, index: 1/)
-      result = described_class.new.call(notice_type: "oeg_oeq")
+      result = subject.call(notice_type: "oeg_oeq")
       expect(result).to be_success
     end
   end
