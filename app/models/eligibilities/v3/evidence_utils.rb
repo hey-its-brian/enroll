@@ -179,12 +179,17 @@ module Eligibilities
           self.move_to_attested
         end
 
+        # Marks the evidence as rejected if it can transition to the rejected state.
+        # Sets verification_outstanding to true and is_satisfied to false.
+        # If the current state is not :review, it schedules a due date if not already set.
+        #
+        # @return [void]
         def mark_as_rejected
           return unless self.can_move_to_rejected?
 
-          assign_attributes(verification_outstanding: true, is_satisfied: false)
-          due_on = self.due_on || schedule_verification_due_on
-          self.due_on = due_on unless self.current_state == 'review'
+          self.verification_outstanding = true
+          self.is_satisfied = false
+          self.due_on = self.due_on || schedule_verification_due_on if self.current_state != :review
           self.move_to_rejected
         end
 

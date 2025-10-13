@@ -193,11 +193,27 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
   end
 
   describe "#mark_as_rejected" do
+    context 'when current_state is review' do
+      before do
+        dummy_evidence.current_state = :review
+        dummy_evidence.due_on = nil
+      end
+
+      it 'marks the evidence as rejected without changing due_on' do
+        dummy_evidence.mark_as_rejected
+        expect(dummy_evidence.rejected?).to be true
+        expect(dummy_evidence.is_satisfied).to be false
+        expect(dummy_evidence.verification_outstanding).to be true
+        expect(dummy_evidence.due_on).to be_nil
+      end
+    end
+
     it "marks the evidence as rejected" do
       dummy_evidence.mark_as_rejected
       expect(dummy_evidence.rejected?).to be true
       expect(dummy_evidence.is_satisfied).to be false
       expect(dummy_evidence.verification_outstanding).to be true
+      expect(dummy_evidence.due_on).to be_present
     end
 
     it "does not mark as rejected if cannot move to rejected" do
