@@ -194,10 +194,6 @@ module Eligibilities
           self.move_to_review
         end
 
-        def set_verified
-          self.move_to_verified if can_move_to_verified?
-        end
-
         def type_unverified?
           !type_verified?
         end

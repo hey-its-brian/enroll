@@ -347,7 +347,7 @@ module Operations
           # @return [void]
           def update_evidence(evidence, evidence_entity)
             if evidence_entity.current_state == :attested
-              evidence.set_verified
+              evidence.mark_as_verified
             else
               evidence.determine_outstanding_state(@call_type)
             end

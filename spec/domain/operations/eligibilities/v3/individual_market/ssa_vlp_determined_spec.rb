@@ -99,6 +99,9 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
         immigration_evidence = individual_market_eligibility.evidences.detect { |e| e.key.to_sym == :immigration_evidence }
 
         expect(ssn_evidence.current_state).to eq(:verified)
+        expect(ssn_evidence.verification_outstanding).to eq false
+        expect(ssn_evidence.is_satisfied).to eq true
+        expect(ssn_evidence.due_on).to be_nil
         expect(citizenship_evidence.current_state).to eq(:negative_response_received)
         expect(immigration_evidence.current_state).to eq(:negative_response_received)
       end
