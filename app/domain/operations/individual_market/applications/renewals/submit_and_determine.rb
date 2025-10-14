@@ -15,12 +15,13 @@ module Operations
           # Calls ::Operations::IndividualMarket::Application::SubmitAndDetermine
           # Retains evidence information from the current application to the renewal application
           def call(application_id:)
-            application         = yield find_application(application_id)
-            family              = yield find_family(application)
-            current_application = yield fetch_current_application(family)
-            application         = yield submit_and_determine(application)
-            application         = yield retain_evidence_info(current_application, application)
-            application         = yield persist(application)
+            application           = yield find_application(application_id)
+            family                = yield find_family(application)
+            current_application   = yield fetch_current_application(family)
+            application           = yield submit_and_determine(application)
+            application           = yield retain_evidence_info(current_application, application)
+            application           = yield persist(application)
+            _family_determination = yield regenerate_family_determination(application)
 
             Success(application)
           end
@@ -99,10 +100,25 @@ module Operations
           def retain_evidence_info(current_application, application)
             application.applicants.each do |applicant|
               current_applicant = current_application.applicants.where(family_member_id: applicant.family_member_id).first
-              applicant.retain_evidence_information(current_applicant)
+              if current_applicant.present?
+                applicant.retain_evidence_information(current_applicant)
+              else
+                build_history_for_new_applicant(applicant, current_application)
+              end
             end
 
             Success(application)
+          end
+
+          # we need to add a history element indicating that the family member is added after the #{current year} application was determined
+          def build_history_for_new_applicant(applicant, current_application)
+            applicant.individual_market_eligibility.evidences.each do |evidence|
+              evidence.build_verification_history(
+                'no_matching_applicant',
+                "family member is added after the #{current_application.assistance_year} application was determined, no prior evidence exists to retain on renewal",
+                'system'
+              )
+            end
           end
 
           # Persists the application
@@ -116,6 +132,11 @@ module Operations
           rescue StandardError => e
             Rails.logger.error("QHP Application - Failed to persist application due to #{e.message}, #{e.backtrace.join("\n")}")
             Failure("An error occurred while persisting the application: #{application.errors.full_messages.join(', ')}")
+          end
+
+          def regenerate_family_determination(application)
+            family = application.family
+            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
           end
         end
       end

@@ -165,6 +165,134 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::SubmitAndDe
     end
 
     context 'when:
+      - renewal application exists in initial state
+      - current application is Financial Assistance Application
+      - family member is added after the current application was determined
+      ' do
+
+      let(:current_application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: 'determined', submitted_at: Time.now, assistance_year: TimeKeeper.date_of_record.year) }
+      let(:applicant) do
+        FactoryBot.create(
+          :financial_assistance_applicant,
+          gender: 'male',
+          dob: Date.current - 25.years,
+          is_incarcerated: false,
+          indian_tribe_member: false,
+          is_physically_disabled: false,
+          no_ssn: '1',
+          citizen_status: 'us_citizen',
+          family_member_id: primary_applicant.id,
+          person_hbx_id: person.hbx_id,
+          application: current_application,
+          is_primary_applicant: true
+        )
+      end
+
+      let(:dependent_person) do
+        pr = FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, ssn: "123-45-6789")
+        person.ensure_relationship_with(pr, 'spouse')
+        pr.save!
+        pr
+      end
+      let(:dependent_family_member) { FactoryBot.create(:family_member, family: family, person: dependent_person) }
+
+      let(:renewal_dependent_applicant) { FactoryBot.create(:individual_market_applicant, :with_person_name, application: renewal_application, family_member_id: dependent_family_member.id, is_primary_applicant: false) }
+
+      let(:renewal_dependent_demographics) do
+        demo = FactoryBot.create(:individual_market_demographics, applicant: renewal_dependent_applicant)
+        renewal_dependent_applicant.build_individual_market_eligibility
+        renewal_dependent_applicant.build_individual_market_evidences
+        renewal_dependent_applicant.build_aptc_csr_eligibility
+        renewal_dependent_applicant.save!
+        demo
+      end
+
+      before do
+        renewal_dependent_demographics
+        applicant.build_ivl_eligibility_with_evidences
+        applicant.build_aptc_eligibilities_evidences
+        applicant.eligibilities.flat_map(&:evidences).each_with_index do |evidence, ind|
+          if ind.even?
+            evidence.mark_as_outstanding
+          else
+            evidence.mark_as_verified
+          end
+        end
+        current_application.save!
+        family.assign_latest_application_gid
+        dependent_family_member
+        family.save!
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      end
+
+      it 'returns a success result' do
+        expect(result).to be_a_success
+      end
+
+      it 'determines the renewal application' do
+        result
+        expect(renewal_application.reload.current_state).to eq(:determined)
+      end
+
+      it 'retains evidence information from the current application to the renewal application' do
+        result
+        renewal_applicant.reload.individual_market_eligibility.evidences.each do |evidence|
+          expect(evidence).to be_present
+          expect(evidence.current_state).not_to eq(:pending)
+          if evidence.due_on.present?
+            expect(evidence.current_state).to eq(:outstanding)
+            expect(
+              evidence.verification_histories.any? do |history|
+                history.action == 'retain_evidence_info_on_renewal' &&
+                history.update_reason == "State updated from pending to #{evidence.current_state} " \
+                "and due date of #{evidence.due_on} copied " \
+                "from previous application #{current_application.hbx_id} " \
+                "application type faa due to annual eligibility redetermination."
+                history.updated_by == 'system'
+              end
+            ).to be_truthy
+          else
+            expect(evidence.current_state).to eq(:verified)
+          end
+
+          expect(
+            evidence.verification_histories.any? do |history|
+              history.action == 'retain_evidence_info_on_renewal' &&
+              history.update_reason == "State updated from pending to #{evidence.current_state} " \
+                "copied from previous application #{current_application.hbx_id} " \
+                "application type qhp due to annual eligibility redetermination."
+              history.updated_by == 'system'
+            end
+          ).to be_truthy
+        end
+      end
+
+      it 'retains evidence information from the current application to the renewal application' do
+        result
+        renewal_dependent_applicant.reload.individual_market_eligibility.evidences.each do |evidence|
+          expect(evidence).to be_present
+          expect(evidence.current_state).to eq(:pending)
+          expect(
+            evidence.verification_histories.any? do |history|
+              history.action == 'no_matching_applicant' &&
+              history.update_reason == "family member is added after the #{current_application.assistance_year} application was determined, no prior evidence exists to retain on renewal"
+              history.updated_by == 'system'
+            end
+          ).to be_truthy
+        end
+      end
+
+      it 'retains evidence information from the current application to the renewal application' do
+        result
+        subject = family.reload.eligibility_determination.subjects.first
+        eligibility_state = subject.eligibility_states[1]
+        evidence_state = eligibility_state.evidence_states.first
+        evidence = renewal_dependent_applicant.reload.individual_market_eligibility.evidences.where(key: "citizenship_evidence").first
+        expect(evidence_state.status).to be(evidence.current_state)
+      end
+    end
+
+    context 'when:
       - renewal application exists in a non initial state
       ' do
 
