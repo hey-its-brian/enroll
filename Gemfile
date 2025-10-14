@@ -13,7 +13,6 @@ gem 'globalid'
 # Update to use features from new version
 gem 'effective_datatables', path: './project_gems/effective_datatables-2.6.14'
 
-# Verify this gem git reference is necessary.  Otherwise point it to release level
 gem 'prawn', '2.4'
 gem 'prawn-table', '~> 0.2.2'
 

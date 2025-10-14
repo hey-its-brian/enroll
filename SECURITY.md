@@ -266,3 +266,28 @@ All vulnerabilities are in sample/demo files or optional plugins that are not in
 
 1. **When patches become available**: Upgrade to patched version and remove CVEs from `.bundler-audit.yml`
 2. **Consider migration**: Evaluate migrating to CKEditor 5 (complete rewrite with better security model) or alternative editors (Trix, Quill, TipTap)
+
+
+### CVE-2025-61921 - Sinatra ReDoS via ETag header
+
+- **Affected Version:** Sinatra 2.2.3
+- **CVE / GHSA:** CVE-2025-61921 / GHSA-mr3q-g2mv-mr4q
+- **Description:**
+   Sinatra is vulnerable to a Regular Expression Denial of Service (ReDoS) when generating ETag headers using the etag method. Malicious `If-None-Match` header values could cause excessive CPU consumption, potentially degrading application performance.
+
+- **Mitigation in Our App:**
+  - Our application does not directly use Sinatra’s etag method.
+  - Sinatra is included indirectly via Resque (v2.6.0), used only for background job processing.
+  - No routes or middleware in our app call the etag method.
+  - Rack::ETag middleware is used, which does not rely on Sinatra’s etag method.
+  - Verified that Resque 2.6.0 does not invoke Sinatra’s etag.
+
+- **Actions Taken:**
+  1. Documented this CVE and our mitigation strategy.
+  2. Verified that our Resque usage does not trigger the vulnerable code path.
+  3. Configured .bundler-audit.yml to ignore CVE-2025-61921 in CI/CD.
+
+- **Ongoing Measures:**
+  1. Monitor for updates to Sinatra and Resque that may require further action.
+  2. Periodically review indirect dependencies for new vulnerabilities.
+  3. Reassess Sinatra usage periodically to ensure no exposure arises.
