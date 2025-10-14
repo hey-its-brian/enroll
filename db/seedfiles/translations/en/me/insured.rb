@@ -1138,6 +1138,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.applications.how.update.step4' => 'Make your changes and resubmit the application.',
   :'en.applications.how.year' => 'Which year should you select?',
   :'en.applications.how.current' => "Choose this year if you’ve had a life change in %{year} and need to enroll through a Special Enrollment Period, or if you want to update your %{year} application. ",
+  :'en.applications.how.current_during_oe' => "Choose this year to apply and enroll during open enrollment.",
   :'en.applications.how.sep_link' => 'Learn more about Special Enrollment Periods.',
   :'en.applications.how.previous' => "Chose this year only if you need to make changes to last year’s coverage (this is uncommon).",
   :'en.applications.how.previous.li1' => "You can only apply for %{year} coverage if you are approved for a Special Enrollment Period.",

@@ -2,7 +2,7 @@
 <h1 class="mb-3"><%= l10n("qhp_application.show.applications") %></h1>
 <!-- this should only show if there is a renewal application and the current year is before open enrollment -->
 <% if @prospective_application.present? %>
-  <div class="alert alert-warning d-flex align-items-start p-2" role="alert">
+  <div data-cuke="prospective-year-banner" class="alert alert-warning d-flex align-items-start p-2" role="alert">
     <div class="warning-icon icon mt-1 px-3" alt="warning" aria-hidden="true">&nbsp;</div>
     <p class="mb-0"><b><%= l10n("insured.sbm.applications.index.pre_oe_warning1", year: @prospective_year&.to_s) %></b> <%= l10n("insured.sbm.applications.index.pre_oe_warning2") %><b><%= @oe_start_date %></b>.</p>
   </div>
@@ -60,7 +60,7 @@
 <section id="year" class="dual-action-accordion mb-4">
   <div class="card p-2 mb-0">
     <div id="whatYearApplicationHeading" class="card-header p-0 m-0 bg-transparent">
-      <button class="accordion-dual-action p-0" data-toggle="collapse" data-target="#whatYearApplication" aria-controls="whatYearApplication" aria-expanded="false">
+      <button class="accordion-dual-action p-0" data-toggle="collapse" data-target="#whatYearApplication" aria-controls="whatYearApplication" aria-expanded="false" data-cuke="year-application-accordion">
         <span class="gamma"><%= l10n("applications.how.year") %></span>
       </button>
     </div>
@@ -71,7 +71,11 @@
           <p class="mb-0 bold">
             <%= @applicable_year %>
           </p>
-          <p><%= l10n("applications.how.current", year: @applicable_year) %> <%= link_to l10n("applications.how.sep_link"), "https://www.coverme.gov/learn-more/special-enrollment-periods", target: "_blank" %></p>
+          <% if HbxProfile.current_hbx.try(:under_open_enrollment?) %>
+            <p data-cuke="current-during-oe-text"><%= l10n("applications.how.current_during_oe") %></p>
+          <% else %>
+            <p data-cuke="current-not-during-oe-text"><%= l10n("applications.how.current", year: @applicable_year) %> <%= link_to l10n("applications.how.sep_link"), "https://www.coverme.gov/learn-more/special-enrollment-periods", target: "_blank" %></p>
+          <% end %>
 
           <p class="mb-0 bold">
             <%= @previous_year %>

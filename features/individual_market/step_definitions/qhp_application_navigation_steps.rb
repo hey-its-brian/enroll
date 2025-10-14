@@ -31,6 +31,59 @@ Then(/^the (.*?) selects 'Applications' from the sidebar$/) do |_user_type|
   end
 end
 
+Then(/^the user should see the current applications page$/) do
+  expect(page).to have_content(l10n('qhp_application.show.applications'))
+  expect(page).to have_content(l10n('insured.sbm.applications.application_history_description1'))
+end
+
+Then(/^the user should not see a prospective year application$/) do
+  expect(page).not_to have_css(IvlQhpCurrentApplicationsPage.qhp_prospective_year_application_card)
+end
+
+Then(/^the user should not see a prospective year application banner$/) do
+  expect(page).not_to have_css(IvlQhpCurrentApplicationsPage.prospective_year_banner)
+end
+
+Then(/^the user should see a prospective year application banner$/) do
+  expect(page).to have_css(IvlQhpCurrentApplicationsPage.prospective_year_banner)
+end
+
+And(/^the user clicks on the start application accordion$/) do
+  find(IvlQhpCurrentApplicationsPage.year_application_accordion).click(wait: 5)
+end
+
+Then(/^the user should see the current during oe text$/) do
+  expect(page).to have_css(IvlQhpCurrentApplicationsPage.current_during_oe_text)
+end
+
+Then(/^the user should not see the current during oe text$/) do
+  expect(page).not_to have_css(IvlQhpCurrentApplicationsPage.current_during_oe_text)
+end
+
+Then(/^the user should see the current not during oe text$/) do
+  expect(page).to have_css(IvlQhpCurrentApplicationsPage.current_not_during_oe_text)
+end
+
+Then(/^the user should not see the current not during oe text$/) do
+  expect(page).not_to have_css(IvlQhpCurrentApplicationsPage.current_not_during_oe_text)
+end
+
+Then(/^the user should see the applicable year draft or no application card$/) do
+  expect(page).to have_css(IvlQhpCurrentApplicationsPage.qhp_applicable_draft_or_no_application_card)
+end
+
+Then(/^the user should see the applicable year application card$/) do
+  expect(page).to have_css(IvlQhpCurrentApplicationsPage.qhp_applicable_year_application_card)
+end
+
+Then(/^the user should see the prospective year application card$/) do
+  expect(page).to have_css(IvlQhpCurrentApplicationsPage.qhp_prospective_year_application_card)
+end
+
+Then(/^the user should see the previous year draft or no application card$/) do
+  expect(page).to have_css(IvlQhpCurrentApplicationsPage.qhp_previous_draft_or_no_application_card)
+end
+
 When(/^the user clicks Back To My Account section on the left navigation$/) do
   find('a#back-button').click(wait: 10)
 end

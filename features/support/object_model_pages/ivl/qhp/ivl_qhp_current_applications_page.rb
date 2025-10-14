@@ -3,6 +3,22 @@
 #qhp current applications page
 class IvlQhpCurrentApplicationsPage
 
+  def self.prospective_year_banner
+    '[data-cuke="prospective-year-banner"]'
+  end
+
+  def self.year_application_accordion
+    '[data-cuke="year-application-accordion"]'
+  end
+
+  def self.current_during_oe_text
+    '[data-cuke="current-during-oe-text"]'
+  end
+
+  def self.current_not_during_oe_text
+    '[data-cuke="current-not-during-oe-text"]'
+  end
+
   def self.qhp_applicable_year_application_card
     '[data-cuke="applicable-year-application-card"]'
   end

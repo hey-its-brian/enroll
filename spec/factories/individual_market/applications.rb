@@ -45,6 +45,15 @@ FactoryBot.define do
       current_state { :initial }
     end
 
+    trait :prospective do
+      current_state { :determined }
+      submitted_at { DateTime.now - 1.hour }
+      generation_reason { :renewal }
+      origin { :system }
+      assistance_year { Family.application_applicable_year + 1 }
+      effective_on { TimeKeeper.date_of_record.next.beginning_of_year }
+    end
+
     trait :renewal do
       is_renewal { true }
       generation_reason { :renewal }

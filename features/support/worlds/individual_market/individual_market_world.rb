@@ -21,10 +21,11 @@ module IndividualMarket
       family.save!
     end
 
-    def qhp_application(*traits) # rubocop:disable Metrics/CyclomaticComplexity
+    def qhp_application(*traits, new: false) # rubocop:disable Metrics/CyclomaticComplexity
       attributes = traits.extract_options!
       attributes.merge!(family_id: qhp_consumer.primary_family.id)
-      @qhp_application ||= FactoryBot.create(:individual_market_application, *traits, attributes).tap do |application|
+      return @qhp_application if @qhp_application.present? && !new
+      @qhp_application = FactoryBot.create(:individual_market_application, *traits, attributes).tap do |application|
         application.update_attributes!(effective_on: TimeKeeper.date_of_record) if application.effective_on.blank?
         qhp_consumer.person.phones << FactoryBot.build(:phone, kind: "mobile")
         generate_dependent

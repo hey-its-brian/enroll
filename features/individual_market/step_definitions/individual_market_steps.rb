@@ -12,6 +12,10 @@ And(/^the qhp consumer has an existing (.*?) application$/) do |status|
   qhp_application(status.to_sym)
 end
 
+And(/^the qhp consumer has an additional existing (.*?) application$/) do |status|
+  qhp_application(status.to_sym, new: true)
+end
+
 And(/^the qhp consumer navigates to 'update application'$/) do
   hbx_profile = FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period)
   allow(HbxProfile).to receive(:current).and_return(hbx_profile)
