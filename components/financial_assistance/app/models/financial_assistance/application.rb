@@ -298,7 +298,7 @@ module FinancialAssistance
     scope :newest_determined_by_family_and_year, ->(family_id, year) { where(family_id: family_id).newest_determined_by_year(year) }
 
     scope :last_determined_by_family_id, lambda { |family_id, present_app_id|
-      renewal_eligible_by_family_id(family_id)
+      for_determined_family(family_id)
         .where(:id.ne => present_app_id)
         .order_by(assistance_year: -1, submitted_at: -1).limit(1)
     }

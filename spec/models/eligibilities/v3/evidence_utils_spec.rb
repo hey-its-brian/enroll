@@ -339,6 +339,21 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
             expect(citizenship_evidence1.current_state).to eq(:verified)
             expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_verified')
           end
+
+          context 'when prev application is not determined' do
+            before do
+              citizenship_evidence.current_state = :verified
+              citizenship_evidence.save
+              allow(citizenship_evidence1).to receive(:demographics_changed?).and_return(false)
+              previous_application.update_attributes(aasm_state: :submitted) if previous_application.instance_of?(FinancialAssistance::Application)
+              previous_application.update_attributes(current_state: :submitted) if previous_application.instance_of?(IndividualMarket::Application)
+            end
+
+            it "calls Not copied_verified" do
+              citizenship_evidence1.determine_outstanding_state('application_determination')
+              expect(citizenship_evidence1.current_state).not_to eq(:verified)
+            end
+          end
         end
 
         context "when evidence is not IVL" do
