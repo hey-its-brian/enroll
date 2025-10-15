@@ -715,6 +715,7 @@ RSpec.describe Exchanges::HbxProfilesController, dbclean: :around_each do
         let(:eligibility_operation_instance) { instance_double('::Operations::TaxHouseholdGroups::CreateEligibility') }
 
         before do
+          allow(user).to receive(:email).and_return('admin@example.com')
           allow(::Operations::TaxHouseholdGroups::CreateEligibility).to receive(:new).and_return(eligibility_operation_instance)
           allow(eligibility_operation_instance).to receive(:call).with(
             hash_including(family: family)
@@ -728,6 +729,7 @@ RSpec.describe Exchanges::HbxProfilesController, dbclean: :around_each do
       end
 
       it "should render create_eligibility if save successful" do
+        allow(user).to receive(:email).and_return('admin@example.com')
         post :create_eligibility, params: params, xhr: true, format: :js
         eligibility_determination = family.reload.eligibility_determination
         grants = eligibility_determination.grants
@@ -737,6 +739,9 @@ RSpec.describe Exchanges::HbxProfilesController, dbclean: :around_each do
       end
 
       context "when request format type is invalid" do
+        before do
+          allow(user).to receive(:email).and_return('admin@example.com')
+        end
         it "should not render create_eligibility" do
           post :create_eligibility, params: params, xhr: true, format: :fake
           expect(response.status).to eq 406

@@ -22,6 +22,7 @@ module Operations
         yield create_taxhousehold_group(values[:th_group_info])
         yield create_family_determination
         yield create_new_enrollments
+        yield record_history_on_evidences(params)
 
         Success(l10n('create_eligibility_tool.success_message'))
       end
@@ -62,6 +63,25 @@ module Operations
 
         ::Operations::Individual::OnNewDetermination.new.call({ family: @family.reload, year: @effective_date.year })
         Success()
+      end
+
+      def record_history_on_evidences(params)
+        latest_application = @family.latest_application
+        return Success() unless latest_application
+        updated_by = params[:updated_by] || 'System'
+        update_reason = "New eligibility effective #{@effective_date} was created by Admin using Create Eligibility Tool"
+        action = 'Manually created new eligibility'
+        latest_application.applicants.each do |applicant|
+          aptc_csr_eligibility = applicant&.aptc_csr_eligibility
+          next unless aptc_csr_eligibility
+          aptc_csr_eligibility.evidences.each do |evidence|
+            evidence.build_verification_history(action, update_reason, updated_by)
+          end
+        end
+        latest_application.save
+        Success()
+      rescue StandardError => e
+        Failure(e.message)
       end
     end
   end

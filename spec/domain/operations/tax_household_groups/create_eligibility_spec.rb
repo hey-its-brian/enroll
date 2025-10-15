@@ -93,6 +93,25 @@ RSpec.describe ::Operations::TaxHouseholdGroups::CreateEligibility, dbclean: :af
 
       expect(eligibility_determination.grants.size).to eq 2
     end
+
+    context 'record history on evidences' do
+      let(:application) { FactoryBot.create(:financial_assistance_application, :with_applicants, family: family, aasm_state: 'determined', effective_date: Date.new(Date.today.year, 1, 1)) }
+      let(:applicant) { application.applicants.first }
+
+      before do
+        applicant.build_aptc_eligibilities_evidences
+        applicant.save
+        params[:updated_by] = 'admin@example.com'
+        allow(family).to receive(:latest_application).and_return(application)
+      end
+
+      it 'Should verification history on evidences' do
+        subject.call(params)
+        expect(applicant.aptc_csr_eligibility.evidences.first.verification_histories.size).to eq 1
+        expect(applicant.aptc_csr_eligibility.evidences.first.verification_histories.first.action).to eq 'Manually created new eligibility'
+        expect(applicant.aptc_csr_eligibility.evidences.first.verification_histories.first.updated_by).to eq 'admin@example.com'
+      end
+    end
   end
 
   describe '#call' do
