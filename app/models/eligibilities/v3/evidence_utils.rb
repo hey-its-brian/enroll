@@ -189,7 +189,18 @@ module Eligibilities
 
           self.verification_outstanding = true
           self.is_satisfied = false
-          self.due_on = self.due_on || schedule_verification_due_on if self.current_state != :review
+          if self.due_on.blank?
+            action = 'admin_triggered_incorrect_transition'
+            if self.is_evidence_manually_verified? && self.most_recent_due_on.present?
+              due_on_source = 'copy due date from prior ROP'
+              due_on = self.most_recent_due_on
+            else
+              due_on_source = 'generate new ROP'
+              due_on = schedule_verification_due_on
+            end
+            self.verification_histories.build(action: action, update_reason: "Incorrect transition - #{due_on_source}", updated_by: 'system')
+            self.due_on = due_on unless self.review?
+          end
           self.move_to_rejected
         end
 
@@ -197,6 +208,12 @@ module Eligibilities
           return unless self.can_move_to_review?
 
           self.move_to_review
+        end
+
+        # Returns the most recent due date from verification histories.
+        # @return [Date, nil] The most recent due date, or nil if none exists
+        def most_recent_due_on
+          verification_histories.with_due_date.newest.first&.due_on
         end
 
         def type_unverified?
@@ -479,6 +496,9 @@ module Eligibilities
         end
 
         # Adds a new verification history record to the evidence with the specified action, update reason, and updated by user. (not persisted)
+        # Also records the current due_on of the evidence at the time of registering this action.
+        #
+        # @note Tracking the due_on at the time of action is important for later restoring it if needed.
         #
         # @param action [String] The action performed on the evidence
         # @param update_reason [String] The reason for the update
@@ -487,7 +507,8 @@ module Eligibilities
           verification_histories.build(
             action: action,
             update_reason: update_reason,
-            updated_by: updated_by
+            updated_by: updated_by,
+            due_on: self.due_on
           )
         end
 
@@ -553,6 +574,12 @@ module Eligibilities
             state_and_date_change_text,
             'system'
           )
+        end
+
+        # Checks if the evidence is in a manually verified state.
+        # @return [Boolean] true if the evidence is manually verified, false otherwise
+        def is_evidence_manually_verified?
+          verified? && latest_verification_history&.action == 'verify' && latest_verification_history&.updated_by != 'system'
         end
       end
     end

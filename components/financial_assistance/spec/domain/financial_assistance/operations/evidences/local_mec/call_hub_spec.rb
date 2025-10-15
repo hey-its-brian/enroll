@@ -202,6 +202,7 @@ RSpec.describe FinancialAssistance::Operations::Evidences::LocalMec::CallHub, db
   describe 'private methods' do
     describe '#record_history' do
       let(:evidence) { local_mec_evidence }
+      let(:due_on) { Date.new(2024, 12, 31) }
       let(:action) { 'test_action' }
       let(:reason) { 'test_reason' }
       let(:user) { 'test_user' }
@@ -209,13 +210,15 @@ RSpec.describe FinancialAssistance::Operations::Evidences::LocalMec::CallHub, db
 
       before do
         allow(evidence).to receive(:verification_histories).and_return(mock_histories)
+        allow(evidence).to receive(:due_on).and_return(due_on)
       end
 
       it 'builds verification history with correct attributes' do
         expect(mock_histories).to receive(:build).with(
           action: action,
           update_reason: reason,
-          updated_by: user
+          updated_by: user,
+          due_on: due_on
         )
         operation.send(:record_history, evidence, action, reason, user)
       end

@@ -220,6 +220,156 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
       allow(dummy_evidence).to receive(:can_move_to_rejected?).and_return(false)
       expect { dummy_evidence.mark_as_rejected }.not_to change(dummy_evidence, :rejected?)
     end
+
+    context "when the evidence is already in review state" do
+      before do
+        dummy_evidence.current_state = :review
+      end
+
+      it "does not change the due_on date" do
+        dummy_evidence.due_on = today + 5.days
+        dummy_evidence.mark_as_rejected
+        expect(dummy_evidence.due_on).to eq(today + 5.days)
+      end
+
+      context "when due_on is blank" do
+        before do
+          dummy_evidence.due_on = nil
+          allow(dummy_evidence).to receive(:is_evidence_manually_verified?).and_return(false)
+          allow(dummy_evidence).to receive(:schedule_verification_due_on).and_return(today + 10.days)
+        end
+
+        it "does not set due_on for review state even when blank" do
+          expect { dummy_evidence.mark_as_rejected }.not_to change(dummy_evidence, :due_on)
+        end
+
+        it "builds verification history for incorrect transition" do
+          dummy_evidence.mark_as_rejected
+          verification_history = dummy_evidence.verification_histories.last
+          expect(verification_history.action).to eq('admin_triggered_incorrect_transition')
+          expect(verification_history.update_reason).to eq('Incorrect transition - generate new ROP')
+          expect(verification_history.updated_by).to eq('system')
+        end
+      end
+    end
+
+    context "when the evidence is not in review state" do
+      before do
+        dummy_evidence.current_state = :pending
+      end
+
+      context "when due_on is present" do
+        before do
+          dummy_evidence.due_on = today + 7.days
+        end
+
+        it "does not change the existing due_on date" do
+          original_due_on = dummy_evidence.due_on
+          dummy_evidence.mark_as_rejected
+          expect(dummy_evidence.due_on).to eq(original_due_on)
+        end
+
+        it "does not create verification history when due_on is present" do
+          expect { dummy_evidence.mark_as_rejected }.not_to change(dummy_evidence.verification_histories, :count)
+        end
+      end
+
+      context "when due_on is blank" do
+        before do
+          dummy_evidence.due_on = nil
+        end
+
+        context "when evidence is manually verified and has most_recent_due_on" do
+          let(:most_recent_due_on) { today + 4.days }
+
+          before do
+            allow(dummy_evidence).to receive(:is_evidence_manually_verified?).and_return(true)
+            allow(dummy_evidence).to receive(:most_recent_due_on).and_return(most_recent_due_on)
+            allow(dummy_evidence).to receive(:schedule_verification_due_on).and_return(today + 10.days)
+          end
+
+          it "sets the due_on date to the most_recent_due_on" do
+            dummy_evidence.mark_as_rejected
+            expect(dummy_evidence.due_on).to eq(most_recent_due_on)
+          end
+
+          it "builds verification history with prior ROP message" do
+            dummy_evidence.mark_as_rejected
+            verification_history = dummy_evidence.verification_histories.last
+            expect(verification_history.action).to eq('admin_triggered_incorrect_transition')
+            expect(verification_history.update_reason).to eq('Incorrect transition - copy due date from prior ROP')
+            expect(verification_history.updated_by).to eq('system')
+          end
+        end
+
+        context "when evidence is manually verified but no most_recent_due_on" do
+          let(:schedule_verification_due_on) { today + 4.days }
+
+          before do
+            allow(dummy_evidence).to receive(:is_evidence_manually_verified?).and_return(true)
+            allow(dummy_evidence).to receive(:most_recent_due_on).and_return(nil)
+            allow(dummy_evidence).to receive(:schedule_verification_due_on).and_return(schedule_verification_due_on)
+          end
+
+          it "sets the due_on date using schedule_verification_due_on" do
+            dummy_evidence.mark_as_rejected
+            expect(dummy_evidence.due_on).to eq(schedule_verification_due_on)
+          end
+
+          it "builds verification history with generate new ROP message" do
+            dummy_evidence.mark_as_rejected
+            verification_history = dummy_evidence.verification_histories.last
+            expect(verification_history.action).to eq('admin_triggered_incorrect_transition')
+            expect(verification_history.update_reason).to eq('Incorrect transition - generate new ROP')
+            expect(verification_history.updated_by).to eq('system')
+          end
+        end
+
+        context "when evidence is not manually verified" do
+          let(:schedule_verification_due_on) { today + 4.days }
+
+          before do
+            allow(dummy_evidence).to receive(:is_evidence_manually_verified?).and_return(false)
+            allow(dummy_evidence).to receive(:most_recent_due_on).and_return(today + 10.days)
+            allow(dummy_evidence).to receive(:schedule_verification_due_on).and_return(schedule_verification_due_on)
+          end
+
+          it "sets the due_on date using schedule_verification_due_on" do
+            dummy_evidence.mark_as_rejected
+            expect(dummy_evidence.due_on).to eq(schedule_verification_due_on)
+          end
+
+          it "builds verification history with generate new ROP message" do
+            dummy_evidence.mark_as_rejected
+            verification_history = dummy_evidence.verification_histories.last
+            expect(verification_history.action).to eq('admin_triggered_incorrect_transition')
+            expect(verification_history.update_reason).to eq('Incorrect transition - generate new ROP')
+            expect(verification_history.updated_by).to eq('system')
+          end
+        end
+
+        context "when both most_recent_due_on and schedule_verification_due_on return nil" do
+          before do
+            allow(dummy_evidence).to receive(:is_evidence_manually_verified?).and_return(false)
+            allow(dummy_evidence).to receive(:most_recent_due_on).and_return(nil)
+            allow(dummy_evidence).to receive(:schedule_verification_due_on).and_return(nil)
+          end
+
+          it "sets due_on to nil" do
+            dummy_evidence.mark_as_rejected
+            expect(dummy_evidence.due_on).to be_nil
+          end
+
+          it "builds verification history with generate new ROP message" do
+            dummy_evidence.mark_as_rejected
+            verification_history = dummy_evidence.verification_histories.last
+            expect(verification_history.action).to eq('admin_triggered_incorrect_transition')
+            expect(verification_history.update_reason).to eq('Incorrect transition - generate new ROP')
+            expect(verification_history.updated_by).to eq('system')
+          end
+        end
+      end
+    end
   end
 
   describe "#mark_as_review" do
@@ -235,8 +385,38 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
   end
 
   describe "#build_verification_history" do
-    it "builds the verification history" do
-      expect(dummy_evidence.build_verification_history("test_action", "test_reason", "test_user")).to be_a(Eligibilities::V3::VerificationHistory)
+    let(:action) { "test_action" }
+    let(:update_reason) { "test_reason" }
+    let(:updated_by) { "test_user" }
+
+    it "creates a verification history with action, update reason, updated_by fields" do
+      verification_history = dummy_evidence.build_verification_history(action, update_reason, updated_by)
+      expect(verification_history).to be_a(Eligibilities::V3::VerificationHistory)
+      expect(verification_history.action).to eq(action)
+      expect(verification_history.update_reason).to eq(update_reason)
+      expect(verification_history.updated_by).to eq(updated_by)
+    end
+
+    context "when due_on is set on the evidence" do
+      before do
+        dummy_evidence.due_on = today + 7.days
+      end
+
+      it "includes due_on in the verification history" do
+        verification_history = dummy_evidence.build_verification_history(action, update_reason, updated_by)
+        expect(verification_history.due_on).to eq(dummy_evidence.due_on)
+      end
+    end
+
+    context "when due_on is not set on the evidence" do
+      before do
+        dummy_evidence.due_on = nil
+      end
+
+      it "sets due_on as nil in the verification history" do
+        verification_history = dummy_evidence.build_verification_history(action, update_reason, updated_by)
+        expect(verification_history.due_on).to be_nil
+      end
     end
   end
 
@@ -1130,6 +1310,91 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
          :denied, :errored, :closed, :corrected].each do |state|
           dummy_evidence.current_state = state
           expect(dummy_evidence.type_verified?).to be false
+        end
+      end
+    end
+
+    describe '#most_recent_due_on' do
+      context 'when there are no verification histories with a due on' do
+        before do
+          vh = FactoryBot.build(:v3_verification_history, evidence: dummy_evidence, due_on: nil)
+          dummy_evidence.move_to_verified
+          dummy_evidence.verification_histories << vh
+          dummy_evidence.save!
+        end
+
+        it 'returns nil' do
+          expect(dummy_evidence.most_recent_due_on).to be_nil
+        end
+      end
+
+      context 'when there are verification histories with a due on' do
+        let(:due_on_1) { Date.today + 14.days }
+        let(:due_on_2) { Date.today + 6.days }
+
+        before do
+          vh1 = FactoryBot.build(:v3_verification_history, evidence: dummy_evidence, due_on: due_on_1)
+          vh2 = FactoryBot.build(:v3_verification_history, evidence: dummy_evidence, due_on: due_on_2)
+          dummy_evidence.verification_histories << vh1
+          dummy_evidence.verification_histories << vh2
+          dummy_evidence.save!
+        end
+
+        it 'returns the most recently tracked due on date' do
+          expect(dummy_evidence.most_recent_due_on).to eq(due_on_2)
+        end
+
+        context 'when the most recent history event has a nil due on' do
+          before do
+            vh3 = FactoryBot.build(:v3_verification_history, evidence: dummy_evidence, due_on: nil)
+            dummy_evidence.verification_histories << vh3
+            dummy_evidence.save!
+          end
+
+          it 'returns the most recently tracked due on date that is not nil' do
+            expect(dummy_evidence.most_recent_due_on).to eq(due_on_2)
+          end
+        end
+      end
+    end
+
+    describe 'is_evidence_manually_verified?' do
+      context "when latest verification history action is a manual verification'" do
+        before do
+          vh = FactoryBot.build(:v3_verification_history, evidence: dummy_evidence, action: 'verify', update_reason: 'test_reason', updated_by: 'user_id')
+          dummy_evidence.move_to_verified
+          dummy_evidence.verification_histories << vh
+          dummy_evidence.save!
+        end
+
+        it "returns true" do
+          expect(dummy_evidence.is_evidence_manually_verified?).to be true
+        end
+      end
+
+      context "when the evidence is verified and latest verification history action is a system verification'" do
+        before do
+          vh = FactoryBot.build(:v3_verification_history, evidence: dummy_evidence, action: 'verify', update_reason: 'test_reason', updated_by: 'system')
+          dummy_evidence.move_to_verified
+          dummy_evidence.verification_histories << vh
+          dummy_evidence.save!
+        end
+
+        it "returns false" do
+          expect(dummy_evidence.is_evidence_manually_verified?).to be false
+        end
+      end
+
+      context "when the evidence is not verified" do
+        before do
+          vh = FactoryBot.build(:v3_verification_history, evidence: dummy_evidence, action: 'not_verify', update_reason: 'test_reason', updated_by: 'system')
+          dummy_evidence.move_to_outstanding
+          dummy_evidence.verification_histories << vh
+          dummy_evidence.save!
+        end
+
+        it "returns false" do
+          expect(dummy_evidence.is_evidence_manually_verified?).to be false
         end
       end
     end
