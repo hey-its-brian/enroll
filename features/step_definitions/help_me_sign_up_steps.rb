@@ -36,7 +36,7 @@ And("clicks on #help_me_sign_up") do
 end
 
 Then("I should see Select an Expert link") do
-  expect(page).to have_content(l10n("broker_agencies.select_an_expert"))
+  expect(page).to have_content(l10n("broker_agencies.assign_an_expert"))
 end
 
 And("clicks on #bottom_expert_assister_link") do
