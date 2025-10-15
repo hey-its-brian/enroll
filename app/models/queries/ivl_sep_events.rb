@@ -67,6 +67,7 @@ module Queries
 
     def has_silent_cancel?(enrollment)
       return false unless EnrollRegistry.feature_enabled?(:silent_transition_enrollment)
+      return false unless enrollment.purchase_event_published_at.blank?
 
       enrollment.workflow_state_transitions.any? do |wst|
         (wst.to_state == 'coverage_canceled') &&

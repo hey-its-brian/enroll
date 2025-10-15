@@ -126,6 +126,29 @@ describe Queries::IvlSepEvents, "searching for terminations, with :silent_transi
     end_time
     expect(subject).not_to include(same_window_enrollment.hbx_id)
   end
+
+  describe "#has_silent_cancel?" do
+    let(:subject) { described_class.new(start_time, end_time) }
+
+    context "When an initial already went out" do
+
+      it "returns false" do
+        enrollment.update_attributes!(purchase_event_published_at: Time.now)
+        enrollment.cancel_coverage!({reason: Enrollments::TerminationReasons::SUPERSEDED_SILENT})
+        end_time
+        expect(subject.has_silent_cancel?(enrollment)).to be_falsey
+      end
+    end
+
+    context "When no initial went out" do
+
+      it "returns true" do
+        enrollment.cancel_coverage!({reason: Enrollments::TerminationReasons::SUPERSEDED_SILENT})
+        end_time
+        expect(subject.has_silent_cancel?(enrollment)).to be_truthy
+      end
+    end
+  end
 end
 
 describe Queries::IvlSepEvents, "searching for terminations, with :silent_transition_enrollment OFF", dbclean: :after_each do
