@@ -44,6 +44,11 @@ module Operations
         return Failure('Given enrollment is a shopping enrollment by aasm_state') if enrollment.shopping?
         return Failure('There exists active enrollments for the subscriber in the year with given effective_on') unless enrollment.can_renew_coverage?(effective_on)
 
+        if EnrollRegistry.feature_enabled?(:qhp_application)
+          @eligible_members = fetch_eligible_members_from_grants(enrollment, effective_on)
+          return Failure('No determined application exists with given effective year') if @eligible_members.blank?
+        end
+
         Success(enrollment)
       end
 
@@ -66,6 +71,10 @@ module Operations
         Success(data || {})
       end
 
+      def fetch_eligible_members_from_grants(validated_enrollment, effective_on)
+        validated_enrollment.family&.eligibility_determination&.shopping_eligible_member_ids(effective_on.year)
+      end
+
       def skip_eligibility_values?(enrollment)
         # APTC is calculated in Enrollments::IndividualMarket::FamilyEnrollmentRenewal when Multi Tax Household feature is enabled
         mthh_enabled = EnrollRegistry.feature_enabled?(:temporary_configuration_enable_multi_tax_household_feature)
@@ -80,6 +89,7 @@ module Operations
         enrollment_renewal.enrollment = enrollment
         enrollment_renewal.assisted = eligibility_values.present?
         enrollment_renewal.aptc_values = eligibility_values
+        enrollment_renewal.eligible_determined_members = @eligible_members if @eligible_members.present?
         enrollment_renewal.renewal_coverage_start = effective_on
         renewed_enrollment = enrollment_renewal.renew
         if renewed_enrollment.is_a?(HbxEnrollment)

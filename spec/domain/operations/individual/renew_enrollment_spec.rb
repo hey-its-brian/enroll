@@ -99,6 +99,26 @@ RSpec.describe Operations::Individual::RenewEnrollment, type: :model, dbclean: :
   let(:effective_on) { HbxProfile.current_hbx.benefit_sponsorship.renewal_benefit_coverage_period.start_on }
 
   context 'for successfully renewal' do
+    let(:grants_config) do
+      {
+        'aptc_csr_credit' => [
+          { key: 'AdvancePremiumAdjustmentGrant' }
+        ]
+      }
+    end
+
+    let(:family) do
+      FactoryBot.create(:family,
+                        :with_primary_family_member,
+                        :with_eligibility_determination_and_subjects,
+                        person: person,
+                        outstanding_verification_status: 'not_enrolled',
+                        eligibility_item_keys: ['aptc_csr_credit'],
+                        assistance_year: next_year_date.year,
+                        use_family_member_ids: true,
+                        grants_config: grants_config)
+    end
+
     before do
       BenefitMarkets::Products::ProductRateCache.initialize_rate_cache!
       hbx_profile.benefit_sponsorship.benefit_coverage_periods.last.update_attributes!(slcsp_id: renewal_product.id)
@@ -370,6 +390,26 @@ RSpec.describe Operations::Individual::RenewEnrollment, type: :model, dbclean: :
   end
 
   context 'enrollment renewal failure' do
+    let(:grants_config) do
+      {
+        'aptc_csr_credit' => [
+          { key: 'AdvancePremiumAdjustmentGrant' }
+        ]
+      }
+    end
+
+    let(:family) do
+      FactoryBot.create(:family,
+                        :with_primary_family_member,
+                        :with_eligibility_determination_and_subjects,
+                        person: person,
+                        outstanding_verification_status: 'not_enrolled',
+                        eligibility_item_keys: ['aptc_csr_credit'],
+                        assistance_year: next_year_date.year,
+                        use_family_member_ids: true,
+                        grants_config: grants_config)
+    end
+
     before do
       enrollment.hbx_enrollment_members.each { |mbr| mbr.person.update_attributes!(is_incarcerated: true) }
       subject.call(hbx_enrollment: enrollment, effective_on: effective_on)
@@ -394,6 +434,21 @@ RSpec.describe Operations::Individual::RenewEnrollment, type: :model, dbclean: :
 
       it 'should return failure with message' do
         expect(@result.failure).to eq('Given object is not a valid enrollment object')
+      end
+    end
+
+    context 'no eligible grants for renewal year' do
+      before :each do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        @result = subject.call(hbx_enrollment: enrollment, effective_on: effective_on)
+      end
+
+      it 'should return failure' do
+        expect(@result).to be_a(Dry::Monads::Result::Failure)
+      end
+
+      it 'should return failure with message' do
+        expect(@result.failure).to eq('No determined application exists with given effective year')
       end
     end
 

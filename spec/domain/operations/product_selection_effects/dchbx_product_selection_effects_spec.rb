@@ -25,7 +25,25 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
       (bcp.start_on.year == coverage_year) && bcp.start_on > bcp.open_enrollment_start_on
     end
   end
-  let(:family) {FactoryBot.create(:family, :with_primary_family_member, person: consumer_role.person)}
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
+  let(:family) do
+    FactoryBot.create(:family,
+                      :with_primary_family_member,
+                      :with_eligibility_determination_and_subjects,
+                      person: consumer_role.person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: benefit_coverage_period.start_on.year,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
+  end
   let(:product) do
     BenefitMarkets::Products::Product.find(benefit_package.benefit_ids.first)
   end
@@ -76,10 +94,24 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
       (bcp.start_on.year == coverage_year) && bcp.start_on > bcp.open_enrollment_start_on
     end
   end
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
   let(:family) do
     FactoryBot.create(:family,
                       :with_primary_family_member,
-                      person: consumer_role.person)
+                      :with_eligibility_determination_and_subjects,
+                      person: consumer_role.person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: renewal_benefit_coverage_period.start_on.year,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
   end
   let(:product) do
     BenefitMarkets::Products::Product.find(benefit_package.benefit_ids.first)
@@ -148,10 +180,24 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
   ", dbclean: :after_each do
 
   let(:consumer_role) { FactoryBot.create(:consumer_role) }
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
   let(:family) do
     FactoryBot.create(:family,
                       :with_primary_family_member,
-                      person: consumer_role.person)
+                      :with_eligibility_determination_and_subjects,
+                      person: consumer_role.person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: Date.today.year + 1,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
   end
   let(:prior_coverage_year) { Date.today.year - 1 }
 
@@ -224,6 +270,25 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
 
   include_context 'family has prior, current and renewal year coverage and in open enrollment and purchased new coverage in prior year via SEP'
 
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
+  let(:family) do
+    FactoryBot.create(:family,
+                      :with_primary_family_member,
+                      :with_eligibility_determination_and_subjects,
+                      person: consumer_role.person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: renewal_calender_date.year,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
+  end
   let(:product_selection) do
     Entities::ProductSelection.new({:enrollment => prior_ivl_enrollment, :product => prior_product, :family => family})
   end
@@ -266,6 +331,25 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
 
   include_context 'family has no current year coverage and not in open enrollment and purchased coverage in prior year via SEP'
 
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
+  let(:family) do
+    FactoryBot.create(:family,
+                      :with_primary_family_member,
+                      :with_eligibility_determination_and_subjects,
+                      person: consumer_role.person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: current_renewal_date,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
+  end
   let(:product_selection) do
     Entities::ProductSelection.new({:enrollment => prior_ivl_enrollment, :product => prior_product, :family => family})
   end
@@ -303,6 +387,25 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
 
   include_context 'family has no current year coverage and not in open enrollment and purchased coverage in prior year via admin SEP'
 
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
+  let(:family) do
+    FactoryBot.create(:family,
+                      :with_primary_family_member,
+                      :with_eligibility_determination_and_subjects,
+                      person: consumer_role.person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: current_renewal_date,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
+  end
   let(:product_selection) do
     Entities::ProductSelection.new({:enrollment => prior_ivl_enrollment, :product => prior_product, :family => family})
   end
@@ -339,6 +442,25 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
     Entities::ProductSelection.new({:enrollment => prior_ivl_enrollment, :product => prior_product, :family => family})
   end
 
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
+  let(:family) do
+    FactoryBot.create(:family,
+                      :with_primary_family_member,
+                      :with_eligibility_determination_and_subjects,
+                      person: consumer_role.person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: current_renewal_date,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
+  end
   subject do
     current_product
     current_ivl_enrollment
@@ -373,6 +495,25 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
 
   include_context 'family has current year and prior year coverage and not in open enrollment and purchased new coverage in prior year via SEP'
 
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
+  let(:family) do
+    FactoryBot.create(:family,
+                      :with_primary_family_member,
+                      :with_eligibility_determination_and_subjects,
+                      person: consumer_role.person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: current_renewal_date,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
+  end
   let(:product_selection) do
     Entities::ProductSelection.new({:enrollment => prior_ivl_enrollment, :product => prior_product, :family => family})
   end
@@ -412,8 +553,33 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
 
   include_context 'family has prior, current and renewal year coverage and in open enrollment and purchased new coverage in prior year via SEP'
 
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
+  let(:family) do
+    FactoryBot.create(:family,
+                      :with_primary_family_member,
+                      :with_eligibility_determination_and_subjects,
+                      person: consumer_role.person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: current_renewal_date,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
+  end
+
   let(:product_selection) do
     Entities::ProductSelection.new({:enrollment => prior_ivl_enrollment, :product => prior_product, :family => family})
+  end
+
+  let(:renewal_grant) do
+    member_ids = family.active_family_members.map(&:id).flat_map(&:to_s)
+    FactoryBot.build(:eligibilities_grant, assistance_year: renewal_calender_date.year, member_ids: member_ids)
   end
 
   subject do
@@ -422,6 +588,7 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
     current_ivl_enrollment
     renewal_ivl_enrollment
     product_selection
+    family.eligibility_determination.grants << renewal_grant
     allow(family).to receive(:current_sep).and_return sep
     Operations::ProductSelectionEffects::DchbxProductSelectionEffects
   end
@@ -495,6 +662,25 @@ RSpec.describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects
       let!(:renewal_service_area) do
         ::BenefitMarkets::Locations::ServiceArea.service_areas_for(address, during: start_on.next_year).first || FactoryBot.create_default(:benefit_markets_locations_service_area, active_year: start_on.next_year.year)
       end
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+
+      let(:family) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member,
+                          :with_eligibility_determination_and_subjects,
+                          person: person,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: next_year_date.year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
 
       before do
         enrollment.update_attributes(rating_area_id: rating_area.id)
@@ -523,6 +709,26 @@ RSpec.describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects
     end
 
     context 'new enrollment in renewal plan year' do
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+
+      let(:family) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member,
+                          :with_eligibility_determination_and_subjects,
+                          person: person,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: start_of_year.year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
+
       before do
         enrollment.update_attributes!(effective_on: enrollment.effective_on + 1.year)
         product_selection = Entities::ProductSelection.new({:enrollment => enrollment, :product => enrollment.product, :family => family})
@@ -549,6 +755,25 @@ RSpec.describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects
     include_context 'family with one member and one enrollment and one predecessor enrollment'
 
     context 'new enrollment in prior plan year' do
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+
+      let!(:family) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member,
+                          :with_eligibility_determination_and_subjects,
+                          person: person,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: current_year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
 
       before do
         predecessor_enrollment.expire_coverage!
@@ -577,6 +802,26 @@ RSpec.describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects
     context 'new enrollment in prior plan year for dependent add' do
       include_context 'family with two members and one enrollment and one predecessor enrollment'
 
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+
+      let!(:family) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member_and_dependent,
+                          :with_eligibility_determination_and_subjects,
+                          person: person,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: current_year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
+
       before do
         predecessor_enrollment.expire_coverage!
         product_selection = Entities::ProductSelection.new({:enrollment => predecessor_enrollment, :product => predecessor_product, :family => family})
@@ -592,6 +837,26 @@ RSpec.describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects
 
     context 'new enrollment in prior plan year for dependent drop with previous year active coverage' do
       include_context 'family with two members and one enrollment and one predecessor enrollment with one member with previous year active coverage'
+
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+
+      let!(:family) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member_and_dependent,
+                          :with_eligibility_determination_and_subjects,
+                          person: person,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: current_year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
 
       before do
         expired_enrollment.generate_hbx_signature
@@ -617,6 +882,26 @@ RSpec.describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects
       let!(:consumer_role) { FactoryBot.create(:consumer_role, person: second_person) }
       let!(:ivl_transition) { FactoryBot.create(:individual_market_transition, person: second_person) }
 
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+
+      let!(:family) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member_and_dependent,
+                          :with_eligibility_determination_and_subjects,
+                          person: person,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: current_year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
+
       before do
         second_person.update_attributes(dob: predecessor_enrollment.effective_on - 10.years)
         expired_enrollment.generate_hbx_signature
@@ -638,6 +923,26 @@ RSpec.describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects
     context 'new enrollment in prior plan year for dependent add with previous year active coverage' do
       include_context 'family with two members and one enrollment and one predecessor enrollment with carrier switch'
 
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+
+      let!(:family) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member,
+                          :with_eligibility_determination_and_subjects,
+                          person: person,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: current_year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
+
       before do
         product_selection = Entities::ProductSelection.new({:enrollment => predecessor_enrollment, :product => predecessor_product, :family => family})
         @result = subject.call(product_selection)
@@ -652,6 +957,26 @@ RSpec.describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects
 
     context 'new enrollment in prior plan year with previous year active coverage to switch plan with same carrier' do
       include_context 'family with two members and one enrollment and one predecessor enrollment with plan switch'
+
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+
+      let!(:family) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member,
+                          :with_eligibility_determination_and_subjects,
+                          person: person,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: start_of_year.year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
 
       before do
         product_selection = Entities::ProductSelection.new({:enrollment => predecessor_enrollment, :product => predecessor_product, :family => family})
@@ -670,6 +995,26 @@ RSpec.describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects
     context 'new enrollment in prior plan year for dependent add with previous year active coverage' do
       include_context 'family with one members and one enrollment and one predecessor enrollment with carrier switch and existing coverage'
 
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+
+      let!(:family) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member,
+                          :with_eligibility_determination_and_subjects,
+                          person: person,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: start_of_year.year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
+
       before do
         product_selection = Entities::ProductSelection.new({:enrollment => predecessor_enrollment, :product => predecessor_product, :family => family})
         @result = subject.call(product_selection)
@@ -684,6 +1029,26 @@ RSpec.describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects
 
     context 'new enrollment in prior plan year for dependent add for age off with previous year active coverage' do
       include_context 'family with two members and one enrollment and one predecessor enrollment with two members with previous year active coverage'
+
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+
+      let!(:family) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member_and_dependent,
+                          :with_eligibility_determination_and_subjects,
+                          person: person,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: start_of_year.year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
 
       before do
         expired_enrollment.generate_hbx_signature
@@ -703,6 +1068,25 @@ RSpec.describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects
     end
 
     context 'new enrollment in prior plan year for dependent drop' do
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+
+      let!(:family) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member_and_dependent,
+                          :with_eligibility_determination_and_subjects,
+                          person: person,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: start_of_year.year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
       let!(:enr_member1) do
         FactoryBot.create(:hbx_enrollment_member,
                           hbx_enrollment: family.hbx_enrollments.first,
@@ -723,6 +1107,25 @@ RSpec.describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects
     end
 
     context 'new enrollment in prior plan year for dependent drop' do
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+
+      let!(:family) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member_and_dependent,
+                          :with_eligibility_determination_and_subjects,
+                          person: person,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: start_of_year.year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
       let!(:enr_member1) do
         FactoryBot.create(:hbx_enrollment_member,
                           hbx_enrollment: family.hbx_enrollments.first,
@@ -743,6 +1146,25 @@ RSpec.describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects
     end
 
     context 'new enrollment in current plan year' do
+      let(:grants_config) do
+        {
+          'aptc_csr_credit' => [
+            { key: 'AdvancePremiumAdjustmentGrant' }
+          ]
+        }
+      end
+
+      let!(:family) do
+        FactoryBot.create(:family,
+                          :with_primary_family_member_and_dependent,
+                          :with_eligibility_determination_and_subjects,
+                          person: person,
+                          outstanding_verification_status: 'not_enrolled',
+                          eligibility_item_keys: ['aptc_csr_credit'],
+                          assistance_year: start_of_year.year,
+                          use_family_member_ids: true,
+                          grants_config: grants_config)
+      end
       before do
         predecessor_enrollment.update_attributes!(effective_on: predecessor_enrollment.effective_on + 1.year)
         product_selection = Entities::ProductSelection.new({:enrollment => predecessor_enrollment, :product => predecessor_product, :family => family})
@@ -786,6 +1208,25 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
     renewal_product
     product_selection
     Operations::ProductSelectionEffects::DchbxProductSelectionEffects
+  end
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
+  let!(:family) do
+    FactoryBot.create(:family,
+                      :with_primary_family_member_and_dependent,
+                      :with_eligibility_determination_and_subjects,
+                      person: person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: current_year,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
   end
   let!(:dependent_person){ family.family_members[1].person}
   let!(:primary_person) do
@@ -837,6 +1278,25 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
 
   include_context 'family with two members and one enrollment and one predecessor enrollment'
 
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
+  let!(:family) do
+    FactoryBot.create(:family,
+                      :with_primary_family_member_and_dependent,
+                      :with_eligibility_determination_and_subjects,
+                      person: person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: current_year,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
+  end
   let(:primary_enrollment_2022) {family.hbx_enrollments[1]}
   let(:product_id_2022) {primary_enrollment_2022.product.id}
   let(:product_selection) do
@@ -901,6 +1361,25 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
   end
   include_context 'family with two members and one enrollment and one predecessor enrollment'
 
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
+  let!(:family) do
+    FactoryBot.create(:family,
+                      :with_primary_family_member_and_dependent,
+                      :with_eligibility_determination_and_subjects,
+                      person: person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: current_year,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
+  end
   let!(:dependent_person){ family.family_members[1].person}
   let!(:primary_person) do
     p = family.family_members[0].person
@@ -1121,6 +1600,25 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
   end
   include_context 'family has current and renewal year coverage and in open enrollment and purchased new coverage in current year via SEP'
 
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
+  let!(:family) do
+    FactoryBot.create(:family,
+                      :with_primary_family_member_and_dependent,
+                      :with_eligibility_determination_and_subjects,
+                      person: person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: current_year,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
+  end
   let!(:current_year_product) do
     product = current_ivl_enrollment_2.product
     product.update_attributes(hios_id: "41842DC0400026-01", hios_base_id: "41842DC0400026", csr_variant_id: "01")
@@ -1140,6 +1638,32 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
   - it is SEP shopping for current year
   ", dbclean: :after_each do
 
+    let(:start_of_year) { Date.new(current_year).beginning_of_year }
+    let!(:person) do
+      FactoryBot.create(:person,
+                        :with_consumer_role,
+                        :with_active_consumer_role,
+                        dob: (start_of_year - 22.years))
+    end
+    let(:grants_config) do
+      {
+        'aptc_csr_credit' => [
+          { key: 'AdvancePremiumAdjustmentGrant' }
+        ]
+      }
+    end
+
+    let!(:family) do
+      FactoryBot.create(:family,
+                        :with_primary_family_member_and_dependent,
+                        :with_eligibility_determination_and_subjects,
+                        outstanding_verification_status: 'not_enrolled',
+                        person: person,
+                        eligibility_item_keys: ['aptc_csr_credit'],
+                        assistance_year: TimeKeeper.date_of_record.next_year.year,
+                        use_family_member_ids: true,
+                        grants_config: grants_config)
+    end
     let!(:delete_enrollment){family.hbx_enrollments.by_year(current_year - 1).delete_all}
     let(:product_selection) do
       Entities::ProductSelection.new({:enrollment => primary_enrollment, :product => primary_enrollment.product, :family => family})
@@ -1150,7 +1674,7 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
                         product_id: current_year_product.id,
                         kind: 'individual',
                         family: family,
-                        consumer_role_id: family.primary_person.consumer_role.id,
+                        consumer_role_id: person.consumer_role.id,
                         effective_on: Date.new(current_year, 11,1))
     end
 
@@ -1206,6 +1730,25 @@ describe Operations::ProductSelectionEffects::DchbxProductSelectionEffects, "whe
 
   include_context 'family with two members and one enrollment and one predecessor enrollment'
 
+  let(:grants_config) do
+    {
+      'aptc_csr_credit' => [
+        { key: 'AdvancePremiumAdjustmentGrant' }
+      ]
+    }
+  end
+
+  let!(:family) do
+    FactoryBot.create(:family,
+                      :with_primary_family_member_and_dependent,
+                      :with_eligibility_determination_and_subjects,
+                      person: person,
+                      outstanding_verification_status: 'not_enrolled',
+                      eligibility_item_keys: ['aptc_csr_credit'],
+                      assistance_year: current_year,
+                      use_family_member_ids: true,
+                      grants_config: grants_config)
+  end
   let!(:dependent_person){ family.family_members[1].person}
   let!(:primary_person) do
     p = family.family_members[0].person

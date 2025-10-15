@@ -4,7 +4,7 @@ class Enrollments::IndividualMarket::FamilyEnrollmentRenewal
   include FloatHelper
   include Config::AcaHelper
 
-  attr_accessor :enrollment, :renewal_coverage_start, :assisted, :aptc_values
+  attr_accessor :enrollment, :renewal_coverage_start, :assisted, :aptc_values, :eligible_determined_members
 
   CAT_AGE_OFF_HIOS_IDS = ["94506DC0390008", "86052DC0400004"]
 
@@ -333,6 +333,7 @@ class Enrollments::IndividualMarket::FamilyEnrollmentRenewal
       if member.person.is_consumer_role_active?
         consumer_role = member.person.consumer_role
 
+        eligible_determined_member?(member) &&
         eligible_to_get_covered?(member) &&
           residency_status_satisfied?(member, consumer_role) &&
           citizenship_status_satisfied?(consumer_role) &&
@@ -345,6 +346,12 @@ class Enrollments::IndividualMarket::FamilyEnrollmentRenewal
         false
       end
     end
+  end
+
+  def eligible_determined_member?(member)
+    return true unless EnrollRegistry.feature_enabled?(:qhp_application)
+
+    @eligible_determined_members&.include?(member.applicant_id.to_s)
   end
 
   # TODO: IndividualMarket

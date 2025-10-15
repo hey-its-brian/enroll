@@ -24,6 +24,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
       enrollment_renewal.enrollment = enrollment
       enrollment_renewal.assisted = assisted
       enrollment_renewal.aptc_values = aptc_values
+      enrollment_renewal.eligible_determined_members = family.active_family_members.map(&:id).flat_map(&:to_s)
       enrollment_renewal.renewal_coverage_start = renewal_benefit_coverage_period.start_on
       enrollment_renewal
     end
@@ -374,6 +375,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
           enrollment_renewal.enrollment = coverall_enrollment
           enrollment_renewal.assisted = assisted
           enrollment_renewal.aptc_values = aptc_values
+          enrollment_renewal.eligible_determined_members = family.active_family_members.map(&:id).flat_map(&:to_s)
           enrollment_renewal.renewal_coverage_start = renewal_benefit_coverage_period.start_on
           enrollment_renewal
         end
@@ -454,6 +456,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
           enrollment_renewal.enrollment = enrollment
           enrollment_renewal.assisted = assisted
           enrollment_renewal.aptc_values = aptc_values
+          enrollment_renewal.eligible_determined_members = family.active_family_members.map(&:id).flat_map(&:to_s)
           enrollment_renewal.renewal_coverage_start = renewal_benefit_coverage_period.start_on
           enrollment_renewal
         end
@@ -751,6 +754,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
           enrollment_renewal.enrollment = enrollment
           enrollment_renewal.assisted = assisted
           enrollment_renewal.aptc_values = aptc_values
+          enrollment_renewal.eligible_determined_members = family.active_family_members.map(&:id).flat_map(&:to_s)
           enrollment_renewal.renewal_coverage_start = renewal_benefit_coverage_period.start_on
           enrollment_renewal
         end
@@ -1070,6 +1074,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
             enrollment_renewal.enrollment = catastrophic_enrollment
             enrollment_renewal.assisted = assisted
             enrollment_renewal.aptc_values = aptc_values
+            enrollment_renewal.eligible_determined_members = family.active_family_members.map(&:id).flat_map(&:to_s)
             enrollment_renewal.renewal_coverage_start = Date.new(Date.current.year + 1,1,1)
             enrollment_renewal
           end
@@ -1119,6 +1124,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
             enrollment_renewal = Enrollments::IndividualMarket::FamilyEnrollmentRenewal.new
             enrollment_renewal.enrollment = catastrophic_ivl_enrollment
             enrollment_renewal.assisted = true
+            enrollment_renewal.eligible_determined_members = family.active_family_members.map(&:id).flat_map(&:to_s)
             enrollment_renewal.aptc_values = {:applied_percentage => 1, :applied_aptc => 730.0, :max_aptc => 730.0, :csr_amt => 73}
             enrollment_renewal.renewal_coverage_start = Date.new(Date.current.year + 1,1,1)
             enrollment_renewal
@@ -1146,6 +1152,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
             enrollment_renewal = Enrollments::IndividualMarket::FamilyEnrollmentRenewal.new
             enrollment_renewal.enrollment = catastrophic_ivl_enrollment
             enrollment_renewal.assisted = true
+            enrollment_renewal.eligible_determined_members = family.active_family_members.map(&:id).flat_map(&:to_s)
             enrollment_renewal.aptc_values = {:applied_percentage => 1, :applied_aptc => 730.0, :max_aptc => 730.0} #, :csr_amt => 73}
             enrollment_renewal.renewal_coverage_start = Date.new(Date.current.year + 1,1,1)
             enrollment_renewal
@@ -1187,6 +1194,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
             enrollment_renewal = Enrollments::IndividualMarket::FamilyEnrollmentRenewal.new
             enrollment_renewal.enrollment = catastrophic_ivl_enrollment
             enrollment_renewal.assisted = true
+            enrollment_renewal.eligible_determined_members = family.active_family_members.map(&:id).flat_map(&:to_s)
             enrollment_renewal.aptc_values = {:applied_percentage => 1, :applied_aptc => 0, :max_aptc => 0, :csr_amt => 73}
             enrollment_renewal.renewal_coverage_start = Date.new(Date.current.year + 1,1,1)
             enrollment_renewal
@@ -1335,6 +1343,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
                                             applied_aptc: 150,
                                             csr_amt: 100,
                                             max_aptc: 200}
+          enrollment_renewal.eligible_determined_members = family_assisted.active_family_members.map(&:id).flat_map(&:to_s)
           enrollment_renewal.renewal_coverage_start = renewal_benefit_coverage_period.start_on
           enrollment_renewal
         end
