@@ -39,7 +39,7 @@ module Operations
           def fetch_application_states(coverage_years)
             applications = ::IndividualMarket::Application.only(
               :assistance_year, :current_state
-            ).where(:assistance_year.in => coverage_years)
+            ).where(:assistance_year.in => coverage_years, :is_renewal => true)
 
             mapped_states = coverage_years.inject([]) do |result, year|
               result << {

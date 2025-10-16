@@ -58,7 +58,7 @@ RSpec.describe ::Operations::HbxAdmin::DryRun::Individual::QhpApplicationStates,
       current_year_data = application_states.find { |year_data| year_data[:assistance_year] == Date.current.year }
       expect(current_year_data).to be_present
       states = current_year_data[:application_states]
-      expect(states[:initial]).to be >= 1
+      expect(states[:initial]).to be 0 # we did not create any _renewal_ apps for current year
 
       renewal_year_data = application_states.find { |year_data| year_data[:assistance_year] == Date.current.year.next }
       expect(renewal_year_data).to be_present
