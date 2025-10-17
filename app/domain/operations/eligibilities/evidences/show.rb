@@ -20,7 +20,7 @@ module Operations
           filtered_applications = yield filter_applications(all_applications, validated_params[:selected_year], years)
           matching_applications = yield fetch_matching_applications(filtered_applications, evidence)
           application_evidence_mapping = yield fetch_matching_evidence_for_applications(matching_applications[:applications], family_member, evidence)
-          renewal_current_and_previous_application_ids = yield fetch_renewal_current_and_previous_application_ids(all_applications)
+          renewal_current_and_previous_application_ids = yield fetch_renewal_current_and_previous_application_ids(all_applications, evidence)
 
           Success(
             years: years,
@@ -114,26 +114,67 @@ module Operations
           Success(mapping)
         end
 
-        def fetch_renewal_current_and_previous_application_ids(all_applications)
-          renewal_year = TimeKeeper.date_of_record.year + 1
+        def fetch_renewal_current_and_previous_application_ids(all_applications, evidence)
+          evidence_key = evidence.key.to_s
+          eligibility_key = evidence.eligibility.key
+          family_member_id = evidence.eligibility&.eligible&.family_member_id.to_s
+          recent_years = calculate_recent_years
+
+          application_ids = all_applications
+                            .select { |app| eligible_application?(app, evidence_key, eligibility_key, family_member_id, recent_years) }
+                            .map(&:hbx_id)
+
+          Success(application_ids)
+        end
+
+        def calculate_recent_years
           current_year = TimeKeeper.date_of_record.year
-          previous_year = current_year - 1
-          renewal_current_and_previous_application_ids = all_applications.select do |app|
-            is_determined = case app
-                            when ::FinancialAssistance::Application
-                              app.aasm_state.to_s == 'determined'
-                            when ::IndividualMarket::Application
-                              app.current_state.to_s == 'determined'
-                            end
+          [current_year + 1, current_year, current_year - 1]
+        end
 
-            # Check if application is for renewal, current or previous year
-            is_recent_year = [renewal_year, current_year, previous_year].include?(app.assistance_year)
+        def eligible_application?(application, evidence_key, eligibility_key, family_member_id, recent_years)
+          # Early return conditions
+          return false unless has_matching_applicant?(application, family_member_id)
+          return false unless has_recent_year?(application, recent_years)
+          return false unless application_determined?(application)
 
-            # Only keep applications that satisfy both conditions
-            is_determined && is_recent_year
-          end.map(&:hbx_id)
+          # Check for matching evidence
+          applicant = find_matching_applicant(application, family_member_id)
+          eligibility = find_matching_eligibility(applicant, eligibility_key)
+          return false unless eligibility&.evidences
 
-          Success(renewal_current_and_previous_application_ids)
+          has_matching_evidence?(eligibility, evidence_key)
+        end
+
+        def has_matching_applicant?(application, family_member_id)
+          application.applicants.any? { |a| a.family_member_id.to_s == family_member_id.to_s }
+        end
+
+        def find_matching_applicant(application, family_member_id)
+          application.applicants.detect { |a| a.family_member_id.to_s == family_member_id.to_s }
+        end
+
+        def find_matching_eligibility(applicant, eligibility_key)
+          applicant.eligibilities.where(key: eligibility_key).first
+        end
+
+        def has_matching_evidence?(eligibility, evidence_key)
+          eligibility.evidences.any? { |ev| ev.key.to_s == evidence_key }
+        end
+
+        def has_recent_year?(application, recent_years)
+          recent_years.include?(application.assistance_year)
+        end
+
+        def application_determined?(application)
+          case application
+          when ::FinancialAssistance::Application
+            application.aasm_state.to_s == 'determined'
+          when ::IndividualMarket::Application
+            application.current_state.to_s == 'determined'
+          else
+            false
+          end
         end
       end
     end

@@ -36,6 +36,16 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
     )
   end
 
+  let(:application_with_no_evidence) do
+    FactoryBot.create(
+      :financial_assistance_application,
+      family_id: family.id,
+      aasm_state: 'determined',
+      submitted_at: Time.now,
+      assistance_year: TimeKeeper.date_of_record.year
+    )
+  end
+
   let(:applicant) do
     FactoryBot.create(
       :financial_assistance_applicant,
@@ -60,6 +70,15 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
       family_member_id: primary_applicant.id,
       person_hbx_id: person.hbx_id,
       application: renewal_application
+    )
+  end
+
+  let!(:applicant_no_evidence) do
+    FactoryBot.create(
+      :financial_assistance_applicant,
+      family_member_id: primary_applicant.id,
+      person_hbx_id: person.hbx_id,
+      application: application_with_no_evidence
     )
   end
 
@@ -97,6 +116,7 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
         expect(result.success[:applications]).to include(faa_application)
         expect(result.success[:application_evidence_mapping]).to be_a(Hash)
         expect(result.success[:renewal_current_and_previous_application_ids]).to match_array(application_ids)
+        expect(result.success[:renewal_current_and_previous_application_ids]).not_to include(application_with_no_evidence.hbx_id)
         expect(result.success[:bs4]).to be true
         expect(result.success[:bs4]).to be true
       end
