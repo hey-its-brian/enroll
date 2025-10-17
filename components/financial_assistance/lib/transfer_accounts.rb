@@ -17,18 +17,22 @@ module FinancialAssistance
       start_on = ENV['start_on'].present? ? Date.strptime(ENV['start_on'].to_s, "%m/%d/%Y") : Date.yesterday
       end_on = ENV['end_on'].present? ? Date.strptime(ENV['end_on'].to_s, "%m/%d/%Y") : Date.yesterday
       range = start_on.beginning_of_day..end_on.end_of_day
-      eligible_family_ids = ::FinancialAssistance::Application.determined_and_submitted_within_range(range).distinct(:family_id)
+      eligible_family_ids = ::FinancialAssistance::Application.determined_and_submitted_within_range(
+        range
+      ).where(:origin.ne => :migration).distinct(:family_id)
       families = Family.where(:_id.in => eligible_family_ids)
-      build_account_transfer_requests(families)
+      build_account_transfer_requests(families, range)
     end
 
-    def build_account_transfer_requests(families)
+    def build_account_transfer_requests(families, range)
       account_transfer_logger = Logger.new("#{Rails.root}/log/account_transfer_logger_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.log")
       count = 0
       total_families_count = families.count
       account_transfer_logger.info("********************************* Total families with determined applications count #{total_families_count}  *********************************")
       families.no_timeout.each_with_index do |family, index|
-        application = FinancialAssistance::Application.for_determined_family(family.id).last
+        application = ::FinancialAssistance::Application.determined_and_submitted_within_range(
+          range
+        ).where(:origin.ne => :migration, family_id: family.id).order_by(submitted_at: -1).limit(1).first
         if application.present? && (application.transfer_requested || application.is_transferrable?) && !application.account_transferred
           publish_event(application, index)
           account_transfer_logger.info("********************************* processed application #{application.hbx_id}  *********************************") if count % 100 == 0

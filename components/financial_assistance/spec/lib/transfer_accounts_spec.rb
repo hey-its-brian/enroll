@@ -157,6 +157,18 @@ RSpec.describe ::FinancialAssistance::TransferAccounts, dbclean: :after_each do
 
   end
 
+  context 'applications that are migrated' do
+    before do
+      application.update!(origin: :migration)
+    end
+
+    it 'does not transfer a migrated application' do
+      ::FinancialAssistance::TransferAccounts.run
+      file_content = File.read("#{Rails.root}/log/account_transfer_logger_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.log")
+      expect(file_content).not_to include(application.hbx_id)
+    end
+  end
+
   context 'current or future assistance year applications' do
     it 'should send for current years even after 11/1' do
       year = TimeKeeper.date_of_record.year
