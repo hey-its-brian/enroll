@@ -87,6 +87,7 @@ FactoryBot.define do
           benefit_sponsors_broker_agency_profile_id: evaluator.organization.broker_agency_profile.id
         )
         user.person.broker_agency_staff_roles.push staff_role
+        user.person.emails = [FactoryBot.build(:email, kind: "work")]
         evaluator.organization.broker_agency_profile.primary_broker_role = FactoryBot.create :broker_role, person: user.person, broker_agency_profile: evaluator.organization.broker_agency_profile
         evaluator.organization.save
         user.save

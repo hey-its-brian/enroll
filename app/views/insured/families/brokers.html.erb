@@ -75,16 +75,3 @@
     </div>
   </div>
 <% end %>
-<script nonce="<%= content_security_policy_nonce %>">
-  document.addEventListener('DOMContentLoaded', function () {
-    const helpMeSignUpButton = document.getElementById('help_me_sign_up');
-    const modalId = '#help_with_plan_shopping';
-
-    if (helpMeSignUpButton) {
-      helpMeSignUpButton.addEventListener('click', function (event) {
-        event.preventDefault(); // Prevent default anchor behavior
-        $(modalId).modal('show'); // Use Bootstrap's modal API to show the modal
-      });
-    }
-  });
-</script>

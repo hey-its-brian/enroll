@@ -105,7 +105,7 @@ Given(/^an individual market broker exists$/) do
 end
 
 And(/^a consumer role family exists with broker$/) do
-  @person = FactoryBot.create(:person, :with_family, :with_consumer_role)
+  @person = user&.person || FactoryBot.create(:person, :with_family, :with_consumer_role)
   @person.consumer_role.move_identity_documents_to_verified
   @person.primary_family.broker_agency_accounts.create!(
     start_on: TimeKeeper.date_of_record,
