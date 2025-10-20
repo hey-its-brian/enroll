@@ -202,7 +202,6 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::SubmitAndDe
         demo = FactoryBot.create(:individual_market_demographics, applicant: renewal_dependent_applicant)
         renewal_dependent_applicant.build_individual_market_eligibility
         renewal_dependent_applicant.build_individual_market_evidences
-        renewal_dependent_applicant.build_aptc_csr_eligibility
         renewal_dependent_applicant.save!
         demo
       end
@@ -287,7 +286,9 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::SubmitAndDe
         subject = family.reload.eligibility_determination.subjects.first
         eligibility_state = subject.eligibility_states[1]
         evidence_state = eligibility_state.evidence_states.first
-        evidence = renewal_dependent_applicant.reload.individual_market_eligibility.evidences.where(key: "citizenship_evidence").first
+        renewal_application.reload
+        dependent = renewal_application.applicants[1]
+        evidence = dependent.eligibilities.flatten[0].evidences.where(key: "citizenship_evidence").first
         expect(evidence_state.status).to be(evidence.current_state)
       end
     end

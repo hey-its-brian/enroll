@@ -128,6 +128,7 @@ module Operations
           # @return [Dry::Monads::Result] Success with the application or Failure with an error message
           def persist(application)
             application.save!
+            application.family.reset_latest_application
             Success(application)
           rescue StandardError => e
             Rails.logger.error("QHP Application - Failed to persist application due to #{e.message}, #{e.backtrace.join("\n")}")
@@ -135,8 +136,7 @@ module Operations
           end
 
           def regenerate_family_determination(application)
-            family = application.family
-            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
+            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: application.family)
           end
         end
       end
