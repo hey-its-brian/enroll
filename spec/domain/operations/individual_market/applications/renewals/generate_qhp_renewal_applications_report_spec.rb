@@ -3,6 +3,17 @@
 require 'rails_helper'
 
 RSpec.describe Operations::IndividualMarket::Applications::Renewals::GenerateQhpRenewalApplicationsReport, dbclean: :after_each do
+  let(:csv_report_headers) do
+    [
+      "PrimaryHbxId",
+      "ApplicationHbxId",
+      "AllApplicantHbxIds",
+      "ApplicationStatus (CurrentState)",
+      "IndividualApplicantEligibilities",
+      "IndividualApplicantIneligibilityReasons"
+    ]
+  end
+
   let(:person) { FactoryBot.create(:person, :with_ssn, :with_consumer_role, :with_active_consumer_role) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
   let(:primary_applicant) { family.primary_applicant }
@@ -56,18 +67,21 @@ RSpec.describe Operations::IndividualMarket::Applications::Renewals::GenerateQhp
         expect(File.exist?(file_path)).to be_truthy
       end
 
-      it 'the CSV has the expected results' do
+      it 'the CSV includes reasons for ineligible applicants' do
         csv_contents = CSV.read(file_path)
 
         headers = csv_contents[0]
-        expect(headers).to eq ["PrimaryHbxId", "ApplicationHbxId", "ApplicationStatus (CurrentState)", "PredecessorApplicationHbxId", "ApplicantEligibilities"]
+        expect(headers).to eq csv_report_headers
 
         row = csv_contents[1]
         expect(row[0]).to eq person.hbx_id
         expect(row[1]).to eq renewal_application.hbx_id
-        expect(row[2]).to eq "determined"
-        expect(row[3]).to eq current_application.hbx_id
-        expect(row[4]).to eq "QHP Ineligible"
+        expect(row[2]).to eq renewal_application.applicants.map(&:hbx_id).join("\n")
+        expect(row[3]).to eq "determined"
+
+        hbx_id = renewal_application.applicants.first.hbx_id
+        expect(row[4]).to eq "#{hbx_id}: QHP Ineligible"
+        expect(row[5]).to eq "#{hbx_id}: Applicant is not a resident"
       end
 
       after { File.delete(file_path) if File.exist?(file_path) }

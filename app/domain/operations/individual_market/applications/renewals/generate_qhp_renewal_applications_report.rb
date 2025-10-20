@@ -15,10 +15,18 @@ module Operations
           QHP_RENEWAL_APPLICATION_REPORT_CSV_HEADERS = [
             "PrimaryHbxId",
             "ApplicationHbxId",
+            "AllApplicantHbxIds",
             "ApplicationStatus (CurrentState)",
-            "PredecessorApplicationHbxId",
-            "ApplicantEligibilities"
+            "IndividualApplicantEligibilities",
+            "IndividualApplicantIneligibilityReasons"
           ].freeze
+
+          QHP_INELIGIBILITY_REASONS_BY_BASIS_KIND = {
+            'is_alive' => 'Applicant has been marked as deceased',
+            'state_resident' => 'Applicant is not a resident',
+            'lawfully_present_in_us' => 'Applicant is not lawfully present in the US',
+            'not_incarcerated' => 'Applicant is incarcerated'
+          }.freeze
 
           def call(params)
             assistance_year  = yield validate(params)
@@ -65,34 +73,55 @@ module Operations
           end
 
           def generate_row(application)
+            non_applicant_ids = application.non_applicants.map(&:hbx_id)
+
             [
               application&.primary_applicant&.person&.hbx_id,
               application.hbx_id,
+              application.applicants.map(&:hbx_id).join("\n"),
               application.current_state.to_s,
-              application.family&.fetch_last_determined_application_from(application.id, application.assistance_year.pred)&.hbx_id,
-              application_eligibilities(application)
+              application_eligibilities(application, non_applicant_ids),
+              ineligibility_reasons(application, non_applicant_ids)
             ]
           end
 
-          def application_eligibilities(application)
-            non_applicant_ids = application.non_applicants.map(&:family_member_id)
-            applicants = application.applicants.reject { |applicant| non_applicant_ids.include?(applicant.family_member_id) }
+          def application_eligibilities(application, non_applicant_ids)
             eligibilities = []
-            eligibilities << "Not Applying" if non_applicant_ids.any?
-            return eligibilities.join(", ") if applicants.empty?
 
-            eligibility = if applicants.all?(&:is_qhp_eligible)
-                            "QHP Eligible"
-                          elsif applicants.none?(&:is_qhp_eligible)
-                            "QHP Ineligible"
-                          else
-                            "Mixed QHP Eligibilities"
-                          end
-            eligibilities << eligibility
+            application.applicants.each do |applicant|
+              eligibilities << if non_applicant_ids.include?(applicant.hbx_id)
+                                 "#{applicant.hbx_id}: Not Applying"
+                               else
+                                 "#{applicant.hbx_id}: #{applicant.is_qhp_eligible ? 'QHP Eligible' : 'QHP Ineligible'}"
+                               end
+            end
 
-            eligibilities.join(", ")
+            eligibilities.join("\n")
           rescue StandardError => e
             "Error determining eligibilities: #{e.message}"
+          end
+
+          def ineligibility_reasons(application, non_applicant_ids)
+            application.applicants.map do |applicant|
+              # skip if applicant is QHP eligible or a non-applicant
+              next if applicant.is_qhp_eligible || non_applicant_ids.include?(applicant.hbx_id)
+
+              qhp_determination = applicant&.individual_market_eligibility&.qhp_determination
+              all_applicant_reasons << "#{applicant.hbx_id}: No valid QHP determination" && next unless qhp_determination
+
+              "#{applicant.hbx_id}: #{add_individual_reasons_from_basis(qhp_determination)}"
+            end.compact.join("\n")
+          rescue StandardError => e
+            "Error extracting ineligibility reasons: #{e.message}"
+          end
+
+          def add_individual_reasons_from_basis(qhp_determination)
+            qhp_determination.bases.map do |basis|
+              # ignore if basis is satisfied (valid/eligible)
+              next if basis.is_satisfied
+
+              QHP_INELIGIBILITY_REASONS_BY_BASIS_KIND[basis.basis_kind]
+            end.compact.join(', and ')
           end
         end
       end
