@@ -110,19 +110,22 @@ RSpec.describe Eligibilities::V3::IndividualMarketEligibility, type: :model do
         american_indian_evidence
         citizenship_evidence
         social_security_number_evidence
-        eligibility.update_evidences_for_enrollment_change
+        eligibility.update_evidences_for_enrollment_change("12345")
       end
 
       it 'should update alive evidence to outstanding' do
         expect(alive_evidence.current_state).to eq(:outstanding)
+        expect(alive_evidence.verification_histories.last.action).to eq("enrollment_purchase")
       end
 
       it 'should not update american indian evidence' do
         expect(american_indian_evidence.current_state).to eq(:outstanding)
+        expect(american_indian_evidence.verification_histories.last&.action).not_to eq("enrollment_purchase")
       end
 
       it 'should update citizenship evidence' do
         expect(citizenship_evidence.current_state).to eq(:outstanding)
+        expect(citizenship_evidence.verification_histories.last.action).to eq("enrollment_purchase")
       end
 
       it 'should not update social security number evidence' do
@@ -140,7 +143,7 @@ RSpec.describe Eligibilities::V3::IndividualMarketEligibility, type: :model do
         american_indian_evidence
         citizenship_evidence
         social_security_number_evidence
-        eligibility.update_outstanding_evidences_for_non_enrolled
+        eligibility.update_outstanding_evidences_for_non_enrolled("12345")
       end
 
       it 'should update alive evidence to outstanding' do

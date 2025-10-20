@@ -219,11 +219,12 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
         esi_evidence
         non_esi_evidence
         local_mec_evidence
-        aptc_eligibility.update_evidences_for_enrollment_change
+        aptc_eligibility.update_evidences_for_enrollment_change("12345")
       end
 
       it 'should update income evidence to outstanding' do
         expect(income_evidence.current_state).to eq(:outstanding)
+        expect(income_evidence.verification_histories.last.action).to eq("enrollment_purchase")
       end
 
       it 'should not update esi evidence' do
@@ -232,6 +233,7 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
 
       it 'should update non esi evidence' do
         expect(non_esi_evidence.current_state).to eq(:outstanding)
+        expect(non_esi_evidence.verification_histories.last.action).to eq("enrollment_purchase")
       end
 
       it 'should not update local mec evidence' do
@@ -249,7 +251,7 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
         esi_evidence
         non_esi_evidence
         local_mec_evidence
-        aptc_eligibility.update_outstanding_evidences_for_non_enrolled
+        aptc_eligibility.update_outstanding_evidences_for_non_enrolled("12345")
       end
 
       it 'should update income evidence to outstanding' do
@@ -258,6 +260,7 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
 
       it 'should not update esi evidence' do
         expect(esi_evidence.current_state).to eq(:negative_response_received)
+        expect(esi_evidence.verification_histories.last.action).to eq("enrollment_purchase")
       end
 
       it 'should update non esi evidence' do

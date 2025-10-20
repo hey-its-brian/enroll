@@ -175,7 +175,7 @@ module Operations
         individual_market_eligibility = applicant.individual_market_eligibility
         return unless individual_market_eligibility.present?
 
-        update_evidences(individual_market_eligibility, applicant_context[:is_enrolled])
+        update_evidences(individual_market_eligibility, applicant_context[:is_enrolled], applicant_context[:enrollment_hbx_id])
         update_eligibility(individual_market_eligibility, applicant_context[:enrollment_hbx_id])
       end
 
@@ -208,7 +208,7 @@ module Operations
         aptc_csr_eligibility = applicant.aptc_csr_eligibility
         return unless aptc_csr_eligibility.present? && applicant_context[:is_enrolled]
 
-        update_evidences(aptc_csr_eligibility, applicant_context[:has_aptc_csr])
+        update_evidences(aptc_csr_eligibility, applicant_context[:has_aptc_csr], applicant_context[:enrollment_hbx_id])
         update_eligibility(aptc_csr_eligibility, applicant_context[:enrollment_hbx_id])
       end
 
@@ -326,11 +326,11 @@ module Operations
       end
 
       # Updates evidence states based on enrollment and benefit usage
-      def update_evidences(eligibility, enrolled_and_or_aptc_csr_used)
+      def update_evidences(eligibility, enrolled_and_or_aptc_csr_used, enrollment_hbx_id)
         if enrolled_and_or_aptc_csr_used
-          eligibility.update_evidences_for_enrollment_change
+          eligibility.update_evidences_for_enrollment_change(enrollment_hbx_id)
         else
-          eligibility.update_outstanding_evidences_for_non_enrolled
+          eligibility.update_outstanding_evidences_for_non_enrolled(enrollment_hbx_id)
         end
       end
 

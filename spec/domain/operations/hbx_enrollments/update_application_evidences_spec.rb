@@ -241,6 +241,7 @@ RSpec.describe Operations::HbxEnrollments::UpdateApplicationEvidences, :type => 
             expect(local_mec_evidence.state_histories.present?).to be_truthy
             expect(local_mec_evidence.state_histories.last.from_state).to eq :outstanding
             expect(local_mec_evidence.state_histories.last.to_state).to eq :negative_response_received
+            expect(local_mec_evidence.verification_histories.last.action).to eq "enrollment_purchase"
           end
         end
 
@@ -259,6 +260,7 @@ RSpec.describe Operations::HbxEnrollments::UpdateApplicationEvidences, :type => 
             expect(alive_evidence.is_satisfied).to be_falsey
             expect(alive_evidence.state_histories.last.from_state).to eq :pending
             expect(alive_evidence.state_histories.last.to_state).to eq :outstanding
+            expect(alive_evidence.verification_histories.last.action).to eq "enrollment_purchase"
           end
 
           it "should not move citizenship evidence from rejected" do
@@ -277,6 +279,7 @@ RSpec.describe Operations::HbxEnrollments::UpdateApplicationEvidences, :type => 
             expect(social_security_evidence.is_satisfied).to be_falsey
             expect(social_security_evidence.state_histories.last.from_state).to eq :pending
             expect(social_security_evidence.state_histories.last.to_state).to eq :outstanding
+            expect(social_security_evidence.verification_histories.last.action).to eq "enrollment_purchase"
           end
         end
       end
@@ -354,12 +357,14 @@ RSpec.describe Operations::HbxEnrollments::UpdateApplicationEvidences, :type => 
             expect(income_evidence.is_satisfied).to be_falsey
             expect(income_evidence.state_histories.last.from_state).to eq :pending
             expect(income_evidence.state_histories.last.to_state).to eq :outstanding
+            expect(income_evidence.verification_histories.last.action).to eq "enrollment_purchase"
           end
 
           it "should not move primary esi_mec_evidence to outstanding state" do
             esi_mec_evidence = @primary_aptc_csr_eligibility.esi_mec_evidence
             expect(esi_mec_evidence).not_to be_outstanding
             expect(esi_mec_evidence.current_state).to eq :verified
+            expect(esi_mec_evidence.verification_histories.last&.action).not_to eq "enrollment_purchase"
           end
 
           it "should move primary non_esi_mec_evidence to outstanding state" do
@@ -370,6 +375,7 @@ RSpec.describe Operations::HbxEnrollments::UpdateApplicationEvidences, :type => 
             expect(non_esi_mec_evidence.is_satisfied).to be_falsey
             expect(non_esi_mec_evidence.state_histories.last.from_state).to eq :negative_response_received
             expect(non_esi_mec_evidence.state_histories.last.to_state).to eq :outstanding
+            expect(non_esi_mec_evidence.verification_histories.last.action).to eq "enrollment_purchase"
           end
 
           it "should not update primary local mec evidence if it is in outstanding" do
@@ -433,6 +439,7 @@ RSpec.describe Operations::HbxEnrollments::UpdateApplicationEvidences, :type => 
             expect(american_indian_evidence.state_histories.present?).to be_truthy
             expect(american_indian_evidence.state_histories.last.from_state).to eq :outstanding
             expect(american_indian_evidence.state_histories.last.to_state).to eq :negative_response_received
+            expect(american_indian_evidence.verification_histories.last.action).to eq "enrollment_purchase"
           end
         end
       end
