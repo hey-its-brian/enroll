@@ -1532,23 +1532,53 @@ module FinancialAssistance
       active_applicants.where(is_primary_applicant: false)
     end
 
-    def update_dependents_home_address
+    # Checks for changes updates dependents with same_with_primary true.
+    #
+    # @param applicant [FinancialAssistance::Applicant] primary applicant
+    # @return [void]
+    def check_for_primary_address_changes(applicant)
+      return unless self.draft?
+      return unless applicant.is_primary_applicant?
+
+      dependents_with_same_address = dependents.where(same_with_primary: true)
+      return unless dependents_with_same_address.present?
+
+      update_same_with_primary_dependent_home_addresses(dependents_with_same_address, applicant)
+    end
+
+    # builds or updates the home address of dependents with same_with_primary true, saves the application if any dependent address is changed
+    #
+    # @param dependents_with_same_address [Array<FinancialAssistance::Applicant>] array of dependents with same_with_primary true
+    # @param primary_applicant [FinancialAssistance::Applicant] primary applicant
+    # @return [void]
+    def update_same_with_primary_dependent_home_addresses(dependents_with_same_address, primary_applicant)
+      new_address = primary_applicant.home_address
+      new_address_attributes, no_state_address_attributes = fetch_primary_applicant_address_attributes(primary_applicant)
+
+      dependents_with_same_address.each do |dependent|
+        dependent.assign_attributes(no_state_address_attributes)
+        next if dependent&.home_address&.matches_addresses?(new_address)
+
+        if dependent&.home_address&.present?
+          dependent.home_address.assign_attributes(new_address_attributes)
+        else
+          dependent.addresses.build(new_address_attributes)
+        end
+      end
+
+      self.save! if dependents_with_same_address.any? { |dep| dep.changed? || dep.home_address.changed? }
+    end
+
+    def fetch_primary_applicant_address_attributes(primary_applicant)
+      new_address_attributes = primary_applicant.home_address&.attributes&.slice(*fetch_dependent_address_info_keys)
+      no_state_address_attributes = primary_applicant.attributes.slice("is_homeless", "is_temporarily_out_of_state")
+      [new_address_attributes, no_state_address_attributes]
+    end
+
+    def fetch_dependent_address_info_keys
       address_keys = ["address_1", "address_2", "address_3", "city", "state", "zip", "kind"]
       address_keys << "county" if EnrollRegistry.feature_enabled?(:display_county)
-      primary_applicant = applicants.where(is_primary_applicant: true).first
-      home_address_attributes = primary_applicant.home_address.attributes.slice(*address_keys)
-      no_state_address_attributes = primary_applicant.attributes.slice("is_homeless", "is_temporarily_out_of_state")
-
-      dependents.where(same_with_primary: true).each do |dependent|
-        if dependent.home_address
-          dependent.home_address.assign_attributes(home_address_attributes)
-        else
-          address = ::FinancialAssistance::Locations::Address.new(home_address_attributes)
-          dependent.addresses << address
-        end
-        dependent.assign_attributes(no_state_address_attributes)
-        dependent.save!
-      end
+      address_keys
     end
 
     # Calculates and assigns the total net income for each applicant.

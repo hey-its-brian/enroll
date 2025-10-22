@@ -150,6 +150,8 @@ module FinancialAssistance
             applicant.save!
           end
 
+          application.check_for_primary_address_changes(applicant)
+
           # reloading the application to fetch the latest data updated through applicant callbacks to avoid duplicate relationships
           application.reload
           application.ensure_relationship_with_primary(applicant, relationship) if relationship.present?

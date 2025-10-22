@@ -511,7 +511,7 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
           gender: 'male',
           dob: (TimeKeeper.date_of_record - 20.years).strftime("%Y-%m-%d"),
           ssn: nil,
-          addresses_attributes: {'0': {kind: 'home', city: 'Bar Harbor', county: 'Cumberland', state: 'ME', zip: '04401', address_1: '1600 Main St'}},
+          addresses_attributes: { '0': { kind: 'home', city: 'Bar Harbor', county: 'Cumberland', state: 'ME', zip: '04401', address_1: '1600 Main St' } },
           is_consumer_role: false
         }
       }
@@ -559,6 +559,89 @@ RSpec.describe FinancialAssistance::ApplicantsController, dbclean: :after_each, 
         patch :update, params: update_params
         applicant.reload
         expect(applicant.addresses.first.county).to eql(county_params)
+      end
+
+      context 'when primary applicant updates their address and qhp_application feature is enabled' do
+        let(:old_address_params) do
+          {
+            kind: 'home',
+            city: 'Bear Island',
+            county: 'Hampden',
+            state: 'ME',
+            zip: '01001',
+            address_1: '123 Main St',
+            address_2: 'Apt 512'
+          }
+        end
+
+        let(:old_address1) { FinancialAssistance::Locations::Address.new(old_address_params) }
+        let(:old_address2) { FinancialAssistance::Locations::Address.new(old_address_params) }
+
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          allow_any_instance_of(::FinancialAssistance::Locations::Address).to receive(:county_check).and_return true
+
+          application.primary_applicant.addresses << old_address1
+          application.primary_applicant.encrypted_ssn = SymmetricEncryption.encrypt('453467849')
+
+          application.dependents.first.addresses << old_address2
+          application.dependents.first.encrypted_ssn = SymmetricEncryption.encrypt('453467848')
+          application.dependents.first.assign_attributes(same_with_primary: true)
+          application.save!
+
+          update_params[:applicant][:addresses_attributes][:'0'][:id] = application.primary_applicant.home_address.id
+          update_params[:applicant][:addresses_attributes][:'0'][:_destroy] = false
+          update_params[:applicant][:addresses_attributes][:'0'][:address_2] = nil
+
+          patch :update, params: update_params
+
+          application.reload
+          application.primary_applicant.reload
+          application.dependents.first.reload
+        end
+
+        it "should update all same_with_primary dependents' addresses with primary" do
+          primary_home_address = application.primary_applicant.home_address
+          dependent_home_address = application.dependents.first.home_address
+
+          # ensure primary address updated from old address
+          expect(primary_home_address.address_1).to_not eq old_address1.address_1
+          expect(primary_home_address.address_2).to_not eq old_address1.address_2
+          expect(primary_home_address.city).to_not eq old_address1.city
+          expect(primary_home_address.zip).to_not eq old_address1.zip
+
+          # ensure dependent address updated from old address
+          expect(dependent_home_address.address_1).to_not eq old_address2.address_1
+          expect(dependent_home_address.address_2).to_not eq old_address2.address_2
+          expect(dependent_home_address.city).to_not eq old_address2.city
+          expect(dependent_home_address.zip).to_not eq old_address2.zip
+
+          # ensure dependent address matches primary
+          expect(dependent_home_address.address_1).to eq(primary_home_address.address_1)
+          expect(dependent_home_address.address_2).to eq(primary_home_address.address_2)
+          expect(dependent_home_address.city).to eq(primary_home_address.city)
+          expect(dependent_home_address.county).to eq(primary_home_address.county)
+          expect(dependent_home_address.state).to eq(primary_home_address.state)
+          expect(dependent_home_address.zip).to eq(primary_home_address.zip)
+        end
+
+        it "should not create multiple mitc_households when converted to a cv3_application", :truncation do
+          application.update(assistance_year: TimeKeeper.date_of_record.year, aasm_state: 'submitted')
+          application.applicants.each { |applicant| applicant.update(gender: 'male') }
+
+          cv3_application_result = ::FinancialAssistance::Operations::Applications::Transformers::ApplicationTo::Cv3Application.new.call(application)
+          expect(cv3_application_result.success?).to be_truthy
+
+          cv3_application = cv3_application_result.success
+          expect(cv3_application[:mitc_households].size).to eq 1
+
+          household = cv3_application[:mitc_households].first
+          expect(household[:people].size).to eq application.applicants.size
+
+          person_ids = household[:people].map { |person| person[:person_id] }
+          expect(person_ids).to include(application.primary_applicant.person_hbx_id)
+          expect(person_ids).to include(application.dependents.first.person_hbx_id)
+        end
       end
     end
 

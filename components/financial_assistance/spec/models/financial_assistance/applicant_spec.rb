@@ -1176,14 +1176,6 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
           application2.ensure_relationship_with_primary(applicant2, 'spouse')
           application2.reload
         end
-
-        it 'should update dependent address' do
-          expect(application2.applicants[1].addresses.present?).to be_falsey
-          application2.reload
-          application2.applicants.first.addresses.first.assign_attributes(city: "was")
-          application2.save!
-          expect(application2.applicants[1].addresses.present?).to be_truthy
-        end
       end
 
       context "when same_with_primary is false" do

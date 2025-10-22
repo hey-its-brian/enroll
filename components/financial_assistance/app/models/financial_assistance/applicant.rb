@@ -2382,7 +2382,6 @@ module FinancialAssistance
         else
           Rails.logger.error {"Unable to propagate_applicant for person hbx_id: #{self.person_hbx_id} | application_hbx_id: #{application.hbx_id} | family_id: #{application.family_id} due to #{create_or_update_result.failure}"} unless Rails.env.test?
         end
-        application.update_dependents_home_address if is_primary_applicant? && address_info_changed?
       end
     rescue StandardError => e
       Rails.logger.error {"Unable to propagate_applicant for person hbx_id: #{self.person_hbx_id} | application_hbx_id: #{application.hbx_id} | family_id: #{application.family_id} due to #{e.message}"} unless Rails.env.test?
