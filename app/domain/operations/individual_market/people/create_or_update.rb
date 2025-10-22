@@ -98,13 +98,37 @@ module Operations
         # @param applicant [Object] The applicant containing updated information
         # @return [Dry::Monads::Result] Success with updated person
         def update_person(person, applicant)
+          assign_person_name_attributes(person, applicant)
+          assign_person_demographics_attributes(person, applicant)
+          handle_ssn_assignment(person, applicant)
+
+          return Failure("Person is not valid: #{person.errors.full_messages.join(', ')}") unless person.valid?
+          Success(person)
+        rescue StandardError => e
+          Rails.logger.error("QHP Application - Error while building person: #{e.message}, backtrace: #{e.backtrace.join('\n')}")
+          Failure("Error while building person: #{e.message}, backtrace: #{e.backtrace.join('\n')}")
+        end
+
+        # Assigns name-related attributes to the person
+        # @param person [Person] The person to update
+        # @param applicant [Object] The applicant containing name information
+        # @return [void]
+        def assign_person_name_attributes(person, applicant)
           person.assign_attributes(
             name_pfx: applicant.person_name.name_pfx,
             first_name: applicant.person_name.given_name,
             middle_name: applicant.person_name.middle_name,
             last_name: applicant.person_name.family_name,
-            name_sfx: applicant.person_name.name_sfx,
-            encrypted_ssn: applicant.demographics.encrypted_ssn,
+            name_sfx: applicant.person_name.name_sfx
+          )
+        end
+
+        # Assigns demographics-related attributes to the person
+        # @param person [Person] The person to update
+        # @param applicant [Object] The applicant containing demographics information
+        # @return [void]
+        def assign_person_demographics_attributes(person, applicant)
+          person.assign_attributes(
             no_ssn: applicant.demographics.no_ssn ? "1" : "0",
             gender: applicant.demographics.gender,
             dob: applicant.demographics.dob,
@@ -122,11 +146,18 @@ module Operations
             is_homeless: applicant.is_homeless,
             is_temporarily_out_of_state: applicant.is_temporarily_out_of_state
           )
-          return Failure("Person is not valid: #{person.errors.full_messages.join(', ')}") unless person.valid?
-          Success(person)
-        rescue StandardError => e
-          Rails.logger.error("QHP Application - Error while building person: #{e.message}, backtrace: #{e.backtrace.join('\n')}")
-          Failure("Error while building person: #{e.message}, backtrace: #{e.backtrace.join('\n')}")
+        end
+
+        # Handles SSN assignment or removal
+        # @param person [Person] The person to update
+        # @param applicant [Object] The applicant containing SSN information
+        # @return [void]
+        def handle_ssn_assignment(person, applicant)
+          if applicant.demographics.encrypted_ssn.blank?
+            person.unset(:encrypted_ssn)
+          else
+            person.encrypted_ssn = applicant.demographics.encrypted_ssn
+          end
         end
 
         # Builds or updates the consumer role for a person

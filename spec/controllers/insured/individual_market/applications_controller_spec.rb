@@ -164,10 +164,6 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
     end
 
     describe "POST submit" do
-      before do
-        allow(Operations::IndividualMarket::Application::SubmitAndDetermine).to receive(:new).and_call_original
-      end
-
       case authorization_type
       when :unauthorized
         it "redirects to sign in" do
@@ -181,33 +177,88 @@ RSpec.describe Insured::IndividualMarket::ApplicationsController, dbclean: :afte
           expect(flash[:error]).to match(/Access not allowed/)
         end
       else
-        context "with valid attestation parameters" do
+        context "with a successful operation" do
           before do
-            post :submit, params: {
-              id: application.id,
-              terms_check: "true",
-              first_name: application.primary_applicant.person_name.given_name,
-              last_name: application.primary_applicant.person_name.family_name
-            }
+            allow(Operations::IndividualMarket::Application::SubmitAndDetermine).to receive(:new).and_call_original
+          end
+          context "with valid attestation parameters" do
+            before do
+              post :submit, params: {
+                id: application.id,
+                terms_check: "true",
+                first_name: application.primary_applicant.person_name.given_name,
+                last_name: application.primary_applicant.person_name.family_name
+              }
+            end
+
+            it "redirects to eligibility results" do
+              expect(response).to redirect_to(eligibility_results_insured_individual_market_application_path(application, internal: true))
+            end
+
+            it "sets submitted_at timestamp on application" do
+              expect(application.reload.submitted_at).to be_present
+            end
           end
 
-          it "redirects to eligibility results" do
-            expect(response).to redirect_to(eligibility_results_insured_individual_market_application_path(application, internal: true))
-          end
+          context "with invalid attestation parameters" do
+            before do
+              post :submit, params: { id: application.id }.merge(valid_params.merge(terms_check: "false"))
+            end
 
-          it "sets submitted_at timestamp on application" do
-            expect(application.reload.submitted_at).to be_present
+            it "redirects back to application with error" do
+              expect(response).to redirect_to(submit_and_determine_error_insured_individual_market_application_path(application))
+              expect(flash[:error]).to eq("Invalid attestation")
+            end
           end
         end
 
-        context "with invalid attestation parameters" do
+        context "with an unsuccessful operation" do
+          let(:failure_message) { 'Dummy Message' }
+          let(:operation_instance) { instance_double('::Operations::IndividualMarket::Application::SubmitAndDetermine') }
           before do
-            post :submit, params: { id: application.id }.merge(valid_params.merge(terms_check: "false"))
+            allow(::Operations::IndividualMarket::Application::SubmitAndDetermine).to receive(:new).and_return(operation_instance)
+            allow(operation_instance).to receive(:call).with({application: application}).and_return(Dry::Monads::Result::Failure.new(failure_message))
           end
 
-          it "redirects back to application with error" do
-            expect(response).to redirect_to(submit_and_determine_error_insured_individual_market_application_path(application))
-            expect(flash[:error]).to eq("Invalid attestation")
+          context "with the application in the initial state" do
+            before do
+              post :submit, params: {
+                id: application.id,
+                terms_check: "true",
+                first_name: application.primary_applicant.person_name.given_name,
+                last_name: application.primary_applicant.person_name.family_name
+              }
+            end
+
+            it "sets the application to failed submission" do
+              expect(application.reload.current_state).to eq(:submission_failed)
+            end
+
+            it "redirects back to application with error" do
+              expect(response).to redirect_to(submit_and_determine_error_insured_individual_market_application_path(application))
+              expect(flash[:error]).to eq(failure_message)
+            end
+          end
+
+          context "with the application in the determination_failed state" do
+            before do
+              allow(application).to receive(:current_state).and_return(:determination_failed)
+              post :submit, params: {
+                id: application.id,
+                terms_check: "true",
+                first_name: application.primary_applicant.person_name.given_name,
+                last_name: application.primary_applicant.person_name.family_name
+              }
+            end
+
+            it "does not change the application state" do
+              expect(application.reload.current_state).to eq(:determination_failed)
+            end
+
+            it "redirects back to application with error" do
+              expect(response).to redirect_to(submit_and_determine_error_insured_individual_market_application_path(application))
+              expect(flash[:error]).to eq(failure_message)
+            end
           end
         end
 

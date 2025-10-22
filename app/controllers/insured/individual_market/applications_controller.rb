@@ -46,15 +46,13 @@ module Insured
         if @application.build_attestation(params[:terms_check] == "true", params[:first_name], params[:last_name], current_user)
           operation = Operations::IndividualMarket::Application::SubmitAndDetermine.new
           result = operation.call(application: @application)
-
           if result.success?
             application = result.success
             redirect_to eligibility_results_insured_individual_market_application_path(application, internal: true) and return
           else
             if @application.current_state == :initial
               @application.failed_submission
-            else
-              @application.failed_determination
+              @application.save!
             end
             flash[:error] = result.failure
             redirect_to submit_and_determine_error_insured_individual_market_application_path(@application) and return
