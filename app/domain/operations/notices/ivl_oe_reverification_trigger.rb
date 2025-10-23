@@ -15,9 +15,9 @@ module Operations
       # @return [Dry::Monads::Result]
 
       def call(params)
-        _values = yield validate(params)
-        event_name = yield determine_eligibility(params[:family])
-        payload = yield build_payload(params[:family])
+        values = yield validate(params)
+        event_name = yield determine_event_name(values)
+        payload = yield build_family_payload(values[:family])
         event = yield build_event(payload, event_name)
         result = yield publish_response(event)
 
@@ -26,45 +26,22 @@ module Operations
 
       private
 
+      # { family: family, notice_type: 'oeq' }
+      # { family: family, notice_type: 'oeg' }
       def validate(params)
-        return Failure('Missing Family') if params[:family].blank?
+        return Failure('notice_type is invalid. It should be either oeg or oeq') if %w[oeg oeq].exclude?(params[:notice_type])
+        return Failure('family is required for oeq or oeg notices') unless params[:family].is_a?(Family)
 
         Success(params)
       end
 
-      def fetch_application(family)
-        applications = ::FinancialAssistance::Application.where(family_id: family.id, assistance_year: TimeKeeper.date_of_record.next_year.year)
-
-        determined_applications = applications.where(aasm_state: 'determined')
-        return determined_applications.max_by(&:created_at) if determined_applications.present?
-
-        applications.max_by(&:created_at)
-      end
-
-      def event_name(financial_application)
-        applicants = financial_application.applicants
-
-        if applicants.all?(&:is_ia_eligible)
-          'aqhp_eligible_on_reverification'
-        elsif applicants.all? { |applicant| applicant.is_medicaid_chip_eligible || applicant.is_magi_medicaid }
-          'medicaid_eligible_on_reverification'
-        elsif applicants.all?(&:is_without_assistance)
-          'uqhp_eligible_on_reverification'
-        elsif applicants.all?(&:is_totally_ineligible)
-          nil # do not have an event defined yet
-        else
-          'mixed_determination_on_reverification'
+      def determine_event_name(values)
+        case values[:notice_type]
+        when 'oeq'
+          Success('qhp_eligible_on_reverification')
+        when 'oeg'
+          Success('expired_consent_during_reverification')
         end
-      end
-
-      def determine_eligibility(family)
-        financial_application = fetch_application(family)
-
-        return Success('qhp_eligible_on_reverification') if financial_application.nil?
-        return Success('expired_consent_during_reverification') unless financial_application.determined?
-
-        event_name = event_name(financial_application)
-        event_name.present? ? Success(event_name) : Failure("Unable to determine event for the given family id: #{family.id}")
       end
 
       def build_addresses(person)
@@ -157,27 +134,8 @@ module Operations
         Success(family_entity)
       end
 
-      def build_payload(family)
-        financial_application = fetch_application(family)
-
-        entity =
-          if financial_application&.determined? && financial_application.eligibility_response_payload.present?
-            ::AcaEntities::MagiMedicaid::Operations::InitializeApplication.new.call(
-              JSON.parse(financial_application.eligibility_response_payload, :symbolize_names => true)
-            )
-          else
-            build_family_payload(family)
-          end
-
-        if entity&.success?
-          Success(entity.success.to_h)
-        else
-          Failure("Error parsing the payload for the given family id: #{family.id}")
-        end
-      end
-
       def build_event(payload, event_name)
-        result = event("events.individual.notices.#{event_name}", attributes: payload)
+        result = event("events.individual.notices.#{event_name}", attributes: payload.to_h)
         unless Rails.env.test?
           logger.info('-' * 100)
           logger.info(
@@ -190,7 +148,9 @@ module Operations
       end
 
       def publish_response(event)
-        Success(event.publish)
+        event.publish
+
+        Success("Event published successfully: #{event.name}")
       end
     end
   end

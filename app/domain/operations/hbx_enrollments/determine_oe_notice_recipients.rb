@@ -14,8 +14,7 @@ module Operations
       # @return [ HbxEnrollment ] hbx_enrollment
       def call(params)
         @notice_type      = yield validate(params)
-        oe_family_ids     = yield aggregate_recipients
-        _send_oe_notices  = yield send_notices(oe_family_ids)
+        _send_oe_notices  = yield send_notices
 
         Success("#{@notice_type} notices sent successfully")
       end
@@ -30,16 +29,11 @@ module Operations
         Success(params[:notice_type].downcase)
       end
 
-      def aggregate_recipients
-        eligible_family_ids = []
-        eligible_family_ids += fetch_oeg_family_ids if @notice_type.include?('oeg')
-        eligible_family_ids += fetch_oeq_family_ids if @notice_type.include?('oeq')
-
-        return Failure("No valid families found for #{@notice_type} notices") if eligible_family_ids.empty?
-
-        Success(eligible_family_ids.uniq)
-      end
-
+      # Aggregates family ids eligible for OEG notices based on the feature flag.
+      # When the feature flag is enabled, it fetches families requiring income verification extension.
+      # Otherwise, it fetches non-determined families for the renewal year.
+      #
+      # @return [Array] of family ids
       def fetch_oeg_family_ids
         if EnrollRegistry.feature_enabled?(:oeg_notice_income_verification_only)
           ::FinancialAssistance::Application.by_year(@renewal_year).income_verification_extension_required.distinct(:family_id)
@@ -48,45 +42,103 @@ module Operations
         end
       end
 
-      # Finds eligible families where the tax household group satisfies the following:
-      #   1. assistance_year is the renewal year
-      #   2. at least one tax household member is marked as is_without_assistance
+      # Finds eligible families for OEQ notices. The families must have at least one applicant
+      # who is eligible for coverage in the renewal year based on their individual market determination
+      # for a IndividualMarket::Application.
       #
       # @return [Array] of family ids
       def fetch_oeq_family_ids
-        ::Family.where(
-          tax_household_groups: {
+        ::IndividualMarket::Application.where(
+          current_state: :determined,
+          assistance_year: @renewal_year,
+          :'applicants.eligibilities' => {
             :$elemMatch => {
-              assistance_year: @renewal_year,
-              :'tax_households.tax_household_members.is_without_assistance' => true
+              :'determinations._type' => 'Eligibilities::V3::Determinations::IndividualMarketDetermination',
+              :'determinations.is_eligible' => true
             }
           }
-        ).distinct(:id)
+        ).distinct(:family_id)
       end
 
-      def send_notices(eligible_family_ids)
-        failures = 0
-
-        eligible_family_ids.each_with_index do |family_id, index|
-          family = Family.find_by(id: family_id)
-          next unless family.present?
-
-          result = Operations::Notices::IvlOeReverificationTrigger.new.call(family: family)
-          if result.success?
-            logger.info "Triggered OE event for family_id: #{family_id}, index: #{index}"
-          else
-            failures += 1
-            logger.info "Error: OE event trigger for family_id: #{family_id}, index: #{index} Failed!! due to #{result.failure}"
-          end
-
-        rescue StandardError => e
-          logger.info "Error triggering OE notice event due to #{e.message} for family_id #{family_id}}"
+      # Sends notices based on the notice type specified.
+      #
+      # @return [Dry::Monads::Result] Success with message if notices are sent successfully
+      def send_notices
+        case @notice_type
+        when 'oeg_oeq'
+          trigger_oeg_notices
+          trigger_oeq_notices
+        when 'oeg'
+          trigger_oeg_notices
+        when 'oeq'
+          trigger_oeq_notices
         end
 
-        logger.info "Triggered #{@notice_type} notices for #{eligible_family_ids.size} families with #{failures} failures"
-        Success(true)
+        Success("#{@notice_type} notices processed successfully. Please see logger for details.")
       end
 
+      # Triggers OEG notices for eligible families.
+      # It checks if the family requires income verification extension based on the feature flag.
+      #
+      # @return [void]
+      def trigger_oeg_notices
+        fetch_oeg_family_ids.each do |family_id|
+          family = Family.find(family_id)
+          logger.info "Triggering OEG notice for Family ID: #{family_id}"
+
+          most_recent_renewal_faa = ::FinancialAssistance::Application.where(
+            family_id: family_id, assistance_year: @renewal_year
+          ).order_by(created_at: -1).limit(1).first
+
+          if EnrollRegistry.feature_enabled?(:oeg_notice_income_verification_only)
+            logger.info "Family ID: #{family_id} - Checking income verification extension requirement."
+            if most_recent_renewal_faa.income_verification_extension_required?
+              result = ::Operations::Notices::IvlOeReverificationTrigger.new.call({ family: family, notice_type: 'oeg' })
+              if result.success?
+                logger.info "Successfully triggered OEG notice for Family ID: #{family_id}, FAA ID: #{most_recent_renewal_faa.id}"
+              else
+                logger.error "Failed to trigger OEG notice for Family ID: #{family_id}, FAA ID: #{most_recent_renewal_faa.id}, Error: #{result.failure}"
+              end
+            else
+              logger.info "Family ID: #{family_id} - Skipping OEG notice for application #{most_recent_renewal_faa.id} as the state #{most_recent_renewal_faa.aasm_state} is not income_verification_extension_required."
+            end
+          elsif most_recent_renewal_faa.non_determined?
+            result = ::Operations::Notices::IvlOeReverificationTrigger.new.call({ family: family, notice_type: 'oeg' })
+            if result.success?
+              logger.info "Successfully triggered OEG notice for Family ID: #{family_id}, FAA ID: #{most_recent_renewal_faa.id}"
+            else
+              logger.error "Failed to trigger OEG notice for Family ID: #{family_id}, FAA ID: #{most_recent_renewal_faa.id}, Error: #{result.failure}"
+            end
+          else
+            logger.info "Family ID: #{family_id} - Skipping OEG notice for application #{most_recent_renewal_faa.id} as the state #{most_recent_renewal_faa.aasm_state} is not non_determined."
+          end
+        rescue StandardError => e
+          logger.error "Exception occurred while processing Family ID: #{family_id}, Error: #{e.message}, Backtrace: #{e.backtrace.join("\n")}"
+        end
+      end
+
+      # Triggers OEQ notices for eligible families.
+      #
+      # @return [void]
+      def trigger_oeq_notices
+        fetch_oeq_family_ids.each do |family_id|
+          logger.info "Triggering OEQ notice for Family ID: #{family_id}"
+          family = Family.find(family_id)
+          result = Operations::Notices::IvlOeReverificationTrigger.new.call({ family: family, notice_type: 'oeq' })
+
+          if result.success?
+            logger.info "Successfully triggered OEQ notice for Family ID: #{family_id}"
+          else
+            logger.error "Failed to trigger OEQ notice for Family ID: #{family_id}, Error: #{result.failure}"
+          end
+        rescue StandardError => e
+          logger.error "Exception occurred while processing Family ID: #{family_id}, Error: #{e.message}, Backtrace: #{e.backtrace.join("\n")}"
+        end
+      end
+
+      # Initializes a logger for recording notice trigger events.
+      #
+      # @return [Logger] the logger instance
       def logger
         @logger ||= Logger.new("#{Rails.root}/log/#{@notice_type}_notice_triggers_#{TimeKeeper.date_of_record.strftime('%Y_%m_%d')}.log")
       end

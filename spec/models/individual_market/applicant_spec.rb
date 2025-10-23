@@ -30,17 +30,6 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
     )
   end
 
-  let(:dependent_applicant) do
-    FactoryBot.create(
-      :individual_market_applicant,
-      :dependent,
-      :with_person_name,
-      :with_demographics,
-      :with_eligibilities,
-      application: application
-    )
-  end
-
   describe 'associations' do
     it 'embeds one person_name' do
       expect(applicant.person_name).to be_a(PersonName)

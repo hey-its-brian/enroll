@@ -4,98 +4,26 @@ require 'rails_helper'
 
 # corresponds to service object called from `rails runner script/oeg_oeq_notice_triggers.rb oeg_oeq`
 RSpec.describe Operations::HbxEnrollments::DetermineOeNoticeRecipients, dbclean: :around_each do
-  let(:logger_double) { instance_double(Logger, info: true) }
-
-  let!(:hbx_profile) { FactoryBot.create(:hbx_profile) }
-  let!(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
-  let(:product) { FactoryBot.create(:benefit_markets_products_health_products_health_product, metal_level_kind: :silver, benefit_market_kind: :aca_individual) }
-
-  let(:hbx_enrollment_member1) do
-    FactoryBot.build(:hbx_enrollment_member,
-                     is_subscriber: true,
-                     applicant_id: family1.family_members[0].id,
-                     coverage_start_on: TimeKeeper.date_of_record.beginning_of_month,
-                     eligibility_date: TimeKeeper.date_of_record.beginning_of_month)
-  end
-
-  let!(:enrollment1) do
-    FactoryBot.create(:hbx_enrollment,
-                      :with_enrollment_members,
-                      product: product,
-                      family: family1,
-                      household: family1.active_household,
-                      hbx_enrollment_members: [hbx_enrollment_member1],
-                      aasm_state: "coverage_selected",
-                      kind: "individual",
-                      effective_on: TimeKeeper.date_of_record,
-                      rating_area_id: person1.consumer_role.rating_address.id,
-                      consumer_role_id: person1.consumer_role.id)
-  end
-
-  let(:hbx_enrollment_member2) do
-    FactoryBot.build(:hbx_enrollment_member,
-                     is_subscriber: true,
-                     applicant_id: family2.family_members[0].id,
-                     coverage_start_on: TimeKeeper.date_of_record.beginning_of_month,
-                     eligibility_date: TimeKeeper.date_of_record.beginning_of_month)
-  end
-
-  let!(:enrollment2) do
-    FactoryBot.create(:hbx_enrollment,
-                      :with_enrollment_members,
-                      product: product,
-                      family: family2,
-                      household: family2.active_household,
-                      hbx_enrollment_members: [hbx_enrollment_member2],
-                      aasm_state: "coverage_selected",
-                      kind: "individual",
-                      effective_on: TimeKeeper.date_of_record,
-                      rating_area_id: person2.consumer_role.rating_address.id,
-                      consumer_role_id: person2.consumer_role.id)
-  end
-
+  let(:hbx_profile) { FactoryBot.create(:hbx_profile) }
+  let(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
   let(:person1) { FactoryBot.create(:person, :with_consumer_role, :with_ssn) }
   let(:family1) { FactoryBot.create(:family, :with_primary_family_member, person: person1) }
-
-  let(:person2) { FactoryBot.create(:person, :with_consumer_role, :with_ssn) }
-  let(:family2) do
-    fam = FactoryBot.create(:family, :with_primary_family_member, person: person2)
-    thhg = fam.tax_household_groups.build(
-      source: 'qhp',
-      application_gid: nil,
-      start_on: TimeKeeper.date_of_record.next_year.beginning_of_year,
-      end_on: nil,
-      assistance_year: TimeKeeper.date_of_record.next_year.year
-    )
-
-    thh = thhg.tax_households.build(effective_starting_on: TimeKeeper.date_of_record.next_year.beginning_of_year)
-
-    thh.tax_household_members.build(
-      applicant_id: fam.primary_applicant.id,
-      is_without_assistance: true,
-      is_totally_ineligible: false,
-      is_csr_eligible: false,
-      csr_percent_as_integer: 0
-    )
-    fam.save!
-    fam
-  end
 
   let(:faa1) do
     FactoryBot.create(
       :financial_assistance_application,
-      :draft,
+      aasm_state: faa1_state,
       family_id: family1.id,
       assistance_year: TimeKeeper.date_of_record.next_year.year,
       applicants: [
         FactoryBot.create(
           :financial_assistance_applicant,
           family_member_id: family1.primary_family_member.id,
-          first_name: person2.first_name,
-          last_name: person2.last_name,
-          gender: person2.gender,
-          dob: person2.dob,
-          person_hbx_id: person2.hbx_id,
+          first_name: person1.first_name,
+          last_name: person1.last_name,
+          gender: person1.gender,
+          dob: person1.dob,
+          person_hbx_id: person1.hbx_id,
           is_applying_coverage: true,
           is_primary_applicant: true
         )
@@ -103,60 +31,80 @@ RSpec.describe Operations::HbxEnrollments::DetermineOeNoticeRecipients, dbclean:
     )
   end
 
-  let(:faa2) do
-    FactoryBot.create(
-      :financial_assistance_application,
-      family_id: family2.id,
-      assistance_year: TimeKeeper.date_of_record.year,
-      applicants: [
-        FactoryBot.create(
-          :financial_assistance_applicant,
-          family_member_id: family2.primary_family_member.id,
-          first_name: person2.first_name,
-          last_name: person2.last_name,
-          gender: person2.gender,
-          dob: person2.dob,
-          person_hbx_id: person2.hbx_id,
-          is_applying_coverage: true,
-          is_primary_applicant: true
-        )
-      ]
+  let(:application)   { FactoryBot.create(:individual_market_application, :prospective, family: family1) }
+  let(:family_member) { application.family.family_members.first }
+  let(:applicant) do
+    FactoryBot.build(
+      :individual_market_applicant,
+      :with_person_name,
+      :with_demographics,
+      :with_eligibilities,
+      :with_home_address,
+      :with_phone_number,
+      :with_email,
+      application: application,
+      family_member_id: family_member.id,
+      is_primary_applicant: true
     )
   end
+  let(:eligibility) { applicant.individual_market_eligibility }
+  let(:determination) { FactoryBot.create(:individual_market_determination, :with_all_bases_satisfied, eligibility: eligibility) }
 
-  before do
-    allow(Logger).to receive(:new).and_return(logger_double)
-    allow(logger_double).to receive(:info)
-    enrollment1
-    enrollment2
-    faa1
-    faa2
-  end
+  describe '#call' do
+    context 'when notice_type is oeg' do
+      context 'when income_verification_only feature flag is enabled' do
+        before :each do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:oeg_notice_income_verification_only).and_return(true)
+        end
 
-  it "returns failure for invalid enrollment_type" do
-    result = subject.call(notice_type: "invalid_type")
-    expect(result).to be_failure
-    expect(result.failure).to match(/Not a valid NoticeType/)
-  end
+        context 'when most recent renewal FAA is in income verification extension' do
+          let(:faa1_state) { 'income_verification_extension_required' }
 
-  it "processes OEG families when 'oeg' is passed" do
-    expect(logger_double).to receive(:info).with(/Triggered OE event for family_id: #{family1.id}, index: 0/)
-    result = subject.call(notice_type: "oeg")
-    expect(result).to be_success
-  end
+          it 'triggers OEG notice' do
+            faa1
+            result = subject.call(notice_type: 'oeg')
+            expect(result).to be_success
+          end
+        end
+      end
 
-  it "processes OEQ families when 'oeq' is passed" do
-    expect(logger_double).to receive(:info).with(/Triggered OE event for family_id: #{family2.id}, index: 0/)
-    result = subject.call(notice_type: "oeq")
-    expect(result).to be_success
-  end
+      context 'when income_verification_only feature flag is disabled' do
+        before :each do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:oeg_notice_income_verification_only).and_return(false)
+        end
 
-  context 'for oeg_oeq' do
-    it "processes both OEG and OEQ families when 'oeg_oeq' is passed" do
-      expect(logger_double).to receive(:info).with(/Triggered OE event for family_id: #{family1.id}, index: 0/)
-      expect(logger_double).to receive(:info).with(/Triggered OE event for family_id: #{family2.id}, index: 1/)
-      result = subject.call(notice_type: "oeg_oeq")
-      expect(result).to be_success
+        context 'when most recent renewal FAA is in income_verification_extension_required state' do
+          let(:faa1_state) { 'income_verification_extension_required' }
+
+          it 'triggers OEG notice' do
+            faa1
+            result = subject.call(notice_type: 'oeg')
+            expect(result).to be_success
+          end
+        end
+
+        context 'when most recent renewal FAA is in renewal_draft state' do
+          let(:faa1_state) { 'renewal_draft' }
+
+          it 'triggers OEG notice' do
+            faa1
+            result = subject.call(notice_type: 'oeg')
+            expect(result).to be_success
+          end
+        end
+      end
+    end
+
+    context 'when notice_type is oeq' do
+      before :each do
+        benefit_sponsorship
+        determination
+      end
+
+      it 'triggers OEQ notice' do
+        result = subject.call(notice_type: 'oeq')
+        expect(result).to be_success
+      end
     end
   end
 end

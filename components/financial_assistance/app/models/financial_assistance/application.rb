@@ -1632,6 +1632,13 @@ module FinancialAssistance
       self.class.where(family_id: family_id, id: predecessor_id).first
     end
 
+    # Returns true if the application is NOT in a determined state.
+    #
+    # @return [Boolean] true if the application is not determined, false otherwise
+    def non_determined?
+      !determined?
+    end
+
     private
 
     # Records the transition of the application state.
