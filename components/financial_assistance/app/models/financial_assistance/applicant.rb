@@ -1631,6 +1631,28 @@ module FinancialAssistance
       end
     end
 
+    # Fetches the v3 evidence based on the provided evidence type.
+    #
+    # This method accepts an evidence type as a parameter and returns the corresponding v3 evidence.
+    # The evidence type can be one of the following: 'income_evidence', 'esi_evidence', 'non_esi_evidence', or 'local_mec_evidence'.
+    #
+    # @param evidence_type [String] The type of evidence to fetch.
+    # @return [Object] The evidence corresponding to the provided type.
+    def fetch_v3_evidence(evidence_type)
+      evidence_map = {
+        'income_evidence' => aptc_csr_eligibility&.income_evidence,
+        'esi_mec_evidence' => aptc_csr_eligibility&.esi_mec_evidence,
+        'non_esi_mec_evidence' => aptc_csr_eligibility&.non_esi_mec_evidence,
+        'local_mec_evidence' => aptc_csr_eligibility&.local_mec_evidence,
+        'social_security_number_evidence' => individual_market_eligibility&.social_security_number_evidence,
+        'citizenship_evidence' => individual_market_eligibility&.citizenship_evidence,
+        'alive_evidence' => individual_market_eligibility&.alive_evidence,
+        'immigration_evidence' => individual_market_eligibility&.immigration_evidence,
+        'american_indian_evidence' => individual_market_eligibility&.american_indian_evidence
+      }
+      evidence_map[evidence_type]
+    end
+
     # Calculates and assigns the total net annual income for the applicant.
     #
     # @return [void]

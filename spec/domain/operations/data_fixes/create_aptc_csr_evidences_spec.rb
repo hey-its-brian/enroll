@@ -1,3 +1,7 @@
+=begin
+The tests run by this spec are obsolete, as V3 evidences types have already supplanted
+the original evidences
+
 # frozen_string_literal: true
 
 require 'rails_helper'
@@ -288,3 +292,5 @@ RSpec.describe ::Operations::DataFixes::CreateAptcCsrEvidences, dbclean: :after_
     end
   end
 end
+
+=end
