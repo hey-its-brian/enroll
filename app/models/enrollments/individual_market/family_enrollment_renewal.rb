@@ -171,7 +171,7 @@ class Enrollments::IndividualMarket::FamilyEnrollmentRenewal
   #  - max APTC
   def renewal_eligiblity_determination; end
 
-  def fetch_cross_walk_product_hios_base_id(county, current_hios_base_id)
+  def fetch_cross_walk_product_hios_base_id(county, current_hios_base_id, renewal_year)
     counties = %w[
       Aroostook
       Hancock
@@ -182,19 +182,36 @@ class Enrollments::IndividualMarket::FamilyEnrollmentRenewal
     ]
 
     return if counties.exclude?(county)
-    { '33653ME0560001' => '33653ME0560006', '33653ME0560005' => '33653ME0560003' }[current_hios_base_id]
+
+    crosswalk_mapping_for_year(renewal_year)[current_hios_base_id]
+  end
+
+  def crosswalk_mapping_for_year(renewal_year)
+    case renewal_year
+    when 2025
+      {
+        '33653ME0560001' => '33653ME0560006',
+        '33653ME0560005' => '33653ME0560003'
+      }.freeze
+    when 2026
+      {
+        '33653ME0530010' => '33653ME0560006',
+        '33653ME0530015' => '33653ME0560003'
+      }.freeze
+    end
   end
 
   def fetch_cross_product
     renewal_year = renewal_coverage_start.year
     default_renewal_product = enrollment.product.renewal_product
 
-    # This is a temporary fix for 2025 renewal enrollments as the current Data Model does not support cross walk products by county.
-    return default_renewal_product unless renewal_year == 2025
+    # This is a temporary fix for renewal enrollments as the current Data Model does not support cross walk products by county.
+    return default_renewal_product unless [2025, 2026].include?(renewal_year)
 
     cross_walk_product_hios_base_id = fetch_cross_walk_product_hios_base_id(
       enrollment&.consumer_role&.rating_address&.county&.capitalize,
-      enrollment.product.hios_base_id
+      enrollment.product.hios_base_id,
+      renewal_year
     )
     return default_renewal_product if cross_walk_product_hios_base_id.blank?
 

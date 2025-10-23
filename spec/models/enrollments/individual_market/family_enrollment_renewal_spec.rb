@@ -332,40 +332,80 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
       end
 
       context "fetch cross walk product for renewal" do
+
+        let(:service_area_2025) do
+          ::BenefitMarkets::Locations::ServiceArea.service_areas_for(address, during: 2025).first || FactoryBot.create_default(:benefit_markets_locations_service_area, active_year: 2025)
+        end
+
+        let(:service_area_2026) do
+          ::BenefitMarkets::Locations::ServiceArea.service_areas_for(address, during: 2026).first || FactoryBot.create_default(:benefit_markets_locations_service_area, active_year: 2026)
+        end
+
         let!(:cross_product) do
           prod =
             FactoryBot.create(:benefit_markets_products_health_products_health_product, :with_issuer_profile,
-                              benefit_market_kind: :aca_individual, kind: :health, service_area: renewal_service_area, csr_variant_id: '01',
+                              benefit_market_kind: :aca_individual, kind: :health, service_area: service_area_2025, csr_variant_id: '01',
                               metal_level_kind: 'silver', hios_id: "33653ME0560006-01", hios_base_id: "33653ME0560006",
-                              application_period: renewal_application_period)
+                              application_period: Date.new(2025,1,1)..Date.new(2025,12,31))
           prod.premium_tables = [renewal_premium_table]
           prod.save
           prod
         end
 
-        before do
-          subject.enrollment.product.update_attributes(hios_base_id: "33653ME0560001", hios_id: "33653ME0560001-01")
+        let!(:cross_product_2026) do
+          prod =
+            FactoryBot.create(:benefit_markets_products_health_products_health_product, :with_issuer_profile,
+                              benefit_market_kind: :aca_individual, kind: :health, service_area: service_area_2026, csr_variant_id: '01',
+                              metal_level_kind: 'silver', hios_id: "33653ME0560003-01", hios_base_id: "33653ME0560003",
+                              application_period: Date.new(2026,1,1)..Date.new(2026,12,31))
+          prod.premium_tables = [renewal_premium_table]
+          prod.save
+          prod
         end
 
-        it "should fetch cross walk product for renewal for year 2025" do
-          subject.enrollment&.consumer_role&.rating_address&.update_attributes(county: "Hancock")
-          renewal = subject.renew
-          if subject.renewal_coverage_start.year == 2025
+        context "for year 2025" do
+          before do
+            subject.enrollment.product.update_attributes(hios_base_id: "33653ME0560001", hios_id: "33653ME0560001-01")
+            allow(subject).to receive(:renewal_coverage_start).and_return(Date.new(2025, 1, 1))
+            allow(::BenefitMarkets::Locations::ServiceArea).to receive(:service_areas_for).and_return([service_area_2025])
+            enrollment.product.renewal_product.update_attributes!(service_area_id: service_area_2025.id)
+          end
+
+          it "should fetch cross walk product for eligible county and HIOS base ID" do
+            subject.enrollment&.consumer_role&.rating_address&.update_attributes(county: "Hancock")
+            renewal = subject.renew
             expect(renewal.product.hios_id).to eq cross_product.hios_id
-          else
-            expect(renewal.product.hios_id).to eq renewal_product.hios_id
+          end
+
+          context "with ineligible county" do
+
+            it "should fetch regular renewal product" do
+              renewal = subject.renew
+              expect(renewal.product.hios_id).to eq renewal_product.hios_id
+            end
           end
         end
 
-        it "should fetch renewal product for renewal" do
-          renewal = subject.renew
-          expect(renewal.product.hios_id).to eq renewal_product.hios_id
-        end
+        context "for year 2026" do
+          before do
+            subject.enrollment.product.update_attributes(hios_base_id: "33653ME0530015", hios_id: "33653ME0530015-01")
+            allow(subject).to receive(:renewal_coverage_start).and_return(Date.new(2026, 1, 1))
+            enrollment.product.renewal_product.update_attributes!(service_area_id: service_area_2026.id)
+          end
 
-        it "should fetch renewal product for renewal for dental" do
-          subject.enrollment.update_attributes(coverage_kind: "dental")
-          renewal = subject.renew
-          expect(renewal.product.hios_id).to eq renewal_product.hios_id
+          it "should fetch cross walk product for eligible county and HIOS base ID" do
+            subject.enrollment&.consumer_role&.rating_address&.update_attributes(county: "Penobscot")
+            renewal = subject.renew
+            expect(renewal.product.hios_id).to eq cross_product_2026.hios_id
+          end
+
+          context "with ineligible county" do
+
+            it "should fetch regular renewal product" do
+              renewal = subject.renew
+              expect(renewal.product.hios_id).to eq renewal_product.hios_id
+            end
+          end
         end
       end
 
