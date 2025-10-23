@@ -122,6 +122,7 @@ module Operations
 
           application_ids = all_applications
                             .select { |app| eligible_application?(app, evidence_key, eligibility_key, family_member_id, recent_years) }
+                            .reverse
                             .map(&:hbx_id)
 
           Success(application_ids)
