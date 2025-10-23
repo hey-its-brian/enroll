@@ -77,12 +77,52 @@ module FinancialAssistance
 
               current_application = renewal_application.predecessor
 
-              current_application.applicants.each do |applicant|
-                renewal_applicant = renewal_application.applicants.where(family_member_id: applicant.family_member_id).first
-                renewal_applicant.retain_evidence_information(applicant)
+              renewal_application.applicants.each do |renewal_applicant|
+                current_applicant = current_application.applicants.where(family_member_id: renewal_applicant.family_member_id).first
+
+                if !current_applicant.is_applying_coverage && renewal_applicant.is_applying_coverage
+                  build_history_for_applicant_now_applying_for_coverage(renewal_applicant, current_applicant)
+                else
+                  renewal_applicant.retain_evidence_information(current_applicant)
+                end
               end
 
               renewal_application
+            end
+
+            def build_history_for_applicant_now_applying_for_coverage(renewal_applicant, current_applicant)
+              renewal_aptc_csr_eligibility = renewal_applicant.aptc_csr_eligibility
+              renewal_individual_market_eligibility = renewal_applicant.individual_market_eligibility
+
+              renewal_aptc_csr_eligibility.evidences.each do |renewal_evidence|
+                if renewal_evidence.key == 'income_evidence'
+                  renewal_evidence.retain_evidence_information(current_applicant.aptc_csr_eligibility.income_evidence)
+                else
+                  build_history_for_newly_applying_for_coverage(renewal_evidence, current_applicant.application)
+                end
+              end
+
+              renewal_individual_market_eligibility.evidences.each do |renewal_evidence|
+                current_evidence = current_applicant.individual_market_eligibility.evidences.where(key: renewal_evidence.key).first
+
+                if renewal_evidence.key == 'social_security_number_evidence'
+                  if current_applicant.encrypted_ssn.present?
+                    renewal_evidence.retain_evidence_information(current_evidence)
+                  else
+                    build_history_for_newly_applying_for_coverage(renewal_evidence, current_applicant.application)
+                  end
+                else
+                  build_history_for_newly_applying_for_coverage(renewal_evidence, current_applicant.application)
+                end
+              end
+            end
+
+            def build_history_for_newly_applying_for_coverage(renewal_evidence, current_application)
+              renewal_evidence.build_verification_history(
+                'applicant_is_applying_for_coverage_now',
+                "applicant did not apply for coverage on previous application hbx id:#{current_application.hbx_id}, no prior evidence exists to retain on renewal",
+                'system'
+              )
             end
 
             def validate(application)
