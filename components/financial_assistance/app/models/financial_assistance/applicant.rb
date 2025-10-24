@@ -718,6 +718,16 @@ module FinancialAssistance
       @family_member = family.family_members.where(id: family_member_id).first
     end
 
+    # Finds the person associated with the family member.
+    # This method caches the person object to avoid multiple database queries.
+    #
+    # @return [Person] The person associated with the family member.
+    def person
+      return @person if defined?(@person)
+
+      @person = family_member.person
+    end
+
     # Finds the family associated with the application.
     # This method caches the family object to avoid multiple database queries.
     #

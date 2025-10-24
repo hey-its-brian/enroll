@@ -146,5 +146,52 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
         end
       end
     end
+
+    context 'when:
+      - the family has an existing application
+      - the application is in renewal_draft state
+      - the current applicant is missing evidences present on the person
+      ' do
+
+      let(:is_applying_coverage) { true }
+
+      before :each do
+        allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:skip_eligibility_redetermination).and_return(false)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+        benefit_sponsorship
+        current_applicant.build_aptc_eligibilities_evidences
+
+        current_applicant.build_individual_market_eligibility
+        current_applicant.send(:build_social_security_number_evidence)
+
+        current_applicant.eligibilities.flat_map(&:evidences).each_with_index do |evidence, index|
+          index.even? ? evidence.mark_as_outstanding : evidence.mark_as_verified
+        end
+        current_applicant.save!
+        family.latest_application_gid = current_application.to_global_id.uri.to_s
+        family.save!
+        renewal_application
+      end
+
+      let(:result) { subject.call(application_id: renewal_application.id) }
+
+      it 'successfully submits the determination request' do
+        expect(result).to be_success
+      end
+
+      it 'retains renewal application ivl market evidence when no prior evidence exists' do
+        result
+        renewal_application.reload.applicants.each do |applicant|
+          applicant.individual_market_eligibility.evidences.each do |evidence|
+            current_evidence = current_applicant.individual_market_eligibility.evidences.where(key: evidence.key).first
+            next unless current_evidence.blank?
+
+            expect(evidence.verification_histories).not_to be_empty
+            history_actions = evidence.verification_histories.map(&:action)
+            expect(history_actions).to eq(['missing_current_evidence'])
+          end
+        end
+      end
+    end
   end
 end

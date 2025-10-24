@@ -83,11 +83,95 @@ module FinancialAssistance
                 if !current_applicant.is_applying_coverage && renewal_applicant.is_applying_coverage
                   build_history_for_applicant_now_applying_for_coverage(renewal_applicant, current_applicant)
                 else
-                  renewal_applicant.retain_evidence_information(current_applicant)
+                  retain_evidence_information(current_applicant, renewal_applicant)
                 end
               end
 
               renewal_application
+            end
+
+            def retain_evidence_information(current_applicant, renewal_applicant)
+              # APTC Eligibility Evidences retention logic
+              renewal_applicant.aptc_csr_eligibility.retain_evidence_information(current_applicant.aptc_csr_eligibility)
+
+              current_person = current_applicant.person
+              renewal_applicant.individual_market_eligibility.evidences.each do |renewal_evidence|
+                current_evidence = current_applicant.individual_market_eligibility.evidences.where(key: renewal_evidence.key).first
+                handle_evidence_scenario(current_person, current_evidence, renewal_evidence)
+              end
+            end
+
+            def handle_evidence_scenario(current_person, current_evidence, renewal_evidence)
+              case renewal_evidence.key
+              when 'social_security_number_evidence'
+                handle_ssn_evidence(current_person, current_evidence, renewal_evidence)
+              when 'alive_evidence'
+                handle_alive_evidence(current_person, current_evidence, renewal_evidence)
+              when 'american_indian_evidence'
+                handle_american_indian_evidence(current_person, current_evidence, renewal_evidence)
+              when 'citizenship_evidence'
+                handle_citizenship_evidence(current_person, current_evidence, renewal_evidence)
+              when 'immigration_evidence'
+                handle_immigration_evidence(current_person, current_evidence, renewal_evidence)
+              end
+            end
+
+            def handle_ssn_evidence(current_person, current_evidence, renewal_evidence)
+              if current_person.encrypted_ssn.present? && current_evidence.blank?
+                # Create a History Object that the evidence is missing even though the person is eligible to have the evidence
+                build_history_for_missing_current_evidence(renewal_evidence, current_person)
+              else
+                # Retain the evidence information as the current evidence exists
+                renewal_evidence.retain_evidence_information(current_evidence)
+              end
+            end
+
+            def handle_alive_evidence(current_person, current_evidence, renewal_evidence)
+              if current_person.encrypted_ssn.present? && current_person.is_applying_coverage && current_evidence.blank?
+                # Create a History Object that the evidence is missing even though the person is eligible to have the evidence
+                build_history_for_missing_current_evidence(renewal_evidence, current_person)
+              else
+                # Retain the evidence information as the current evidence exists
+                renewal_evidence.retain_evidence_information(current_evidence)
+              end
+            end
+
+            def handle_american_indian_evidence(current_person, current_evidence, renewal_evidence)
+              if current_person.indian_tribe_member.present? && current_evidence.blank?
+                # Create a History Object that the evidence is missing even though the person is eligible to have the evidence
+                build_history_for_missing_current_evidence(renewal_evidence, current_person)
+              else
+                # Retain the evidence information as the current evidence exists
+                renewal_evidence.retain_evidence_information(current_evidence)
+              end
+            end
+
+            def handle_citizenship_evidence(current_person, current_evidence, renewal_evidence)
+              if current_person.is_applying_coverage && current_person.citizen_status.in?([ConsumerRole::US_CITIZEN_STATUS, ConsumerRole::NATURALIZED_CITIZEN_STATUS]) && current_evidence.blank?
+                # Create a History Object that the evidence is missing even though the person is eligible to have the evidence
+                build_history_for_missing_current_evidence(renewal_evidence, current_person)
+              else
+                # Retain the evidence information as the current evidence exists
+                renewal_evidence.retain_evidence_information(current_evidence)
+              end
+            end
+
+            def handle_immigration_evidence(current_person, current_evidence, renewal_evidence)
+              if current_person.is_applying_coverage && current_person.citizen_status == ConsumerRole::ALIEN_LAWFULLY_PRESENT_STATUS && current_evidence.blank?
+                # Create a History Object that the evidence is missing even though the person is eligible to have the evidence
+                build_history_for_missing_current_evidence(renewal_evidence, current_person)
+              else
+                # Retain the evidence information as the current evidence exists
+                renewal_evidence.retain_evidence_information(current_evidence)
+              end
+            end
+
+            def build_history_for_missing_current_evidence(renewal_evidence, current_person)
+              renewal_evidence.build_verification_history(
+                'missing_current_evidence',
+                "Verification type is missing for person with hbx id: #{current_person.hbx_id}, id: #{current_person.id}. Person must have this evidence as they are eligible for it based on their personal information",
+                'system'
+              )
             end
 
             def build_history_for_applicant_now_applying_for_coverage(renewal_applicant, current_applicant)
