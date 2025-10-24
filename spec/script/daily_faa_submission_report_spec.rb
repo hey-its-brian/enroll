@@ -103,6 +103,7 @@ describe 'daily_faa_submission_report', :dbclean => :after_each do
         FPL_Amount
         Application_Year
         Application_State
+        Is_Applying_For_Coverage
     ]
   end
 
@@ -198,6 +199,10 @@ describe 'daily_faa_submission_report', :dbclean => :after_each do
     it "should match the application state" do
       expect(@file_content[1][18]).to eql(application.aasm_state.to_s)
     end
+
+    it 'should match with the applicant applying forr coverage' do
+      expect(@file_content[1][19]).to eq(primary_applicant.is_applying_coverage.to_s)
+    end
   end
 
   context 'spouse applicant in a separate tax household' do
@@ -265,6 +270,10 @@ describe 'daily_faa_submission_report', :dbclean => :after_each do
     it 'should match with the applicant immigration status' do
       immigration_status = spouse_applicant.citizen_status&.humanize&.downcase&.gsub("us", "US")
       expect(@file_content[2][15]).to eq(immigration_status)
+    end
+
+    it 'should match with the applicant applying forr coverage' do
+      expect(@file_content[1][19]).to eq(spouse_applicant.is_applying_coverage.to_s)
     end
   end
 
