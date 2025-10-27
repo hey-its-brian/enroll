@@ -673,6 +673,13 @@ Then(/Individual creates a new HBX account$/) do
   find(CreateAccount.create_account_btn, wait: 5).click
 end
 
+Then(/the button should have disabled attribute$/) do
+  continue_button = find('#continue_button')
+  disable_with_value = continue_button['data-disable-with']
+  expect(disable_with_value).to be_present
+  expect(disable_with_value).to eq(l10n('continue_next'))
+end
+
 Then(/Individual creates a new HBX account with a weak password$/) do
   fill_in CreateAccount.email_or_username, :with => "testflow@test.com"
   fill_in CreateAccount.password, :with => "BadPw1!"

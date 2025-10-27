@@ -13,6 +13,9 @@
 <% run_person_validations = local_assigns[:run_person_validations] ? run_person_validations : false %>
 <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
 <% show_back_to_household_button = local_assigns[:show_back_to_household_button] ? show_back_to_household_button : false %>
+<% continue_button_data = { disable_with: l10n("continue_next") }
+   continue_button_data[:turbolinks] = false if genesys_feature_enabled
+%>
 
 <div class="d-flex flex-column flex-sm-row align-items-center">
   <% if show_back_to_household_button && @application.present? %>
@@ -40,7 +43,7 @@
           <%= l10n("continue_next") %>
         </button>
       <% else %>
-        <%= h(link_to l10n("continue_next"), next_link, method: link_method, class: "btn #{'disabled' if disable_link}", id: "continue_button", data: genesys_feature_enabled ? {turbolinks: false} : {}) %>
+        <%= h(link_to l10n("continue_next"), next_link, method: link_method, class: "btn #{'disabled' if disable_link}", id: "continue_button", data: continue_button_data) %>
       <% end %>
     <% end %>
   <% end %>

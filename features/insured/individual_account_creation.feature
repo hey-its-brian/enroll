@@ -96,3 +96,12 @@ Feature: UI validations for Email, Username, SSN already in use, and weak Passwo
     When user registers as an individual female gender
     When the Individual clicks CONTINUE
     Then Individual sees form to enter personal information with checked female gender
+
+   Scenario: New user creates account and double clicks on the continue button
+    Given bs4_consumer_flow feature is enabled
+    When Individual visits the Consumer portal during open enrollment
+    And Individual creates a new HBX account
+    And Individual should see a successful sign up message
+    And Individual sees Your Information page
+    And user registers as an individual female gender
+    Then the button should have disabled attribute
