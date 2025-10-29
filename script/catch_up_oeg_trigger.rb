@@ -43,8 +43,9 @@ end
 primary_person_hbx_ids.each do |primary_person_hbx_id|
   person = Person.by_hbx_id(primary_person_hbx_id).first
   family = person.primary_family
+  app = FinancialAssistance::Application.where(family_id: family.id, :predecessor_id.ne => nil).by_year(renewal_year).non_determined.max_by(&:created_at)
 
-  if family.present?
+  if family.present? && app.present?
     oeg_notices = person.documents.where(title: "Your Eligibility Results Consent or Missing Information Needed", :created_at.gte => from_date)
 
     if oeg_notices.present?
@@ -58,7 +59,7 @@ primary_person_hbx_ids.each do |primary_person_hbx_id|
       end
     end
   else
-    puts "no primary family for the given person"
+    puts "no primary family for the given person or no non_determined application"
   end
 end
 

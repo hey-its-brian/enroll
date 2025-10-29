@@ -49,7 +49,19 @@ primary_person_hbx_ids.each do |primary_person_hbx_id|
   person = Person.by_hbx_id(primary_person_hbx_id).first
   family = person.primary_family
 
-  if family.present?
+   app = ::IndividualMarket::Application.where(
+                             current_state: :determined,
+                             family_id: family.id,
+                             assistance_year: renewal_year,
+                             :'applicants.eligibilities' => {
+                               :$elemMatch => {
+                                 :'determinations._type' => 'Eligibilities::V3::Determinations::IndividualMarketDetermination',
+                                 :'determinations.is_eligible' => true
+                               }
+                             }
+                           ).first
+
+  if family.present? && app.present?
     oeq_notices = person.documents.where(title: "Your Eligibility Results - Health Coverage Eligibility", :created_at.gte => from_date)
 
     if oeq_notices.present?
@@ -63,7 +75,7 @@ primary_person_hbx_ids.each do |primary_person_hbx_id|
       end
     end
   else
-    puts "no primary family for the given person"
+    puts "no primary family for the given person or valid QHP is present"
   end
 end
 
