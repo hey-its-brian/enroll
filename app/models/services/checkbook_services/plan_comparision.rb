@@ -38,7 +38,10 @@ module Services
               @hbx_enrollment.kind.downcase == "individual" ? construct_body_ivl : construct_body_shop
             end
 
-          @result = HTTParty.post(@url, :body => construct_body.to_json, :headers => { 'Content-Type' => 'application/json' })
+          @result = HTTParty.post(@url,
+                                  :body => construct_body.to_json,
+                                  :headers => { 'Content-Type' => 'application/json' },
+                                  timeout: 5)
           uri =
             if @result.parsed_response.is_a?(String)
               JSON.parse(@result.parsed_response)["URL"]
@@ -50,7 +53,7 @@ module Services
           else
             raise "Unable to generate url"
           end
-        rescue Exception => e
+        rescue StandardError => e
           Rails.logger.error { "Unable to generate url for hbx_enrollment_id #{@hbx_enrollment.id} due to #{e.backtrace}" }
           # redirects to plan shopping show page if url generation is failed.
           "/insured/plan_shoppings/#{@hbx_enrollment.id}?market_kind=#{@hbx_enrollment.kind}&coverage_kind=#{@hbx_enrollment.coverage_kind}"

@@ -66,7 +66,7 @@ describe Services::CheckbookServices::PlanComparision, dbclean: :after_each do
     end
   end
 
-  describe "when checkbook response is irregular or an exception is raised", dbclean: :after_each do
+  describe "when checkbook response is irregular or an error is raised", dbclean: :after_each do
     subject { Services::CheckbookServices::PlanComparision.new(hbx_enrollment1,false) }
     let(:checkbook_url) {"http://checkbook_url"}
     let(:result) {double("HttpResponse", :parsed_response => {"URL" => ""})}
@@ -75,15 +75,8 @@ describe Services::CheckbookServices::PlanComparision, dbclean: :after_each do
       if ApplicationHelperModStubber.checkbook_integration_enabled?
         allow(subject).to receive(:construct_body_ivl).and_return({})
         allow(HTTParty).to receive(:post)
-          .with(
-            Rails.application.config.checkbook_services_base_url,
-            {
-              :body => "{}",
-              :headers => {
-                "Content-Type" => "application/json"
-              }
-            }
-          ).and_raise(Exception)
+          .with(anything, hash_including(:body, :headers, :timeout))
+          .and_raise(StandardError)
         expect(subject.generate_url).to eq "/insured/plan_shoppings/#{hbx_enrollment1.id}?market_kind=#{hbx_enrollment1.kind}&coverage_kind=#{hbx_enrollment1.coverage_kind}"
       end
     end
