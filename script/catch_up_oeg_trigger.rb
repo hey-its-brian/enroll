@@ -1,27 +1,21 @@
 # frozen_string_literal: true
 
 # Trigger OEG notices for missing families
-# Option1: rails runner script/catch_up_oeg_trigger.rb "oeg" "2025-10-23" "" "retrigger_for_all_non_determined_applications" 2026
-# Option2: rails runner script/catch_up_oeg_trigger.rb "oeg" "2025-10-23" "12345,67890" "" 2026
+# Option1: rails runner script/catch_up_oeg_trigger.rb "2025-10-23" "" "retrigger_for_all_non_determined_applications" 2026
+# Option2: rails runner script/catch_up_oeg_trigger.rb "2025-10-23" "12345,67890" "" 2026
 
-notice_type = ARGV[0]&.downcase
-from_date = ARGV[1]&.to_date
-primary_person_hbx_ids_list = ARGV[2]&.split(",") || []
-retrigger_for_all_non_determined_applications = ARGV[3]&.strip == 'retrigger_for_all_non_determined_applications'
-renewal_year = ARGV[4]&.to_i
-
-unless notice_type
-  puts "Must provide (oeg) notice type provided: #{ARGV[0]}"
-  exit 1
-end
+from_date = ARGV[0]&.to_date
+primary_person_hbx_ids_list = ARGV[1]&.split(",") || []
+retrigger_for_all_non_determined_applications = ARGV[2]&.strip == 'retrigger_for_all_non_determined_applications'
+renewal_year = ARGV[3]&.to_i
 
 unless from_date
-  puts "Must provide from_date in 'YYYY-MM-DD' or 'YYYY/MM/DD' format. Provided: #{ARGV[1]}"
+  puts "Must provide from_date in 'YYYY-MM-DD' or 'YYYY/MM/DD' format. Provided: #{ARGV[0]}"
   exit 1
 end
 
 start_time = DateTime.current
-puts "#{notice_type}_catch_up_notice_triggers start_time: #{start_time}"
+puts "oeg_catch_up_notice_triggers start_time: #{start_time}"
 
 primary_person_hbx_ids = if retrigger_for_all_non_determined_applications
                            family_ids  = if EnrollRegistry.feature_enabled?(:oeg_notice_income_verification_only)
