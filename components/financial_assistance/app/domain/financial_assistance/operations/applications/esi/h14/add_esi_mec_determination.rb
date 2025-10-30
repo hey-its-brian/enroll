@@ -61,7 +61,7 @@ module FinancialAssistance
 
               esi_mec_evidence = aptc_csr_eligibility.esi_mec_evidence
               if esi_mec_evidence.blank?
-                Rails.logger.error("#{esi_mec_evidence.key} Evidence Not Found for applicant with person_hbx_id: #{applicant.person_hbx_id} in application with hbx_id: #{applicant.application.hbx_id}")
+                Rails.logger.error("ESI MEC Evidence Not Found for applicant with person_hbx_id: #{applicant.person_hbx_id} in application with hbx_id: #{applicant.application.hbx_id}")
                 return
               end
 

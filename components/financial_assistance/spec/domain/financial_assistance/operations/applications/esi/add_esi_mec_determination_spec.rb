@@ -404,6 +404,46 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Esi::H14::AddEsi
           end
         end
       end
+
+      context 'when esi_mec_evidence is blank' do
+        include_context 'FDSH ESI MEC sample response'
+
+        let(:payload) do
+          response_payload[:applicants].each { |applicant| applicant[:esi_evidence][:aasm_state] = 'verified' }
+          response_payload
+        end
+
+        before do
+          build_eligibilities
+          @applicant = application.applicants.first
+          application.applicants[0].update_attributes(person_hbx_id: family.primary_person.hbx_id)
+          application.applicants[1].update_attributes(person_hbx_id: dependent_person.hbx_id)
+
+          applicant
+          dependent_applicant
+
+          @aptc_csr_eligibility = aptc_csr_eligibility
+          @applicant.reload
+        end
+
+        it 'should return success and log error when esi_mec_evidence is missing' do
+          expect(Rails.logger).to receive(:error).with(/ESI MEC Evidence Not Found for applicant with person_hbx_id/)
+          result = subject.call(payload: payload)
+          expect(result).to be_success
+        end
+
+        it 'should not update any evidence when esi_mec_evidence is missing' do
+          expect(@applicant.aptc_csr_eligibility).to be_present
+          expect(@applicant.aptc_csr_eligibility.esi_mec_evidence).to be_blank
+
+          allow(Rails.logger).to receive(:error)
+          result = subject.call(payload: payload)
+
+          expect(result).to be_success
+          @applicant.reload
+          expect(@applicant.aptc_csr_eligibility.esi_mec_evidence).to be_blank
+        end
+      end
     end
   end
 end

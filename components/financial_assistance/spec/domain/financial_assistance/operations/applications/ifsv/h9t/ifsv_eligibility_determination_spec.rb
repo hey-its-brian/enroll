@@ -402,6 +402,43 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
       allow(::Operations::Eligibilities::BuildFamilyDetermination).to receive(:new).and_return(double(call: Dry::Monads::Success(true)))
     end
 
+    context 'when income_evidence is blank' do
+      let(:payload) do
+        response_payload[:tax_households].each { |th| th[:is_ifsv_eligible] = true }
+        response_payload
+      end
+
+      before do
+        build_eligibilities
+        application.applicants[0].update_attributes(person_hbx_id: family.primary_person.hbx_id)
+        application.applicants[1].update_attributes(person_hbx_id: dependent_person.hbx_id)
+
+        applicant
+        dependent_applicant
+
+        @aptc_csr_eligibility = aptc_csr_eligibility
+        @applicant = application.applicants.first.reload
+      end
+
+      it 'should return success and log error when income_evidence is missing' do
+        expect(Rails.logger).to receive(:error).with(/Income Evidence Not Found for applicant with person_hbx_id/)
+        result = subject.call({payload: payload, call_type: "hub_call"})
+        expect(result).to be_success
+      end
+
+      it 'should not update any evidence when income_evidence is missing' do
+        expect(@applicant.aptc_csr_eligibility).to be_present
+        expect(@applicant.aptc_csr_eligibility.income_evidence).to be_blank
+
+        allow(Rails.logger).to receive(:error)
+        result = subject.call({payload: payload, call_type: "hub_call"})
+
+        expect(result).to be_success
+        @applicant.reload
+        expect(@applicant.aptc_csr_eligibility.income_evidence).to be_blank
+      end
+    end
+
     context 'FTI Ifsv eligible response' do
       context 'when is_ifsv_eligible is true' do
         let(:payload) do

@@ -86,7 +86,7 @@ module FinancialAssistance
               return unless aptc_csr_eligibility
               income_evidence = aptc_csr_eligibility.income_evidence
               if income_evidence.blank?
-                Rails.logger.error("#{income_evidence.key} Evidence Not Found for applicant with person_hbx_id: #{applicant.person_hbx_id} in application with hbx_id: #{applicant.application.hbx_id}")
+                Rails.logger.error("Income Evidence Not Found for applicant with person_hbx_id: #{applicant.person_hbx_id} in application with hbx_id: #{applicant.application.hbx_id}")
                 return
               end
               update_income_evidence(income_evidence, status, call_type)

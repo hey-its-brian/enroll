@@ -61,7 +61,7 @@ module FinancialAssistance
 
               non_esi_mec_evidence = aptc_csr_eligibility.non_esi_mec_evidence
               if non_esi_mec_evidence.blank?
-                Rails.logger.error("#{non_esi_mec_evidence.key} Evidence Not Found for applicant with person_hbx_id: #{applicant.person_hbx_id} in application with hbx_id: #{applicant.application.hbx_id}")
+                Rails.logger.error("Non-ESI Evidence Not Found for applicant with person_hbx_id: #{applicant.person_hbx_id} in application with hbx_id: #{applicant.application.hbx_id}")
                 return
               end
 
@@ -72,7 +72,7 @@ module FinancialAssistance
                 non_esi_mec_evidence.request_results.build(request_result.to_h)
               end
 
-              reason = "Hub response received for esi mec evidence with state: #{non_esi_mec_evidence.current_state}, updated eligibility based on four evidences"
+              reason = "Hub response received for non-esi mec evidence with state: #{non_esi_mec_evidence.current_state}, updated eligibility based on four evidences"
               aptc_csr_eligibility.determine_eligibility_state(reason)
               aptc_csr_eligibility.is_satisfied = aptc_csr_eligibility.evidences.all?(&:is_satisfied)
             end
