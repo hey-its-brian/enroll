@@ -536,6 +536,51 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
         end
       end
 
+      context 'family has aptc grants present but one member is not present' do
+        let(:grants_config) do
+          {
+            'aptc_csr_credit' => [
+              { key: 'AdvancePremiumAdjustmentGrant' }
+            ]
+          }
+        end
+        let(:family) do
+          FactoryBot.create(:family,
+                            :with_family_members_and_consumer_role,
+                            :with_eligibility_determination_and_subjects,
+                            person: person_2,
+                            outstanding_verification_status: 'not_enrolled',
+                            eligibility_item_keys: ['aptc_csr_credit'],
+                            assistance_year: TimeKeeper.date_of_record.year,
+                            use_family_member_ids: true,
+                            grants_config: grants_config)
+        end
+
+        it "family member with out grant should have error" do
+          sign_in user_2
+          family.family_members[2].person.update_attributes(dob: Date.today - 1.year)
+          family.family_members[0].person.ensure_relationship_with(family.family_members[1].person, 'spouse')
+          family.family_members[0].person.ensure_relationship_with(family.family_members[2].person, 'child')
+          family.eligibility_determination.grants.first.update_attributes(member_ids: [family.family_members[0].id.to_s, family.family_members[1].id.to_s])
+
+          get(
+            :new,
+            params: {
+              person_id: person_2.id,
+              consumer_role_id: person_2.consumer_role.id,
+              change_plan: "",
+              coverage_kind: hbx_enrollment.coverage_kind,
+              market_kind: "individual"
+            }
+          )
+          fm_hash = assigns(:fm_hash)
+
+          expect(fm_hash[family.family_members[2].id].flatten.detect{|err| err.to_s.match(/Ineligible for Plan shopping/)}).to eq("Ineligible for Plan shopping")
+          expect(fm_hash[family.family_members[2].id].last).to be_falsey
+          expect(response).to have_http_status("200")
+        end
+      end
+
       context 'family has aptc grants present but members not eligible for plan shopping' do
         let(:grants_config) do
           {

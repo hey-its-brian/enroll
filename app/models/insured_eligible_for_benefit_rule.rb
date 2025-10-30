@@ -100,10 +100,15 @@ class InsuredEligibleForBenefitRule
     end
 
     return status if shopping_eligible_member_ids.include?(@family_member_id)
+
+    unless shopping_eligible_member_ids.include?(@family_member_id)
+      @errors << [l10n('insured.group_selection.ineligible_for_plan_shopping')]
+      return false
+    end
     # if the member is over 26 and has age_off_excluded set to true, the state residency criteria can be overridden, allowing them to shop
     # this logic is fragile, and should be refactored when FAA has basis implemented.
     return status if state_residency_overridden?
-    @errors << ["Ineligible for Plan shopping"] unless @errors.any?
+    @errors << [l10n('insured.group_selection.ineligible_for_plan_shopping')] unless @errors.any?
     status
   end
 

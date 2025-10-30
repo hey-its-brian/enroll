@@ -920,6 +920,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.ssn_or_no_ssn_not_provided' => "Enter a valid social security number or select 'I don't have an SSN'",
   :'en.insured.must_submit_application' => "You must submit an application before taking this action",
   :'en.insured.group_selection.no_application_submitted' => "No application submitted",
+  :'en.insured.group_selection.ineligible_for_plan_shopping' => "Ineligible for Plan shopping",
   :'en.qhp_application.nav_header' => "Enroll in Coverage",
   :'en.qhp_application.generation_reason' => "Generation Reason",
   :'en.qhp_application.origin' => "Origin Kind",

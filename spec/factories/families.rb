@@ -77,6 +77,21 @@ FactoryBot.define do
       end
     end
 
+    trait :with_family_members_and_consumer_role do
+      family_members do
+        [
+          FactoryBot.build(:family_member, family: self, is_primary_applicant: true, is_active: true, person: person),
+          FactoryBot.build(:family_member, family: self, is_primary_applicant: false, is_active: true, person: FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, first_name: "John", last_name: "Doe")),
+          FactoryBot.build(:family_member, family: self, is_primary_applicant: false, is_active: true, person:  FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role, first_name: "Alex", last_name: "Doe"))
+        ]
+      end
+      before(:create)  do |family, _evaluator|
+        family.dependents.each do |dependent|
+          family.relate_new_member(dependent.person, "child")
+        end
+      end
+    end
+
     trait :with_eligibility_determination do
       transient do
         subject_count { 3 }

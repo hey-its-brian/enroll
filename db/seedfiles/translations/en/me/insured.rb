@@ -1150,6 +1150,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.ssn_or_no_ssn_not_provided' => "Enter a valid social security number or select 'I don't have an SSN'",
   :'en.insured.must_submit_application' => "You must submit an application before taking this action",
   :'en.insured.group_selection.no_application_submitted' => "No application submitted",
+  :'en.insured.group_selection.ineligible_for_plan_shopping' => "Ineligible for Plan shopping",
   :'en.insured.evidences.select_application_year_text' => "Select an application year and choose which application you'd like to see history for.",
   :'en.insured.evidences.no_applications' => 'No applications found for the selected year.',
   :'en.insured.evidences.expand_row' => 'Expand the row to see the payload for each event',
