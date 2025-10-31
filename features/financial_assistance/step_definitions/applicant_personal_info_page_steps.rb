@@ -309,3 +309,32 @@ Then(/the confirm member button should remain disabled$/) do
   button_disabled_attr = confirm_button['disabled'] == 'disabled' || confirm_button['disabled'] == 'true'
   expect(button_has_disabled_class || button_disabled_attr).to be_truthy
 end
+
+When(/the user enters their own ssn for the dependent/) do
+  application = FinancialAssistance::Application.first
+  primary_applicant = application.primary_applicant
+  applicant_ssn = primary_applicant.ssn
+  applicant_ssn = applicant_ssn.gsub('-', '') if applicant_ssn.present?
+
+  field = find('#applicant_ssn', visible: :all)
+  field.set(applicant_ssn)
+  page.execute_script("document.getElementById('applicant_ssn').dispatchEvent(new Event('input'))")
+  page.execute_script("document.getElementById('applicant_ssn').dispatchEvent(new Event('change'))")
+
+  sleep 5
+end
+
+When(/the user enters "(.*)" in the dependent ssn field/) do |ssn_partial|
+  field = find('#applicant_ssn', visible: :all)
+  field.set(ssn_partial)
+  page.execute_script("document.getElementById('applicant_ssn').dispatchEvent(new Event('input'))")
+  page.execute_script("document.getElementById('applicant_ssn').dispatchEvent(new Event('change'))")
+  sleep 5
+end
+
+Then(/the ssn input field should format as "(.*)"/) do |expected_format|
+  sleep 5
+  value = find('#applicant_ssn', visible: :all).value
+  expect(value).to eq(expected_format)
+end
+
