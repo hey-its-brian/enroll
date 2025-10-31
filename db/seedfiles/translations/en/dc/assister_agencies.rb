@@ -76,5 +76,4 @@ ASSISTER_AGENCIES_TRANSLATIONS = {
 	"en.assister_agencies.last_name" => "Last Name",
 	"en.assister_agencies.dob" => "Date of Birth",
   "en.assister_agencies.message_deleted" => "Successfully deleted message.",
-  "en.insured.plan_shoppings.assister_description" => "Maine Enrollment Assisters help Maine residents find quality, affordable health insurance through CoverME.gov. Assisters are trained experts with deep roots and trusted relationships in Maine and its communities. Assisters provide unbiased information and help you apply for either Mainecare (Medicaid) or a Marketplace plan, but they won’t endorse a specific plan choice for you. Assisters must complete rigorous training and pass criminal background checks prior to service. There is no cost to use an Assister.",
 }

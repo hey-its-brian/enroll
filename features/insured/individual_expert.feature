@@ -13,7 +13,11 @@ Feature: Consumer My Expert page
     Then the consumer should see Expert page navigation link
 
   Scenario: Consumer sees Help with Plan Shopping modal
+    And EnrollRegistry assister_agency feature is enabled
     When the consumer goes to the Expert page
-    When the the consumer selects Select an Assister button
+    When the consumer selects Select an Assister button
     Then the consumer should see the Help with Plan Shopping modal
     
+  # TODO: add scenario for modal button:
+  # -> should be hidden when consumer has both an assister expert and broker expert
+  # -> should be present otherwise with correct text based on which expert type the consumer has

@@ -25,8 +25,8 @@
     </section>
   <% end %>
 
-  <% unless has_broker && has_assister %>
-    <% button_text = has_broker ? "Select an Assister" : "Select a Broker" %>
+  <% if assister_agency_is_enabled? && (!has_broker || !has_assister) %>
+    <% button_text_key = has_broker ? "assister_agencies.assister" : "broker_agencies.broker" %>
 
     <a href="#help_with_plan_shopping"
        tabindex="0"
@@ -34,7 +34,7 @@
        class="button mt-4 help-me-sign-up"
        data-target="#help_with_plan_shopping"
        data-toggle="modal">
-      <%= button_text %>
+      <%= l10n(button_text_key) %>
     </a>
 
     <%= render partial: './ui-components/v1/modals/help_with_plan_in_my_expert'%>
