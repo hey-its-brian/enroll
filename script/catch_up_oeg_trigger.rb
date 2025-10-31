@@ -53,9 +53,11 @@ primary_person_hbx_ids.each do |primary_person_hbx_id|
       end
     end
   else
-    puts "no primary family for the given person or no non_determined application"
+    puts "no primary family for the given person or no non_determined application for person HBX ID: #{primary_person_hbx_id}"
   end
+rescue StandardError => e
+  puts "Error processing person HBX ID: #{primary_person_hbx_id}, Error: #{e.message}"
 end
 
 end_time = DateTime.current
-puts "#{notice_type}_catch_up_notice_triggers end_time: #{end_time}, total_time_taken_in_minutes: #{((end_time - start_time) * 24 * 60).to_f.ceil}"
+puts "oeg_catch_up_notice_triggers end_time: #{end_time}, total_time_taken_in_minutes: #{((end_time - start_time) * 24 * 60).to_f.ceil}"
