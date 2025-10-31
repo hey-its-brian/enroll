@@ -189,7 +189,7 @@ module Eligibilities
 
           self.verification_outstanding = true
           self.is_satisfied = false
-          if self.due_on.blank?
+          if self.due_on.blank? && !self.review?
             action = 'admin_triggered_incorrect_transition'
             if self.is_evidence_manually_verified? && self.most_recent_due_on.present?
               due_on_source = 'copy due date from prior ROP'
@@ -199,7 +199,7 @@ module Eligibilities
               due_on = schedule_verification_due_on
             end
             self.verification_histories.build(action: action, update_reason: "Incorrect transition - #{due_on_source}", updated_by: 'system')
-            self.due_on = due_on unless self.review?
+            self.due_on = due_on
           end
           self.move_to_rejected
         end

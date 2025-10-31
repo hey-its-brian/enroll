@@ -47,6 +47,43 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerifica
       end
     end
 
+    context 'with request_hbx_ids' do
+      let!(:second_person) { FactoryBot.create(:person, :with_consumer_role, first_name: 'Jane', last_name: 'Doe') }
+      let!(:second_family_member) { FactoryBot.create(:family_member, family: family, person: second_person) }
+      let!(:second_applicant) do
+        second_app = FactoryBot.create(:financial_assistance_applicant,
+                                       application: application,
+                                       family_member_id: second_family_member.id,
+                                       person_hbx_id: second_person.hbx_id,
+                                       first_name: second_person.first_name,
+                                       last_name: second_person.last_name,
+                                       gender: second_person.gender,
+                                       dob: second_person.dob)
+        eligibility = FactoryBot.build(:individual_market_eligibility, eligible: second_app)
+        eligibility.evidences = [FactoryBot.build(:social_security_number_evidence, :verified, eligibility: eligibility)]
+        second_app.eligibilities = [eligibility]
+        second_app.save
+        second_app
+      end
+
+      it 'only updates verifications for requested applicants' do
+        result = subject.call({call_type: 'application_determination',
+                               application: application,
+                               updated_by: 'hub_call',
+                               request_hbx_ids: [application.applicants.first.person_hbx_id]})
+        expect(result).to be_success
+
+        first_applicant_evidence = application.applicants.first.individual_market_eligibility.social_security_number_evidence
+        expect(first_applicant_evidence.verification_histories.count).to eq(1)
+        expect(first_applicant_evidence.pending?).to be_truthy
+        expect(first_applicant_evidence.verification_histories.first.action).to eq('SSA VLP Hub Request')
+
+        second_applicant_evidence = application.applicants.second.reload.individual_market_eligibility.social_security_number_evidence
+        expect(second_applicant_evidence.verification_histories).to be_empty
+        expect(second_applicant_evidence.verified?).to be_truthy
+      end
+    end
+
     context 'with app_entity provided' do
       let(:entity_response) { Operations::Fdsh::BuildAndValidateApplicationPayload.new.call(application) }
 

@@ -679,6 +679,41 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
     end
   end
 
+  describe '#applicants_by_hbx_ids' do
+    let(:application) { FactoryBot.create(:financial_assistance_application) }
+    let(:applicant1) { FactoryBot.create(:financial_assistance_applicant, application: application, person_hbx_id: 'hbx_12345') }
+    let(:applicant2) { FactoryBot.create(:financial_assistance_applicant, application: application, person_hbx_id: 'hbx_67890') }
+    let(:applicant3) { FactoryBot.create(:financial_assistance_applicant, application: application, person_hbx_id: 'hbx_11111') }
+
+    before do
+      applicant1
+      applicant2
+      applicant3
+    end
+
+    context 'when provided with matching hbx_ids' do
+      it 'returns applicants with matching person_hbx_ids' do
+        result = application.applicants_by_hbx_ids(['hbx_12345', 'hbx_67890'])
+        expect(result.count).to eq(2)
+        expect(result.pluck(:person_hbx_id)).to match_array(['hbx_12345', 'hbx_67890'])
+      end
+    end
+
+    context 'when provided with non-matching hbx_ids' do
+      it 'returns an empty collection' do
+        result = application.applicants_by_hbx_ids(['hbx_99999', 'hbx_88888'])
+        expect(result).to be_empty
+      end
+    end
+
+    context 'when provided with empty array' do
+      it 'returns an empty collection' do
+        result = application.applicants_by_hbx_ids([])
+        expect(result).to be_empty
+      end
+    end
+  end
+
   describe '.is_draft?' do
     it 'should returns true if aasm state is draft' do
       application.update_attributes(aasm_state: 'draft')

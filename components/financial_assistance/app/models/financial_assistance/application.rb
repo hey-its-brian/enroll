@@ -1295,6 +1295,10 @@ module FinancialAssistance
       applicants.where(:is_active => true)
     end
 
+    def applicants_by_hbx_ids(hbx_ids)
+      applicants.where(:person_hbx_id.in => hbx_ids)
+    end
+
     # Calculates the total net income and benchmark premiums for all applicants.
     # Iterates over each applicant and performs the necessary calculations.
     #

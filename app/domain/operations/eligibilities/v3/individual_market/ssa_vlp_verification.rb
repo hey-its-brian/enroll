@@ -44,7 +44,7 @@ module Operations
             @request_transmission = yield build_and_create_request_transmission(transmittable_params)
             @request_transaction = yield build_and_create_request_transaction(transmittable_params)
             @app_entity = yield build_app_entity(params)
-            publish(params)
+            publish
           end
 
           private
@@ -57,6 +57,7 @@ module Operations
 
             @call_type = params[:call_type]
             @updated_by = params[:updated_by] || 'System'
+            @request_hbx_ids = params[:request_hbx_ids]
             application = params[:application]
             if application.is_a?(::FinancialAssistance::Application) || application.is_a?(::IndividualMarket::Application)
               Success(application)
@@ -157,7 +158,7 @@ module Operations
           # @return [Dry::Monads::Result::Failure] On publication failure with error message
           #
           # @raise [StandardError] On unexpected errors during event publication
-          def publish(params)
+          def publish
             headers = {
               job_id: @job&.job_id,
               application_type: @application.is_a?(::FinancialAssistance::Application) ? 'faa' : 'uqhp',
@@ -166,7 +167,7 @@ module Operations
               call_type: @call_type
             }
             # for admin call hub requests, we need to pass the requested ids
-            headers.merge!(request_hbx_ids: params[:request_hbx_ids]) if params[:request_hbx_ids].present?
+            headers.merge!(request_hbx_ids: @request_hbx_ids) if @request_hbx_ids.present?
 
             event = event('events.enroll.verifications.ssa_vlp.requested', attributes: @app_entity.to_h, headers: headers).success
             event.publish
@@ -188,7 +189,8 @@ module Operations
           def add_verification_histories(update_reason)
             # matching current behavior
             update_reason = @call_type == 'application determination' ? update_reason : nil
-            @application.applicants.each do |applicant|
+            requested_applicants = @request_hbx_ids.present? ? @application.applicants_by_hbx_ids(@request_hbx_ids) : @application.applicants
+            requested_applicants.each do |applicant|
               eligibility = applicant.eligibilities.detect {|eli| eli.key.to_s == 'individual_market_eligibility' }
               next unless eligibility
               evidences = eligibility.evidences.select {|e| EVIDENCE_KEYS.include?(e.key.to_s) }

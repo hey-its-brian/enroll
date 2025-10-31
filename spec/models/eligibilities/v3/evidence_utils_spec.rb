@@ -243,12 +243,10 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
           expect { dummy_evidence.mark_as_rejected }.not_to change(dummy_evidence, :due_on)
         end
 
-        it "builds verification history for incorrect transition" do
+        it "does not build verification history for incorrect transition" do
           dummy_evidence.mark_as_rejected
           verification_history = dummy_evidence.verification_histories.last
-          expect(verification_history.action).to eq('admin_triggered_incorrect_transition')
-          expect(verification_history.update_reason).to eq('Incorrect transition - generate new ROP')
-          expect(verification_history.updated_by).to eq('system')
+          expect(verification_history).to be_nil
         end
       end
     end

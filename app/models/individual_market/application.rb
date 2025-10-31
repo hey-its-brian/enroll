@@ -299,6 +299,10 @@ module IndividualMarket
       @non_applicants ||= applicants.select{|a| a.individual_market_eligibility.qhp_determination.bases.non_applicant.any?}
     end
 
+    def applicants_by_hbx_ids(hbx_ids)
+      applicants.where(:hbx_id.in => hbx_ids)
+    end
+
     # Prepares the application for submission by setting the submitted_at and effective_on fields
     #
     # @return [void]

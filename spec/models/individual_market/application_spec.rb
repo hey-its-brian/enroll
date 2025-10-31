@@ -720,4 +720,33 @@ RSpec.describe IndividualMarket::Application, type: :model do
       expect(application.fetch_evidence(alive_evidence.id, BSON::ObjectId.new)).to be_nil
     end
   end
+
+  describe '#applicants_by_hbx_ids' do
+    let(:application) { FactoryBot.create(:individual_market_application, :with_primary) }
+    let(:applicant1) { application.primary_applicant }
+    let!(:applicant2) { FactoryBot.create(:individual_market_applicant, application: application, hbx_id: 'qhp_67890') }
+    let!(:applicant3) { FactoryBot.create(:individual_market_applicant, application: application, hbx_id: 'qhp_11111') }
+
+    context 'when provided with matching hbx_ids' do
+      it 'returns applicants with matching hbx_ids' do
+        result = application.applicants_by_hbx_ids(['qhp_11111', 'qhp_67890'])
+        expect(result.count).to eq(2)
+        expect(result.pluck(:hbx_id)).to match_array(['qhp_11111', 'qhp_67890'])
+      end
+    end
+
+    context 'when provided with non-matching hbx_ids' do
+      it 'returns an empty collection' do
+        result = application.applicants_by_hbx_ids(['qhp_99999', 'qhp_88888'])
+        expect(result).to be_empty
+      end
+    end
+
+    context 'when provided with empty array' do
+      it 'returns an empty collection' do
+        result = application.applicants_by_hbx_ids([])
+        expect(result).to be_empty
+      end
+    end
+  end
 end
