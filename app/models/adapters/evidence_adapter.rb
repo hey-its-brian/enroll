@@ -121,7 +121,7 @@ module Adapters
           @located_evidence = evidence
           @person = evidence.eligibility.eligible.family_member.person
           @evidence_group = evidence.eligibility.key
-          @evidence_item_key = evidence.key
+          @evidence_item_key = evidence.key.to_sym
           @status = evidence.current_state
           @due_on = evidence.due_on
           @documents = evidence.documents

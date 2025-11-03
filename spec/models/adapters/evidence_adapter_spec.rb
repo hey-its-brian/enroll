@@ -106,7 +106,7 @@ RSpec.describe Adapters::EvidenceAdapter, dbclean: :after_each do
         expect(adapter.inactive).to be true
         expect(adapter.locate_evidence).to eq evidence
         expect(adapter.evidence_group).to eq :individual_market_eligibility
-        expect(adapter.evidence_item_key).to eq "american_indian_evidence"
+        expect(adapter.evidence_item_key).to eq :american_indian_evidence
         expect(adapter.status).to eq :verified
         expect(adapter.due_on).to be nil
         expect(adapter.update_reason).to be nil

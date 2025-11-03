@@ -77,11 +77,20 @@ module VerificationHelper
     # Market Eligibility Verifications
     when :residency
       l10n("insured.families.verifications.types.evidence_type_residency")
-    when :alive_status
-      l10n("insured.families.verifications.types.evidence_type_alive_status")
-      # RIDP
+    # RIDP
     when :identity
       l10n('insured.families.verifications.types.evidence_type_identity')
+    # Person Level Evidences
+    when :alive_status, :alive_evidence
+      l10n("insured.families.verifications.types.evidence_type_alive_status")
+    when :american_indian_evidence
+      l10n("insured.families.verifications.types.evidences_type_american_indian")
+    when :immigration_evidence
+      l10n("insured.families.verifications.types.evidences_type_immigration_status")
+    when :citizenship_evidence
+      l10n("insured.families.verifications.types.evidences_type_citizenship")
+    when :social_security_number_evidence
+      l10n("insured.families.verifications.types.evidences_type_social_security_number")
     else
       type.to_s.titleize
     end
