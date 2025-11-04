@@ -7,7 +7,7 @@ require "#{Rails.root}/app/domain/operations/remove_duplicate_faa_relationships"
 RSpec.describe Operations::RemoveDuplicateFaaRelationships, type: :model, dbclean: :after_each do
   subject(:operation) { described_class.new }
 
-  let(:year) { TimeKeeper.date_of_record.year }
+  let(:year) { FinancialAssistance::Operations::EnrollmentDates::ApplicationYear.new.call.value! }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member) }
   let(:primary_applicant) { FactoryBot.create(:financial_assistance_applicant, is_primary_applicant: true, family_member_id: family.primary_applicant.id) }
   let(:relative_applicant) { FactoryBot.create(:financial_assistance_applicant, family_member_id: family.family_members.last.id) }
@@ -17,7 +17,8 @@ RSpec.describe Operations::RemoveDuplicateFaaRelationships, type: :model, dbclea
       :financial_assistance_application,
       family_id: family.id,
       aasm_state: 'draft',
-      effective_date: TimeKeeper.date_of_record.beginning_of_year - 1.day
+      assistance_year: year,
+      effective_date: Date.new(year, 1, 1) - 1.day
     )
   end
 
@@ -26,7 +27,8 @@ RSpec.describe Operations::RemoveDuplicateFaaRelationships, type: :model, dbclea
       :financial_assistance_application,
       family_id: family.id,
       aasm_state: 'draft',
-      effective_date: TimeKeeper.date_of_record.beginning_of_year,
+      assistance_year: year,
+      effective_date: Date.new(year, 1, 1),
       applicants: [primary_applicant, relative_applicant]
     )
   end

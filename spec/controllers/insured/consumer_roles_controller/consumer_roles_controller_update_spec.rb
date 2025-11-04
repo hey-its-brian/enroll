@@ -306,7 +306,7 @@ RSpec.describe Insured::ConsumerRolesController, dbclean: :after_each, type: :co
           expect(application).to be_present
           expect(application.origin).to eq(:user)
           expect(application.generation_reason).to eq(:manual)
-          expect(application.assistance_year).to eq(TimeKeeper.date_of_record.year)
+          expect(application.assistance_year).to eq(FinancialAssistance::Operations::EnrollmentDates::ApplicationYear.new.call.value!)
         end
       end
 

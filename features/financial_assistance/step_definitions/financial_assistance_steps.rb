@@ -533,7 +533,7 @@ end
 Then(/^.+ should see county under Mailing and Home address$/) do
   expect(page).to have_css('div', text: l10n('count').upcase)
   # this is checking on user-inputed data, therefore not l10n
-  expect(page).to have_css('div', text: 'Cumberland')
+  expect(page).to have_css('div', text: 'Hampden')
 end
 
 Then(/^user should land on full application page and should see 2 view my applications buttons$/) do

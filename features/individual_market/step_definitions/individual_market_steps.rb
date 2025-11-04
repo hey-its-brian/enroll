@@ -13,6 +13,13 @@ And(/^the qhp consumer has an existing (.*?) application$/) do |status|
 end
 
 And(/^the qhp consumer has an additional existing (.*?) application$/) do |status|
+  # application_applicable_year needs to be stubbed to current year
+  # otherwise applications will not display correctly on current_applications page
+  if status == 'prospective'
+    current_year = TimeKeeper.date_of_record.year
+    allow(Family).to receive(:application_applicable_year).and_return(current_year)
+  end
+
   qhp_application(status.to_sym, new: true)
 end
 

@@ -49,19 +49,16 @@ module ConsumerWorld
   def create_prior_current_and_future_benefit_packages
     allow(EnrollRegistry[:enroll_app].setting(:geographic_rating_area_model)).to receive(:item).and_return('single')
     allow(EnrollRegistry[:service_area].setting(:service_area_model)).to receive(:item).and_return('single').and_return('single')
-    prior_coverage_year = Date.today.year - 1
-    current_coverage_year = Date.today.year
-    hbx_profile = FactoryBot.create(:hbx_profile,
-                                    :no_open_enrollment_coverage_period,
-                                    coverage_year: prior_coverage_year)
+    prior_coverage_year = TimeKeeper.date_of_record.year - 1
+    current_coverage_year = TimeKeeper.date_of_record.year
 
-    FactoryBot.create(:benefit_coverage_period, :next_years_open_enrollment_coverage_period, benefit_sponsorship: hbx_profile.benefit_sponsorship)
-    prior_benefit_coverage_period = hbx_profile.benefit_sponsorship.benefit_coverage_periods.detect{ |bcp|  bcp.start_on.year == prior_coverage_year }
-    prior_benefit_package = prior_benefit_coverage_period.benefit_packages.first
-    current_benefit_coverage_period = prior_benefit_coverage_period.successor
-    current_benefit_package = current_benefit_coverage_period.benefit_packages.first
-    renewal_benefit_coverage_period = current_benefit_coverage_period.successor
-    renewal_benefit_package = renewal_benefit_coverage_period.benefit_packages.first
+    current_hbx = determine_current_hbx_profile(prior_coverage_year)
+    organization = FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_aca_shop_cca_employer_profile, :with_site)
+    current_hbx.organization = organization
+    organization.profiles << current_hbx
+
+    prior_benefit_package, current_benefit_package, renewal_benefit_package = generate_benefit_coverage_periods_current_hbx(current_hbx, prior_coverage_year)
+    current_hbx.save!
 
     prior_product = BenefitMarkets::Products::Product.find(prior_benefit_package.benefit_ids.first)
     current_product = BenefitMarkets::Products::Product.by_year(current_coverage_year).find(current_benefit_package.benefit_ids.last)
@@ -73,6 +70,28 @@ module ConsumerWorld
     current_product.renewal_product_id = renewal_product.id
     current_product.save!
     current_product.reload
+  end
+
+  def determine_current_hbx_profile(prior_coverage_year)
+    return HbxProfile.current_hbx if HbxProfile.current_hbx.present?
+
+    hbx_profile = FactoryBot.create(:hbx_profile,
+                                    :no_open_enrollment_coverage_period,
+                                    coverage_year: prior_coverage_year)
+    allow(HbxProfile).to receive(:current_hbx).and_return(hbx_profile)
+    hbx_profile
+  end
+
+  def generate_benefit_coverage_periods_current_hbx(current_hbx, prior_coverage_year)
+    FactoryBot.create(:benefit_coverage_period, :next_years_open_enrollment_coverage_period, benefit_sponsorship: current_hbx.benefit_sponsorship)
+    prior_benefit_coverage_period = current_hbx.benefit_sponsorship.benefit_coverage_periods.detect{ |bcp|  bcp.start_on.year == prior_coverage_year }
+    prior_benefit_package = prior_benefit_coverage_period.benefit_packages.first
+    current_benefit_coverage_period = prior_benefit_coverage_period.successor
+    current_benefit_package = current_benefit_coverage_period.benefit_packages.first
+    renewal_benefit_coverage_period = current_benefit_coverage_period.successor
+    renewal_benefit_package = renewal_benefit_coverage_period.benefit_packages.first
+
+    [prior_benefit_package, current_benefit_package, renewal_benefit_package]
   end
 
   def create_prior_and_active_ivl_enrollment_for_family(family)
