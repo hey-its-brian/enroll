@@ -121,10 +121,9 @@
                         : {})
           ) %>
     <% end %>
-    <% previous_link = qhp_enabled ? edit_application_path(@application) : review_and_submit_application_path(@application)  %>
     <% show_back_to_household_button = qhp_enabled ? false : true %>
     <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
-      previous_link: previous_link, show_back_to_household_button: show_back_to_household_button
+      show_back_to_household_button: show_back_to_household_button
     } %>
   <% end %>
     <% if qhp_application_feature_enabled? %>
