@@ -2043,6 +2043,112 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
       expect(flash[:error]).to eq 'You must select at least one Eligible applicant to enroll in the healthcare plan'
       expect(response).to redirect_to(new_insured_group_selection_path(person_id: person.id, employee_role_id: employee_role.id, change_plan: '', market_kind: 'shop', enrollment_kind: ''))
     end
+
+    context "when the family has a writing agent" do
+      let(:broker_agency_profile) { FactoryBot.create(:benefit_sponsors_organizations_broker_agency_profile) }
+      let(:broker_person) do
+        broker_role = broker_agency_profile.primary_broker_role
+        broker_role.update(aasm_state: 'active')
+        person = broker_role.person
+        person.broker_agency_staff_roles << FactoryBot.create(:broker_agency_staff_role, broker_agency_profile: broker_agency_profile, person: person, aasm_state: 'active')
+        person
+      end
+      let(:site) { create(:benefit_sponsors_site, :with_benefit_market, :as_hbx_profile, :cca) }
+      let(:broker_organization) { FactoryBot.build(:benefit_sponsors_organizations_general_organization, site: site)}
+      let(:broker_user) { FactoryBot.create(:user, person: broker_person) }
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, broker_agency_accounts: [broker_agency_account]) }
+      let(:broker_agency_account) { FactoryBot.build(:benefit_sponsors_accounts_broker_agency_account, broker_agency_profile: broker_agency_profile, is_active: true) }
+
+      context "when the user has an active broker role and is staff of the family's broker agency" do
+        before do
+          allow(family).to receive(:current_broker_agency).and_return(broker_agency_account)
+          allow(broker_agency_account).to receive(:writing_agent).and_return(broker_person.broker_role)
+          allow_any_instance_of(GroupSelectionPrevaricationAdapter).to receive(:family).and_return(family)
+          sign_in broker_user
+        end
+
+        it "should set broker information on enrollment" do
+          post :create, params: { person_id: person.id, family_member_ids: family_member_ids }
+          family.reload
+
+          new_enrollment = HbxEnrollment.last
+          expect(new_enrollment.writing_agent_id).to eq(broker_person.broker_role.id)
+          expect(family.broker_agency_accounts.count).to eq 1
+        end
+      end
+
+      context "when the user has a broker role but is not staff of the family's broker agency" do
+        let(:different_broker_agency_profile) { FactoryBot.create(:benefit_sponsors_organizations_broker_agency_profile) }
+        let(:different_broker_person) do
+          broker_role = different_broker_agency_profile.primary_broker_role
+          broker_role.update(aasm_state: 'active')
+          broker_role.person
+        end
+        let(:different_broker_user) { FactoryBot.create(:user, person: different_broker_person) }
+
+        before do
+          allow(family).to receive(:current_broker_agency).and_return(broker_agency_account)
+          allow(broker_agency_account).to receive(:writing_agent).and_return(broker_person.broker_role)
+          allow_any_instance_of(GroupSelectionPrevaricationAdapter).to receive(:family).and_return(family)
+          sign_in different_broker_user
+        end
+
+        it "should not set broker information on enrollment" do
+          post :create, params: { person_id: person.id, employee_role_id: employee_role.id, family_member_ids: family_member_ids }
+          family.reload
+
+          new_enrollment = HbxEnrollment.last
+          expect(new_enrollment.writing_agent_id).to be_nil
+          expect(new_enrollment.broker_agency_profile_id).to be_nil
+          expect(family.broker_agency_accounts.count).to eq 1
+        end
+      end
+
+      context "when the user does not have an active broker role" do
+        let(:non_broker_person) { FactoryBot.create(:person) }
+        let(:non_broker_user) { FactoryBot.create(:user, person: non_broker_person) }
+
+        before do
+          allow(family).to receive(:current_broker_agency).and_return(broker_agency_account)
+          allow(broker_agency_account).to receive(:writing_agent).and_return(broker_person.broker_role)
+          allow_any_instance_of(GroupSelectionPrevaricationAdapter).to receive(:family).and_return(family)
+          sign_in non_broker_user
+        end
+
+        it "should not set broker information on enrollment" do
+          post :create, params: { person_id: person.id, employee_role_id: employee_role.id, family_member_ids: family_member_ids }
+          family.reload
+
+          new_enrollment = HbxEnrollment.last
+          expect(new_enrollment.writing_agent_id).to be_nil
+          expect(new_enrollment.broker_agency_profile_id).to be_nil
+          expect(family.broker_agency_accounts.count).to eq 1
+        end
+      end
+    end
+
+    context "when the family does not have a writing agent" do
+      let(:family_without_broker) { FactoryBot.create(:family, :with_primary_family_member) }
+      let(:non_broker_person) { FactoryBot.create(:person) }
+      let(:non_broker_user) { FactoryBot.create(:user, person: non_broker_person) }
+
+      before do
+        allow(family_without_broker).to receive(:current_broker_agency).and_return(nil)
+        allow(Person).to receive(:find).and_return(family_without_broker.primary_person)
+        allow_any_instance_of(GroupSelectionPrevaricationAdapter).to receive(:family).and_return(family_without_broker)
+        sign_in non_broker_user
+      end
+
+      it "should not set broker information on enrollment" do
+        post :create, params: { person_id: family_without_broker.primary_person.id, employee_role_id: employee_role.id, family_member_ids: {"0" => family_without_broker.family_members.first.id} }
+        family_without_broker.reload
+
+        new_enrollment = HbxEnrollment.last
+        expect(new_enrollment.writing_agent_id).to be_nil
+        expect(new_enrollment.broker_agency_profile_id).to be_nil
+        expect(family_without_broker.broker_agency_accounts.count).to eq 0
+      end
+    end
   end
 
   context 'With keep_existing_plan' do

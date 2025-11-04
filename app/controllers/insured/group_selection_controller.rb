@@ -162,12 +162,13 @@ class Insured::GroupSelectionController < ApplicationController
     select_enrollment_members(hbx_enrollment, family_member_ids) if @market_kind == 'individual' || @market_kind == 'coverall'
 
     hbx_enrollment.generate_hbx_signature
-    existing_active_broker_id = @adapter.family.current_broker_agency&.writing_agent&.id
-    @adapter.family.hire_broker_agency(current_user.person.broker_role.try(:id)) if existing_active_broker_id != current_user.person.broker_role.try(:id)
-    hbx_enrollment.writing_agent_id = current_user.person.try(:broker_role).try(:id)
+    existing_active_broker = @adapter.family.current_broker_agency&.writing_agent
+    current_user_person = current_user.person
+    if existing_active_broker.present? && current_user_person.broker_agency_staff_roles.active.by_profile_id(existing_active_broker.benefit_sponsors_broker_agency_profile_id).any?
+      hbx_enrollment.writing_agent_id = existing_active_broker&.id
+      hbx_enrollment.broker_agency_profile_id = existing_active_broker&.broker_agency_profile_id
+    end
     hbx_enrollment.original_application_type = session[:original_application_type]
-    broker_role = current_user.person.broker_role
-    hbx_enrollment.broker_agency_profile_id = broker_role.broker_agency_profile_id if broker_role
 
     hbx_enrollment.coverage_kind = @coverage_kind
     hbx_enrollment.validate_for_cobra_eligiblity(@employee_role, current_user)
