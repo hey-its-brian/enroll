@@ -581,6 +581,54 @@ module Eligibilities
         def is_evidence_manually_verified?
           verified? && latest_verification_history&.action == 'verify' && latest_verification_history&.updated_by != 'system'
         end
+
+        # Determines if the evidence has received a determination response from external services
+        # @return [Boolean] true if evidence has determination response, false otherwise
+        def has_determination_response?
+          return false if pending?
+          return true if outstanding? || verified?
+          return check_review_state_response if review?
+          return check_attested_state_response if attested?
+
+          request_results.present?
+        end
+
+        # Checks for determination response when evidence is in review state
+        # @return [Boolean] true if response exists, false otherwise
+        def check_review_state_response
+          transitions = state_histories.by_state(:review).order_by(created_at: :desc)
+
+          from_pending = transitions.detect { |transition| transition.from_state == :pending }
+          return has_results_after_transition?(from_pending) if from_pending
+
+          from_outstanding = transitions.detect { |transition| transition.from_state == :outstanding }
+          from_outstanding.present?
+        end
+
+        # Checks for determination response when evidence is in attested state
+        # @return [Boolean] true if response exists, false otherwise
+        def check_attested_state_response
+          request_history = verification_histories.where(:action.in => ['application_determined', 'call_hub']).last
+          return false unless request_history
+
+          has_results_after_timestamp?(request_history.created_at)
+        end
+
+        # Checks if request results exist after a given transition
+        # @param transition [StateHistory] the state transition to check against
+        # @return [Boolean] true if results exist after transition, false otherwise
+        def has_results_after_transition?(transition)
+          return false unless transition
+
+          request_results.where(:created_at.gte => transition.created_at).present?
+        end
+
+        # Checks if request results exist after a given timestamp
+        # @param timestamp [DateTime] the timestamp to check against
+        # @return [Boolean] true if results exist after timestamp, false otherwise
+        def has_results_after_timestamp?(timestamp)
+          request_results.where(:created_at.gte => timestamp).present?
+        end
       end
     end
   end

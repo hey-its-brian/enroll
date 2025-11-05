@@ -1396,5 +1396,597 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
         end
       end
     end
+
+    describe '#has_determination_response?' do
+      let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+      let(:primary_applicant) { family.primary_applicant }
+      let(:faa_application) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          aasm_state: 'determined',
+          submitted_at: Time.now,
+          assistance_year: TimeKeeper.date_of_record.year
+        )
+      end
+
+      let(:applicant) do
+        FactoryBot.create(
+          :financial_assistance_applicant,
+          family_member_id: primary_applicant.id,
+          person_hbx_id: person.hbx_id,
+          application: faa_application
+        )
+      end
+
+      let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+      let(:evidence) { FactoryBot.create(:citizenship_evidence, eligibility: ivl_eligibility) }
+
+      context 'when current_state is pending' do
+        before { evidence.current_state = :pending }
+
+        it 'returns false' do
+          expect(evidence.has_determination_response?).to be false
+        end
+      end
+
+      context 'when current_state is outstanding' do
+        before { evidence.current_state = :outstanding }
+
+        it 'returns true' do
+          expect(evidence.has_determination_response?).to be true
+        end
+      end
+
+      context 'when current_state is verified' do
+        before { evidence.current_state = :verified }
+
+        it 'returns true' do
+          expect(evidence.has_determination_response?).to be true
+        end
+      end
+
+      context 'when current_state is review' do
+        before do
+          evidence.current_state = :review
+          allow(evidence).to receive(:check_review_state_response).and_return(true)
+        end
+
+        it 'calls check_review_state_response' do
+          expect(evidence.has_determination_response?).to be true
+          expect(evidence).to have_received(:check_review_state_response)
+        end
+      end
+
+      context 'when current_state is attested' do
+        before do
+          evidence.current_state = :attested
+          allow(evidence).to receive(:check_attested_state_response).and_return(false)
+        end
+
+        it 'calls check_attested_state_response' do
+          expect(evidence.has_determination_response?).to be false
+          expect(evidence).to have_received(:check_attested_state_response)
+        end
+      end
+
+      context 'when current_state is other and has request_results' do
+        before do
+          evidence.current_state = :rejected
+          evidence.request_results.build(created_at: Time.now)
+        end
+
+        it 'returns true when request_results are present' do
+          expect(evidence.has_determination_response?).to be true
+        end
+      end
+
+      context 'when current_state is other and has no request_results' do
+        before { evidence.current_state = :rejected }
+
+        it 'returns false when request_results are not present' do
+          expect(evidence.has_determination_response?).to be false
+        end
+      end
+    end
+
+    describe '#check_review_state_response' do
+      let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+      let(:primary_applicant) { family.primary_applicant }
+      let(:faa_application) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          aasm_state: 'determined',
+          submitted_at: Time.now,
+          assistance_year: TimeKeeper.date_of_record.year
+        )
+      end
+
+      let(:applicant) do
+        FactoryBot.create(
+          :financial_assistance_applicant,
+          family_member_id: primary_applicant.id,
+          person_hbx_id: person.hbx_id,
+          application: faa_application
+        )
+      end
+
+      let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+      let(:evidence) { FactoryBot.create(:citizenship_evidence, eligibility: ivl_eligibility) }
+
+      context 'when there is a transition from pending to review' do
+        let(:transition_from_pending) do
+          FactoryBot.build(
+            :v3_state_history,
+            status_trackable: evidence,
+            from_state: 'pending',
+            to_state: 'review',
+            created_at: 1.hour.ago
+          )
+        end
+
+        before do
+          evidence.state_histories << transition_from_pending
+          evidence.save!
+          allow(evidence).to receive(:has_results_after_transition?).and_return(true)
+        end
+
+        it 'calls has_results_after_transition? with the transition' do
+          expect(evidence.check_review_state_response).to be true
+          expect(evidence).to have_received(:has_results_after_transition?).with(transition_from_pending)
+        end
+      end
+
+      context 'when there is no transition from pending but there is from outstanding' do
+        let(:transition_from_outstanding) do
+          FactoryBot.build(
+            :v3_state_history,
+            status_trackable: evidence,
+            from_state: 'outstanding',
+            to_state: 'review',
+            created_at: 1.hour.ago
+          )
+        end
+
+        before do
+          evidence.state_histories << transition_from_outstanding
+          evidence.save!
+        end
+
+        it 'returns true when transition from outstanding exists' do
+          expect(evidence.check_review_state_response).to be true
+        end
+      end
+
+      context 'when there are multiple transitions to review' do
+        let(:older_transition) do
+          FactoryBot.build(
+            :v3_state_history,
+            status_trackable: evidence,
+            from_state: 'outstanding',
+            to_state: 'review',
+            created_at: 2.hours.ago
+          )
+        end
+
+        let(:newer_transition) do
+          FactoryBot.build(
+            :v3_state_history,
+            status_trackable: evidence,
+            from_state: 'pending',
+            to_state: 'review',
+            created_at: 1.hour.ago
+          )
+        end
+
+        before do
+          evidence.state_histories << older_transition
+          evidence.state_histories << newer_transition
+          evidence.save!
+          allow(evidence).to receive(:has_results_after_transition?).and_return(false)
+        end
+
+        it 'prioritizes the transition from pending' do
+          expect(evidence.check_review_state_response).to be false
+          expect(evidence).to have_received(:has_results_after_transition?).with(newer_transition)
+        end
+      end
+
+      context 'when there are no transitions to review state' do
+        it 'returns false' do
+          expect(evidence.check_review_state_response).to be false
+        end
+      end
+    end
+
+    describe '#check_attested_state_response' do
+      let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+      let(:primary_applicant) { family.primary_applicant }
+      let(:faa_application) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          aasm_state: 'determined',
+          submitted_at: Time.now,
+          assistance_year: TimeKeeper.date_of_record.year
+        )
+      end
+
+      let(:applicant) do
+        FactoryBot.create(
+          :financial_assistance_applicant,
+          family_member_id: primary_applicant.id,
+          person_hbx_id: person.hbx_id,
+          application: faa_application
+        )
+      end
+
+      let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+      let(:evidence) { FactoryBot.create(:citizenship_evidence, eligibility: ivl_eligibility) }
+
+      context 'when there is an application_determined verification history' do
+        let(:request_history) do
+          FactoryBot.build(
+            :v3_verification_history,
+            evidence: evidence,
+            action: 'application_determined',
+            created_at: 1.hour.ago
+          )
+        end
+
+        before do
+          evidence.verification_histories << request_history
+          evidence.save!
+          allow(evidence).to receive(:has_results_after_timestamp?).and_return(true)
+        end
+
+        it 'calls has_results_after_timestamp? with the history timestamp' do
+          expect(evidence.check_attested_state_response).to be true
+          expect(evidence).to have_received(:has_results_after_timestamp?).with(request_history.created_at)
+        end
+      end
+
+      context 'when there is a call_hub verification history' do
+        let(:request_history) do
+          FactoryBot.build(
+            :v3_verification_history,
+            evidence: evidence,
+            action: 'call_hub',
+            created_at: 1.hour.ago
+          )
+        end
+
+        before do
+          evidence.verification_histories << request_history
+          evidence.save!
+          allow(evidence).to receive(:has_results_after_timestamp?).and_return(false)
+        end
+
+        it 'calls has_results_after_timestamp? with the history timestamp' do
+          expect(evidence.check_attested_state_response).to be false
+          expect(evidence).to have_received(:has_results_after_timestamp?).with(request_history.created_at)
+        end
+      end
+
+      context 'when there are multiple relevant verification histories' do
+        let(:older_history) do
+          FactoryBot.build(
+            :v3_verification_history,
+            evidence: evidence,
+            action: 'application_determined',
+            created_at: 2.hours.ago
+          )
+        end
+
+        let(:newer_history) do
+          FactoryBot.build(
+            :v3_verification_history,
+            evidence: evidence,
+            action: 'call_hub',
+            created_at: 1.hour.ago
+          )
+        end
+
+        before do
+          evidence.verification_histories << older_history
+          evidence.verification_histories << newer_history
+          evidence.save!
+          allow(evidence).to receive(:has_results_after_timestamp?).and_return(true)
+        end
+
+        it 'uses the last matching verification history' do
+          expect(evidence.check_attested_state_response).to be true
+          expect(evidence).to have_received(:has_results_after_timestamp?).with(newer_history.created_at)
+        end
+      end
+
+      context 'when there is no relevant verification history' do
+        let(:irrelevant_history) do
+          FactoryBot.build(
+            :v3_verification_history,
+            evidence: evidence,
+            action: 'some_other_action',
+            created_at: 1.hour.ago
+          )
+        end
+
+        before do
+          evidence.verification_histories << irrelevant_history
+          evidence.save!
+        end
+
+        it 'returns false' do
+          expect(evidence.check_attested_state_response).to be false
+        end
+      end
+
+      context 'when there are no verification histories' do
+        it 'returns false' do
+          expect(evidence.check_attested_state_response).to be false
+        end
+      end
+    end
+
+    describe '#has_results_after_transition?' do
+      let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+      let(:primary_applicant) { family.primary_applicant }
+      let(:faa_application) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          aasm_state: 'determined',
+          submitted_at: Time.now,
+          assistance_year: TimeKeeper.date_of_record.year
+        )
+      end
+
+      let(:applicant) do
+        FactoryBot.create(
+          :financial_assistance_applicant,
+          family_member_id: primary_applicant.id,
+          person_hbx_id: person.hbx_id,
+          application: faa_application
+        )
+      end
+
+      let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+      let(:evidence) { FactoryBot.create(:citizenship_evidence, eligibility: ivl_eligibility) }
+
+      context 'when transition is nil' do
+        it 'returns false' do
+          expect(evidence.has_results_after_transition?(nil)).to be false
+        end
+      end
+
+      context 'when transition exists but no results after it' do
+        let(:transition) do
+          FactoryBot.build(
+            :v3_state_history,
+            status_trackable: evidence,
+            from_state: 'pending',
+            to_state: 'review',
+            created_at: 1.hour.ago
+          )
+        end
+
+        before do
+          evidence.state_histories << transition
+          evidence.save!
+        end
+
+        it 'returns false' do
+          expect(evidence.has_results_after_transition?(transition)).to be false
+        end
+      end
+
+      context 'when transition exists and results exist after it' do
+        let(:transition) do
+          FactoryBot.build(
+            :v3_state_history,
+            status_trackable: evidence,
+            from_state: 'pending',
+            to_state: 'review',
+            created_at: 1.hour.ago
+          )
+        end
+
+        let(:result_after) do
+          FactoryBot.build(
+            :v3_request_result,
+            evidence: evidence,
+            created_at: 30.minutes.ago
+          )
+        end
+
+        before do
+          evidence.state_histories << transition
+          evidence.request_results << result_after
+          evidence.save!
+        end
+
+        it 'returns true' do
+          expect(evidence.has_results_after_transition?(transition)).to be true
+        end
+      end
+
+      context 'when transition exists but results are before it' do
+        let(:transition) do
+          FactoryBot.build(
+            :v3_state_history,
+            status_trackable: evidence,
+            from_state: 'pending',
+            to_state: 'review',
+            created_at: 1.hour.ago
+          )
+        end
+
+        let(:result_before) do
+          FactoryBot.build(
+            :v3_request_result,
+            evidence: evidence,
+            created_at: 2.hours.ago
+          )
+        end
+
+        before do
+          evidence.state_histories << transition
+          evidence.request_results << result_before
+          evidence.save!
+        end
+
+        it 'returns false' do
+          expect(evidence.has_results_after_transition?(transition)).to be false
+        end
+      end
+
+      context 'when transition exists and results exist exactly at the same time' do
+        let(:timestamp) { 1.hour.ago }
+        let(:transition) do
+          FactoryBot.build(
+            :v3_state_history,
+            status_trackable: evidence,
+            from_state: 'pending',
+            to_state: 'review',
+            created_at: timestamp
+          )
+        end
+
+        let(:result_at_same_time) do
+          FactoryBot.build(
+            :v3_request_result,
+            evidence: evidence,
+            created_at: timestamp
+          )
+        end
+
+        before do
+          evidence.state_histories << transition
+          evidence.request_results << result_at_same_time
+          evidence.save!
+        end
+
+        it 'returns true (gte includes equal times)' do
+          expect(evidence.has_results_after_transition?(transition)).to be true
+        end
+      end
+    end
+
+    describe '#has_results_after_timestamp?' do
+      let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+      let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+      let(:primary_applicant) { family.primary_applicant }
+      let(:faa_application) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          aasm_state: 'determined',
+          submitted_at: Time.now,
+          assistance_year: TimeKeeper.date_of_record.year
+        )
+      end
+
+      let(:applicant) do
+        FactoryBot.create(
+          :financial_assistance_applicant,
+          family_member_id: primary_applicant.id,
+          person_hbx_id: person.hbx_id,
+          application: faa_application
+        )
+      end
+
+      let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+      let(:evidence) { FactoryBot.create(:citizenship_evidence, eligibility: ivl_eligibility) }
+
+      context 'when no request results exist after timestamp' do
+        let(:timestamp) { 1.hour.ago }
+
+        before do
+          result_before = FactoryBot.build(
+            :v3_request_result,
+            evidence: evidence,
+            created_at: 2.hours.ago
+          )
+          evidence.request_results << result_before
+          evidence.save!
+        end
+
+        it 'returns false' do
+          expect(evidence.has_results_after_timestamp?(timestamp)).to be false
+        end
+      end
+
+      context 'when request results exist after timestamp' do
+        let(:timestamp) { 2.hours.ago }
+
+        before do
+          result_after = FactoryBot.build(
+            :v3_request_result,
+            evidence: evidence,
+            created_at: 1.hour.ago
+          )
+          evidence.request_results << result_after
+          evidence.save!
+        end
+
+        it 'returns true' do
+          expect(evidence.has_results_after_timestamp?(timestamp)).to be true
+        end
+      end
+
+      context 'when request results exist exactly at timestamp' do
+        let(:timestamp) { 1.hour.ago }
+
+        before do
+          result_at_timestamp = FactoryBot.build(
+            :v3_request_result,
+            evidence: evidence,
+            created_at: timestamp
+          )
+          evidence.request_results << result_at_timestamp
+          evidence.save!
+        end
+
+        it 'returns true (gte includes equal times)' do
+          expect(evidence.has_results_after_timestamp?(timestamp)).to be true
+        end
+      end
+
+      context 'when multiple request results exist with mixed timestamps' do
+        let(:timestamp) { 1.hour.ago }
+
+        before do
+          result_before = FactoryBot.build(
+            :v3_request_result,
+            evidence: evidence,
+            created_at: 2.hours.ago
+          )
+          result_after = FactoryBot.build(
+            :v3_request_result,
+            evidence: evidence,
+            created_at: 30.minutes.ago
+          )
+          evidence.request_results << result_before
+          evidence.request_results << result_after
+          evidence.save!
+        end
+
+        it 'returns true when at least one result is after timestamp' do
+          expect(evidence.has_results_after_timestamp?(timestamp)).to be true
+        end
+      end
+
+      context 'when no request results exist at all' do
+        let(:timestamp) { 1.hour.ago }
+
+        it 'returns false' do
+          expect(evidence.has_results_after_timestamp?(timestamp)).to be false
+        end
+      end
+    end
   end
 end

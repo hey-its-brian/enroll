@@ -214,5 +214,246 @@ RSpec.describe ::Operations::Eligibilities::FamilyDataExportProcessor,
       expect(headers.include?("Income Auto-Extended")).to be_truthy
     end
   end
+
+  describe "evidences export class selection" do
+    context "when qhp_application feature is enabled" do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      end
+
+      it "uses FamilyEvidencesDataExportV3 class" do
+        expect(::Operations::Eligibilities::FamilyEvidencesDataExportV3).to receive(:new).and_call_original
+        expect(::Operations::Eligibilities::FamilyEvidencesDataExport).not_to receive(:new)
+
+        subject.call(required_params)
+      end
+    end
+
+    context "when qhp_application feature is disabled" do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+      end
+
+      it "uses FamilyEvidencesDataExport class" do
+        expect(::Operations::Eligibilities::FamilyEvidencesDataExport).to receive(:new).and_call_original
+        expect(::Operations::Eligibilities::FamilyEvidencesDataExportV3).not_to receive(:new)
+
+        subject.call(required_params)
+      end
+    end
+  end
+
+  describe "header configuration based on feature flags" do
+    context "when qhp_application feature is enabled" do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+      end
+
+      it "excludes 'Esi Updated?' and 'Local Mec Updated?' headers" do
+        result = subject.call(required_params)
+        headers = CSV.open(result.success, 'r', &:first)
+
+        expect(headers).not_to include("Esi Updated?")
+        expect(headers).not_to include("Local Mec Updated?")
+      end
+
+      it "includes core evidence headers" do
+        result = subject.call(required_params)
+        headers = CSV.open(result.success, 'r', &:first)
+
+        expect(headers).to include("SSN Evi Status")
+        expect(headers).to include("SSN Evi Due Date")
+        expect(headers).to include("Citizenship Evi Status")
+        expect(headers).to include("Citizenship Evi Due Date")
+        expect(headers).to include("Immigration Evi Status")
+        expect(headers).to include("Immigration Evi Due Date")
+      end
+    end
+
+    context "when qhp_application feature is disabled" do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+      end
+
+      it "includes 'Esi Updated?' and 'Local Mec Updated?' headers" do
+        result = subject.call(required_params)
+        headers = CSV.open(result.success, 'r', &:first)
+
+        expect(headers).to include("Esi Updated?")
+        expect(headers).to include("Local Mec Updated?")
+      end
+    end
+
+    context "residency verification feature interaction" do
+      context "when both qhp_application and location_residency_verification_type are enabled" do
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:location_residency_verification_type).and_return(true)
+        end
+
+        it "includes residency headers but excludes updated status headers" do
+          result = subject.call(required_params)
+          headers = CSV.open(result.success, 'r', &:first)
+
+          expect(headers).to include("Residency Evi Status")
+          expect(headers).to include("Residency Evi Due Date")
+          expect(headers).not_to include("Esi Updated?")
+          expect(headers).not_to include("Local Mec Updated?")
+        end
+      end
+
+      context "when location_residency_verification_type is enabled but qhp_application is disabled" do
+        before do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:location_residency_verification_type).and_return(true)
+        end
+
+        it "includes both residency headers and updated status headers" do
+          result = subject.call(required_params)
+          headers = CSV.open(result.success, 'r', &:first)
+
+          expect(headers).to include("Residency Evi Status")
+          expect(headers).to include("Residency Evi Due Date")
+          expect(headers).to include("Esi Updated?")
+          expect(headers).to include("Local Mec Updated?")
+        end
+      end
+    end
+
+    it "always includes core headers regardless of feature flags" do
+      result = subject.call(required_params)
+      headers = CSV.open(result.success, 'r', &:first)
+
+      # Core headers that should always be present
+      expected_core_headers = [
+        # Family and member identification
+        'Family Hbx ID',
+        'Primary Hbx ID',
+        'Is Subscriber?',
+        'Member Hbx ID',
+        'SSN',
+        'Member First Name',
+        'Member Last Name',
+        'Member Is Active?',
+
+        # Coverage information
+        'Health Cov Hbx ID',
+        'Health Cov Effective On',
+        'Health Cov Applied APTC',
+        'Health Cov CSR Variant',
+        'Health Cov Member Start',
+        'Health Cov Member End',
+        'Other Health Covs',
+        'Dental Cov Hbx ID',
+        'Dental Cov Effective On',
+        'Dental Cov Member Start',
+        'Dental Cov Member End',
+        'Other Dental Covs',
+
+        # Evidence information
+        'Citizen Kind',
+        'Immigrant Kind',
+        'SSN Evi Status',
+        'SSN Evi Due Date',
+        'American Ind Evi Status',
+        'American Ind Evi Due Date',
+        'Citizenship Evi Status',
+        'Citizenship Evi Due Date',
+        'Immigration Evi Status',
+        'Immigration Evi Due Date',
+
+        # Application and eligibility data
+        'Aptc Amt',
+        'CSR',
+        'Application Hbx ID',
+        'Application Created At',
+        'Application Submitted At',
+        'Applicant Applying Coverage?',
+
+        # Income information
+        'Cur Mth Earned Income Amt',
+        'Cur Mth UnEarned Income Amt',
+        'Income Status',
+        'Income Due Date',
+        'Income Auto-Extended',
+        'Income Response',
+
+        # Insurance information
+        'Esi Status',
+        'Esi Due Date',
+        'Esi Response',
+        'Non Esi Status',
+        'Non Esi Due Date',
+        'Non Esi Response',
+        'Local Mec Status',
+        'Local Mec Due Date',
+        'Local Mec Response',
+
+        # Eligibility determination
+        'Eligibility Determination Status',
+        'Eligibility Determination Due Date',
+
+        # DR notice creation dates
+        'DR0 Created On',
+        'DR1 Created On',
+        'DR2 Created On',
+        'DR3 Created On',
+        'DR4 Created On',
+
+        # Communication preference
+        'Communication Preference'
+      ]
+
+      expected_core_headers.each do |header|
+        expect(headers).to include(header)
+      end
+    end
+
+    describe "conditional headers based on feature flags" do
+      context "residency verification headers" do
+        it "includes residency headers when location_residency_verification_type is enabled" do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:location_residency_verification_type).and_return(true)
+
+          result = subject.call(required_params)
+          headers = CSV.open(result.success, 'r', &:first)
+
+          expect(headers).to include("Residency Evi Status")
+          expect(headers).to include("Residency Evi Due Date")
+        end
+
+        it "excludes residency headers when location_residency_verification_type is disabled" do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:location_residency_verification_type).and_return(false)
+
+          result = subject.call(required_params)
+          headers = CSV.open(result.success, 'r', &:first)
+
+          expect(headers).not_to include("Residency Evi Status")
+          expect(headers).not_to include("Residency Evi Due Date")
+        end
+      end
+
+      context "QHP application feature headers" do
+        it "excludes update status headers when qhp_application is enabled" do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
+
+          result = subject.call(required_params)
+          headers = CSV.open(result.success, 'r', &:first)
+
+          expect(headers).not_to include("Esi Updated?")
+          expect(headers).not_to include("Local Mec Updated?")
+        end
+
+        it "includes update status headers when qhp_application is disabled" do
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
+
+          result = subject.call(required_params)
+          headers = CSV.open(result.success, 'r', &:first)
+
+          expect(headers).to include("Esi Updated?")
+          expect(headers).to include("Local Mec Updated?")
+        end
+      end
+    end
+  end
 end
 

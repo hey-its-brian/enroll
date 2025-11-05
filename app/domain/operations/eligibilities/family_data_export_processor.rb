@@ -10,6 +10,7 @@ module Operations
     # Generate family evidence data report
     class FamilyDataExportProcessor
       include Dry::Monads[:do, :result]
+      include ResourceRegistryHelper
 
       DR_NOTICES = {
         :DR0 => "Action Needed - Submit Documents",
@@ -52,7 +53,8 @@ module Operations
             puts "processed #{index} families" if index % 100 == 0
             logger.info "processed #{index} families" if index % 100 == 0
 
-            family_data = ::Operations::Eligibilities::FamilyEvidencesDataExport.new.call(
+            exporter = qhp_application_feature_enabled? ? ::Operations::Eligibilities::FamilyEvidencesDataExportV3 : ::Operations::Eligibilities::FamilyEvidencesDataExport
+            family_data = exporter.new.call(
               family: family,
               assistance_year: values[:assistance_year] || TimeKeeper.date_of_record.year
             ).success
@@ -157,6 +159,7 @@ module Operations
         ]
 
         headings.insert(headings.find_index('Aptc Amt'), "Residency Evi Status", "Residency Evi Due Date") if EnrollRegistry.feature_enabled?(:location_residency_verification_type)
+        headings -= ['Esi Updated?', 'Local Mec Updated?'] if qhp_application_feature_enabled?
         headings
       end
       # rubocop:enable Metrics/MethodLength
