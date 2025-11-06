@@ -20,6 +20,58 @@ namespace :completed_evidence_due_dates do
   
   desc "Clear due_on for completed evidences that shouldn't have due dates"
   task fix: :environment do
+    def find_affected_applications(namespace)
+      namespace::Application.where(
+        'applicants' => {
+          '$elemMatch' => {
+            'eligibilities' => {
+              '$elemMatch' => {
+                'evidences' => {
+                  '$elemMatch' => {
+                    'current_state' => { '$nin' => ['rejected', 'outstanding', 'review'] },
+                    'due_on' => { '$ne' => nil }
+                  }
+                }
+              }
+            }
+          }
+        }
+      )
+    end
+
+    def evidence_needs_processing?(evidence)
+      evidence.current_state.present? && 
+      ![:rejected, :outstanding, :review].include?(evidence.current_state.to_sym) && 
+      evidence.due_on.present?
+    end
+
+    def each_affected_evidence(&block)
+      fa_apps = find_affected_applications(FinancialAssistance)
+      im_apps = find_affected_applications(IndividualMarket)
+
+      total_apps = fa_apps.count + im_apps.count
+      puts "Found #{total_apps} applications with evidences to process."
+      
+      app_index = 0
+      [fa_apps, im_apps].each do |apps|
+        apps.each do |app|
+          app_index += 1
+          offset_index = app_index
+          puts "Processing Application (#{offset_index}/#{total_apps})" if offset_index % 1000 == 0
+          
+          app.applicants.each do |applicant|
+            applicant.eligibilities.each do |eligibility|
+              eligibility.evidences.each do |evidence|
+                next unless evidence_needs_processing?(evidence)
+                
+                block.call(app, applicant, eligibility, evidence)
+              end
+            end
+          end
+        end
+      end
+    end
+
     puts "Starting data fix to clear due_on for completed evidences..."
     
     updated_count = 0
@@ -34,6 +86,58 @@ namespace :completed_evidence_due_dates do
 
   desc "Generate impact list for completed evidences with due_on set"
   task generate_impact_list: :environment do
+    def find_affected_applications(namespace)
+      namespace::Application.where(
+        'applicants' => {
+          '$elemMatch' => {
+            'eligibilities' => {
+              '$elemMatch' => {
+                'evidences' => {
+                  '$elemMatch' => {
+                    'current_state' => { '$nin' => ['rejected', 'outstanding', 'review'] },
+                    'due_on' => { '$ne' => nil }
+                  }
+                }
+              }
+            }
+          }
+        }
+      )
+    end
+
+    def evidence_needs_processing?(evidence)
+      evidence.current_state.present? && 
+      ![:rejected, :outstanding, :review].include?(evidence.current_state.to_sym) && 
+      evidence.due_on.present?
+    end
+
+    def each_affected_evidence(&block)
+      fa_apps = find_affected_applications(FinancialAssistance)
+      im_apps = find_affected_applications(IndividualMarket)
+
+      total_apps = fa_apps.count + im_apps.count
+      puts "Found #{total_apps} applications with evidences to process."
+      
+      app_index = 0
+      [fa_apps, im_apps].each do |apps|
+        apps.each do |app|
+          app_index += 1
+          offset_index = app_index
+          puts "Processing Application (#{offset_index}/#{total_apps})" if offset_index % 1000 == 0
+          
+          app.applicants.each do |applicant|
+            applicant.eligibilities.each do |eligibility|
+              eligibility.evidences.each do |evidence|
+                next unless evidence_needs_processing?(evidence)
+                
+                block.call(app, applicant, eligibility, evidence)
+              end
+            end
+          end
+        end
+      end
+    end
+
     puts "Generating impact list for completed evidences with due_on set..."
     
     data = []
@@ -88,59 +192,5 @@ namespace :completed_evidence_due_dates do
     puts "CSV report generated: #{file_name}"
   rescue StandardError => e
     puts "Error generating CSV: #{e.message}"
-  end
-
-  private
-
-  def self.each_affected_evidence(&block)
-    fa_apps = find_affected_applications(FinancialAssistance)
-    im_apps = find_affected_applications(IndividualMarket)
-
-    total_apps = fa_apps.count + im_apps.count
-    puts "Found #{total_apps} applications with evidences to process."
-    
-    app_index = 0
-    [fa_apps, im_apps].each do |apps|
-      apps.each do |app|
-        app_index += 1
-        offset_index = app_index
-        puts "Processing Application (#{offset_index}/#{total_apps})" if offset_index % 1000 == 0
-        
-        app.applicants.each do |applicant|
-          applicant.eligibilities.each do |eligibility|
-            eligibility.evidences.each do |evidence|
-              next unless evidence_needs_processing?(evidence)
-              
-              block.call(app, applicant, eligibility, evidence)
-            end
-          end
-        end
-      end
-    end
-  end
-
-  def self.find_affected_applications(namespace)
-    namespace::Application.where(
-      'applicants' => {
-        '$elemMatch' => {
-          'eligibilities' => {
-            '$elemMatch' => {
-              'evidences' => {
-                '$elemMatch' => {
-                  'current_state' => { '$nin' => ['rejected', 'outstanding', 'review'] },
-                  'due_on' => { '$ne' => nil }
-                }
-              }
-            }
-          }
-        }
-      }
-    )
-  end
-
-  def self.evidence_needs_processing?(evidence)
-    evidence.current_state.present? && 
-    ![:rejected, :outstanding, :review].include?(evidence.current_state.to_sym) && 
-    evidence.due_on.present?
   end
 end

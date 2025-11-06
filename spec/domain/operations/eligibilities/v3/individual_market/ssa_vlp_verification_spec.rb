@@ -25,6 +25,8 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerifica
         evidence = eligibility.evidences.where(
           :key.in => Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerification::EVIDENCE_KEYS
         ).first
+        expect(evidence.pending?).to be_truthy
+        expect(evidence.is_satisfied).to be_truthy
         expect(evidence.verification_histories.first.action).to eq('SSA VLP Hub Request')
         expect(::Transmittable::Job.first.process_status.latest_state).to eq(:transmitted)
         expect(::Transmittable::Transmission.first.process_status.latest_state).to eq(:transmitted)
@@ -41,6 +43,8 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerifica
         expect(result).to be_success
         eligibility = application.applicants.first.eligibilities.first
         evidence = eligibility.evidences.where(key: :social_security_number_evidence).first
+        expect(evidence.pending?).to be_truthy
+        expect(evidence.is_satisfied).to be_truthy
         expect(evidence.verification_histories.first.action).to eq('SSA VLP Hub Request')
         expect(evidence.verification_histories.first.updated_by).to eq('hub_call')
         expect(::Transmittable::Job.first.process_status.latest_state).to eq(:transmitted)

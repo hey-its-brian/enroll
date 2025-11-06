@@ -143,6 +143,13 @@ module Eligibilities
           TimeKeeper.date_of_record + verification_document_due.days
         end
 
+        def mark_as_pending(**args)
+          return unless self.can_move_to_pending?
+
+          self.move_to_pending(**args)
+          assign_attributes(verification_outstanding: false, is_satisfied: true)
+        end
+
         def mark_as_outstanding
           return unless self.can_move_to_outstanding?
 
@@ -165,18 +172,18 @@ module Eligibilities
           self.move_to_verified
         end
 
-        def mark_as_unverified
+        def mark_as_unverified(**args)
           return unless self.can_move_to_unverified?
 
-          assign_attributes(verification_outstanding: true, is_satisfied: false, due_on: nil)
-          self.move_to_unverified
+          assign_attributes(verification_outstanding: false, is_satisfied: true, due_on: nil)
+          self.move_to_unverified(**args)
         end
 
-        def mark_as_attested
+        def mark_as_attested(**args)
           return unless self.can_move_to_attested?
 
           assign_attributes(verification_outstanding: false, is_satisfied: true, due_on: nil)
-          self.move_to_attested
+          self.move_to_attested(**args)
         end
 
         # Marks the evidence as rejected if it can transition to the rejected state.

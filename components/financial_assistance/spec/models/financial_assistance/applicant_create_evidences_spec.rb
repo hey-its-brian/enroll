@@ -120,6 +120,9 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
         it 'creates a new evidence' do
           expect(result).to be_a(::Eligibilities::V3::Evidences::CitizenshipEvidence)
           expect(result.current_state).to eq(:pending)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('Citizenship evidence is required for QHP eligibility')
           expect(result.eligibility).to eq(individual_market_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end
@@ -167,6 +170,9 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
         it 'creates a new evidence' do
           expect(result).to be_a(::Eligibilities::V3::Evidences::ImmigrationEvidence)
           expect(result.current_state).to eq(:pending)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('Immigration evidence is required for QHP eligibility')
           expect(result.eligibility).to eq(individual_market_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end
@@ -250,6 +256,9 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
         it 'builds a new ai_an_evidence' do
           expect(result).to be_a(::Eligibilities::V3::Evidences::AmericanIndianEvidence)
           expect(result.current_state).to eq(:attested)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('American Indian evidence is required for QHP eligibility')
           expect(result.eligibility).to eq(individual_market_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end
@@ -316,6 +325,10 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
 
         it 'builds a new ssn_evidence' do
           expect(result).to be_a(::Eligibilities::V3::Evidences::SocialSecurityNumberEvidence)
+          expect(result.current_state).to eq(:pending)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('Social Security Number evidence is required for QHP eligibility')
           expect(result.eligibility).to eq(individual_market_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end
@@ -372,6 +385,10 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
 
         it 'builds a new alive_evidence' do
           expect(result).to be_a(::Eligibilities::V3::Evidences::AliveEvidence)
+          expect(result.current_state).to eq(:unverified)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('Alive evidence can only be moved to :outstanding or :attested by the DMF call')
           expect(result.eligibility).to eq(individual_market_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end
@@ -465,6 +482,10 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
 
         it 'creates a new esi_mec_evidence' do
           expect(result).to be_a(::FinancialAssistance::Evidences::EsiMecEvidence)
+          expect(result.current_state).to eq(:pending)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('ESI MEC evidence is required for APTC eligibility')
           expect(result.eligibility).to eq(aptc_csr_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end
@@ -512,6 +533,10 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
 
           it 'creates a new income_evidence' do
             expect(result).to be_a(::FinancialAssistance::Evidences::IncomeEvidence)
+            expect(result.current_state).to eq(:pending)
+            expect(result.is_satisfied).to eq(true)
+            expect(result.state_histories.last.comment).to eq('application_determination')
+            expect(result.state_histories.last.reason).to eq('Income evidence is required for APTC eligibility')
             expect(result.eligibility).to eq(aptc_csr_eligibility)
             expect(result.eligibility.eligible).to eq(applicant)
           end
@@ -551,6 +576,10 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
 
           it 'creates a new income_evidence' do
             expect(result).to be_a(::FinancialAssistance::Evidences::IncomeEvidence)
+            expect(result.current_state).to eq(:pending)
+            expect(result.is_satisfied).to eq(true)
+            expect(result.state_histories.last.comment).to eq('application_determination')
+            expect(result.state_histories.last.reason).to eq('Income evidence is required for APTC eligibility')
             expect(result.eligibility).to eq(aptc_csr_eligibility)
             expect(result.eligibility.eligible).to eq(applicant)
           end
@@ -614,6 +643,10 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
 
         it 'creates a new local_mec_evidence' do
           expect(result).to be_a(::FinancialAssistance::Evidences::LocalMecEvidence)
+          expect(result.current_state).to eq(:pending)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('Local MEC evidence is required for APTC eligibility')
           expect(result.eligibility).to eq(aptc_csr_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end
@@ -676,6 +709,10 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model do
 
         it 'creates a new non_esi_mec_evidence' do
           expect(result).to be_a(::FinancialAssistance::Evidences::NonEsiMecEvidence)
+          expect(result.current_state).to eq(:pending)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('Non-ESI MEC evidence is required for APTC eligibility')
           expect(result.eligibility).to eq(aptc_csr_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end

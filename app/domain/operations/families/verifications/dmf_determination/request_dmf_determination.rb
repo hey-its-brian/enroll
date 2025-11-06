@@ -112,6 +112,10 @@ module Operations
           def build_applicants_alive_evidences
             return Failure("No latest application found for family") unless latest_application&.present?
             latest_application.applicants.each(&:build_alive_evidence)
+            if latest_application.applicants.any? { |applicant| applicant.individual_market_eligibility.alive_evidence.new_record? }
+              return Failure("Failed to save alive evidences for applicants in latest application") unless latest_application.save
+              Operations::Eligibilities::BuildFamilyDetermination.new.call({ family: @family })
+            end
 
             Success(true)
           end

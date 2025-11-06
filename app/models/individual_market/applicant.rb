@@ -330,7 +330,7 @@ module IndividualMarket
         title: 'Citizenship Evidence',
         key: :citizenship_evidence
       )
-      evidence.move_to_pending(
+      evidence.mark_as_pending(
         comment: 'application_determination',
         reason: 'Citizenship evidence is required for QHP eligibility'
       )
@@ -352,7 +352,7 @@ module IndividualMarket
         key: :immigration_evidence
       )
 
-      evidence.move_to_pending(
+      evidence.mark_as_pending(
         comment: 'application_determination',
         reason: 'Immigration evidence is required for QHP eligibility'
       )
@@ -374,12 +374,12 @@ module IndividualMarket
       )
 
       if EnrollRegistry.feature_enabled?(:ai_an_self_attestation)
-        evidence.move_to_attested(
+        evidence.mark_as_attested(
           comment: 'application_determination',
           reason: 'American Indian evidence is required for QHP eligibility'
         )
       else
-        evidence.move_to_pending(
+        evidence.mark_as_pending(
           comment: 'application_determination',
           reason: 'American Indian evidence is required for QHP eligibility'
         )
@@ -401,7 +401,7 @@ module IndividualMarket
         key: :social_security_number_evidence
       )
 
-      evidence.move_to_pending(
+      evidence.mark_as_pending(
         comment: 'application_determination',
         reason: 'Social Security Number evidence is required for QHP eligibility'
       )
@@ -423,7 +423,7 @@ module IndividualMarket
         key: :alive_evidence
       )
 
-      evidence.move_to_unverified(
+      evidence.mark_as_unverified(
         comment: 'application_determination',
         reason: 'Alive evidence can only be moved to :outstanding or :attested by the DMF call'
       )

@@ -9,7 +9,11 @@ RSpec.shared_context 'dual applications with eligible family setup' do
 
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: primary_person) }
   let(:primary_person) { FactoryBot.create(:person, :with_consumer_role, :with_ssn, dob: dob1) }
-  let(:non_primary_person) { FactoryBot.create(:person, :with_consumer_role, :with_ssn, dob: dob2) }
+  let(:non_primary_person) do
+    person = FactoryBot.create(:person, :with_consumer_role, :with_ssn, dob: dob2)
+    primary_person.ensure_relationship_with(person, 'spouse')
+    person
+  end
   let!(:non_primary_family_member) { FactoryBot.create(:family_member, person: non_primary_person, family: family) }
 
   let(:encrypted_ssn) { SymmetricEncryption.encrypt(primary_person.ssn) }
@@ -25,7 +29,7 @@ RSpec.shared_context 'dual applications with eligible family setup' do
     current_application.build_ivl_eligibility_with_evidences
     current_application.save!
 
-    allow(family).to receive(:latest_application).and_return(current_application)
+    allow(family).to receive(:latest_application_gid).and_return(current_application.to_global_id.to_s)
     Operations::Eligibilities::BuildFamilyDetermination.new.call({effective_date: Date.today, family: family})
   end
 

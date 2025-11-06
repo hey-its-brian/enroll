@@ -195,7 +195,7 @@ module Operations
               next unless eligibility
               evidences = eligibility.evidences.select {|e| EVIDENCE_KEYS.include?(e.key.to_s) }
               evidences.each do |evidence|
-                evidence.move_to_pending unless evidence.pending?
+                evidence.mark_as_pending unless evidence.pending?
                 evidence.verification_histories.build({
                                                         action: "SSA VLP Hub Request",
                                                         update_reason: update_reason,

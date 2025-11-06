@@ -20,13 +20,45 @@ namespace :fix_evidence_is_satisfied do
   
   desc "Set is_satisfied to true for evidences in completed states"
   task fix: :environment do
+    satisfied_states = %i[verified attested negative_response_received unverified pending].freeze
+
+    def find_affected_applications(namespace, assistance_year, satisfied_states)
+      query = {
+        'applicants' => {
+          '$elemMatch' => {
+            'eligibilities' => {
+              '$elemMatch' => {
+                'evidences' => {
+                  '$elemMatch' => {
+                    'current_state' => { '$in' => satisfied_states },
+                    'is_satisfied' => { '$ne' => true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      if assistance_year
+        query['assistance_year'] = assistance_year
+      end
+      
+      namespace::Application.where(query)
+    end
+
+    def evidence_needs_processing?(evidence, satisfied_states)
+      evidence.current_state.present? && 
+      satisfied_states.include?(evidence.current_state.to_sym) && 
+      evidence.is_satisfied != true
+    end
     puts "Starting data fix to set is_satisfied to true for completed evidences..."
     
     updated_count = 0
     eligibility_count = 0
     
-    fa_apps = find_affected_applications(FinancialAssistance, 2026)
-    im_apps = find_affected_applications(IndividualMarket, 2026)
+    fa_apps = find_affected_applications(FinancialAssistance, 2026, satisfied_states)
+    im_apps = find_affected_applications(IndividualMarket, 2026, satisfied_states)
 
     total_apps = fa_apps.count + im_apps.count
     puts "Found #{total_apps} applications with evidences to process."
@@ -40,7 +72,7 @@ namespace :fix_evidence_is_satisfied do
         
         app.applicants.each do |applicant|
           applicant.eligibilities.each do |eligibility|
-            affected_evidences = eligibility.evidences.select { |evidence| evidence_needs_processing?(evidence) }
+            affected_evidences = eligibility.evidences.select { |evidence| evidence_needs_processing?(evidence, satisfied_states) }
             next if affected_evidences.empty?
 
             affected_evidences.each do |evidence|
@@ -67,12 +99,45 @@ namespace :fix_evidence_is_satisfied do
 
   desc "Generate impact list for evidences in completed states with is_satisfied not true"
   task generate_impact_list: :environment do
+    satisfied_states = %i[verified attested negative_response_received unverified pending].freeze
+
+    def find_affected_applications(namespace, assistance_year, satisfied_states)
+      query = {
+        'applicants' => {
+          '$elemMatch' => {
+            'eligibilities' => {
+              '$elemMatch' => {
+                'evidences' => {
+                  '$elemMatch' => {
+                    'current_state' => { '$in' => satisfied_states },
+                    'is_satisfied' => { '$ne' => true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      if assistance_year
+        query['assistance_year'] = assistance_year
+      end
+      
+      namespace::Application.where(query)
+    end
+
+    def evidence_needs_processing?(evidence, satisfied_states)
+      evidence.current_state.present? && 
+      satisfied_states.include?(evidence.current_state.to_sym) && 
+      evidence.is_satisfied != true
+    end
+
     puts "Generating impact list for evidences in completed states with is_satisfied not true..."
     
     data = []
     
-    fa_apps = find_affected_applications(FinancialAssistance, 2026)
-    im_apps = find_affected_applications(IndividualMarket, 2026)
+    fa_apps = find_affected_applications(FinancialAssistance, nil, satisfied_states)
+    im_apps = find_affected_applications(IndividualMarket, nil, satisfied_states)
 
     total_apps = fa_apps.count + im_apps.count
     puts "Found #{total_apps} applications with evidences to process."
@@ -87,7 +152,7 @@ namespace :fix_evidence_is_satisfied do
         app.applicants.each do |applicant|
           applicant.eligibilities.each do |eligibility|
             eligibility.evidences.each do |evidence|
-              next unless evidence_needs_processing?(evidence)
+              next unless evidence_needs_processing?(evidence, satisfied_states)
               
               last_history = evidence.verification_histories&.last
               if app.is_a?(FinancialAssistance::Application) 
@@ -146,34 +211,5 @@ namespace :fix_evidence_is_satisfied do
   rescue StandardError => e
     puts "Error generating CSV: #{e.message}"
   end
-
-  private
-
-
-
-  def self.find_affected_applications(namespace, assistance_year)
-    namespace::Application.where(
-      assistance_year: assistance_year,
-      'applicants' => {
-        '$elemMatch' => {
-          'eligibilities' => {
-            '$elemMatch' => {
-              'evidences' => {
-                '$elemMatch' => {
-                  'current_state' => { '$in' => ['verified', 'attested', 'negative_response_received'] },
-                  'is_satisfied' => { '$ne' => true }
-                }
-              }
-            }
-          }
-        }
-      }
-    )
-  end
-
-  def self.evidence_needs_processing?(evidence)
-    evidence.current_state.present? && 
-    [:verified, :attested, :negative_response_received].include?(evidence.current_state.to_sym) && 
-    evidence.is_satisfied != true
-  end
 end
+  

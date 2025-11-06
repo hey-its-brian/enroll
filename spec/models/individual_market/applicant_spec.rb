@@ -187,6 +187,9 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
           applicant.demographics.update_attributes(citizen_status: 'us_citizen')
           expect(result).to be_a(::Eligibilities::V3::Evidences::CitizenshipEvidence)
           expect(result.current_state).to eq(:pending)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('Citizenship evidence is required for QHP eligibility')
           expect(result.eligibility).to eq(individual_market_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end
@@ -233,6 +236,9 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
           applicant.demographics.update_attributes(citizen_status: 'alien_lawfully_present')
           expect(result).to be_a(::Eligibilities::V3::Evidences::ImmigrationEvidence)
           expect(result.current_state).to eq(:pending)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('Immigration evidence is required for QHP eligibility')
           expect(result.eligibility).to eq(individual_market_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end
@@ -318,6 +324,9 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
           applicant.demographics.update_attributes(indian_tribe_member: true)
           expect(result).to be_a(::Eligibilities::V3::Evidences::AmericanIndianEvidence)
           expect(result.current_state).to eq(:attested)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('American Indian evidence is required for QHP eligibility')
           expect(result.eligibility).to eq(individual_market_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end
@@ -333,6 +342,9 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
           applicant.demographics.update_attributes(indian_tribe_member: true)
           expect(result).to be_a(::Eligibilities::V3::Evidences::AmericanIndianEvidence)
           expect(result.current_state).to eq(:pending)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('American Indian evidence is required for QHP eligibility')
           expect(result.eligibility).to eq(individual_market_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end
@@ -385,6 +397,10 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
         it 'builds a new ssn_evidence' do
           applicant.demographics.update_attributes(no_ssn: '1', encrypted_ssn: SymmetricEncryption.encrypt('123456789'))
           expect(result).to be_a(::Eligibilities::V3::Evidences::SocialSecurityNumberEvidence)
+          expect(result.current_state).to eq(:pending)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('Social Security Number evidence is required for QHP eligibility')
           expect(result.eligibility).to eq(individual_market_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end
@@ -467,6 +483,10 @@ RSpec.describe IndividualMarket::Applicant, type: :model do
         it 'builds a new alive_evidence' do
           applicant.demographics.update_attributes(no_ssn: '1', encrypted_ssn: SymmetricEncryption.encrypt('123456789'))
           expect(result).to be_a(::Eligibilities::V3::Evidences::AliveEvidence)
+          expect(result.current_state).to eq(:unverified)
+          expect(result.is_satisfied).to eq(true)
+          expect(result.state_histories.last.comment).to eq('application_determination')
+          expect(result.state_histories.last.reason).to eq('Alive evidence can only be moved to :outstanding or :attested by the DMF call')
           expect(result.eligibility).to eq(individual_market_eligibility)
           expect(result.eligibility.eligible).to eq(applicant)
         end

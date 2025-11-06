@@ -1719,6 +1719,18 @@ module FinancialAssistance
       build_individual_market_evidences
     end
 
+    # Builds a new Individual Market eligibility for the applicant.
+    #
+    # @param applicant [FinancialAssistance::Applicant] The applicant for whom the eligibility is being built.
+    # @return [Eligibilities::V3::IndividualMarketEligibility] The newly built eligibility.
+    def build_individual_market_eligibility
+      eligibilities.build(
+        _type: 'Eligibilities::V3::IndividualMarketEligibility',
+        title: 'Individual Market Eligibility',
+        key: :individual_market_eligibility
+      )
+    end
+
     # Method to build APTC/CSR Eligibility and evidences for the applicant.
     #   It creates APTC/CSR Eligibility if it does not exist.
     #   It calls the method to build evidences for APTC/CSR Eligibility if they do not exist.
@@ -1727,14 +1739,6 @@ module FinancialAssistance
     def build_aptc_eligibilities_evidences
       build_aptc_csr_eligibility unless aptc_csr_eligibility
       build_aptc_csr_evidences
-    end
-
-    def build_individual_market_eligibility
-      eligibilities.build(
-        _type: 'Eligibilities::V3::IndividualMarketEligibility',
-        title: 'Individual Market Eligibility',
-        key: :individual_market_eligibility
-      )
     end
 
     # Builds a new APTC/CSR eligibility for the applicant.
@@ -1746,18 +1750,6 @@ module FinancialAssistance
         _type: 'Eligibilities::V3::AptcCsrEligibility',
         title: 'APTC/CSR Eligibility',
         key: :aptc_csr_eligibility
-      )
-    end
-
-    # Builds a new Individual Market eligibility for the applicant.
-    #
-    # @param applicant [FinancialAssistance::Applicant] The applicant for whom the eligibility is being built.
-    # @return [Eligibilities::V3::AptcCsrEligibility] The newly built eligibility.
-    def build_individual_market_eligibility
-      eligibilities.build(
-        _type: 'Eligibilities::V3::IndividualMarketEligibility',
-        title: 'Individual Market Eligibility',
-        key: :individual_market_eligibility
       )
     end
 
@@ -1844,7 +1836,7 @@ module FinancialAssistance
         key: :alive_evidence
       )
 
-      evidence.move_to_unverified(
+      evidence.mark_as_unverified(
         comment: 'application_determination',
         reason: 'Alive evidence can only be moved to :outstanding or :attested by the DMF call'
       )
@@ -2014,7 +2006,7 @@ module FinancialAssistance
         title: 'Citizenship Evidence',
         key: :citizenship_evidence
       )
-      evidence.move_to_pending(
+      evidence.mark_as_pending(
         comment: 'application_determination',
         reason: 'Citizenship evidence is required for QHP eligibility'
       )
@@ -2036,7 +2028,7 @@ module FinancialAssistance
         key: :immigration_evidence
       )
 
-      evidence.move_to_pending(
+      evidence.mark_as_pending(
         comment: 'application_determination',
         reason: 'Immigration evidence is required for QHP eligibility'
       )
@@ -2058,12 +2050,12 @@ module FinancialAssistance
       )
 
       if EnrollRegistry.feature_enabled?(:ai_an_self_attestation)
-        evidence.move_to_attested(
+        evidence.mark_as_attested(
           comment: 'application_determination',
           reason: 'American Indian evidence is required for QHP eligibility'
         )
       else
-        evidence.move_to_pending(
+        evidence.mark_as_pending(
           comment: 'application_determination',
           reason: 'American Indian evidence is required for QHP eligibility'
         )
@@ -2085,7 +2077,7 @@ module FinancialAssistance
         key: :social_security_number_evidence
       )
 
-      evidence.move_to_pending(
+      evidence.mark_as_pending(
         comment: 'application_determination',
         reason: 'Social Security Number evidence is required for QHP eligibility'
       )
@@ -2117,7 +2109,7 @@ module FinancialAssistance
         title: 'ESI MEC Evidence',
         key: :esi_mec_evidence
       )
-      evidence.move_to_pending(
+      evidence.mark_as_pending(
         comment: 'application_determination',
         reason: 'ESI MEC evidence is required for APTC eligibility'
       )
@@ -2139,7 +2131,7 @@ module FinancialAssistance
         title: 'Income Evidence',
         key: :income_evidence
       )
-      evidence.move_to_pending(
+      evidence.mark_as_pending(
         comment: 'application_determination',
         reason: 'Income evidence is required for APTC eligibility'
       )
@@ -2160,7 +2152,7 @@ module FinancialAssistance
         title: 'Local MEC Evidence',
         key: :local_mec_evidence
       )
-      evidence.move_to_pending(
+      evidence.mark_as_pending(
         comment: 'application_determination',
         reason: 'Local MEC evidence is required for APTC eligibility'
       )
@@ -2181,7 +2173,7 @@ module FinancialAssistance
         title: 'Non-ESI MEC Evidence',
         key: :non_esi_mec_evidence
       )
-      evidence.move_to_pending(
+      evidence.mark_as_pending(
         comment: 'application_determination',
         reason: 'Non-ESI MEC evidence is required for APTC eligibility'
       )

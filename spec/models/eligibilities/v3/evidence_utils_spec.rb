@@ -156,6 +156,46 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
     end
   end
 
+  describe "#mark_as_pending" do
+    before { dummy_evidence.move_to_outstanding }
+
+    it "marks the evidence as pending" do
+      dummy_evidence.mark_as_pending
+      expect(dummy_evidence.pending?).to be true
+      expect(dummy_evidence.is_satisfied).to be true
+      expect(dummy_evidence.verification_outstanding).to be false
+    end
+
+    it "does not mark as pending if cannot move to pending" do
+      allow(dummy_evidence).to receive(:can_move_to_pending?).and_return(false)
+      expect { dummy_evidence.mark_as_pending }.not_to change(dummy_evidence, :pending?)
+    end
+
+    it "passes keyword arguments to move_to_pending" do
+      expect(dummy_evidence).to receive(:move_to_pending).with(comment: 'test comment', reason: 'test reason').and_call_original
+      dummy_evidence.mark_as_pending(comment: 'test comment', reason: 'test reason')
+    end
+
+    it "works with no arguments" do
+      expect(dummy_evidence).to receive(:move_to_pending).with(no_args).and_call_original
+      dummy_evidence.mark_as_pending
+    end
+  end
+
+  describe "#mark_as_unverified" do
+    it "marks the evidence as unverified" do
+      dummy_evidence.mark_as_unverified
+      expect(dummy_evidence.unverified?).to be true
+      expect(dummy_evidence.is_satisfied).to be true
+      expect(dummy_evidence.verification_outstanding).to be false
+    end
+
+    it "does not mark as unverified if cannot move to unverified" do
+      allow(dummy_evidence).to receive(:can_move_to_unverified?).and_return(false)
+      expect { dummy_evidence.mark_as_unverified }.not_to change(dummy_evidence, :unverified?)
+    end
+  end
+
   describe "#mark_as_negative_response_received" do
     it "marks the evidence as negative_response_received" do
       dummy_evidence.due_on = TimeKeeper.date_of_record

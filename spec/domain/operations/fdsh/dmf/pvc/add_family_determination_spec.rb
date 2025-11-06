@@ -195,6 +195,7 @@ RSpec.describe Operations::Fdsh::Dmf::Pvc::AddFamilyDetermination, dbclean: :aft
       end
 
       before do
+        family.reset_latest_application
         @result = described_class.new.call(params)
         primary_person.reload
         family.reload

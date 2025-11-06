@@ -70,7 +70,35 @@ RSpec.describe 'fix_evidence_is_satisfied rake tasks', type: :task, dbclean: :af
       end
     end
 
-    context 'when evidences are in pending states' do
+    context 'when evidences are in satisfied states including pending and unverified' do
+      let!(:pending_evidence) do
+        FactoryBot.create(:income_evidence, eligibility: eligibility, current_state: :pending, is_satisfied: false)
+      end
+
+      let!(:unverified_evidence) do
+        FactoryBot.create(:esi_mec_evidence, eligibility: eligibility, current_state: :unverified, is_satisfied: false)
+      end
+
+      let(:expected_app_count) { 1 }
+
+      include_examples 'evidence processing'
+
+      it 'sets is_satisfied to true for evidences in pending and unverified states' do
+        task.invoke
+
+        pending_evidence.reload
+        unverified_evidence.reload
+
+        expect(pending_evidence.is_satisfied).to be true
+        expect(unverified_evidence.is_satisfied).to be true
+      end
+
+      it 'displays correct counts in output' do
+        expect { task.invoke }.to output(/is_satisfied updated for 2 evidences across 1 eligibilities/).to_stdout
+      end
+    end
+
+    context 'when evidences are in non-satisfied states' do
       let!(:outstanding_evidence) do
         FactoryBot.create(:income_evidence, eligibility: eligibility, current_state: :outstanding, is_satisfied: false)
       end
@@ -87,7 +115,7 @@ RSpec.describe 'fix_evidence_is_satisfied rake tasks', type: :task, dbclean: :af
 
       include_examples 'evidence processing'
 
-      it 'does not update is_satisfied for evidences in pending states' do
+      it 'does not update is_satisfied for evidences in non-satisfied states' do
         task.invoke
 
         outstanding_evidence.reload
@@ -135,14 +163,14 @@ RSpec.describe 'fix_evidence_is_satisfied rake tasks', type: :task, dbclean: :af
 
       include_examples 'evidence processing'
 
-      it 'only processes 2026 applications' do
+      it 'processes only 2026 applications (hardcoded year constraint)' do
         expect { task.invoke }.to output(/is_satisfied updated for 1 evidences across 1 eligibilities/).to_stdout
 
         evidence_2026.reload
         evidence_2025.reload
 
         expect(evidence_2026.is_satisfied).to be true
-        expect(evidence_2025.is_satisfied).to be false # Should not be updated
+        expect(evidence_2025.is_satisfied).to be false # Should not be updated due to year constraint
       end
     end
 
@@ -206,13 +234,17 @@ RSpec.describe 'fix_evidence_is_satisfied rake tasks', type: :task, dbclean: :af
     before { task.reenable }
     after { File.delete(csv_file_path) if File.exist?(csv_file_path) }
 
-    context 'when evidences need reporting' do
+    context 'when evidences need reporting including pending and unverified states' do
       let!(:evidence1) do
         FactoryBot.create(:income_evidence, eligibility: eligibility, current_state: :verified, is_satisfied: false, key: 'income_evidence')
       end
 
       let!(:evidence2) do
-        FactoryBot.create(:income_evidence, eligibility: eligibility, current_state: :attested, is_satisfied: false, key: 'residency_evidence')
+        FactoryBot.create(:income_evidence, eligibility: eligibility, current_state: :pending, is_satisfied: false, key: 'residency_evidence')
+      end
+
+      let!(:evidence3) do
+        FactoryBot.create(:income_evidence, eligibility: eligibility, current_state: :unverified, is_satisfied: false, key: 'citizenship_evidence')
       end
 
       let(:expected_app_count) { 1 }
@@ -245,12 +277,14 @@ RSpec.describe 'fix_evidence_is_satisfied rake tasks', type: :task, dbclean: :af
         expect(csv_content).to include(applicant.person_hbx_id) # Person HBX ID
         expect(csv_content).to include('income_evidence')
         expect(csv_content).to include('residency_evidence')
+        expect(csv_content).to include('citizenship_evidence')
         expect(csv_content).to include('verified')
-        expect(csv_content).to include('attested')
+        expect(csv_content).to include('pending')
+        expect(csv_content).to include('unverified')
       end
 
       it 'includes correct number of evidence records' do
-        expect { task.invoke }.to output(/Generating CSV report with 2 evidence records/).to_stdout
+        expect { task.invoke }.to output(/Generating CSV report with 3 evidence records/).to_stdout
       end
     end
 
@@ -281,6 +315,36 @@ RSpec.describe 'fix_evidence_is_satisfied rake tasks', type: :task, dbclean: :af
 
       it 'handles CSV generation errors gracefully' do
         expect { task.invoke }.to output(/Error generating CSV: Permission denied/).to_stdout
+      end
+    end
+
+    context 'with different assistance years (all years processed)' do
+      let(:application_2025) { FactoryBot.create(:financial_assistance_application, family_id: family.id, assistance_year: 2025) }
+      let(:applicant_2025) { FactoryBot.create(:financial_assistance_applicant, application: application_2025) }
+      let(:eligibility_2025) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant_2025) }
+
+      let!(:evidence_2026) do
+        FactoryBot.create(:income_evidence, eligibility: eligibility, current_state: :verified, is_satisfied: false, key: 'income_2026')
+      end
+
+      let!(:evidence_2025) do
+        FactoryBot.create(:income_evidence, eligibility: eligibility_2025, current_state: :pending, is_satisfied: false, key: 'income_2025')
+      end
+
+      let(:expected_app_count) { 2 }
+
+      include_examples 'evidence processing'
+
+      it 'processes all assistance years (no year constraint)' do
+        expect { task.invoke }.to output(/Generating CSV report with 2 evidence records/).to_stdout
+
+        expect(File.exist?(csv_file_path)).to be true
+        csv_content = File.read(csv_file_path)
+
+        expect(csv_content).to include('income_2026')
+        expect(csv_content).to include('income_2025')
+        expect(csv_content).to include('2026')
+        expect(csv_content).to include('2025')
       end
     end
   end

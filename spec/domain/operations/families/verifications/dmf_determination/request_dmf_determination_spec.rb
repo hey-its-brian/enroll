@@ -333,10 +333,9 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::RequestDmf
         it 'should build alive evidence for applicants in the latest application' do
           expect(applicant&.individual_market_eligibility&.alive_evidence).to be_nil
 
+          family.reset_latest_application
           described_class.new.call(payload)
-          current_application.reload
-
-          expect(applicant&.individual_market_eligibility&.alive_evidence).to be_present
+          expect(applicant&.reload&.individual_market_eligibility&.alive_evidence).to be_present
         end
       end
     end
@@ -364,10 +363,11 @@ RSpec.describe Operations::Families::Verifications::DmfDetermination::RequestDmf
         it 'should build alive evidence for applicants in the latest application' do
           expect(applicant.individual_market_eligibility&.alive_evidence).to be_nil
 
+          family.reset_latest_application
           described_class.new.call(payload)
           current_application.reload
 
-          expect(applicant.individual_market_eligibility&.alive_evidence).to be_present
+          expect(applicant&.reload&.individual_market_eligibility&.alive_evidence).to be_present
         end
       end
     end

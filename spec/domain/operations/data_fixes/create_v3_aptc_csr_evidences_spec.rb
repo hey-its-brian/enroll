@@ -231,8 +231,8 @@ RSpec.describe ::Operations::DataFixes::CreateV3AptcCsrEvidences, dbclean: :afte
         applicant2_eligibility = applicant2.aptc_csr_eligibility
         expect(applicant2_eligibility).to be_present
         expect(applicant2).to have_verified_evidence('income_evidence', :outstanding, false, true)
-        expect(applicant2).to have_verified_evidence('esi_mec_evidence', :pending, false, false)
-        expect(applicant2).to have_verified_evidence('non_esi_mec_evidence', :pending, false, false)
+        expect(applicant2).to have_verified_evidence('esi_mec_evidence', :pending, true, false)
+        expect(applicant2).to have_verified_evidence('non_esi_mec_evidence', :pending, true, false)
       end
 
       it 'creates verified evidences for applicant3' do
