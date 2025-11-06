@@ -835,15 +835,21 @@ RSpec.describe ::Operations::Eligibilities::FamilyEvidencesDataExportV3,
         expect(result).to be_a(Hash)
         expect(result[:income_status]).to be_nil
         expect(result[:income_due_date]).to be_nil
-        expect(result[:income_auto_extended]).to be(false)
+        expect(result[:income_auto_extended]).to be_nil
         expect(result[:income_response]).to be_nil
         expect(result[:esi_status]).to be_nil
         expect(result[:esi_due_date]).to be_nil
         expect(result[:esi_response]).to be_nil
+        expect(result[:non_esi_status]).to be_nil
+        expect(result[:non_esi_due_date]).to be_nil
+        expect(result[:non_esi_response]).to be_nil
+        expect(result[:local_mec_status]).to be_nil
+        expect(result[:local_mec_due_date]).to be_nil
+        expect(result[:local_mec_response]).to be_nil
       end
     end
 
-    context 'when applicant has evidence data' do
+    context 'when applicant exists' do
       let!(:fa_application) do
         FactoryBot.create(
           :financial_assistance_application,
@@ -858,54 +864,196 @@ RSpec.describe ::Operations::Eligibilities::FamilyEvidencesDataExportV3,
         )
       end
 
-      let!(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: fa_applicant) }
+      context 'when there is no aptc_csr_eligibility' do
+        it 'returns hash with nil values for all APTC/CSR evidence types' do
+          result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
 
-      let!(:income_evidence) do
-        FactoryBot.create(
-          :income_evidence,
-          eligibility: aptc_csr_eligibility,
-          key: :income_evidence,
-          current_state: 'pending',
-          due_on: Date.current + 30.days,
-          due_date_extended_at: Time.current
-        )
+          expect(result).to be_a(Hash)
+          expect(result[:income_status]).to be_nil
+          expect(result[:income_due_date]).to be_nil
+          expect(result[:income_auto_extended]).to be_nil
+          expect(result[:income_response]).to be_nil
+          expect(result[:esi_status]).to be_nil
+          expect(result[:esi_due_date]).to be_nil
+          expect(result[:esi_response]).to be_nil
+          expect(result[:non_esi_status]).to be_nil
+          expect(result[:non_esi_due_date]).to be_nil
+          expect(result[:non_esi_response]).to be_nil
+          expect(result[:local_mec_status]).to be_nil
+          expect(result[:local_mec_due_date]).to be_nil
+          expect(result[:local_mec_response]).to be_nil
+        end
       end
 
-      let!(:esi_evidence) do
-        FactoryBot.create(
-          :esi_mec_evidence,
-          eligibility: aptc_csr_eligibility,
-          key: :esi_mec_evidence,
-          current_state: 'verified',
-          due_on: Date.current + 60.days
-        )
-      end
+      context 'when there is aptc_csr_eligibility' do
+        let!(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: fa_applicant) }
 
-      before do
-        allow(income_evidence).to receive(:has_determination_response?).and_return(true)
-        allow(esi_evidence).to receive(:has_determination_response?).and_return(false)
-      end
+        context 'when ESI evidence is nil' do
+          it 'returns nil values for ESI evidence fields' do
+            result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
 
-      it 'returns evidence data with status, due dates, and response flags' do
-        result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
+            expect(result[:esi_status]).to be_nil
+            expect(result[:esi_due_date]).to be_nil
+            expect(result[:esi_response]).to be_nil
+          end
+        end
 
-        expect(result).to be_a(Hash)
-        expect(result[:income_status]).to eq(:pending)
-        expect(result[:income_due_date]).to eq(Date.current + 30.days)
-        expect(result[:income_auto_extended]).to be(true)
-        expect(result[:income_response]).to be(true)
-        expect(result[:esi_status]).to eq(:verified)
-        expect(result[:esi_due_date]).to eq(Date.current + 60.days)
-        expect(result[:esi_response]).to be(false)
-      end
+        context 'when ESI evidence is present' do
+          let!(:esi_evidence) do
+            FactoryBot.create(
+              :esi_mec_evidence,
+              eligibility: aptc_csr_eligibility,
+              key: :esi_mec_evidence,
+              current_state: 'verified',
+              due_on: Date.current + 60.days
+            )
+          end
 
-      it 'sets income_auto_extended only for income evidence' do
-        result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
+          before do
+            allow(esi_evidence).to receive(:has_determination_response?).and_return(false)
+          end
 
-        expect(result).to have_key(:income_auto_extended)
-        expect(result).not_to have_key(:esi_auto_extended)
-        expect(result).not_to have_key(:non_esi_auto_extended)
-        expect(result).not_to have_key(:local_mec_auto_extended)
+          it 'returns ESI evidence data mapped from underlying evidence' do
+            result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
+
+            expect(result[:esi_status]).to eq(:verified)
+            expect(result[:esi_due_date]).to eq(Date.current + 60.days)
+            expect(result[:esi_response]).to be(false)
+          end
+        end
+
+        context 'when non-ESI evidence is nil' do
+          it 'returns nil values for non-ESI evidence fields' do
+            result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
+
+            expect(result[:non_esi_status]).to be_nil
+            expect(result[:non_esi_due_date]).to be_nil
+            expect(result[:non_esi_response]).to be_nil
+          end
+        end
+
+        context 'when non-ESI evidence is present' do
+          let!(:non_esi_evidence) do
+            FactoryBot.create(
+              :non_esi_mec_evidence,
+              eligibility: aptc_csr_eligibility,
+              key: :non_esi_mec_evidence,
+              current_state: 'outstanding',
+              due_on: Date.current + 45.days
+            )
+          end
+
+          before do
+            allow(non_esi_evidence).to receive(:has_determination_response?).and_return(true)
+          end
+
+          it 'returns non-ESI evidence data mapped from underlying evidence' do
+            result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
+
+            expect(result[:non_esi_status]).to eq(:outstanding)
+            expect(result[:non_esi_due_date]).to eq(Date.current + 45.days)
+            expect(result[:non_esi_response]).to be(true)
+          end
+        end
+
+        context 'when local MEC evidence is nil' do
+          it 'returns nil values for local MEC evidence fields' do
+            result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
+
+            expect(result[:local_mec_status]).to be_nil
+            expect(result[:local_mec_due_date]).to be_nil
+            expect(result[:local_mec_response]).to be_nil
+          end
+        end
+
+        context 'when local MEC evidence is present' do
+          let!(:local_mec_evidence) do
+            FactoryBot.create(
+              :local_mec_evidence,
+              eligibility: aptc_csr_eligibility,
+              key: :local_mec_evidence,
+              current_state: 'rejected',
+              due_on: Date.current + 15.days
+            )
+          end
+
+          before do
+            allow(local_mec_evidence).to receive(:has_determination_response?).and_return(false)
+          end
+
+          it 'returns local MEC evidence data mapped from underlying evidence' do
+            result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
+
+            expect(result[:local_mec_status]).to eq(:rejected)
+            expect(result[:local_mec_due_date]).to eq(Date.current + 15.days)
+            expect(result[:local_mec_response]).to be(false)
+          end
+        end
+
+        context 'when income evidence is nil' do
+          it 'returns nil values for all income evidence fields including auto_extended' do
+            result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
+
+            expect(result[:income_status]).to be_nil
+            expect(result[:income_due_date]).to be_nil
+            expect(result[:income_auto_extended]).to be_nil
+            expect(result[:income_response]).to be_nil
+          end
+        end
+
+        context 'when income evidence is present' do
+          context 'when income extended_at is present' do
+            let!(:income_evidence) do
+              FactoryBot.create(
+                :income_evidence,
+                eligibility: aptc_csr_eligibility,
+                key: :income_evidence,
+                current_state: 'pending',
+                due_on: Date.current + 30.days,
+                due_date_extended_at: Time.current
+              )
+            end
+
+            before do
+              allow(income_evidence).to receive(:has_determination_response?).and_return(true)
+            end
+
+            it 'returns income evidence data with auto_extended as true' do
+              result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
+
+              expect(result[:income_status]).to eq(:pending)
+              expect(result[:income_due_date]).to eq(Date.current + 30.days)
+              expect(result[:income_auto_extended]).to be(true)
+              expect(result[:income_response]).to be(true)
+            end
+          end
+
+          context 'when income extended_at is nil' do
+            let!(:income_evidence) do
+              FactoryBot.create(
+                :income_evidence,
+                eligibility: aptc_csr_eligibility,
+                key: :income_evidence,
+                current_state: 'outstanding',
+                due_on: Date.current + 20.days,
+                due_date_extended_at: nil
+              )
+            end
+
+            before do
+              allow(income_evidence).to receive(:has_determination_response?).and_return(false)
+            end
+
+            it 'returns income evidence data with auto_extended as false' do
+              result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
+
+              expect(result[:income_status]).to eq(:outstanding)
+              expect(result[:income_due_date]).to eq(Date.current + 20.days)
+              expect(result[:income_auto_extended]).to be(false)
+              expect(result[:income_response]).to be(false)
+            end
+          end
+        end
       end
     end
   end

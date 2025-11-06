@@ -266,7 +266,7 @@ module Operations
 
           evidence_data["#{evidence_key}_status".to_sym] = evidence&.current_state
           evidence_data["#{evidence_key}_due_date".to_sym] = evidence&.due_on
-          evidence_data[:income_auto_extended] = evidence&.due_date_extended_at&.present? == true if evidence_key == 'income'
+          evidence_data[:income_auto_extended] = evidence ? evidence.due_date_extended_at.present? : nil if evidence_key == 'income'
           evidence_data["#{evidence_key}_response".to_sym] = evidence&.has_determination_response?
         end
 
