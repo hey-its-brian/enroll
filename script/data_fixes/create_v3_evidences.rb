@@ -9,7 +9,9 @@
 # Large result sets are split automatically into files of at most 500,000 rows to keep file sizes manageable.
 #
 # INPUT
-#   ARGV[0] - A comma‑separated list of Application HBX IDs
+#   ARGV[0] - the evidences to create or report on: "aptc_csr" or "individual_market"
+#   ARGV[1] - the action to perform: "data_fix" to create missing evidences, "report" to only report on missing evidences
+#   ARGV[2] - A comma‑separated list of Application HBX IDs
 #
 # OUTPUT
 #   One or more CSV files named: "evidences report 0.csv", "evidences report 1.csv", ...
@@ -26,8 +28,8 @@
 #     message
 #
 # EXAMPLES
-#   CLIENT=me bundle exec rails runner script/data_fixes/create_v3_evidences.rb "aptc_csr" "12345,67890"
-#   CLIENT=me bundle exec rails runner script/data_fixes/create_v3_evidences.rb "individual_market" "12345,67890"
+#   CLIENT=me bundle exec rails runner script/data_fixes/create_v3_evidences.rb "aptc_csr" "report" "12345,67890"
+#   CLIENT=me bundle exec rails runner script/data_fixes/create_v3_evidences.rb "individual_market" "data_fix" "12345,67890"
 #   CLIENT=me bundle exec rails runner script/data_fixes/create_v3_evidences.rb
 #     (prints an error and exits if no IDs provided or if an invalid type is given)
 #
@@ -74,13 +76,17 @@ end
 # @return [Float] Elapsed seconds (stored in elapsed_time local)
 
 elapsed_time = Caches::BenchmarkCache.with_benchmark do
-  type = ARGV[0].present? ? ARGV[0] : ""
-  list = ARGV[1].present? ? ARGV[1] : ""
+  type   = ARGV[0].present? ? ARGV[0] : ""
+  action = ARGV[1].present? ? ARGV[1] : ""
+  list   = ARGV[2].present? ? ARGV[2] : ""
 
   application_hbx_ids = list.split(',').map(&:strip).reject(&:empty?)
 
   if application_hbx_ids.empty?
     puts "Error: No valid HBX IDs provided"
+    exit 1
+  elsif action.blank? || !['data_fix', 'report'].include?(action)
+    puts "Error: Invalid report setting provided. Must be 'data_fix' or 'report'"
     exit 1
   elsif ['individual_market', 'aptc_csr'].exclude?(type)
     puts "Error: Invalid type provided. Must be 'individual_market' or 'aptc_csr'"
@@ -90,10 +96,9 @@ elapsed_time = Caches::BenchmarkCache.with_benchmark do
   array_collection = []
   application_hbx_ids.each do |application_hbx_id|
     result = if type == 'aptc_csr'
-               ::Operations::DataFixes::CreateV3AptcCsrEvidences.new.call({ application_hbx_id: application_hbx_id })
+               ::Operations::DataFixes::CreateV3AptcCsrEvidences.new.call({ application_hbx_id: application_hbx_id, action: action })
              else
-              puts 'Invalid type, script only supports aptc csr'
-              #  ::Operations::DataFixes::CreateV3IndividualMarketEvidences.new.call({ application_hbx_id: application_hbx_id })
+               ::Operations::DataFixes::CreateV3IndividualMarketEvidences.new.call({ application_hbx_id: application_hbx_id, action: action })
              end
 
     if result.success?

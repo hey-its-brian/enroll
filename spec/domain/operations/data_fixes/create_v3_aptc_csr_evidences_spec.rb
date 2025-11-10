@@ -206,44 +206,81 @@ RSpec.describe ::Operations::DataFixes::CreateV3AptcCsrEvidences, dbclean: :afte
     end
 
     context 'after triggering the operation' do
-      before do
-        @result = described_class.new.call(params)
-        application.reload
+      context 'with report mode enabled' do
+        before do
+          params[:action] = 'report'
+          @result = described_class.new.call(params)
+          application.reload
+        end
+
+        it 'should be successful' do
+          expect(@result).to be_success
+        end
+
+        it 'does not create any evidences for any applicants' do
+          primary_elig = applicant.aptc_csr_eligibility
+          dependent_elig = dependent_applicant.aptc_csr_eligibility
+
+          expect(primary_elig&.income_evidence).to be_nil
+          expect(primary_elig&.esi_mec_evidence).to be_nil
+          expect(primary_elig&.non_esi_mec_evidence).to be_nil
+          expect(primary_elig&.local_mec_evidence).to be_nil
+
+          expect(dependent_elig.income_evidence).to be_present
+          expect(dependent_elig.income_evidence.current_state).to eq(:outstanding)
+          expect(dependent_elig.esi_mec_evidence).to be_present
+          expect(dependent_elig.esi_mec_evidence.current_state).to eq(:pending)
+          expect(dependent_elig.non_esi_mec_evidence).to be_present
+          expect(dependent_elig.non_esi_mec_evidence.current_state).to eq(:pending)
+
+          expect(dependent_applicant2.aptc_csr_eligibility).to be_nil
+        end
       end
 
-      it 'creates verified evidences for applicant1' do
-        expect(@result).to be_success
-        applicant1 = application.primary_applicant
-        applicant1_eligibility = applicant1.aptc_csr_eligibility
-        expect(applicant1_eligibility).to be_present
-        expect(applicant1).to have_verified_evidence('income_evidence', :verified, true, false)
-        expect(applicant1_eligibility.income_evidence).to have_state_histories
-        expect(applicant1).to have_verified_evidence('esi_mec_evidence', :verified, true, false)
-        expect(applicant1_eligibility.esi_mec_evidence).to have_state_histories
-        expect(applicant1).to have_verified_evidence('non_esi_mec_evidence', :verified, true, false)
-        expect(applicant1_eligibility.non_esi_mec_evidence).to have_state_histories
-        expect(applicant1).to have_verified_evidence('local_mec_evidence', :verified, true, false)
-        expect(applicant1_eligibility.local_mec_evidence).to have_state_histories
-      end
+      context 'with report mode disabled' do
+        before do
+          params[:action] = 'data_fix'
+          @result = described_class.new.call(params)
+          application.reload
+        end
 
-      it 'creates verified evidences for applicant2' do
-        applicant2 = application.applicants.where(id: dependent_applicant.id).first
-        applicant2_eligibility = applicant2.aptc_csr_eligibility
-        expect(applicant2_eligibility).to be_present
-        expect(applicant2).to have_verified_evidence('income_evidence', :outstanding, false, true)
-        expect(applicant2).to have_verified_evidence('esi_mec_evidence', :pending, true, false)
-        expect(applicant2).to have_verified_evidence('non_esi_mec_evidence', :pending, true, false)
-      end
+        it 'should be successful' do
+          expect(@result).to be_success
+        end
 
-      it 'creates verified evidences for applicant3' do
-        applicant3 = application.applicants.where(id: dependent_applicant2.id).first
-        applicant3_eligibility = applicant3.aptc_csr_eligibility
-        expect(applicant3_eligibility).to be_present
-        expect(applicant3).to have_verified_evidence('income_evidence', :verified, true, false)
-        expect(applicant3_eligibility.income_evidence).to have_state_histories
-        expect(applicant3_eligibility.esi_mec_evidence).to be_nil
-        expect(applicant3_eligibility.non_esi_mec_evidence).to be_nil
-        expect(applicant3_eligibility.local_mec_evidence).to be_nil
+        it 'creates verified evidences for applicant1' do
+          applicant1 = application.primary_applicant
+          applicant1_eligibility = applicant1.aptc_csr_eligibility
+          expect(applicant1_eligibility).to be_present
+          expect(applicant1).to have_verified_evidence('income_evidence', :verified, true, false)
+          expect(applicant1_eligibility.income_evidence).to have_state_histories
+          expect(applicant1).to have_verified_evidence('esi_mec_evidence', :verified, true, false)
+          expect(applicant1_eligibility.esi_mec_evidence).to have_state_histories
+          expect(applicant1).to have_verified_evidence('non_esi_mec_evidence', :verified, true, false)
+          expect(applicant1_eligibility.non_esi_mec_evidence).to have_state_histories
+          expect(applicant1).to have_verified_evidence('local_mec_evidence', :verified, true, false)
+          expect(applicant1_eligibility.local_mec_evidence).to have_state_histories
+        end
+
+        it 'creates verified evidences for applicant2' do
+          applicant2 = application.applicants.where(id: dependent_applicant.id).first
+          applicant2_eligibility = applicant2.aptc_csr_eligibility
+          expect(applicant2_eligibility).to be_present
+          expect(applicant2).to have_verified_evidence('income_evidence', :outstanding, false, true)
+          expect(applicant2).to have_verified_evidence('esi_mec_evidence', :pending, true, false)
+          expect(applicant2).to have_verified_evidence('non_esi_mec_evidence', :pending, true, false)
+        end
+
+        it 'creates verified evidences for applicant3' do
+          applicant3 = application.applicants.where(id: dependent_applicant2.id).first
+          applicant3_eligibility = applicant3.aptc_csr_eligibility
+          expect(applicant3_eligibility).to be_present
+          expect(applicant3).to have_verified_evidence('income_evidence', :verified, true, false)
+          expect(applicant3_eligibility.income_evidence).to have_state_histories
+          expect(applicant3_eligibility.esi_mec_evidence).to be_nil
+          expect(applicant3_eligibility.non_esi_mec_evidence).to be_nil
+          expect(applicant3_eligibility.local_mec_evidence).to be_nil
+        end
       end
     end
   end
