@@ -22,8 +22,10 @@ And(/^user clicks Add General Agency Staff Role$/) do
 end
 
 Then(/^the terminated general agency staff role will be reactivated$/) do
-  terminated_ga_people = Person.all.map(&:general_agency_staff_roles).flatten.detect { |ga| ga.aasm_state == "general_agency_terminated" }
-  expect(terminated_ga_people.blank?).to eq(true)
+  expect(page).to have_content('Role added successfully')
+  expect(page).to have_content('Active Linked')
+  ga_person = Person.all.map(&:general_agency_staff_roles).flatten.first
+  expect(ga_person.aasm_state).to eq('active')
 end
 
 And(/^user enters information for that terminated general agency staff and clicks save$/) do
