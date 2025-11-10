@@ -45,8 +45,11 @@ end
 And(/^Primary Broker creates new Prospect Employer with default_office_location$/) do
   fill_in BrokerAddProspectEmployerPage.legal_name, :with => "emp1"
   fill_in BrokerAddProspectEmployerPage.dba, :with => 101_010
+  wait_for_ajax
   find(BrokerAddProspectEmployerPage.entity_kind_dropdown).click
+  wait_for_ajax
   find(BrokerAddProspectEmployerPage.select_c_corporation).click
+  wait_for_ajax
   fill_in BrokerAddProspectEmployerPage.address_1, :with => "1818"
   fill_in BrokerAddProspectEmployerPage.address_2, :with => "exp st"
   fill_in BrokerAddProspectEmployerPage.city, :with => EnrollRegistry[:enroll_app].setting(:contact_center_city).item
