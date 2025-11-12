@@ -200,11 +200,11 @@ module FinancialAssistance
             new_applicant = new_app.build_new_applicant(new_appli_params)
 
             new_applicant.callback_update = true # avoiding callback to enroll in copy feature
-            build_applicant_embeded_documents(source_applicant, new_applicant, active_fms_applicant_params)
+            build_applicant_embedded_documents(source_applicant, new_applicant, active_fms_applicant_params)
           end
         end
 
-        def build_applicant_embeded_documents(source_applicant, new_applicant, active_fms_applicant_params)
+        def build_applicant_embedded_documents(source_applicant, new_applicant, active_fms_applicant_params)
           active_fm_applicant_params = active_fms_applicant_params.detect{ |fm_params| fm_params[:family_member_id] == new_applicant.family_member_id }
           build_new_addresses(new_applicant, active_fm_applicant_params)
           build_new_phones(new_applicant, active_fm_applicant_params)
@@ -270,10 +270,13 @@ module FinancialAssistance
         end
 
         def fetch_applicant_params(source_applicant, fm_applicant_params)
-          applicant_mergable_params = fm_applicant_params.except(:addresses, :phones, :emails, :relationship)
-          return applicant_mergable_params if source_applicant.nil?
+          # remove same_with_primary from mergeable params to preserve source_applicant value,
+          # fm_applicant_params value is always 'false' because it is copied from family_member (no same_with_primary attr)
+          applicant_mergeable_params = fm_applicant_params.except(:addresses, :phones, :emails, :relationship, :same_with_primary)
+          return applicant_mergeable_params if source_applicant.nil?
+
           is_living_in_state = has_in_state_home_addresses?(source_applicant.addresses.map(&:attributes).each_with_index.to_h.invert)
-          applicant_mergable_params.merge!(is_living_in_state: is_living_in_state)
+          applicant_mergeable_params.merge!(is_living_in_state: is_living_in_state)
 
           source_appli_params = source_applicant.attributes.slice(:name_pfx, :first_name, :middle_name, :last_name, :name_sfx, :encrypted_ssn, :gender, :dob, :is_primary_applicant,
                                                                   :is_incarcerated, :is_disabled, :ethnicity, :race, :indian_tribe_member, :tribal_id, :language_code, :no_dc_address,
@@ -300,7 +303,7 @@ module FinancialAssistance
                                                                   :five_year_bar_applies, :five_year_bar_met, :qualified_non_citizen, :age_off_excluded,
                                                                   :contact_method, :language_preference)
 
-          source_appli_params.merge(applicant_mergable_params).deep_symbolize_keys
+          source_appli_params.merge(applicant_mergeable_params).deep_symbolize_keys
         end
 
         # Cancels previous draft applications when a new one is created

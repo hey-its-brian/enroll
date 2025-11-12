@@ -111,7 +111,7 @@ FactoryBot.define do
     end
 
     trait :with_home_address do
-      addresses { [FactoryBot.build(:financial_assistance_address)]}
+      addresses { [FactoryBot.build(:financial_assistance_address)] }
     end
 
     trait :with_income_evidence do

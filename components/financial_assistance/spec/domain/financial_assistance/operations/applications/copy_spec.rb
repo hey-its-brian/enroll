@@ -461,6 +461,27 @@ RSpec.describe FinancialAssistance::Operations::Applications::Copy, type: :model
           expect(@duplicate_applicant.qualified_non_citizen).to eq(true)
         end
       end
+
+      context 'dependents with same_with_primary have that value carried over into a copied application' do
+        before do
+          applicant.addresses << [FactoryBot.build(:financial_assistance_address)]
+          primary_address = applicant.addresses.first
+          applicant2.addresses << [FactoryBot.build(:financial_assistance_address, kind: primary_address.kind,
+                                                                                   address_1: primary_address.address_1,
+                                                                                   address_2: primary_address.address_2,
+                                                                                   city: primary_address.city,
+                                                                                   state: primary_address.state,
+                                                                                   zip: primary_address.zip,
+                                                                                   county: primary_address.county)]
+          applicant2.update_attributes!(same_with_primary: true)
+          application.reload
+          @duplicate_applicant2 = subject.call(application_id: application.id).success.applicants.last
+        end
+
+        it 'should accurately copy same_with_primary' do
+          expect(@duplicate_applicant2.same_with_primary).to eq(true)
+        end
+      end
     end
   end
 
