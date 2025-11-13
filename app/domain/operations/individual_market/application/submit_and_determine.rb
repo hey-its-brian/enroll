@@ -154,7 +154,7 @@ module Operations
         def update_family(application)
           result = Operations::IndividualMarket::Families::CreateOrUpdate.new.call(application: application)
           return result if result.success?
-          application.failed_family_sync
+          application.failed_family_sync!
           result
         rescue StandardError => e
           Rails.logger.error("QHP Application - Failed to update family due to #{e.message}, #{e.backtrace.join("\n")}")

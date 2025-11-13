@@ -191,6 +191,7 @@ module IndividualMarket
       determined
       expired
       cancelled
+      family_sync_failed
     ].freeze
 
     state_transitions do

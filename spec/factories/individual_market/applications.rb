@@ -150,5 +150,38 @@ FactoryBot.define do
         )
       end
     end
+
+    trait :cancelled do
+      current_state { :cancelled }
+
+      after(:create) do |app|
+        app.state_histories.create(
+          from_state: :initial,
+          to_state: :cancelled,
+          transition_at: DateTime.now,
+          event: :cancel
+        )
+      end
+    end
+
+    trait :family_sync_failed do
+      current_state { :family_sync_failed }
+
+      after(:create) do |app|
+        app.state_histories.create(
+          from_state: :submitted,
+          to_state: :determined,
+          effective_on: DateTime.now - 1.hour,
+          transition_at: DateTime.now - 1.hour,
+          event: :determine
+        )
+        app.state_histories.create(
+          from_state: :determined,
+          to_state: :family_sync_failed,
+          transition_at: DateTime.now,
+          event: :failed_family_sync
+        )
+      end
+    end
   end
 end

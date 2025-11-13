@@ -139,6 +139,26 @@ RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, db
       end
     end
 
+    context 'when family update operation fails' do
+      before do
+        failure_result = Dry::Monads::Result::Failure.new("Family update failed")
+        mock_operation = double('mock_operation', call: failure_result)
+        allow(Operations::IndividualMarket::Families::CreateOrUpdate).to receive(:new).and_return(mock_operation)
+      end
+
+      it 'returns failure' do
+        result = subject.call(application: application)
+        expect(result).to be_failure
+        expect(result.failure).to eq("Family update failed")
+      end
+
+      it 'sets application to failed_family_sync state' do
+        subject.call(application: application)
+        application.reload
+        expect(application.current_state).to eq(:family_sync_failed)
+      end
+    end
+
     context 'with an existing aptc enrollment' do
       let(:existing_aptc_enrollment) do
         FactoryBot.create(

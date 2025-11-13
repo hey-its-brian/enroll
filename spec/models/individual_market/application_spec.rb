@@ -185,6 +185,12 @@ RSpec.describe IndividualMarket::Application, type: :model do
           expect(application.current_state).to eq(:expired)
         end
 
+        it 'can transition to cancelled' do
+          expect(application.can_cancel?).to be true
+          application.cancel(reason: 'Application cancelled')
+          expect(application.current_state).to eq(:cancelled)
+        end
+
         it 'cannot transition to determined or determination_failed' do
           expect(application.can_determine?).to be false
           expect(application.can_failed_determination?).to be false
@@ -219,6 +225,12 @@ RSpec.describe IndividualMarket::Application, type: :model do
           expect(application.current_state).to eq(:expired)
         end
 
+        it 'can transition to cancelled' do
+          expect(application.can_cancel?).to be true
+          application.cancel(reason: 'Application cancelled')
+          expect(application.current_state).to eq(:cancelled)
+        end
+
         it 'cannot transition to determined or determination_failed' do
           expect(application.can_determine?).to be false
           expect(application.can_failed_determination?).to be false
@@ -251,6 +263,12 @@ RSpec.describe IndividualMarket::Application, type: :model do
           expect(application.current_state).to eq(:expired)
         end
 
+        it 'can transition to cancelled' do
+          expect(application.can_cancel?).to be true
+          application.cancel(reason: 'Application cancelled')
+          expect(application.current_state).to eq(:cancelled)
+        end
+
         it 'cannot transition to initial or submission_failed' do
           expect(application.can_reset?).to be false
           expect(application.can_failed_submission?).to be false
@@ -270,6 +288,12 @@ RSpec.describe IndividualMarket::Application, type: :model do
             expect(application.can_expire?).to be true
             application.expire(**expire_comment)
             expect(application.current_state).to eq(:expired)
+          end
+
+          it 'can transition to family_sync_failed' do
+            expect(application.can_failed_family_sync?).to be true
+            application.failed_family_sync(reason: 'Family sync failed')
+            expect(application.current_state).to eq(:family_sync_failed)
           end
         end
 
@@ -293,6 +317,10 @@ RSpec.describe IndividualMarket::Application, type: :model do
           it 'cannot transition to determined state (already there)' do
             expect(application.can_determine?).to be false
           end
+
+          it 'cannot transition to cancelled state' do
+            expect(application.can_cancel?).to be false
+          end
         end
       end
 
@@ -305,12 +333,19 @@ RSpec.describe IndividualMarket::Application, type: :model do
           expect(application.current_state).to eq(:expired)
         end
 
+        it 'can transition to cancelled' do
+          expect(application.can_cancel?).to be true
+          application.cancel(reason: 'Application cancelled')
+          expect(application.current_state).to eq(:cancelled)
+        end
+
         it 'cannot transition to other states' do
           expect(application.can_reset?).to be false
           expect(application.can_failed_submission?).to be false
           expect(application.can_submit?).to be false
           expect(application.can_failed_determination?).to be false
           expect(application.can_determine?).to be false
+          expect(application.can_failed_family_sync?).to be false
         end
       end
 
@@ -324,6 +359,38 @@ RSpec.describe IndividualMarket::Application, type: :model do
           expect(application.can_failed_determination?).to be false
           expect(application.can_determine?).to be false
           expect(application.can_expire?).to be false
+          expect(application.can_cancel?).to be false
+          expect(application.can_failed_family_sync?).to be false
+        end
+      end
+
+      context 'from cancelled state' do
+        let(:application) { FactoryBot.create(:individual_market_application, :cancelled) }
+
+        it 'cannot transition to any other state' do
+          expect(application.can_reset?).to be false
+          expect(application.can_failed_submission?).to be false
+          expect(application.can_submit?).to be false
+          expect(application.can_failed_determination?).to be false
+          expect(application.can_determine?).to be false
+          expect(application.can_expire?).to be false
+          expect(application.can_cancel?).to be false
+          expect(application.can_failed_family_sync?).to be false
+        end
+      end
+
+      context 'from family_sync_failed state' do
+        let(:application) { FactoryBot.create(:individual_market_application, :family_sync_failed) }
+
+        it 'cannot transition to any other state' do
+          expect(application.can_reset?).to be false
+          expect(application.can_failed_submission?).to be false
+          expect(application.can_submit?).to be false
+          expect(application.can_failed_determination?).to be false
+          expect(application.can_determine?).to be false
+          expect(application.can_expire?).to be false
+          expect(application.can_cancel?).to be false
+          expect(application.can_failed_family_sync?).to be false
         end
       end
     end
