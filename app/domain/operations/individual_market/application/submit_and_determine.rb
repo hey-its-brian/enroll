@@ -25,10 +25,10 @@ module Operations
           _applicants             = yield build_evidences(applicant_results)
           determined_application  = yield determine_application(application)
           _application_entity     = yield build_app_entity(application)
-          _calls                  = yield call_hubs(application)
           _family                 = yield update_family(application)
           _enrollments            = yield generate_enrollments(application)
           _notification           = yield trigger_notifications(application)
+          _calls                  = yield call_hubs(application)
           Success(determined_application)
         end
 

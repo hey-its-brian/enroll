@@ -67,7 +67,8 @@ module LegacyImporters
            :hbx_enrollment_members_attributes => member_props,
            :kind => "individual",
            :plan_id => plan.id,
-           :effective_on => e_on
+           :effective_on => e_on,
+           :generation_reason => :import
       }
     end
 

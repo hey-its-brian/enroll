@@ -199,6 +199,36 @@ class HbxEnrollment
   #   @return [DateTime] the date and time when the purchase event was published.
   field :purchase_event_published_at, type: DateTime
 
+  GENERATION_REASONS = [
+    :plan_shopping,
+    :application_determination,
+    :eligibility_creation,
+    :renewal,
+    :reinstatement,
+    :relocation,
+    :age_off,
+    :date_change,
+    :migration,
+    :import,
+    :unknown
+  ].freeze
+
+  # Specifies the reason for which the system generated this enrollment.
+  # @!attribute generation_reason
+  # @return [Symbol] The specific reason why the system generated this enrollment
+  # @option plan_shopping [Symbol] Created in the plan shopping flow by a user, either as a new enrollment or aptc edit
+  # @option application_determination [Symbol] Created as a result of an application determination
+  # @option eligibility_creation [Symbol] Created as a result of the create eligibility determination tool
+  # @option renewal [Symbol] Created as part of the annual renewal process
+  # @option reinstatement [Symbol] Created as part of a reinstatement process
+  # @option relocation [Symbol] Created as part of a relocation process
+  # @option age_off [Symbol] Created as part of a dependent age off process
+  # @option migration [Symbol] Created as part of a data migration
+  # @option unknown [Symbol] Reason for generation is unknown (default)
+  field :generation_reason, type: Symbol, default: :unknown
+
+  validates :generation_reason, inclusion: { in: GENERATION_REASONS }, on: :create
+
   track_history   :modifier_field_optional => true,
                   :on => [:kind,
                           :enrollment_kind,
@@ -947,7 +977,8 @@ class HbxEnrollment
       coverage_household: coverage_hh,
       benefit_package: sponsored_benefit_package,
       benefit_group_assignment: benefit_group_assignment,
-      qle: qle
+      qle: qle,
+      generation_reason: :plan_shopping
     )
     waived_enrollment.coverage_kind = coverage_kind
     waived_enrollment.enrollment_kind = (qle ? 'special_enrollment' : 'open_enrollment')
@@ -1851,11 +1882,26 @@ class HbxEnrollment
     return benefit_group_assignment.benefit_group, benefit_group_assignment
   end
 
-  def self.new_from(employee_role: nil, coverage_household: nil, benefit_group: nil, benefit_group_assignment: nil, consumer_role: nil, benefit_package: nil, qle: false, submitted_at: nil, resident_role: nil, external_enrollment: false, coverage_start: nil, opt_effective_on: nil)
+  def self.new_from( # rubocop:disable Metrics/ParameterLists, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity, Metrics/AbcSize
+    employee_role: nil,
+    coverage_household: nil,
+    benefit_group: nil,
+    benefit_group_assignment: nil,
+    consumer_role: nil,
+    benefit_package: nil,
+    qle: false,
+    submitted_at: nil,
+    resident_role: nil,
+    external_enrollment: false,
+    coverage_start: nil,
+    opt_effective_on: nil,
+    generation_reason: :unknown
+  )
     enrollment = HbxEnrollment.new
     enrollment.household = coverage_household.household
     enrollment.family = coverage_household.household.family
     enrollment.submitted_at = submitted_at
+    enrollment.generation_reason = generation_reason
     # We need to refactor the raises out of here
     case
       when employee_role.present?
@@ -2099,7 +2145,7 @@ class HbxEnrollment
   def reinstate(edi: false)
     return false unless can_be_reinstated?
     return false if has_active_term_or_expired_exists_for_reinstated_date?
-    reinstate_enrollment = Enrollments::Replicator::Reinstatement.new(self, fetch_reinstatement_date).build
+    reinstate_enrollment = Enrollments::Replicator::Reinstatement.new(self, fetch_reinstatement_date, generation_reason: :reinstatement).build
     can_renew = ::Operations::Products::ProductOfferedInServiceArea.new.call({enrollment: reinstate_enrollment})
 
     return false unless can_renew.success?
@@ -2882,6 +2928,26 @@ class HbxEnrollment
     @latest_wfst ||= workflow_state_transitions.order(created_at: :desc).first
   end
 
+  # Determines if this enrollment represents a new enrollment vs a renewal
+  #
+  # Analyzes the most recent workflow state transition to determine if this is
+  # a new enrollment or a renewal based on the transition states.
+  #
+  # @return [Boolean] True if this is a new enrollment, false if it's a renewal
+  def new_enrollment?
+    transition = workflow_state_transitions.only(:to_state, :from_state).desc(:created_at).first
+
+    return true unless transition # Default to true if no transitions found
+
+    to_state = transition.to_state
+    from_state = transition.from_state
+
+    # Return false only if transitioning to coverage_selected from renewal states
+    return false if to_state == 'coverage_selected' && ['renewing_coverage_selected', 'auto_renewing'].include?(from_state)
+
+    true
+  end
+
   def is_eligible_for_osse_grant?(key)
     return false if is_shop? || dental? || is_cobra_status?
     hbx_enrollment_members.any? do |member|
@@ -3050,6 +3116,21 @@ class HbxEnrollment
     has_aptc? || ['02', '04', '05', '06'].include?(product.csr_variant_id)
   end
 
+  # Fetches the application related to this enrollment
+  #
+  # Uses a two-stage approach:
+  # 1. First attempts to find application through tax household enrollment relationship
+  # 2. Falls back to finding the latest determined application for the enrollment year
+  #
+  # @return [FinancialAssistance::Application, IndividualMarket::Application, nil]
+  #   The related application or nil if no application found
+  def related_application
+    application = find_application_via_tax_household
+    application = family.latest_determined_application_for_year(effective_on.year) if application.blank?
+
+    application
+  end
+
   private
 
   # Calculates sum of enrolled aptc member's of TaxHouseholdEnrollment ehb_premiums including Minimum Responsibility.
@@ -3152,5 +3233,17 @@ class HbxEnrollment
       self.errors.add(:base, "You can not keep an existing plan which belongs to previous plan year")
       false
     end
+  end
+
+  # Attempts to find application through tax household enrollment relationship
+  #
+  # @return [FinancialAssistance::Application, IndividualMarket::Application, nil]
+  #   Application if found via tax household relationship, nil otherwise
+  def find_application_via_tax_household
+    tax_household_enrollment = TaxHouseholdEnrollment.find_by(enrollment_id: id)
+    return nil unless tax_household_enrollment
+
+    application_gid = tax_household_enrollment.tax_household&.tax_household_group&.application_gid
+    GlobalID::Locator.locate(application_gid) if application_gid
   end
 end

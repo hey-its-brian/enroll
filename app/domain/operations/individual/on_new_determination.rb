@@ -22,6 +22,7 @@ module Operations
       def validate(params)
         return Failure("Missing Family") unless params[:family].is_a?(Family)
         return Failure("Missing Year") if params[:year].blank?
+        @generation_reason = params[:generation_reason] || :application_determination
 
         Success(params)
       end
@@ -47,7 +48,8 @@ module Operations
           attrs = {
             enrollment_id: enrollment.id,
             elected_aptc_pct: elected_aptc_pct,
-            exclude_enrollments_list: exclude_enrollments_list
+            exclude_enrollments_list: exclude_enrollments_list,
+            generation_reason: @generation_reason
           }
 
           ::Insured::Forms::SelfTermOrCancelForm.for_aptc_update_post(attrs)

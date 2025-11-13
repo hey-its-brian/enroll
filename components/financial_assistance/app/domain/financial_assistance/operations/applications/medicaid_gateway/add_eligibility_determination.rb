@@ -26,9 +26,9 @@ module FinancialAssistance
             _family_result          = yield create_or_update_family(application)
             _done                   = yield cache_determination_token(application)
             application_entity      = yield rebuild_application_entity(application)
-            _verification_requested = yield request_evidences_verification(application_entity, application)
             _notified               = yield trigger_notifications(application, application_entity)
             _enrollments            = yield generate_enrollments(application)
+            _verification_requested = yield request_evidences_verification(application_entity, application)
 
             Success(application)
           end

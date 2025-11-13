@@ -95,6 +95,42 @@ RSpec.describe Enrollments::Replicator::Reinstatement, :type => :model, dbclean:
       end
     end
 
+    describe 'generation_reason parameter behavior', dbclean: :around_each do
+      let(:effective_date) { enrollment.terminated_on.next_day }
+
+      context 'with default generation_reason' do
+        let(:replicator) do
+          Enrollments::Replicator::Reinstatement.new(enrollment, effective_date)
+        end
+
+        let(:reinstated_enrollment) { replicator.build }
+
+        it 'should set generation_reason to :unknown by default on the replicator' do
+          expect(replicator.generation_reason).to eq :unknown
+        end
+
+        it 'should set generation_reason to :unknown on the built enrollment' do
+          expect(reinstated_enrollment.generation_reason).to eq :unknown
+        end
+      end
+
+      context 'with custom generation_reason' do
+        let(:replicator) do
+          Enrollments::Replicator::Reinstatement.new(enrollment, effective_date, generation_reason: :relocation)
+        end
+
+        let(:reinstated_enrollment) { replicator.build }
+
+        it 'should set the custom generation_reason on the replicator' do
+          expect(replicator.generation_reason).to eq :relocation
+        end
+
+        it 'should set the custom generation_reason on the built enrollment' do
+          expect(reinstated_enrollment.generation_reason).to eq :relocation
+        end
+      end
+    end
+
     context 'when enrollment reinstated for person with tobacco attestation', dbclean: :around_each do
       let!(:enrollment) do
         FactoryBot.create(:hbx_enrollment, :with_tobacco_use_enrollment_members,

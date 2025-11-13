@@ -301,6 +301,7 @@ module Operations
       def create_hbx_enrollment
         hbx_enrollment = HbxEnrollment.new(enrollment_hash.except("hbx_enrollment_members"))
         hbx_enrollment.hbx_enrollment_members = hbx_enrollment_members
+        hbx_enrollment.generation_reason = :migration
         hbx_enrollment.generate_hbx_signature
         create_state_transition(hbx_enrollment)
         hbx_enrollment.save

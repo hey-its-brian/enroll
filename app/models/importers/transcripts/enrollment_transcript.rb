@@ -409,7 +409,8 @@ module Importers::Transcripts
                                                                          terminated_on: @other_enrollment.terminated_on,
                                                                          submitted_at: TimeKeeper.datetime_of_record,
                                                                          created_at: TimeKeeper.datetime_of_record,
-                                                                         updated_at: TimeKeeper.datetime_of_record
+                                                                         updated_at: TimeKeeper.datetime_of_record,
+                                                                         generation_reason: :import
                                                                        })
 
         if @market == 'individual'

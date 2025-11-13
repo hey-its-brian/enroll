@@ -162,7 +162,6 @@ CSV.foreach(filename, headers: :true) do |row|
       coverage_household: ch,
       consumer_role: consumer_role,
       benefit_package: benefit_package,
-      submitted_at: data_row["Date Plan Selected"].to_time
     })
   en.effective_on = start_date
   en.external_enrollment = true

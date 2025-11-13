@@ -155,6 +155,9 @@ RSpec.describe ::Operations::HbxEnrollments::EndDateChange, dbclean: :after_each
           expect(terminated_enrollment.family.hbx_enrollments.count).to eq 1
           expect(subject).to be_success
           expect(terminated_enrollment.family.hbx_enrollments.count).to eq 2
+
+          new_enrollment = terminated_enrollment.family.hbx_enrollments.where.not(id: terminated_enrollment.id).first
+          expect(new_enrollment.generation_reason).to eq(:date_change)
         end
       end
     end
@@ -318,6 +321,9 @@ RSpec.describe ::Operations::HbxEnrollments::EndDateChange, dbclean: :after_each
         terminated_enrollment.reload
         expect(terminated_enrollment.family.hbx_enrollments.count).to eq 2
         expect(terminated_enrollment.family.hbx_enrollments.map(&:aasm_state)).to match_array(['coverage_terminated', 'coverage_terminated'])
+
+        new_enrollment = terminated_enrollment.family.hbx_enrollments.where.not(id: terminated_enrollment.id).first
+        expect(new_enrollment.generation_reason).to eq(:date_change)
       end
     end
 

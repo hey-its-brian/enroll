@@ -61,6 +61,7 @@ namespace :reinstate_policies do
           }
           reinstate_enrollment = HbxEnrollment.new
           reinstate_enrollment.assign_attributes(params)
+          reinstate_enrollment.generation_reason = :reinstate
           if reinstate_enrollment.present? && reinstate_enrollment.may_reinstate_coverage?
             reinstate_enrollment.reinstate_coverage!
             if EnrollRegistry.feature_enabled?(:temporary_configuration_enable_multi_tax_household_feature) && base_enrollment.is_ivl_by_kind?

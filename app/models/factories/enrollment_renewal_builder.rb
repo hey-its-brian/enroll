@@ -35,6 +35,7 @@ module Factories
       end
 
       renewal_enrollment.plan_id = active_enrollment.plan.renewal_plan_id if active_enrollment.plan.present?
+      renewal_enrollment.generation_reason = :renewal
       renewal_enrollment
     end
 
@@ -120,6 +121,7 @@ module Factories
       renewal_enrollment.coverage_kind = enrollment.try(:coverage_kind) || coverage_kind || "health"
       renewal_enrollment.enrollment_kind = "open_enrollment"
       renewal_enrollment.kind = enrollment.try(:kind) || "employer_sponsored"
+      renewal_enrollment.generation_reason = :renewal
 
       benefit_group_assignment = renewal_assignment
 

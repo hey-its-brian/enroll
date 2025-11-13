@@ -132,6 +132,7 @@ RSpec.describe Operations::Individual::OnNewDetermination, type: :model, dbclean
         expect(new_enrollment.elected_aptc_pct).to eq(0.85)
         expect(new_enrollment.applied_aptc_amount.to_f).to eq(1020.0)
         expect(new_enrollment.ehb_premium.to_f).to eq(1500.0)
+        expect(new_enrollment.generation_reason).to eq(:application_determination)
       end
     end
 
@@ -144,6 +145,7 @@ RSpec.describe Operations::Individual::OnNewDetermination, type: :model, dbclean
         expect(new_enrollment.elected_aptc_pct).to eq(1.0)
         expect(new_enrollment.applied_aptc_amount.to_f).to eq(1200.0)
         expect(new_enrollment.ehb_premium.to_f).to eq(1500.0)
+        expect(new_enrollment.generation_reason).to eq(:application_determination)
       end
     end
 
@@ -155,6 +157,7 @@ RSpec.describe Operations::Individual::OnNewDetermination, type: :model, dbclean
         expect(new_enrollment.aggregate_aptc_amount.to_f).to eq(max_aptc)
         expect(new_enrollment.elected_aptc_pct).to eq(1.0)
         expect(new_enrollment.applied_aptc_amount.to_f).to eq(1200.0)
+        expect(new_enrollment.generation_reason).to eq(:application_determination)
       end
     end
 
@@ -170,6 +173,22 @@ RSpec.describe Operations::Individual::OnNewDetermination, type: :model, dbclean
         expect(new_enrollment.aggregate_aptc_amount.to_f).to eq(max_aptc)
         expect(new_enrollment.applied_aptc_amount.to_f).to eq(393.76)
         expect(new_enrollment.ehb_premium.to_f).to eq(393.76)
+        expect(new_enrollment.generation_reason).to eq(:application_determination)
+      end
+    end
+
+    context 'when custom generation_reason is provided as argument' do
+      it 'creates enrollment with the specified generation_reason' do
+        enrollment.update_attributes(elected_aptc_pct: 0.75)
+        subject.new.call({family: family, year: effective_date.year + 1, generation_reason: :eligibility_creation})
+        new_enrollment = family.reload.active_household.hbx_enrollments.last
+        expect(new_enrollment.generation_reason).to eq(:eligibility_creation)
+      end
+
+      it 'uses default generation_reason when none provided' do
+        subject.new.call({family: family, year: effective_date.year + 1})
+        new_enrollment = family.reload.active_household.hbx_enrollments.last
+        expect(new_enrollment.generation_reason).to eq(:application_determination)
       end
     end
   end

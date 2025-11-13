@@ -849,6 +849,157 @@ describe HbxEnrollment, "with index definitions" do
   end
 end
 
+describe '#new_enrollment?' do
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member) }
+  let(:hbx_enrollment) { FactoryBot.create(:hbx_enrollment, family: family, household: family.active_household) }
+
+  context 'when enrollment has no workflow state transitions' do
+    before do
+      hbx_enrollment.workflow_state_transitions.destroy_all
+    end
+
+    it 'returns true' do
+      expect(hbx_enrollment.new_enrollment?).to be_truthy
+    end
+  end
+
+  context 'when enrollment transitions to coverage_selected from a new enrollment state' do
+    before do
+      hbx_enrollment.workflow_state_transitions.create!(
+        from_state: 'shopping',
+        to_state: 'coverage_selected',
+        event: 'select_coverage',
+        created_at: Time.current
+      )
+    end
+
+    it 'returns true' do
+      expect(hbx_enrollment.new_enrollment?).to be_truthy
+    end
+  end
+
+  context 'when enrollment transitions to coverage_selected from auto_renewing' do
+    before do
+      hbx_enrollment.workflow_state_transitions.create!(
+        from_state: 'auto_renewing',
+        to_state: 'coverage_selected',
+        event: 'select_coverage',
+        created_at: Time.current
+      )
+    end
+
+    it 'returns false' do
+      expect(hbx_enrollment.new_enrollment?).to be_falsy
+    end
+  end
+
+  context 'when enrollment transitions to coverage_selected from renewing_coverage_selected' do
+    before do
+      hbx_enrollment.workflow_state_transitions.create!(
+        from_state: 'renewing_coverage_selected',
+        to_state: 'coverage_selected',
+        event: 'select_coverage',
+        created_at: Time.current
+      )
+    end
+
+    it 'returns false' do
+      expect(hbx_enrollment.new_enrollment?).to be_falsy
+    end
+  end
+
+  context 'when enrollment has multiple transitions' do
+    before do
+      hbx_enrollment.workflow_state_transitions.create!(
+        from_state: 'shopping',
+        to_state: 'coverage_selected',
+        event: 'select_coverage',
+        created_at: 2.days.ago
+      )
+      hbx_enrollment.workflow_state_transitions.create!(
+        from_state: 'coverage_selected',
+        to_state: 'coverage_enrolled',
+        event: 'begin_coverage',
+        created_at: 1.day.ago
+      )
+    end
+
+    it 'uses the most recent transition and returns true' do
+      expect(hbx_enrollment.new_enrollment?).to be_truthy
+    end
+  end
+
+  context 'when enrollment transitions to non-coverage_selected state' do
+    before do
+      hbx_enrollment.workflow_state_transitions.create!(
+        from_state: 'auto_renewing',
+        to_state: 'coverage_enrolled',
+        event: 'begin_coverage',
+        created_at: Time.current
+      )
+    end
+
+    it 'returns true' do
+      expect(hbx_enrollment.new_enrollment?).to be_truthy
+    end
+  end
+end
+
+describe '#related_application' do
+  let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+  let(:hbx_enrollment) { FactoryBot.create(:hbx_enrollment, family: family, household: family.active_household) }
+
+  context 'when tax household enrollment relationship exists' do
+    let(:application) { double('Application') }
+
+    before do
+      allow(hbx_enrollment).to receive(:find_application_via_tax_household).and_return(application)
+    end
+
+    it 'returns the application from tax household relationship' do
+      expect(hbx_enrollment.related_application).to eq(application)
+    end
+  end
+
+  context 'when no tax household enrollment relationship exists' do
+    let(:application) { double('Application') }
+
+    before do
+      allow(hbx_enrollment).to receive(:find_application_via_tax_household).and_return(nil)
+      allow(family).to receive(:latest_determined_application_for_year).with(hbx_enrollment.effective_on.year).and_return(application)
+    end
+
+    it 'returns the latest determined application for the enrollment year' do
+      expect(hbx_enrollment.related_application).to eq(application)
+    end
+  end
+
+  context 'when no application is found through either method' do
+    before do
+      allow(hbx_enrollment).to receive(:find_application_via_tax_household).and_return(nil)
+      allow(family).to receive(:latest_determined_application_for_year).with(hbx_enrollment.effective_on.year).and_return(nil)
+    end
+
+    it 'returns nil' do
+      expect(hbx_enrollment.related_application).to be_nil
+    end
+  end
+
+  context 'when find_application_via_tax_household returns blank object' do
+    let(:application) { double('Application') }
+
+    before do
+      allow(hbx_enrollment).to receive(:find_application_via_tax_household).and_return('')
+      allow(family).to receive(:latest_determined_application_for_year).with(hbx_enrollment.effective_on.year).and_return(application)
+    end
+
+    it 'falls back to latest determined application' do
+      expect(hbx_enrollment.related_application).to eq(application)
+    end
+  end
+end
+
 describe '#can_make_changes_for_ivl_enrollment?' do
   let(:hbx_enrollment) { HbxEnrollment.new }
   context 'when enrollment_plan_tile_update feature is disabled' do

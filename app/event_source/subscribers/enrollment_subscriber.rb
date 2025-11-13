@@ -13,7 +13,7 @@ module Subscribers
 
       # Add subscriber operations below this line
       if qhp_application_feature_enabled?
-        update_evidences_and_family_eligibility(subscriber_logger, payload)
+        handle_enrollment_saved(subscriber_logger, payload)
       else
         redetermine_family_eligibility(subscriber_logger, payload)
       end
@@ -54,13 +54,23 @@ module Subscribers
       ack(delivery_info.delivery_tag)
     end
 
-    def update_evidences_and_family_eligibility(subscriber_logger, payload)
-      result = ::Operations::HbxEnrollments::UpdateApplicationEvidences.new.call(payload)
+    def handle_enrollment_saved(subscriber_logger, payload)
+      result = ::Operations::HbxEnrollments::OnSave.new.call(payload)
 
       if result.success?
-        subscriber_logger.info "EnrollmentSubscriber#update_evidences_and_family_eligibility, successfully updated application evidences for enrollment #{enrollment.hbx_id}"
+        data = result.value!
+        reconciliation = data[:reconciliation_result]
+        subscriber_logger.info(
+          "EnrollmentSubscriber#handle_enrollment_saved, #{data[:enrollment]&.hbx_id} processed" +
+          (if reconciliation[:status] == :success
+             " with reconciliation on application #{reconciliation[:application]&.hbx_id}"
+           else
+             " (reconciliation skipped because #{reconciliation[:message]})"
+           end)
+        )
       else
-        subscriber_logger.error "EnrollmentSubscriber#update_evidences_and_family_eligibility, failed to update application evidences for enrollment #{enrollment.hbx_id}, error: #{result.failure}"
+        subscriber_logger.error "EnrollmentSubscriber#handle_enrollment_saved, failed to update application evidences for enrollment #{payload[:gid]}, error: #{result.failure}"
+        Rails.logger.error "EnrollmentSubscriber#handle_enrollment_saved, failed to update application evidences for enrollment #{payload[:gid]}, error: #{result.failure}"
       end
     end
 

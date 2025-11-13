@@ -80,7 +80,7 @@ module Operations
         end
 
         def terminate_and_reinstate_enrollment(enrollment, effective_date, eligible_dependents)
-          reinstate_enrollment = ::Enrollments::Replicator::Reinstatement.new(enrollment, effective_date, nil, eligible_dependents).build
+          reinstate_enrollment = ::Enrollments::Replicator::Reinstatement.new(enrollment, effective_date, nil, eligible_dependents, generation_reason: :age_off).build
           reinstate_enrollment.save!
           return unless reinstate_enrollment.may_reinstate_coverage?
           reinstate_enrollment.force_select_coverage!

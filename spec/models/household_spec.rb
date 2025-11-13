@@ -113,13 +113,26 @@ describe Household, "given a coverage household with a dependent", :dbclean => :
     end
 
     it "should build hbx enrollment" do
-      subject.new_hbx_enrollment_from(
+      enrollment = subject.new_hbx_enrollment_from(
         consumer_role: consumer_role,
-        family:family,
         coverage_household: coverage_household,
         benefit_package: benefit_package,
         qle: false
       )
+      expect(enrollment).to be_a(HbxEnrollment)
+      expect(enrollment.generation_reason).to eq(:unknown) # default value
+    end
+
+    it "should build hbx enrollment with custom generation_reason" do
+      enrollment = subject.new_hbx_enrollment_from(
+        consumer_role: consumer_role,
+        coverage_household: coverage_household,
+        benefit_package: benefit_package,
+        qle: false,
+        generation_reason: :plan_shopping
+      )
+      expect(enrollment).to be_a(HbxEnrollment)
+      expect(enrollment.generation_reason).to eq(:plan_shopping)
     end
   end
 

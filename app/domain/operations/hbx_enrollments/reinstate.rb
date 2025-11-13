@@ -77,7 +77,7 @@ module Operations
       end
 
       def additional_params
-        attrs = {benefit_group_assignment_id: @bga.id, sponsored_benefit_package_id: @bga.benefit_package_id, predecessor_enrollment_id: @current_enr.id}
+        attrs = {benefit_group_assignment_id: @bga.id, sponsored_benefit_package_id: @bga.benefit_package_id, predecessor_enrollment_id: @current_enr.id, generation_reason: :reinstatement}
         if @current_enr.is_health_enrollment?
           attrs.merge({sponsored_benefit_id: @bga.benefit_package.health_sponsored_benefit.id})
         else

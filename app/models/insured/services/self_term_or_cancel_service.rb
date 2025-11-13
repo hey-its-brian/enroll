@@ -16,6 +16,7 @@ module Insured
         @factory_class = ::Insured::Factories::SelfServiceFactory
         @exclude_enrollments_list = attrs[:exclude_enrollments_list]
         @change_tax_credit = attrs[:change_tax_credit]
+        @generation_reason = attrs[:generation_reason] || :unknown
       end
 
       def find
@@ -32,7 +33,14 @@ module Insured
       end
 
       def update_aptc
-        @factory_class.update_aptc(@enrollment_id, @selected_aptc.to_f, exclude_enrollments_list: @exclude_enrollments_list, elected_aptc_pct: @elected_aptc_pct.to_f, change_tax_credit: @change_tax_credit)
+        @factory_class.update_aptc(
+          @enrollment_id,
+          @selected_aptc.to_f,
+          exclude_enrollments_list: @exclude_enrollments_list,
+          elected_aptc_pct: @elected_aptc_pct.to_f,
+          change_tax_credit: @change_tax_credit,
+          generation_reason: @generation_reason
+        )
       end
 
       def attributes_to_form_params(attrs)

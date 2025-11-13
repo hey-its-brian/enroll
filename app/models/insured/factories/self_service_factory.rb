@@ -52,14 +52,13 @@ module Insured
         )
       end
 
-      def self.update_aptc(enrollment_id, applied_aptc_amount, exclude_enrollments_list: nil, elected_aptc_pct: nil, change_tax_credit: false)
+      def self.update_aptc(enrollment_id, applied_aptc_amount, exclude_enrollments_list: nil, elected_aptc_pct: nil, change_tax_credit: false, generation_reason: :unknown) # rubocop:disable Metrics/ParameterLists
         # field :elected_aptc_pct, type: Float, default: 0.0
         # field :applied_aptc_amount, type: Money, default: 0.0
         enrollment = HbxEnrollment.find(BSON::ObjectId.from_string(enrollment_id))
 
         new_effective_date = Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date(enrollment, change_tax_credit)
-        reinstatement = Enrollments::Replicator::Reinstatement.new(enrollment, new_effective_date, applied_aptc_amount).build
-
+        reinstatement = Enrollments::Replicator::Reinstatement.new(enrollment, new_effective_date, applied_aptc_amount, generation_reason: generation_reason).build
         drop_invalid_enrollment_members(reinstatement) if EnrollRegistry[:check_enrollment_member_eligibility].feature.is_enabled
         can_renew = ::Operations::Products::ProductOfferedInServiceArea.new.call({enrollment: reinstatement})
 
@@ -75,7 +74,6 @@ module Insured
         else
           update_enrollment_for_apcts(reinstatement, applied_aptc_amount)
         end
-
         reinstatement.select_coverage!
       end
 

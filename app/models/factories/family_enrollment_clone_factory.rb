@@ -46,6 +46,7 @@ module Factories
       product = fetch_product(enrollment, sponsored_benefit_package, effective_on)
       return if product.blank?
 
+      clone_enrollment.generation_reason = enrollment.generation_reason
       clone_enrollment.product_id = product.id
       clone_enrollment.predecessor_enrollment_id = enrollment.id
       clone_enrollment.coverage_kind = enrollment.coverage_kind

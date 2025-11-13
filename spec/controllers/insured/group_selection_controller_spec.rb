@@ -1873,6 +1873,8 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
       post :create, params: { person_id: person.id, employee_role_id: employee_role.id, family_member_ids: family_member_ids }
       family.reload
       family.active_household.reload
+      new_enrollment = family.active_household.hbx_enrollments[1]
+      expect(new_enrollment.generation_reason).to eq(:unknown)
       expect(response).to have_http_status(:redirect)
       expect(response).to redirect_to(insured_plan_shopping_path(id: family.active_household.hbx_enrollments[1].id, market_kind: 'shop', coverage_kind: 'health', enrollment_kind: ''))
     end
@@ -1886,6 +1888,8 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
       post :create, params: { person_id: person.id, employee_role_id: employee_role.id, family_member_ids: family_member_ids, change_plan: 'change' }
       family.reload
       family.active_household.reload
+      new_enrollment = family.active_household.hbx_enrollments[1]
+      expect(new_enrollment.generation_reason).to eq(:unknown)
       expect(response).to have_http_status(:redirect)
       expect(response).to redirect_to(insured_plan_shopping_path(id: family.active_household.hbx_enrollments[1].id, change_plan: 'change', coverage_kind: 'health', market_kind: 'shop', enrollment_kind: ''))
     end
@@ -2236,7 +2240,7 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
         sign_in user
       end
 
-      it 'creates enrollment & set tobacco_use on hbx_enrollment member' do
+      it 'creates enrollment & sets generation_reason on enrollment and tobacco_use on hbx_enrollment member' do
         expect(family.active_household.hbx_enrollments.size).to eq 0
         post :create, params: {
           "person_id" => person.id,
@@ -2253,6 +2257,7 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
         ivl_enrollments = HbxEnrollment.where(kind: 'individual')
         expect(ivl_enrollments.size).to eq 1
         expect(ivl_enrollments.first.hbx_enrollment_members.first.tobacco_use).to eq 'Y'
+        expect(ivl_enrollments.first.generation_reason).to eq :plan_shopping
       end
     end
 

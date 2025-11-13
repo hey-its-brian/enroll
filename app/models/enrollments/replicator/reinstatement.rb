@@ -5,9 +5,9 @@ module Enrollments
     class Reinstatement
       include LoggerUtils
 
-      attr_accessor :base_enrollment, :new_effective_date, :new_aptc, :year, :duplicate_hbx, :reinstate_enrollment, :eligible_dependents
+      attr_accessor :base_enrollment, :new_effective_date, :new_aptc, :year, :duplicate_hbx, :reinstate_enrollment, :eligible_dependents, :generation_reason
 
-      def initialize(enrollment, effective_date, new_aptc = nil, eligible_dependents = nil)
+      def initialize(enrollment, effective_date, new_aptc = nil, eligible_dependents = nil, generation_reason: :unknown)
         @base_enrollment = enrollment
         @new_effective_date = effective_date
         @new_aptc = new_aptc
@@ -16,6 +16,7 @@ module Enrollments
         # what it is supposed to be
         @duplicate_hbx = enrollment.dup
         @eligible_dependents = eligible_dependents
+        @generation_reason = generation_reason
       end
 
       def benefit_application
@@ -99,6 +100,7 @@ module Enrollments
         assign_all_attributes(reinstated_enrollment)
 
         reinstated_enrollment.hbx_enrollment_members = clone_hbx_enrollment_members
+        reinstated_enrollment.generation_reason = @generation_reason
         unless base_enrollment.coverage_expired?
           if base_enrollment.may_terminate_coverage? && (reinstate_enrollment.effective_on > base_enrollment.effective_on)
             unless base_enrollment.ineligible_for_termination?(new_effective_date)

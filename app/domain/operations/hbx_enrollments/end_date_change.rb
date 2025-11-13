@@ -73,8 +73,7 @@ module Operations
       end
 
       def reinstate_enrollment
-        reinstate_enrollment = Enrollments::Replicator::Reinstatement.new(@enrollment, @enrollment.terminated_on.next_day).build
-
+        reinstate_enrollment = Enrollments::Replicator::Reinstatement.new(@enrollment, @enrollment.terminated_on.next_day, generation_reason: :date_change).build
         can_reinstate = ::Operations::Products::ProductOfferedInServiceArea.new.call({enrollment: reinstate_enrollment})
         return can_reinstate unless can_reinstate.success?
 

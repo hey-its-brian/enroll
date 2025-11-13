@@ -209,7 +209,7 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
       end
     end
 
-    context '#update_evidences_for_enrollment_change' do
+    context '#escalate_evidences_to_outstanding' do
       let(:income_evidence_state) {:pending}
       let(:esi_evidence_state) {:outstanding}
       let(:non_esi_evidence_state) {:negative_response_received}
@@ -219,12 +219,13 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
         esi_evidence
         non_esi_evidence
         local_mec_evidence
-        aptc_eligibility.update_evidences_for_enrollment_change("12345")
+        aptc_eligibility.escalate_evidences_to_outstanding("enrollment_purchase", "Coverage purchased for enrollment 12345")
       end
 
       it 'should update income evidence to outstanding' do
         expect(income_evidence.current_state).to eq(:outstanding)
         expect(income_evidence.verification_histories.last.action).to eq("enrollment_purchase")
+        expect(income_evidence.verification_histories.last.update_reason).to eq("Coverage purchased for enrollment 12345")
       end
 
       it 'should not update esi evidence' do
@@ -234,14 +235,19 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
       it 'should update non esi evidence' do
         expect(non_esi_evidence.current_state).to eq(:outstanding)
         expect(non_esi_evidence.verification_histories.last.action).to eq("enrollment_purchase")
+        expect(non_esi_evidence.verification_histories.last.update_reason).to eq("Coverage purchased for enrollment 12345")
       end
 
       it 'should not update local mec evidence' do
         expect(local_mec_evidence.current_state).to eq(:verified)
       end
+
+      it 'should call determine_eligibility_state after updating evidences' do
+        expect(aptc_eligibility.current_state).to be_present
+      end
     end
 
-    context '#update_outstanding_evidences_for_non_enrolled' do
+    context '#downgrade_evidences_to_nrr' do
       let(:income_evidence_state) {:pending}
       let(:esi_evidence_state) {:outstanding}
       let(:non_esi_evidence_state) {:negative_response_received}
@@ -251,24 +257,29 @@ RSpec.describe Eligibilities::V3::AptcCsrEligibility, type: :model do
         esi_evidence
         non_esi_evidence
         local_mec_evidence
-        aptc_eligibility.update_outstanding_evidences_for_non_enrolled("12345")
+        aptc_eligibility.downgrade_evidences_to_nrr("enrollment_purchase", "Coverage cancelled for enrollment 12345")
       end
 
-      it 'should update income evidence to outstanding' do
+      it 'should keep income evidence as pending' do
         expect(income_evidence.current_state).to eq(:pending)
       end
 
-      it 'should not update esi evidence' do
+      it 'should waive esi evidence to negative_response_received' do
         expect(esi_evidence.current_state).to eq(:negative_response_received)
         expect(esi_evidence.verification_histories.last.action).to eq("enrollment_purchase")
+        expect(esi_evidence.verification_histories.last.update_reason).to eq("Coverage cancelled for enrollment 12345")
       end
 
-      it 'should update non esi evidence' do
+      it 'should keep non esi evidence as negative_response_received' do
         expect(non_esi_evidence.current_state).to eq(:negative_response_received)
       end
 
       it 'should not update local mec evidence' do
         expect(local_mec_evidence.current_state).to eq(:verified)
+      end
+
+      it 'should call determine_eligibility_state after updating evidences' do
+        expect(aptc_eligibility.current_state).to be_present
       end
     end
   end

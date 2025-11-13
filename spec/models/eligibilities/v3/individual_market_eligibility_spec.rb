@@ -100,7 +100,7 @@ RSpec.describe Eligibilities::V3::IndividualMarketEligibility, type: :model do
     let(:citizenship_evidence)   { FactoryBot.create(:citizenship_evidence, current_state: citizenship_evidence_state, eligibility: eligibility, due_on: Date.today + 5.days, verification_outstanding: true, is_satisfied: false) }
     let(:social_security_number_evidence)   { FactoryBot.create(:social_security_number_evidence, current_state: social_security_number_evidence_state, eligibility: eligibility) }
 
-    context '#update_evidences_for_enrollment_change' do
+    context '#escalate_evidences_to_outstanding' do
       let(:alive_evidence_state) {:pending}
       let(:american_indian_evidence_state) {:outstanding}
       let(:citizenship_evidence_state) {:negative_response_received}
@@ -110,12 +110,13 @@ RSpec.describe Eligibilities::V3::IndividualMarketEligibility, type: :model do
         american_indian_evidence
         citizenship_evidence
         social_security_number_evidence
-        eligibility.update_evidences_for_enrollment_change("12345")
+        eligibility.escalate_evidences_to_outstanding("enrollment_purchase", "Coverage purchased for enrollment 12345")
       end
 
       it 'should update alive evidence to outstanding' do
         expect(alive_evidence.current_state).to eq(:outstanding)
         expect(alive_evidence.verification_histories.last.action).to eq("enrollment_purchase")
+        expect(alive_evidence.verification_histories.last.update_reason).to eq("Coverage purchased for enrollment 12345")
       end
 
       it 'should not update american indian evidence' do
@@ -126,14 +127,19 @@ RSpec.describe Eligibilities::V3::IndividualMarketEligibility, type: :model do
       it 'should update citizenship evidence' do
         expect(citizenship_evidence.current_state).to eq(:outstanding)
         expect(citizenship_evidence.verification_histories.last.action).to eq("enrollment_purchase")
+        expect(citizenship_evidence.verification_histories.last.update_reason).to eq("Coverage purchased for enrollment 12345")
       end
 
       it 'should not update social security number evidence' do
         expect(social_security_number_evidence.current_state).to eq(:verified)
       end
+
+      it 'should call determine_eligibility_state after updating evidences' do
+        expect(eligibility.current_state).to be_present
+      end
     end
 
-    context '#update_outstanding_evidences_for_non_enrolled' do
+    context '#downgrade_evidences_to_nrr' do
       let(:alive_evidence_state) {:pending}
       let(:american_indian_evidence_state) {:outstanding}
       let(:citizenship_evidence_state) {:negative_response_received}
@@ -143,23 +149,29 @@ RSpec.describe Eligibilities::V3::IndividualMarketEligibility, type: :model do
         american_indian_evidence
         citizenship_evidence
         social_security_number_evidence
-        eligibility.update_outstanding_evidences_for_non_enrolled("12345")
+        eligibility.downgrade_evidences_to_nrr("enrollment_purchase", "Coverage cancelled for enrollment 12345")
       end
 
-      it 'should update alive evidence to outstanding' do
+      it 'should keep alive evidence as pending' do
         expect(alive_evidence.current_state).to eq(:pending)
       end
 
-      it 'should not update american indian evidence' do
+      it 'should waive american indian evidence to negative_response_received' do
         expect(american_indian_evidence.current_state).to eq(:negative_response_received)
+        expect(american_indian_evidence.verification_histories.last.action).to eq("enrollment_purchase")
+        expect(american_indian_evidence.verification_histories.last.update_reason).to eq("Coverage cancelled for enrollment 12345")
       end
 
-      it 'should update citizenship evidence' do
+      it 'should keep citizenship evidence as negative_response_received' do
         expect(citizenship_evidence.current_state).to eq(:negative_response_received)
       end
 
       it 'should not update social security number evidence' do
         expect(social_security_number_evidence.current_state).to eq(:verified)
+      end
+
+      it 'should call determine_eligibility_state after updating evidences' do
+        expect(eligibility.current_state).to be_present
       end
     end
   end

@@ -16,6 +16,7 @@ namespace :migrations do
     enrollment.coverage_kind = "health"
     enrollment.enrollment_kind = "open_enrollment"
     enrollment.kind = "employer_sponsored"
+    enrollment.generation_reason = :migration
 
     benefit_group_assignment = census_employees.first.active_benefit_group_assignment
 

@@ -63,6 +63,9 @@ RSpec.describe ::Operations::HbxEnrollments::RelocateEnrollment, dbclean: :after
       family.reload
       expect(family.active_household.hbx_enrollments.count).to eq(2)
       expect(described_class.new.call({expected_enrollment_action: "Generate Rerated Enrollment with same product ID", enrollment_hbx_id: enrollment.hbx_id})).to be_success
+
+      new_enrollment = family.active_household.hbx_enrollments.where.not(id: enrollment.id).first
+      expect(new_enrollment.generation_reason).to eq(:relocation)
     end
 
     it "should generate new enrollment with different rating area" do

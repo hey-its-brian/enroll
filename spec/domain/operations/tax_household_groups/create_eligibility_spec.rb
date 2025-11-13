@@ -94,7 +94,38 @@ RSpec.describe ::Operations::TaxHouseholdGroups::CreateEligibility, dbclean: :af
       expect(eligibility_determination.grants.size).to eq 2
     end
 
-    context 'record history on evidences' do
+    context 'when there is a current year health enrollment' do
+      let(:product) { FactoryBot.create(:benefit_markets_products_health_products_health_product, :silver, benefit_market_kind: :aca_individual, kind: :health) }
+      let!(:hbx_enrollment) do
+        FactoryBot.create(:hbx_enrollment,
+                          :with_enrollment_members,
+                          :coverage_selected,
+                          consumer_role_id: primary.consumer_role.id,
+                          product: product,
+                          kind: 'individual',
+                          coverage_kind: 'health',
+                          family: family,
+                          effective_on: Date.new(Date.today.year, 1, 1),
+                          aasm_state: 'coverage_selected')
+      end
+
+      context 'when apply_aggregate_to_enrollment flag is enabled' do
+        before do
+          allow(EnrollRegistry[:apply_aggregate_to_enrollment].feature).to receive(:is_enabled).and_return(true)
+          allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(false)
+          allow(EnrollRegistry[:temporary_configuration_enable_multi_tax_household_feature].feature).to receive(:is_enabled).and_return(true)
+          allow(::Insured::Factories::SelfServiceFactory).to receive(:mthh_update_enrollment_for_aptcs).and_return(nil)
+        end
+
+        it 'should call OnNewDetermination :eligibility_creation generation reason' do
+          subject.call(params)
+          new_enrollments = family.reload.hbx_enrollments.where(generation_reason: :eligibility_creation)
+          expect(new_enrollments).to_not be_empty
+        end
+      end
+    end
+
+    context 'when there is an application' do
       let(:application) { FactoryBot.create(:financial_assistance_application, :with_applicants, family: family, aasm_state: 'determined', effective_date: Date.new(Date.today.year, 1, 1)) }
       let(:applicant) { application.applicants.first }
 

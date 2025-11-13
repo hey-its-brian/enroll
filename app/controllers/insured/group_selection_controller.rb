@@ -290,7 +290,13 @@ class Insured::GroupSelectionController < ApplicationController
     (redirect_to(root_path) and return) unless ridp_verified?(hbx_enrollment.kind, hbx_enrollment.family)
     aptc_applied_total = revise_aptc_applied_total(params, enrollment_id)
     applied_aptc_pct = calculate_elected_aptc_pct(aptc_applied_total.to_f, params[:max_aptc].to_f)
-    attrs = {enrollment_id: enrollment_id, elected_aptc_pct: applied_aptc_pct, aptc_applied_total: aptc_applied_total, change_tax_credit: true}
+    attrs = {
+      enrollment_id: enrollment_id,
+      elected_aptc_pct: applied_aptc_pct,
+      aptc_applied_total: aptc_applied_total,
+      generation_reason: :plan_shopping,
+      change_tax_credit: true
+    }
     begin
       message = ::Insured::Forms::SelfTermOrCancelForm.for_aptc_update_post(attrs)
       if params[:bs4]
@@ -460,6 +466,7 @@ class Insured::GroupSelectionController < ApplicationController
       @change_plan = 'change_by_qle'
     end
 
+    generation_reason = :plan_shopping
     case @market_kind
     when 'shop', 'fehb'
       if is_shop_or_fehb_market_enabled?
@@ -468,6 +475,7 @@ class Insured::GroupSelectionController < ApplicationController
         end
 
         set_change_plan
+        # TODO: add generation_reason for shop/fehb
         build_shop_enrollment(permitted_group_selection_params, family_member_ids, @change_plan, @employee_role)
       end
     when 'individual'
@@ -476,7 +484,8 @@ class Insured::GroupSelectionController < ApplicationController
         resident_role: @adapter.person.resident_role,
         coverage_household: @adapter.coverage_household,
         qle: @adapter.is_qle?,
-        opt_effective_on: @adapter.optional_effective_on
+        opt_effective_on: @adapter.optional_effective_on,
+        generation_reason: generation_reason
       )
     when 'coverall'
       @adapter.coverage_household.household.new_hbx_enrollment_from(
@@ -484,7 +493,8 @@ class Insured::GroupSelectionController < ApplicationController
         resident_role: @person.resident_role,
         coverage_household: @adapter.coverage_household,
         qle: @adapter.is_qle?,
-        opt_effective_on: @adapter.optional_effective_on
+        opt_effective_on: @adapter.optional_effective_on,
+        generation_reason: generation_reason
       )
     end
   end

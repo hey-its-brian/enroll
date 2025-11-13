@@ -65,8 +65,7 @@ module Operations
         return Failure(date_context.message) if date_context.failure?
 
         new_effective_date = date_context.new_effective_on.to_date
-        reinstatement = Enrollments::Replicator::Reinstatement.new(base_enrollment, new_effective_date, base_enrollment.applied_aptc_amount).build
-
+        reinstatement = Enrollments::Replicator::Reinstatement.new(base_enrollment, new_effective_date, base_enrollment.applied_aptc_amount, generation_reason: :relocation).build
         if reinstatement.save!
           result = if reinstatement.is_health_enrollment? && base_enrollment.has_aptc? && EnrollRegistry.feature_enabled?(:temporary_configuration_enable_multi_tax_household_feature)
                      default_percentage = EnrollRegistry[:aca_individual_assistance_benefits].setting(:default_applied_aptc_percentage).item
