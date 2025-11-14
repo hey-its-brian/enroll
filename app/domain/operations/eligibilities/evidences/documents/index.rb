@@ -108,7 +108,7 @@ module Operations
                 matching_evidences.each do |ev|
                   next unless ev.documents
 
-                  ev.documents.each do |doc|
+                  ev.documents.most_recent_first.each do |doc|
                     all_documents << doc
                     document_app_map[doc.id.to_s] = app_info
                   end

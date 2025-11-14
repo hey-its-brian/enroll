@@ -611,6 +611,10 @@ module VerificationHelper
     is_strong ? content_tag(:strong, &block) : yield
   end
 
+  def sorted_evidence_documents(evidence)
+    evidence&.documents&.most_recent_first || []
+  end
+
   def verification_upload_query(evidence, family)
     group = evidence.evidence_group
     return if group == 'ridp'

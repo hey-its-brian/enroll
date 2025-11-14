@@ -65,7 +65,7 @@ RSpec.describe Operations::Eligibilities::Evidences::Documents::Index, type: :op
 
       before do
         income_evidence.documents.create!(identifier: "test-1#sample-key",
-                                          title: "sample-document.pdf", subject: "sample-document.pdf")
+                                          title: "sample-document.pdf", subject: "sample-document.pdf", created_at: Date.today)
         income_evidence_2.documents.create!(identifier: "test-2#sample-key",
                                           title: "sample-document.pdf", subject: "sample-document.pdf")
       end
@@ -94,6 +94,33 @@ RSpec.describe Operations::Eligibilities::Evidences::Documents::Index, type: :op
         expect(result.success[:applications]).to include(faa_application)
         expect(result.success[:all_documents].count).to eq(1)
         expect(result.success[:all_documents].first.identifier).to eq("test-2#sample-key")
+      end
+
+      context "#fetch_documents_with_app_ids" do
+
+        context "evidence with documents" do
+          before do
+            income_evidence.documents.create!(identifier: "test-1#sample-key", title: "sample-document.pdf", subject: "sample-document.pdf")
+          end
+
+          let(:all_documents) { [income_evidence.documents.first] }
+
+          it "successfully sorts documents based on created at date" do
+            result = operation.send(:fetch_documents_with_app_ids, [faa_application], income_evidence)
+            expect(result.value![:documents]).to eq(income_evidence.documents.to_a.reverse)
+          end
+        end
+
+        context "evidence without documents" do
+          before do
+            income_evidence.documents.destroy_all
+          end
+
+          it "returns no documents" do
+            result = operation.send(:fetch_documents_with_app_ids, [faa_application], income_evidence)
+            expect(result.value![:documents]).to be_empty
+          end
+        end
       end
     end
 

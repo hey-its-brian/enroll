@@ -26,6 +26,8 @@ class Document
     "Admin::BulkNotice" => Admin::BulkNotice
   }.freeze
 
+  scope :most_recent_first,      -> { order_by(created_at: :desc) }
+
   after_save :notify_on_save
 
   # Enable polymorphic associations

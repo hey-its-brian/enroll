@@ -96,7 +96,7 @@
         </tr>
         </thead>
         <tbody>
-        <% @evidence_delegator.documents&.each do |document| %>
+        <% sorted_evidence_documents(@evidence_delegator).each do |document| %>
           <tr>
             <td class='col-7'><%= document.title.titleize %></td>
             <td class='col-3'><%= document.created_at %></td>

@@ -1100,6 +1100,46 @@ describe 'verification actions' do
     family.save!
   end
 
+  context '#sorted_evidence_documents' do
+
+    let(:evidence_adapter) do
+      subject = determination.success.subjects.first
+      evidence_adapter = subject.eligibility_states.by_type_uploadable.flat_map do |state|
+        state.evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
+      end.first
+      helper.send(:sorted_evidence_documents, evidence_adapter)
+    end
+
+    context 'when evidence delegator has no documents' do
+      before do
+        allow(evidence_adapter).to receive(:documents).and_return(nil)
+      end
+
+      it 'returns an empty array' do
+        result = helper.send(:sorted_evidence_documents, evidence_adapter)
+        expect(result).to eq([])
+      end
+    end
+
+    context 'when evidence delegator has documents' do
+      let(:document1) { double('Document', created_at: 3.days.ago) }
+      let(:document2) { double('Document', created_at: 1.day.ago) }
+      let(:document3) { double('Document', created_at: 2.days.ago) }
+      let(:documents_relation) { double('DocumentsRelation') }
+      let(:sorted_documents) { [document2, document3, document1] }
+
+      before do
+        allow(evidence_adapter).to receive(:documents).and_return(documents_relation)
+        allow(documents_relation).to receive(:most_recent_first).and_return(sorted_documents)
+      end
+
+      it 'returns documents sorted by most recent first' do
+        result = helper.send(:sorted_evidence_documents, evidence_adapter)
+        expect(result).to eq(sorted_documents)
+      end
+    end
+  end
+
   context '#verification_upload_query' do
     it 'returns verification upload query for the person' do
       subject = determination.success.subjects.first
