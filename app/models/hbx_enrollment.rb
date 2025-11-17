@@ -2146,6 +2146,10 @@ class HbxEnrollment
     return false unless can_be_reinstated?
     return false if has_active_term_or_expired_exists_for_reinstated_date?
     reinstate_enrollment = Enrollments::Replicator::Reinstatement.new(self, fetch_reinstatement_date, generation_reason: :reinstatement).build
+    # Since the reinstate of enrollment is exactly same as the original enrollment, we need to
+    # set the ehb premium to be same as original enrollment's ehb premium
+    # Since Reinstatement class is used by other features as well, it is best to set ehb premium here
+    reinstate_enrollment.ehb_premium = self.ehb_premium
     can_renew = ::Operations::Products::ProductOfferedInServiceArea.new.call({enrollment: reinstate_enrollment})
 
     return false unless can_renew.success?

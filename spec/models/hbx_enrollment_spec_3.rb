@@ -146,7 +146,12 @@ describe HbxEnrollment, "reinstate and change end date", type: :model, :dbclean 
     end
 
     let!(:enrollment) do
-      FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :individual_assisted, family: family, product: product, consumer_role_id: person.consumer_role.id, rating_area_id: rating_area.id, hbx_enrollment_members: hbx_en_members)
+      FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :individual_assisted,
+                        family: family,
+                        product: product,
+                        consumer_role_id: person.consumer_role.id,
+                        rating_area_id: rating_area.id,
+                        hbx_enrollment_members: hbx_en_members, ehb_premium: 1500)
     end
     let!(:thhm_enrollment_members) do
       enrollment.hbx_enrollment_members.collect do |member|
@@ -181,9 +186,13 @@ describe HbxEnrollment, "reinstate and change end date", type: :model, :dbclean 
         allow(UnassistedPlanCostDecorator).to receive(:new).and_return(double(total_ehb_premium: 1500, total_premium: 1600))
       end
 
+      it "should copy ehb_premium" do
+        reinstate_enrollment = enrollment.reinstate
+        expect(reinstate_enrollment.ehb_premium).to eq enrollment.ehb_premium
+      end
+
       it "should create tax household enrollment" do
         reinstate_enrollment = enrollment.reinstate
-
         expect(TaxHouseholdEnrollment.where(enrollment_id: reinstate_enrollment.id).present?).to be_truthy
       end
 
