@@ -517,6 +517,37 @@ RSpec.describe Insured::FamiliesController, dbclean: :after_each do
       expect(assigns(:family_members)).to eq(family.family_members)
     end
 
+    context 'when show_previous_year_faa_verifications is enabled' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_previous_year_faa_verifications).and_return(true)
+      end
+
+      context 'when family has a previous year faa application needing verifications' do
+        let(:previous_year_faa_application_needing_verifications) { FactoryBot.create(:financial_assistance_application, family: family) }
+
+        before do
+          allow(family).to receive(:previous_year_faa_application_needing_verifications).and_return(previous_year_faa_application_needing_verifications)
+        end
+
+        it "assigns previous_year_faa_application_needing_verifications" do
+          get :verification
+          expect(assigns(:previous_year_faa_application_needing_verifications)).to be_present
+        end
+      end
+
+      context 'when family does not have a previous year faa application needing verifications' do
+
+        before do
+          allow(family).to receive(:previous_year_faa_application_needing_verifications).and_return(nil)
+        end
+
+        it "does not assign previous_year_faa_application_needing_verifications" do
+          get :verification
+          expect(assigns(:previous_year_faa_application_needing_verifications)).to be_nil
+        end
+      end
+    end
+
     context 'with invalid mime types' do
       # these should respond with a UrlGenerationError due to the use of `format: false` in the routes file
       it "js should return an error" do

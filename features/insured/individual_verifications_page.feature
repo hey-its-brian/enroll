@@ -58,6 +58,20 @@ Feature: Individual Verifications Page
     And the consumer selects a household member
     Then the consumer should see the individual detail page
 
+  Scenario: Consumer can see banner on the individual verification page when there is a previous year faa application needing verifications
+    Given show_new_verifications_household_summary feature is enabled
+    Given show_previous_year_faa_verifications feature is enabled
+    Given qhp_application feature is enabled
+    Given the consumer has a previous year FA application that needs verifications
+    Given the consumer has a determined QHP application
+    And the consumer visits the verification tab
+    Then consumer should see a previous year FA application needing verifications banner
+    And the consumer selects a household member
+    Then the consumer should see the individual detail page
+    Then consumer should see the application id link
+    Then consumer should see a previous year FA application needing verifications banner
+    And consumer clicks the link in the previous year application banner
+
   Scenario: Consumer goes to the Documents page with inactive members
     Given show_new_verifications_household_summary feature is enabled
     And EnrollRegistry show_inactive_verification_members feature is disabled

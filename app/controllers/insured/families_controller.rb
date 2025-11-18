@@ -27,6 +27,7 @@ class Insured::FamiliesController < FamiliesController
   ]
   before_action :create_evidence, only: [:verification_detail, :verification_history]
   before_action :redirect_to_current_applications, only: [:manage_family]
+  before_action :check_previous_year_faa_application, only: [:verification, :verification_individual]
 
   around_action :cache_hbx, only: [:home]
 
@@ -778,5 +779,11 @@ class Insured::FamiliesController < FamiliesController
 
   def enable_bs4_layout
     @bs4 = conditionally_bs4_enabled_actions.include?(action_name) ? params[:bs4] == "true" : true if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
+  end
+
+  def check_previous_year_faa_application
+    return unless EnrollRegistry.feature_enabled?(:show_previous_year_faa_verifications)
+    return unless @family.show_previous_year_faa_verifications
+    @previous_year_faa_application_needing_verifications = @family.previous_year_faa_application_needing_verifications
   end
 end

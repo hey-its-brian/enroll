@@ -56,11 +56,13 @@ registry:
         is_enabled: <%= ENV['SHOW_NEW_DOCUMENTS_TAB_TEXT'] || false %>
       - key: :show_new_verifications_household_summary
         is_enabled: <%= ENV['SHOW_NEW_VERIFICATIONS_HOUSEHOLD_SUMMARY_IS_ENABLED'] || false %>
+      - key: :show_previous_year_faa_verifications
+        is_enabled: <%= ENV['SHOW_PREVIOUS_YEAR_FAA_VERIFICATIONS_IS_ENABLED'] || false %>
       - key: :verification_due_on_options
         is_enabled: <%= ENV['VERIFICATION_DUE_ON_OPTIONS_IS_ENABLED'] || false %>
         settings:
           - key: :static_options
-            item: 
+            item:
             - 35
             - 95
       - key: :show_new_documents_types
@@ -75,4 +77,3 @@ registry:
         is_enabled: <%= ENV['VERIFICATIONS_HOUSEHOLD_SUMMARY_TEXT_UPDATE_IS_ENABLED'] || false %>
       - key: :ifsv_income_nrr
         is_enabled: <%= ENV['IFSV_INCOME_NRR_IS_ENABLED'] || false %>
-        

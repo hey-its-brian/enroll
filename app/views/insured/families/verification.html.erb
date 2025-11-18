@@ -28,12 +28,16 @@
           <a href=<%= ::EnrollRegistry[:enroll_app].setting(:submit_docs_url).item %> rel="noopener noreferrer" target="_blank"><%= l10n('insured.families.verifications.summary_disclaimer_3_redirect_text') %></a>
           <%= l10n('insured.families.verifications.summary_disclaimer_3_2') %>
         </p>
-      <% else %>. 
+      <% else %>.
         <p><%= l10n(EnrollRegistry.feature_enabled?(:show_new_documents_tab_text) ? 'insured.verification_information' : 'insured.verification_information_old') %></p>
       <% end %>
 
+      <% if @previous_year_faa_application_needing_verifications.present? %>
+        <%= render partial: 'insured/families/faa_evidence_banner', locals: { application: @previous_year_faa_application_needing_verifications } %>
+      <% end %>
+
       <% if @person && @subjects.present? && individual_market_is_enabled? %>
-        
+
         <% items = @action_items.select { |item| can_display_type?(item) } %>
         <% item_count = items.count %>
         <% if items.present? %>

@@ -1,0 +1,14 @@
+<% if application.present? %>
+  <div class="container p-0" data-cuke="previous-year-faa-application-needing-verifications-banner">
+    <div class="alert alert-info d-flex align-items-start">
+      <div class="d-flex pl-1">
+        <div class="info-icon icon" alt="info">&nbsp;</div>
+      </div>
+      <div class="col mr-auto p-0 align-self-center">
+        <!-- TODO: Update this to use the correct link once the link is implemented -->
+        <% link = financial_assistance.review_application_path(application) %>
+        <%= l10n('insured.families.verifications.individual.faa_evidence_banner_text') %> <%= link_to l10n('insured.families.verifications.individual.faa_evidence_banner_link_text'), link, class: 'primary-text' %>.
+      </div>
+    </div>
+  </div>
+<% end %>

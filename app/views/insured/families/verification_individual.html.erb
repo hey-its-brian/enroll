@@ -8,14 +8,18 @@
     navigation: verification_navigation(@member, @evidence),
     summary_rows: [:member_status],
     is_back_nav_primary: !@family.eligibility_determination.subjects.by_person(@member.person_id).first&.documents_action_needed?,
-    display_application_id: false
+    display_application_id: EnrollRegistry.feature_enabled?(:show_previous_year_faa_verifications),
+    application: @family.latest_application
   } %>
-
 <% if EnrollRegistry.feature_enabled?(:verifications_household_summary_text_update) %>
   <p><%= l10n('insured.families.verifications.individual.disclaimer_1') %></p>
   <p><%= l10n('insured.families.verifications.individual.disclaimer_2') %></p>
 <% else %>
   <p><%= l10n('insured.families.verifications.individual.disclaimer_old') %></p>
+<% end %>
+
+<% if @previous_year_faa_application_needing_verifications.present? %>
+  <%= render partial: 'insured/families/faa_evidence_banner', locals: { application: @previous_year_faa_application_needing_verifications } %>
 <% end %>
 
 <% inactive_evidences, active_evidences = @evidences.select { |item| can_display_type?(item) }.partition(&:inactive) %>

@@ -1905,6 +1905,17 @@ class Family
     result
   end
 
+  def show_previous_year_faa_verifications
+    return false if latest_application_type == "faa"
+    previous_year_faa_application_needing_verifications.present?
+  end
+
+  # TODO: update this logic to check if the application has any non-verified applicants
+  def previous_year_faa_application_needing_verifications
+    previous_year = application_applicable_year - 1
+    @previous_year_faa_application_needing_verifications ||= FinancialAssistance::Application.for_determined_family(id).by_year(previous_year).first
+  end
+
   private
 
   def find_best_application_for_year(applications)

@@ -253,6 +253,11 @@ Given(/^show_new_verifications_household_summary feature is (.*)$/) do |feature|
   disable_feature :show_new_verifications_household_summary if feature == 'disabled'
 end
 
+Given(/^show_previous_year_faa_verifications feature is (.*)$/) do |feature|
+  enable_feature :show_previous_year_faa_verifications if feature == 'enabled'
+  disable_feature :show_previous_year_faa_verifications if feature == 'disabled'
+end
+
 When(/^choose_shopping_method feature is disabled$/) do
   disable_feature :choose_shopping_method
 end

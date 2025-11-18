@@ -615,3 +615,28 @@ end
 Then(/^Individual should not see view history table$/) do
   expect(page).not_to have_content('Verification History')
 end
+
+Given(/^the consumer has a previous year FA application that needs verifications$/) do
+  family = user.person.primary_family
+  previous_year = family.application_applicable_year - 1
+  # TODO: Create a proper previous year FA application that needs verifications, will need to update once logic finalized
+  FactoryBot.create(:financial_assistance_application, family_id: family.id, assistance_year: previous_year, aasm_state: 'determined')
+end
+
+Given(/^the consumer has a determined QHP application$/) do
+  family = user.person.primary_family
+  application = FactoryBot.create(:individual_market_application, :determined, family: family)
+  family.update_attributes(latest_application_gid: application.to_global_id.to_s)
+end
+
+Then(/^.+ should see a previous year FA application needing verifications banner$/) do
+  expect(page).to have_selector('div[data-cuke="previous-year-faa-application-needing-verifications-banner"]')
+end
+
+And(/^.+ clicks the link in the previous year application banner$/) do
+  find('div[data-cuke="previous-year-faa-application-needing-verifications-banner"] a').click
+end
+
+Then(/^.+ should see the application id link$/) do
+  expect(page).to have_selector('div[data-cuke="application-id-link"] a')
+end
