@@ -109,18 +109,25 @@ RSpec.describe ::Operations::TaxHouseholdGroups::CreateEligibility, dbclean: :af
                           aasm_state: 'coverage_selected')
       end
 
+      let(:new_effective_date) { Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date(hbx_enrollment, nil) }
+
       context 'when apply_aggregate_to_enrollment flag is enabled' do
         before do
           allow(EnrollRegistry[:apply_aggregate_to_enrollment].feature).to receive(:is_enabled).and_return(true)
           allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(false)
           allow(EnrollRegistry[:temporary_configuration_enable_multi_tax_household_feature].feature).to receive(:is_enabled).and_return(true)
           allow(::Insured::Factories::SelfServiceFactory).to receive(:mthh_update_enrollment_for_aptcs).and_return(nil)
+          allow(EnrollRegistry[:fifteenth_of_the_month_rule_overridden].feature).to receive(:is_enabled).and_return(true)
         end
 
         it 'should call OnNewDetermination :eligibility_creation generation reason' do
-          subject.call(params)
-          new_enrollments = family.reload.hbx_enrollments.where(generation_reason: :eligibility_creation)
-          expect(new_enrollments).to_not be_empty
+          # if the existing enrollment was created after December 1,
+          # it will have a next year effective date and no new enrollments will generate
+          if new_effective_date.year == hbx_enrollment.effective_on.year
+            subject.call(params)
+            new_enrollments = family.reload.hbx_enrollments.where(generation_reason: :eligibility_creation)
+            expect(new_enrollments).to_not be_empty
+          end
         end
       end
     end

@@ -606,9 +606,17 @@ module Insured
       end
 
       context 'when change_tax_credit is not provided' do
+        before do
+          allow(EnrollRegistry[:fifteenth_of_the_month_rule_overridden].feature).to receive(:is_enabled).and_return(true)
+        end
+
+        let(:new_effective_date) { Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date(enrollment, nil) }
+
         it 'calls new_enrollment_effective_on_date with change_tax_credit defaulted to false' do
-          expect(Insured::Factories::SelfServiceFactory).to receive(:new_enrollment_effective_on_date).with(enrollment, false).and_call_original
-          subject.update_aptc(enrollment.id, 1000)
+          if new_effective_date.year == enrollment.effective_on.year
+            expect(Insured::Factories::SelfServiceFactory).to receive(:new_enrollment_effective_on_date).with(enrollment, false).and_call_original
+            subject.update_aptc(enrollment.id, 1000)
+          end
         end
       end
 

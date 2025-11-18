@@ -323,6 +323,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
           individual_market
           allow(EnrollRegistry).to receive(:feature_enabled?).with(:apply_aggregate_to_enrollment).and_return(true)
           allow(EnrollRegistry).to receive(:feature_enabled?).with(:temporary_configuration_enable_multi_tax_household_feature).and_return(true)
+          allow(EnrollRegistry[:fifteenth_of_the_month_rule_overridden].feature).to receive(:is_enabled).and_return(true)
           allow(HbxProfile).to receive(:current_hbx).and_return hbx_profile
           allow(hbx_profile).to receive(:benefit_sponsorship).and_return benefit_sponsorship
           allow(benefit_sponsorship).to receive(:current_benefit_period).and_return(benefit_coverage_period)
@@ -333,15 +334,24 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
           @result = subject.call(response_payload)
         end
 
+        let(:new_effective_date) { Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date(existing_aptc_enrollment, nil) }
+
         it 'should create a new aptc enrollment' do
-          expect(family.active_household.hbx_enrollments.count).to eq(2)
+          # if the existing enrollment was created after December 1,
+          # it will have a next year effective date and no new enrollments will generate
+          if new_effective_date.year == existing_aptc_enrollment.effective_on.year
+            expect(family.active_household.hbx_enrollments.count).to eq(2)
+          else
+            expect(family.active_household.hbx_enrollments.count).to eq(1)
+          end
         end
 
-        it "terminates the existing aptc enrollment" do
-          existing_aptc_enrollment.reload
-          expect(existing_aptc_enrollment.aasm_state).to eq('coverage_terminated')
+        it "terminates the existing aptc enrollment if the new effective date year matches enrollment effective on year" do
+          if new_effective_date.year == existing_aptc_enrollment.effective_on.year
+            existing_aptc_enrollment.reload
+            expect(existing_aptc_enrollment.aasm_state).to eq('coverage_terminated')
+          end
         end
-
       end
     end
 

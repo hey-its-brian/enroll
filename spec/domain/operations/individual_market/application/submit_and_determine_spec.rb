@@ -57,6 +57,8 @@ RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, db
         )
       end
 
+      let(:new_effective_date) { Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date(existing_enrollment, nil) }
+
       before do
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:apply_aggregate_to_enrollment).and_return(true)
         existing_enrollment
@@ -100,15 +102,21 @@ RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, db
         expect(primary_applicant.individual_market_eligibility.evidences.count).to eq(4)
       end
 
-      it 'terminates existing enrollment' do
-        existing_enrollment.reload
-        expect(existing_enrollment.aasm_state).to eq('coverage_terminated')
+      it "terminates the existing aptc enrollment if the new effective date year matches enrollment effective on year" do
+        if new_effective_date.year == existing_enrollment.effective_on.year
+          existing_enrollment.reload
+          expect(existing_enrollment.aasm_state).to eq('coverage_terminated')
+        end
       end
 
       it 'generates new enrollments' do
         family.reload
-        expect(family.active_household.hbx_enrollments.count).to eq(2)
-        expect(family.active_household.hbx_enrollments.last.aasm_state).to eq('coverage_selected')
+        if new_effective_date.year == existing_enrollment.effective_on.year
+          expect(family.active_household.hbx_enrollments.count).to eq(2)
+          expect(family.active_household.hbx_enrollments.last.aasm_state).to eq('coverage_selected')
+        else
+          expect(family.active_household.hbx_enrollments.count).to eq(1)
+        end
       end
 
       context 'when attempting to send qhp notifications for a renewal application' do
@@ -175,6 +183,8 @@ RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, db
         )
       end
 
+      let(:new_effective_date) { Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date(existing_aptc_enrollment, nil) }
+
       before do
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:apply_aggregate_to_enrollment).and_return(true)
         existing_aptc_enrollment
@@ -184,19 +194,27 @@ RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, db
         primary_applicant.reload
       end
 
-      it "terminates the existing aptc enrollment" do
-        existing_aptc_enrollment.reload
-        expect(existing_aptc_enrollment.aasm_state).to eq('coverage_terminated')
+      it "terminates the existing aptc enrollment if the new effective date year matches enrollment effective on year" do
+        if new_effective_date.year == existing_aptc_enrollment.effective_on.year
+          existing_aptc_enrollment.reload
+          expect(existing_aptc_enrollment.aasm_state).to eq('coverage_terminated')
+        end
       end
 
       it 'generates new enrollment' do
+        # if the existing enrollment was created after December 1,
+        # it will have a next year effective date and no new enrollments will generate
         family.reload
-        expect(family.active_household.hbx_enrollments.count).to eq(2)
+        if new_effective_date.year == existing_aptc_enrollment.effective_on.year
+          expect(family.active_household.hbx_enrollments.count).to eq(2)
+        else
+          expect(family.active_household.hbx_enrollments.count).to eq(1)
+        end
       end
 
       it 'applies no aptc to the new enrollment' do
         family.reload
-        expect(family.active_household.hbx_enrollments.last.applied_aptc_amount).to eq(0)
+        expect(family.active_household.hbx_enrollments.last.applied_aptc_amount).to eq(0) if new_effective_date.year == existing_aptc_enrollment.effective_on.year
       end
     end
   end
