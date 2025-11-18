@@ -656,6 +656,57 @@ RSpec.describe ::Operations::Eligibilities::FamilyEvidencesDataExportV3,
         expect(result[:social_security_number_status]).to eq(:verified)
         expect(result[:social_security_number_due_date]).to eq(Date.current + 30.days)
       end
+
+      context 'when evidence is_active is false' do
+        before do
+          ssn_evidence.update!(is_active: false)
+        end
+
+        it 'excludes inactive evidence from results' do
+          result = operation.send(:get_aca_individual_evidence_data, family_member)
+
+          expect(result).to be_a(Hash)
+          expect(result[:social_security_number_status]).to be_nil
+          expect(result[:social_security_number_due_date]).to be_nil
+        end
+      end
+
+      context 'with multiple evidence types, some active, some inactive' do
+        let!(:citizenship_evidence) do
+          FactoryBot.create(
+            :citizenship_evidence,
+            eligibility: individual_eligibility,
+            key: :citizenship,
+            current_state: 'outstanding',
+            due_on: Date.current + 45.days,
+            is_active: true
+          )
+        end
+
+        let!(:immigration_evidence) do
+          FactoryBot.create(
+            :immigration_evidence,
+            eligibility: individual_eligibility,
+            key: :immigration_status,
+            current_state: 'pending',
+            due_on: Date.current + 60.days,
+            is_active: false
+          )
+        end
+
+        it 'only returns data for active evidences' do
+          result = operation.send(:get_aca_individual_evidence_data, family_member)
+
+          expect(result).to be_a(Hash)
+          expect(result[:social_security_number_status]).to eq(:verified)
+          expect(result[:social_security_number_due_date]).to eq(Date.current + 30.days)
+          expect(result[:citizenship_status]).to eq(:outstanding)
+          expect(result[:citizenship_due_date]).to eq(Date.current + 45.days)
+
+          expect(result[:immigration_status_status]).to be_nil
+          expect(result[:immigration_status_due_date]).to be_nil
+        end
+      end
     end
   end
 
@@ -1052,6 +1103,98 @@ RSpec.describe ::Operations::Eligibilities::FamilyEvidencesDataExportV3,
               expect(result[:income_auto_extended]).to be(false)
               expect(result[:income_response]).to be(false)
             end
+          end
+        end
+
+        context 'when evidence is_active is false' do
+          let!(:esi_evidence) do
+            FactoryBot.create(
+              :esi_mec_evidence,
+              eligibility: aptc_csr_eligibility,
+              key: :esi_mec_evidence,
+              current_state: 'verified',
+              due_on: Date.current + 60.days,
+              is_active: false
+            )
+          end
+
+          it 'excludes inactive evidence from results' do
+            result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
+
+            expect(result[:esi_status]).to be_nil
+            expect(result[:esi_due_date]).to be_nil
+            expect(result[:esi_response]).to be_nil
+          end
+        end
+
+        context 'with multiple APTC CSR evidence types, some active, some inactive' do
+          let!(:income_evidence) do
+            FactoryBot.create(
+              :income_evidence,
+              eligibility: aptc_csr_eligibility,
+              key: :income_evidence,
+              current_state: 'verified',
+              due_on: Date.current + 30.days,
+              is_active: true
+            )
+          end
+
+          let!(:esi_evidence) do
+            FactoryBot.create(
+              :esi_mec_evidence,
+              eligibility: aptc_csr_eligibility,
+              key: :esi_mec_evidence,
+              current_state: 'outstanding',
+              due_on: Date.current + 45.days,
+              is_active: false
+            )
+          end
+
+          let!(:non_esi_evidence) do
+            FactoryBot.create(
+              :non_esi_mec_evidence,
+              eligibility: aptc_csr_eligibility,
+              key: :non_esi_mec_evidence,
+              current_state: 'pending',
+              due_on: Date.current + 60.days,
+              is_active: true
+            )
+          end
+
+          let!(:local_mec_evidence) do
+            FactoryBot.create(
+              :local_mec_evidence,
+              eligibility: aptc_csr_eligibility,
+              key: :local_mec_evidence,
+              current_state: 'attested',
+              due_on: Date.current + 75.days,
+              is_active: false
+            )
+          end
+
+          before do
+            allow(income_evidence).to receive(:has_determination_response?).and_return(true)
+            allow(non_esi_evidence).to receive(:has_determination_response?).and_return(false)
+          end
+
+          it 'only returns data for active evidences' do
+            result = operation.send(:get_financial_assistance_applicant_evidence_data, fa_applicant)
+
+            # Active evidences should be included
+            expect(result[:income_status]).to eq(:verified)
+            expect(result[:income_due_date]).to eq(Date.current + 30.days)
+            expect(result[:income_response]).to be(true)
+            expect(result[:non_esi_status]).to eq(:pending)
+            expect(result[:non_esi_due_date]).to eq(Date.current + 60.days)
+            expect(result[:non_esi_response]).to be(false)
+
+            # Inactive evidences should be excluded
+            expect(result[:esi_status]).to be_nil
+            expect(result[:esi_due_date]).to be_nil
+            expect(result[:esi_response]).to be_nil
+            expect(result[:local_mec_status]).to be_nil
+            expect(result[:local_mec_due_date]).to be_nil
+            expect(result[:local_mec_response]).to be_nil
           end
         end
       end

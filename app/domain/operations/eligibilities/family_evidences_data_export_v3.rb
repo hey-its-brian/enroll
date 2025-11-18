@@ -110,15 +110,7 @@ module Operations
       end
 
       def latest_application
-        qhp_app = ::IndividualMarket::Application
-                  .for_determined_family(@family.id)
-                  .where(assistance_year: @assistance_year)
-                  .order_by(submitted_at: :desc)
-                  .limit(1)
-                  .first
-
-        faa_app = ::FinancialAssistance::Application.newest_determined_by_family_and_year(@family.id, @assistance_year).first
-        @latest_application ||= [qhp_app, faa_app].compact.max_by(&:submitted_at)
+        @latest_application ||= @family.latest_determined_application_for_year(@assistance_year)
       end
 
       def enrollments_for_family
@@ -209,6 +201,7 @@ module Operations
 
         evidence_types.each do |type_name|
           evidence = applicant&.individual_market_eligibility&.fetch_evidence(type_name)
+          next unless evidence&.is_active
 
           evidence_data["#{type_name}_status".to_sym] = evidence&.current_state
           evidence_data["#{type_name}_due_date".to_sym] = evidence&.due_on
@@ -263,6 +256,7 @@ module Operations
 
         evidence_keys.each do |evidence_key|
           evidence = applicant&.aptc_csr_eligibility&.fetch_evidence("#{evidence_key}_evidence")
+          next unless evidence&.is_active
 
           evidence_data["#{evidence_key}_status".to_sym] = evidence&.current_state
           evidence_data["#{evidence_key}_due_date".to_sym] = evidence&.due_on
