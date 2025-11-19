@@ -783,7 +783,9 @@ class Insured::FamiliesController < FamiliesController
 
   def check_previous_year_faa_application
     return unless EnrollRegistry.feature_enabled?(:show_previous_year_faa_verifications)
-    return unless @family.show_previous_year_faa_verifications
-    @previous_year_faa_application_needing_verifications = @family.previous_year_faa_application_needing_verifications
+    app_info = @family.previous_year_faa_app_info_needing_evidence_display
+    return if app_info.blank?
+
+    @previous_year_faa_application_needing_verifications = app_info[:application]
   end
 end

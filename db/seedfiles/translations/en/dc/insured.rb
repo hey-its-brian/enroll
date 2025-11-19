@@ -500,6 +500,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.insured.sbm.applications.actions.resume_draft_year' => "Resume %{year} Draft",
   :'en.insured.sbm.applications.actions.review_year' => "Review %{year} Application",
   :'en.insured.sbm.applications.actions.restore_fa' => "Restore Financial Assistance",
+  :'en.insured.sbm.applications.actions.view_evidences' => 'View Verifications',
   :'en.applications.how.current_during_oe' => "Choose this year to apply and enroll during open enrollment.",
   :'en.insured.not_applicable_abbreviation' => 'N/A',
   :'en.insured.my_coverme_header' => "My CoverME.gov",

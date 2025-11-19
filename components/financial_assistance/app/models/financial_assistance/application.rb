@@ -1643,6 +1643,20 @@ module FinancialAssistance
       !determined?
     end
 
+    # Returns true if any applicant has actionable APTC evidences.
+    #
+    # @return [Boolean] true if any applicant has actionable APTC evidences, false otherwise
+    def has_actionable_aptc_evidences?
+      applicants.any?(&:has_actionable_aptc_evidences?)
+    end
+
+    # Returns true if the application was manually migrated during a migration process.
+    #
+    # @return [Boolean] true if the application was manually migrated, false otherwise
+    def manually_migrated?
+      origin == :migration && generation_reason == :manual
+    end
+
     private
 
     # Records the transition of the application state.

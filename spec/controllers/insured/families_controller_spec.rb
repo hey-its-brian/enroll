@@ -526,7 +526,9 @@ RSpec.describe Insured::FamiliesController, dbclean: :after_each do
         let(:previous_year_faa_application_needing_verifications) { FactoryBot.create(:financial_assistance_application, family: family) }
 
         before do
-          allow(family).to receive(:previous_year_faa_application_needing_verifications).and_return(previous_year_faa_application_needing_verifications)
+          allow(family).to receive(:previous_year_faa_app_info_needing_evidence_display).and_return(
+            { application_type: :faa, application: previous_year_faa_application_needing_verifications }
+          )
         end
 
         it "assigns previous_year_faa_application_needing_verifications" do
@@ -536,9 +538,8 @@ RSpec.describe Insured::FamiliesController, dbclean: :after_each do
       end
 
       context 'when family does not have a previous year faa application needing verifications' do
-
         before do
-          allow(family).to receive(:previous_year_faa_application_needing_verifications).and_return(nil)
+          allow(family).to receive(:previous_year_faa_app_info_needing_evidence_display).and_return({})
         end
 
         it "does not assign previous_year_faa_application_needing_verifications" do

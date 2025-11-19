@@ -117,6 +117,13 @@ module Eligibilities
         non_esi_mec_evidence.retain_evidence_information(eligibility.non_esi_mec_evidence) if non_esi_mec_evidence.present?
       end
 
+      # Checks if any evidence has an actionable status
+      #
+      # @return [Boolean] true if any evidence has an actionable status, false otherwise
+      def has_actionable_evidences?
+        evidences.any?(&:has_actionable_status?)
+      end
+
       private
 
       # Adds to errors collection if duplicate evidence types are found

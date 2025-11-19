@@ -279,6 +279,22 @@ module DropdownHelper
     end
   end
 
+  # Determine if evidences need to be displayed for a given application
+  #
+  # @param application [FinancialAssistance::Application] the financial assistance application to check
+  #
+  # @return [Boolean] true if evidences need to be displayed, false otherwise
+  def display_evidences_for_application(application)
+    return false unless ::EnrollRegistry.feature_enabled?(:show_previous_year_faa_verifications)
+
+    family = application.family
+    app_info = family.previous_year_faa_app_info_needing_evidence_display
+    return false if app_info.blank?
+    return false if app_info[:application_type] != :faa
+
+    application.hbx_id.to_s == app_info[:application].hbx_id.to_s
+  end
+
   def sbm_faa_dropdown(application, year, draft_application, alt_year)
     option_args = []
 
@@ -286,6 +302,15 @@ module DropdownHelper
     option_args << [l10n("insured.sbm.applications.actions.update_year", year: year), financial_assistance.copy_application_path(application, assistance_year: year), :default]
     option_args << [l10n("insured.sbm.applications.actions.view_eligibility"), financial_assistance.eligibility_results_application_path(application), :default] if application.is_determined? || application.is_terminated?
     option_args << [l10n("insured.sbm.applications.actions.copy_to_alt_year", alt_year: alt_year), financial_assistance.copy_application_path(application, assistance_year: alt_year), :default] if alt_year.present?
+
+    # Add Application Verifications link if evidences need to be displayed
+    if display_evidences_for_application(application)
+      option_args << [
+        l10n('insured.sbm.applications.actions.view_evidences'),
+        'javascript:void(0)',
+        :default
+      ]
+    end
 
     if current_user.has_hbx_staff_role? && FinancialAssistanceRegistry.feature_enabled?(:transfer_history_page)
       option_args << (

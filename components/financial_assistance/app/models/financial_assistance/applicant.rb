@@ -1975,6 +1975,13 @@ module FinancialAssistance
       end
     end
 
+    # Checks if there are any actionable evidences for the APTC/CSR eligibility.
+    #
+    # @return [Boolean] true if any evidence has an actionable status, false otherwise
+    def has_actionable_aptc_evidences?
+      aptc_csr_eligibility.has_actionable_evidences?
+    end
+
     private
 
     # Builds evidences for the individual market eligibility.

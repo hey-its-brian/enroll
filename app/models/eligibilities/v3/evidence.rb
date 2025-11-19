@@ -30,6 +30,14 @@ module Eligibilities
       # Accepted states
       STATUSES = %i[initial verification_succeeded verification_failed].freeze
 
+      # Actionable statuses
+      #
+      # A list of statuses that require action from the user or admin.
+      #
+      # @return [Array<Symbol>] List of actionable statuses
+      # @note Do not modify this list without considering the impact on the user workflow especially the Application Level Evidence/DataMatchingInconsistency/Verification Display.
+      ACTIONABLE_STATUSES = %i[outstanding in_review rejected negative_response_received].freeze
+
       # key stores information about which type of evidence it is.
       # income_evidence, local_mec_evidence, esi_mec_evidence, non_esi_mec_evidence, citizenship_evidence, immigration_status_evidence
       field :key, type: String
@@ -76,6 +84,13 @@ module Eligibilities
 
         self.due_on = extend_by
         build_verification_history(action, reason, modified_by)
+      end
+
+      # Checks if the evidence has an actionable status
+      #
+      # @return [Boolean] true if the evidence is in an actionable status, false otherwise
+      def has_actionable_status?
+        ACTIONABLE_STATUSES.include?(self.current_state)
       end
     end
   end

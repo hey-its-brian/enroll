@@ -1085,4 +1085,60 @@ RSpec.describe DropdownHelper, type: :helper do
       end
     end
   end
+
+  describe '#display_evidences_for_application' do
+    let(:double_family) { double('Family') }
+    let(:application) { double('FinancialAssistance::Application', hbx_id: 'some_hbx_id', family: double_family) }
+    let(:qhp_application) { double('IndividualMarket::Application', family: double_family) }
+
+    context 'when :show_previous_year_faa_verifications is disabled' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_previous_year_faa_verifications).and_return(false)
+      end
+
+      it 'returns false' do
+        expect(helper.display_evidences_for_application(application)).to be false
+      end
+    end
+
+    context 'when :show_previous_year_faa_verifications is enabled' do
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_previous_year_faa_verifications).and_return(true)
+      end
+
+      context 'when previous_year_faa_app_info_needing_evidence_display returns empty hash' do
+        before do
+          allow(double_family).to receive(:previous_year_faa_app_info_needing_evidence_display).and_return({})
+        end
+
+        it 'returns false' do
+          expect(helper.display_evidences_for_application(application)).to be false
+        end
+      end
+
+      context 'when previous_year_faa_app_info_needing_evidence_display returns a hash with application_type that does not include :faa' do
+        before do
+          allow(double_family).to receive(:previous_year_faa_app_info_needing_evidence_display).and_return(
+            { application_type: :qhp, application: qhp_application }
+          )
+        end
+
+        it 'returns false' do
+          expect(helper.display_evidences_for_application(application)).to be false
+        end
+      end
+
+      context 'when previous_year_faa_app_info_needing_evidence_display returns a hash with application_type that includes :faa and hbx_id matches' do
+        before do
+          allow(double_family).to receive(:previous_year_faa_app_info_needing_evidence_display).and_return(
+            { application_type: :faa, application: application }
+          )
+        end
+
+        it 'returns true' do
+          expect(helper.display_evidences_for_application(application)).to be true
+        end
+      end
+    end
+  end
 end
