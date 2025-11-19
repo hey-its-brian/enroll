@@ -31,9 +31,11 @@ CSV.open(file_path, "w+", headers: true) do |csv|
     batch.each do |person|
       next if person.addresses.blank?
 
-      # Will export one row per invalid address (could be multiple per person)
       person.addresses.each do |address|
-        if address.county.blank? || address.zip.blank?
+        next unless address.state.to_s.strip.upcase == "ME"
+        zip_code = address.zip.to_s.strip[0,5]
+
+        if address.county.blank? || zip_code.blank?
           csv << [
             person.hbx_id,
             address.zip,
@@ -43,7 +45,7 @@ CSV.open(file_path, "w+", headers: true) do |csv|
             "Missing ZIP or County"
           ]
         else
-          pair = [address.county.to_s.downcase.strip, address.zip.to_s.strip]
+          pair = [address.county.to_s.downcase.strip, zip_code]
           unless valid_pairs.include?(pair)
             csv << [
               person.hbx_id,

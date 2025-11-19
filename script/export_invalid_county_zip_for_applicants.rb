@@ -8,7 +8,6 @@
 #
 # The generated CSV file will be saved to tmp/invalid_county_zip_report_TIMESTAMP.csv
 
-
 require 'csv'
 require 'set'
 
@@ -20,24 +19,44 @@ timestamp = Time.now.strftime("%Y%m%d%H%M%S")
 file_path = Rails.root.join("tmp", "invalid_county_zip_report_#{timestamp}.csv")
 
 CSV.open(file_path, "w+", headers: true) do |csv|
-  csv << ["person_hbx_id", "application_hbx_id", "assistance_year", "application_aasm_state", "address_zip", "address_kind", "address_county", "address_created_at", "reason"]
+  csv << [
+    "person_hbx_id",
+    "application_hbx_id",
+    "assistance_year",
+    "application_aasm_state",
+    "address_zip",
+    "address_kind",
+    "address_county",
+    "address_created_at",
+    "reason"
+  ]
 
   batch_size = 10_000
-  applications = ::FinancialAssistance::Application.all
-  total_count = applications.count
+  families = Family.all
+  total_count = families.count
   number_of_batches = (total_count / batch_size.to_f).ceil
 
   number_of_batches.times do |batch_index|
     offset = batch_index * batch_size
-    batch = applications.skip(offset).limit(batch_size)
-    batch.each do |application|
+    batch = families.skip(offset).limit(batch_size)
+
+    batch.each do |family|
+      application = family.latest_determined_faa_application
+      next unless application.present?
+
+      next unless [2025, 2026].include?(application.assistance_year)
+
       next unless application.applicants.present?
 
       application.applicants.each do |applicant|
         next if applicant.addresses.blank?
 
         applicant.addresses.each do |address|
-          if address.county.blank? || address.zip.blank?
+          next unless address.state.to_s.strip.upcase == "ME"
+
+          zip_code = address.zip.to_s.strip[0, 5]
+
+          if address.county.blank? || zip_code.blank?
             csv << [
               application&.primary_applicant&.person_hbx_id,
               application&.hbx_id,
@@ -50,7 +69,9 @@ CSV.open(file_path, "w+", headers: true) do |csv|
               "Missing ZIP or County"
             ]
           else
-            pair = [address.county.to_s.downcase.strip, address.zip.to_s.strip]
+            # Compare against 5-digit ZIP
+            pair = [address.county.to_s.downcase.strip, zip_code]
+
             unless valid_pairs.include?(pair)
               csv << [
                 application&.primary_applicant&.person_hbx_id,
