@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.shared_context 'valid cv3 application setup', :shared_context => :metadata do
-  let(:person) { FactoryBot.create(:person, :with_consumer_role, hbx_id: '100095') }
+  let(:person) { FactoryBot.create(:person, :with_consumer_role, hbx_id: '100095', ssn: '889984400') }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
   let(:has_enrolled_health_coverage) { true }
   let(:is_primary_applicant) { true }
@@ -16,11 +16,12 @@ RSpec.shared_context 'valid cv3 application setup', :shared_context => :metadata
       application: application,
       is_primary_applicant: is_primary_applicant,
       ssn: '889984400',
-      dob: Date.new(1994,11,17),
+      dob: person.dob,
       first_name: person.first_name,
       last_name: person.last_name,
       gender: person.gender,
       person_hbx_id: person.hbx_id,
+      family_member_id: family.family_members.where(person_id: person.id).first.id,
       eligibility_determination_id: eligibility_determination.id,
       has_enrolled_health_coverage: has_enrolled_health_coverage,
       benchmark_premiums: {

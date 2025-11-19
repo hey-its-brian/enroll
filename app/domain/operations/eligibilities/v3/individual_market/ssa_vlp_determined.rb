@@ -346,8 +346,11 @@ module Operations
           # @param evidence_entity [AcaEntities::MagiMedicaid::Evidence] The evidence entity from the response
           # @return [void]
           def update_evidence(evidence, evidence_entity)
-            if evidence_entity.current_state == :attested
+            case evidence_entity.current_state
+            when :attested
               evidence.mark_as_verified
+            when :failed
+              evidence.eligible_state(@call_type)
             else
               evidence.determine_outstanding_state(@call_type)
             end
