@@ -2004,7 +2004,7 @@ class Family
     ::FinancialAssistance::Application.where(
       family_id: id, assistance_year: { '$in' => years }, aasm_state: :determined
     ).only(
-      :hbx_id, :assistance_year, :submitted_at, :aasm_state, :family_id, :'applicants.aasm_state', :'applicants.eligibilities', :origin, :generation_reason
+      :hbx_id, :assistance_year, :submitted_at, :aasm_state, :family_id, :applicants, :origin, :generation_reason
     ).to_a
   end
 
