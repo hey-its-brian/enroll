@@ -21,6 +21,13 @@ class FamilyPolicy < ApplicationPolicy
     show?
   end
 
+  # Determines if the current user has permission to view the list of evidences for previous application.
+  #
+  # @return [Boolean] Returns true if the user has permission to view the list of evidences, false otherwise.
+  def evidences?
+    show?
+  end
+
   # Determines if the current user has permission to view the list of family applications.
   # The user can view the list if they have permission to view a single record.
   #

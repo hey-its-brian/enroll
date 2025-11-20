@@ -7,7 +7,7 @@
     title: type_name,
     evidence: @evidence,
     member: @member,
-    navigation: verification_navigation(@member, @evidence),
+    navigation: verification_navigation(@member, @evidence, display_previous_evidences: false),
     summary_rows: [:member, :member_status, :status, :update_reason, :due_on],
     is_back_nav_primary: !display_upload_for_verification?(@evidence),
     display_application_id: true
@@ -35,7 +35,7 @@
 
   <section class="mb-4">
     <h2><%= l10n('insured.families.verifications.detail.document_upload') %></h2>
-    <% query = verification_upload_query(@evidence, @family) %>
+    <% query = verification_upload_query(@evidence, @family, display_previous_evidences: false) %>
     <% attachable = false %>
     <%= form_tag query[:url], multipart: true, method: :post, :'data-controller' => ("file-manager" if attachable), :'data-action' => 'file-manager#submitForm' do %>
       <% query[:params].each do |name, value| %>
@@ -101,7 +101,7 @@
             <td class='col-7'><%= document.title.titleize %></td>
             <td class='col-3'><%= document.created_at %></td>
             <td class='col-2'>
-              <% dropdowns = qhp_application_feature_enabled? ? qhp_enabled_verification_dropdowns(@evidence, document) : verification_dropdowns(@evidence, document)  %>
+              <% dropdowns = qhp_application_feature_enabled? ? qhp_enabled_verification_dropdowns(@evidence, document, evidence: nil, display_previous_evidences: false) : verification_dropdowns(@evidence, document)  %>
               <%= render partial: 'datatables/shared/dropdown', locals: {dropdowns: dropdowns} %>
             </td>
           </tr>
@@ -113,7 +113,7 @@
 
   <% if qhp_application_feature_enabled? && @evidence.evidence_group != 'ridp' %>
     <div class="d-flex justify-content-start">
-      <%= link_to l10n('insured.families.verifications.detail.view_upload_history'), evidence_document_history_link(@evidence), class: 'btn btn-secondary' %>
+      <%= link_to l10n('insured.families.verifications.detail.view_upload_history'), evidence_document_history_link(@evidence, display_previous_evidences: false), class: 'btn btn-secondary' %>
     </div>
   <% end %>
 </section>
@@ -127,7 +127,7 @@
     <h2 class="admin-designation"><%= l10n('insured.families.verifications.detail.admin_tools') %></h2>
     <% if options.present? %>
       <section class="mb-3">
-        <% actions_hash = verification_admin_actions(@evidence, @family) %>
+        <% actions_hash = verification_admin_actions(@evidence, @family, display_previous_evidences: false) %>
         <label class="v-type-actions">
           <%= l10n('action') %>
           <div><%= select_tag :verification_actions, options_for_select(options), {id: "v-action-#{actions_hash[:id]}", class: 'col-4', prompt: l10n("insured.consumer_roles.upload_ridp_documents.select_action")} %></div>

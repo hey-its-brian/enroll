@@ -154,6 +154,39 @@ module IndividualMarket
       eligibilities.where(_type: 'Eligibilities::V3::IndividualMarketEligibility').first
     end
 
+    def uploadable_eligibilities
+      [
+        [aptc_csr_eligibility, individual_market_eligibility].compact.reduce(:+)
+      ].compact
+    end
+
+    def find_action_items_and_sort
+      action_items = uploadable_eligibilities.map do |state|
+        state.evidences.select{|evidence| [:outstanding, :rejected].include?(evidence.current_state)}
+      end.flatten
+
+      sorted_action_items = action_items.sort_by { |evidence| evidence.due_on || Float::INFINITY }
+      sorted_action_items.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
+    end
+
+    def documents_action_needed?
+      cumulative_grouped_status == :action_needed
+    end
+
+    def cumulative_grouped_status
+      evidences = uploadable_eligibilities.flat_map(&:evidences)
+
+      return :action_needed if evidences.any? { |evidence| [:outstanding, :rejected].include?(evidence.current_state) }
+      return :review if evidences.any? { |evidence| evidence.current_state == :review }
+
+      :verified
+    end
+
+    def earliest_due_date
+      evidences = uploadable_eligibilities.flat_map(&:evidences)
+      evidences.collect(&:due_on).compact.min
+    end
+
     def find_person
       ssn = SymmetricEncryption.decrypt(demographics.encrypted_ssn)
       match_criteria, records = ::Operations::People::Match.new.call({:dob => demographics.dob,

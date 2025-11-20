@@ -239,7 +239,7 @@ module DropdownHelper
     construct_options(option_args)
   end
 
-  def qhp_enabled_verification_dropdowns(evidence_delegator, document, evidence = nil)
+  def qhp_enabled_verification_dropdowns(evidence_delegator, document, evidence: nil, display_previous_evidences: false)
     doc_key = document.identifier.split('#').last
 
     return construct_options([[l10n('download'), "/insured/ridp_documents/download/#{doc_key}", :blank_target]]) if evidence_delegator.evidence_group == 'ridp'
@@ -261,7 +261,8 @@ module DropdownHelper
       applicant: applicant,
       person: person,
       evidence_delegator: evidence_delegator,
-      doc_key: doc_key
+      doc_key: doc_key,
+      display_previous_evidences: display_previous_evidences
     }
 
     # Build options array
@@ -303,11 +304,11 @@ module DropdownHelper
     option_args << [l10n("insured.sbm.applications.actions.view_eligibility"), financial_assistance.eligibility_results_application_path(application), :default] if application.is_determined? || application.is_terminated?
     option_args << [l10n("insured.sbm.applications.actions.copy_to_alt_year", alt_year: alt_year), financial_assistance.copy_application_path(application, assistance_year: alt_year), :default] if alt_year.present?
 
-    # Add Application Verifications link if evidences need to be displayed
     if display_evidences_for_application(application)
+      application_gid = application.to_global_id.uri.to_s
       option_args << [
         l10n('insured.sbm.applications.actions.view_evidences'),
-        'javascript:void(0)',
+        main_app.evidences_insured_sbm_application_path(application, application_gid: application_gid),
         :default
       ]
     end
@@ -414,7 +415,8 @@ module DropdownHelper
         person_id: context[:person].id,
         eligibility_kind: context[:evidence_delegator].evidence_group,
         evidence_key: context[:evidence_delegator].evidence_item_key,
-        key: context[:doc_key]
+        key: context[:doc_key],
+        display_previous_evidences: context[:display_previous_evidences]
       ),
       :blank_target
     ]
@@ -431,7 +433,8 @@ module DropdownHelper
         person_id: context[:person].id,
         eligibility_kind: context[:evidence_delegator].evidence_group,
         evidence_key: context[:evidence_delegator].evidence_item_key,
-        doc_key: context[:doc_key]
+        doc_key: context[:doc_key],
+        display_previous_evidences: context[:display_previous_evidences]
       ),
       :delete
     ]

@@ -21,7 +21,7 @@ module Operations
             member       = yield find_member(family: valid_params[:family], subject: subject)
             evidence     = find_evidence(valid_params, subject)
 
-            Success(member: member, evidence: evidence)
+            Success(member: member, evidence: evidence, display_previous_evidences: false)
           end
 
           private
@@ -69,7 +69,7 @@ module Operations
             evidence = family_member&.find_latest_determined_application_with_evidence_key(evidence_key)
             return Failure("Inactive evidence \"#{evidence_key.gsub(/\W+/, '')&.titleize}\" not found for #{subject.full_name}") unless evidence.present?
 
-            Success(::Adapters::EvidenceAdapter.new(evidence))
+            Success(::Adapters::EvidenceAdapter.new(evidence, :inactive))
           end
 
           def find_evidence(valid_params, subject)

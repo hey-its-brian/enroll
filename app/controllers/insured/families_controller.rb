@@ -267,12 +267,19 @@ class Insured::FamiliesController < FamiliesController
   def verification_individual
     authorize @family, :verification_individual?
 
-    result = Operations::Families::Verifications::Summary::IndividualQuery.new.call(family: @family, person_id: params[:person_id])
+    result = if params[:application_gid].present? && params[:applicant_id].present?
+               Operations::Sbm::Applications::Applicants::ApplicantQuery.new.call({application_gid: params[:application_gid], applicant_id: params[:applicant_id]})
+             else
+               Operations::Families::Verifications::Summary::IndividualQuery.new.call(family: @family, person_id: params[:person_id])
+             end
+
     if result.success?
       value = result.value!
 
       @member = value[:member]
       @evidences = value[:evidences]
+      @display_previous_evidences = value[:display_previous_evidences]
+      @previous_application = value[:application] if @display_previous_evidences
     else
       redirect_back(fallback_location: verification_insured_families_path, :flash => {error: result.failure})
     end

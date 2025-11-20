@@ -128,19 +128,32 @@ module Eligibilities
       # @return [void]
       # @note This method is only used for the V3 evidence verification process.
       def set_evidence_context
-        result = Operations::Families::Verifications::Summary::EvidenceQuery.new.call(
-          family: @application.family,
-          person_id: params[:person_id],
-          evidence_key: params[:evidence_key],
-          eligibility_kind: params[:eligibility_kind],
-          inactive: params[:inactive]
-        )
+        result = if params[:display_previous_evidences] == 'true'
+                   Operations::Sbm::Applications::Applicants::EvidenceQuery.new.call(
+                     family: @family,
+                     person_id: params[:person_id],
+                     evidence_key: params[:evidence_key],
+                     eligibility_kind: params[:eligibility_kind],
+                     inactive: params[:inactive],
+                     application: @application,
+                     applicant: @applicant
+                   )
+                 else
+                   Operations::Families::Verifications::Summary::EvidenceQuery.new.call(
+                     family: @family,
+                     person_id: params[:person_id],
+                     evidence_key: params[:evidence_key],
+                     eligibility_kind: params[:eligibility_kind],
+                     inactive: params[:inactive]
+                   )
+                 end
 
         if result.success?
           value = result.value!
 
           @member = value[:member]
           @evidence_delegator = value[:evidence]
+          @display_previous_evidences = value[:display_previous_evidences]
         else
           redirect_back(fallback_location: verification_insured_families_path, :flash => {error: result.failure})
         end
@@ -164,7 +177,8 @@ module Eligibilities
               person_id: params[:person_id],
               eligibility_kind: params[:eligibility_kind],
               evidence_key: params[:evidence_key],
-              family_id: @family.id
+              family_id: @family.id,
+              display_previous_evidences: params[:display_previous_evidences]
             )
           else
             verification_detail_insured_families_path(

@@ -10,7 +10,7 @@
     <tbody>
       <% evidences.each do |evidence| %>
         <% is_action_needed = evidence.is_action_needed? %>
-        <% link = qhp_application_feature_enabled? && evidence.evidence_group != "ridp" ? evidence_details_link(evidence) : verification_detail_insured_families_path(evidence.detail_params)  %>
+        <% link = qhp_application_feature_enabled? && evidence.evidence_group != "ridp" ? evidence_details_link(evidence, display_previous_evidences: @display_previous_evidences) : verification_detail_insured_families_path(evidence.detail_params)  %>
         <tr data-href=<%= link %>>
           <td class="<%= 'admin-designation' if current_user.has_hbx_staff_role? && !can_display_type?(evidence, is_admin: false) %>">
             <%= strong_if(is_strong: is_action_needed) do display_verification_type_name(evidence.evidence_item_key) end %>

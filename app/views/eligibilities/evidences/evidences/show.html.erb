@@ -7,7 +7,7 @@
   title: type_name,
   evidence: @evidence_delegator,
   member: @member,
-  navigation: verification_navigation(@member, @evidence_delegator),
+  navigation: verification_navigation(@member, @evidence_delegator, display_previous_evidences: @display_previous_evidences),
   summary_rows: [:member, :member_status, :status, :update_reason, :due_on],
   is_back_nav_primary: !display_upload_for_verification?(@evidence_delegator),
   display_application_id: true
@@ -35,7 +35,7 @@
 
   <section class="mb-4">
     <h2><%= l10n('insured.families.verifications.detail.document_upload') %></h2>
-    <% query = verification_upload_query(@evidence_delegator, @family) %>
+    <% query = verification_upload_query(@evidence_delegator, @family, display_previous_evidences: @display_previous_evidences) %>
     <% attachable = false %>
     <%= form_tag query[:url], multipart: true, method: :post, :'data-controller' => ("file-manager" if attachable), :'data-action' => 'file-manager#submitForm' do %>
       <% query[:params].each do |name, value| %>
@@ -101,7 +101,7 @@
             <td class='col-7'><%= document.title.titleize %></td>
             <td class='col-3'><%= document.created_at %></td>
             <td class='col-2'>
-              <% dropdowns = qhp_application_feature_enabled? ? qhp_enabled_verification_dropdowns(@evidence_delegator, document) : verification_dropdowns(@evidence_delegator, document)  %>
+              <% dropdowns = qhp_application_feature_enabled? ? qhp_enabled_verification_dropdowns(@evidence_delegator, document, evidence: nil, display_previous_evidences: @display_previous_evidences) : verification_dropdowns(@evidence_delegator, document)  %>
               <%= render partial: 'datatables/shared/dropdown', locals: {dropdowns: dropdowns} %>
             </td>
           </tr>
@@ -113,13 +113,13 @@
 
   <% if qhp_application_feature_enabled? && @evidence_delegator.evidence_group != 'ridp' %>
     <div class="d-flex justify-content-start">
-      <%= link_to l10n('insured.families.verifications.detail.view_upload_history'), evidence_document_history_link(@evidence_delegator), class: 'btn btn-secondary' %>
+      <%= link_to l10n('insured.families.verifications.detail.view_upload_history'), evidence_document_history_link(@evidence_delegator, display_previous_evidences: @display_previous_evidences), class: 'btn btn-secondary' %>
     </div>
   <% end %>
 </section>
 
 
-<% admin_actions = admin_actions(@evidence_delegator, @member.person) %>
+<% admin_actions = admin_actions(@evidence_delegator, @member.person, display_previous_evidences: @display_previous_evidences) %>
 <% if current_user.has_hbx_staff_role? && admin_actions.values.any?(&:present?) %>
   <% can_view_history = admin_actions[:can_view_history] %>
   <% options = admin_actions[:options] %>
@@ -127,7 +127,7 @@
     <h2 class="admin-designation"><%= l10n('insured.families.verifications.detail.admin_tools') %></h2>
     <% if options.present? %>
       <section class="mb-3">
-        <% actions_hash = verification_admin_actions(@evidence_delegator, @family) %>
+        <% actions_hash = verification_admin_actions(@evidence_delegator, @family, display_previous_evidences: @display_previous_evidences) %>
         <label class="v-type-actions">
           <%= l10n('action') %>
           <div><%= select_tag :verification_actions, options_for_select(options), {id: "v-action-#{actions_hash[:id]}", class: 'col-4', prompt: l10n("insured.consumer_roles.upload_ridp_documents.select_action")} %></div>
@@ -153,6 +153,7 @@
             <%= hidden_field_tag :person_id, params[:person_id] %>
             <%= hidden_field_tag :eligibility_kind, params[:eligibility_kind] %>
             <%= hidden_field_tag :evidence_key, params[:evidence_key] %>
+            <%= hidden_field_tag :display_previous_evidences, @display_previous_evidences %>
           <% end %>
         </div>
 
@@ -172,7 +173,7 @@
               <% @applications&.each do |application| %>
                 <tr>
                   <% evidence = @application_evidence_mapping[application.hbx_id] %>
-                  <td><%= link_to application.hbx_id, evidence_history_link(@evidence_delegator, evidence), class: 'primary-text' %></td>
+                  <td><%= link_to application.hbx_id, evidence_history_link(@evidence_delegator, evidence: evidence, display_previous_evidences: @display_previous_evidences), class: 'primary-text' %></td>
                   <td><%= fetch_program_eligibility(application) %></td>
                   <td><%= application_state_for_display(application) %></td>
                   <td><%= to_est application.created_at %></td>

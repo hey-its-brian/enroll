@@ -86,6 +86,16 @@ RSpec.describe Adapters::EvidenceAdapter, dbclean: :after_each do
       end
     end
 
+    context 'Eligibility ESI evidence' do
+      it 'initializes and sets the adapter' do
+        result
+        adapter = Adapters::EvidenceAdapter.new(esi_evidence)
+        expect(adapter.history).to be_present
+        expect(adapter.person.hbx_id).to eq person.hbx_id
+        expect(adapter.locate_evidence).to eq esi_evidence
+      end
+    end
+
     context 'aca_individual_credit state' do
       it 'initializes and sets the adapter' do
         result
@@ -100,7 +110,7 @@ RSpec.describe Adapters::EvidenceAdapter, dbclean: :after_each do
       it 'initializes and sets the adapter' do
         result
         evidence = ai_an_evidence
-        adapter = Adapters::EvidenceAdapter.new(evidence)
+        adapter = Adapters::EvidenceAdapter.new(evidence, :inactive)
         expect(adapter.history).to be_present
         expect(adapter.person.hbx_id).to eq person.hbx_id
         expect(adapter.inactive).to be true

@@ -161,14 +161,14 @@ module NavigationHelper
     ]
   end
 
-  def verification_navigation(member, evidence)
+  def verification_navigation(member, evidence, display_previous_evidences: false)
     steps = {
       "verification" => {title: l10n('insured.families.verifications'), link: main_app.verification_insured_families_path(tab: 'verification')},
-      "verification_individual" => {title: l10n('insured.families.verifications.individual'), link: verification_individual_insured_families_path(person_id: member&.person_id)}
+      "verification_individual" => {title: l10n('insured.families.verifications.individual'), link: fetch_verification_individual_link(member, evidence, display_previous_evidences)}
     }
 
     if qhp_application_feature_enabled? && evidence.present? && evidence.evidence_group != 'ridp'
-      steps["show"] = {title: l10n('insured.families.verifications.detail'), link: evidence_details_link(evidence)}
+      steps["show"] = {title: l10n('insured.families.verifications.detail'), link: evidence_details_link(evidence, display_previous_evidences: display_previous_evidences)}
     else
       steps["verification_detail"] = {title: l10n('insured.families.verifications.detail'), link: main_app.verification_detail_insured_families_path(evidence&.detail_params)}
     end
@@ -198,6 +198,27 @@ module NavigationHelper
       { breadcrumbs: steps.values[0..current_step_index], previous_step: steps.values[current_step_index - 1] }
     else
       { breadcrumbs: steps.values[0..2], previous_step: steps.values[1] }
+    end
+  end
+
+  def fetch_verification_link(display_previous_evidences, evidence)
+    if display_previous_evidences
+      applicant = evidence.locate_evidence.eligibility.eligible
+      application = applicant.application
+      verifications_insured_sbm_applications_path(application_gid: application.to_global_id.uri.to_s)
+    else
+      main_app.verification_insured_families_path(tab: 'verification')
+    end
+  end
+
+  def fetch_verification_individual_link(member, evidence, display_previous_evidences)
+    if display_previous_evidences
+      applicant = evidence.locate_evidence.eligibility.eligible
+      application = applicant.application
+      application_gid = application.to_global_id.uri.to_s
+      verification_individual_insured_families_path(application_gid: application_gid, applicant_id: applicant.id.to_s)
+    else
+      verification_individual_insured_families_path(person_id: member&.person_id)
     end
   end
 

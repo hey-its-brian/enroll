@@ -1709,6 +1709,39 @@ module FinancialAssistance
       eligibilities.where(_type: 'Eligibilities::V3::IndividualMarketEligibility').first
     end
 
+    def uploadable_eligibilities
+      eligibilities.select do |eligibility|
+        eligibility.is_a?(Eligibilities::V3::AptcCsrEligibility) || eligibility.is_a?(Eligibilities::V3::IndividualMarketEligibility)
+      end
+    end
+
+    def find_action_items_and_sort
+      action_items = uploadable_eligibilities.map do |state|
+        state.evidences.select{|evidence| [:outstanding, :rejected].include?(evidence.current_state)}
+      end.flatten
+
+      sorted_action_items = action_items.sort_by { |evidence| evidence.due_on || Float::INFINITY }
+      sorted_action_items.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
+    end
+
+    def documents_action_needed?
+      cumulative_grouped_status == :action_needed
+    end
+
+    def cumulative_grouped_status
+      evidences = uploadable_eligibilities.flat_map(&:evidences)
+
+      return :action_needed if evidences.any? { |evidence| [:outstanding, :rejected].include?(evidence.current_state) }
+      return :review if evidences.any? { |evidence| evidence.current_state == :review }
+
+      :verified
+    end
+
+    def earliest_due_date
+      evidences = uploadable_eligibilities.flat_map(&:evidences)
+      evidences.collect(&:due_on).compact.min
+    end
+
     # Method to build Individual Market Eligibility and evidences for the applicant.
     #   It creates Individual Market Eligibility if it does not exist.
     #   It calls the method to build evidences for Individual Market Eligibility if they do not exist.

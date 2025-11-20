@@ -6,6 +6,7 @@
     <%= hidden_field_tag 'eligibility_kind', eligibility_kind %>
     <%= hidden_field_tag 'evidence_key', evidence_key %>
     <%= hidden_field_tag 'admin_action', 'verify' %>
+    <%= hidden_field_tag 'display_previous_evidences', display_previous_evidences %>
     <div class='mb-2'>
       <label>
         <%= l10n('admin.verifications.verify_reason') %>
@@ -33,6 +34,7 @@
     <%= hidden_field_tag 'eligibility_kind', eligibility_kind %>
     <%= hidden_field_tag 'evidence_key', evidence_key %>
     <%= hidden_field_tag 'admin_action', 'return_for_deficiency' %>
+    <%= hidden_field_tag 'display_previous_evidences', display_previous_evidences %>
     <div class='mb-2'>
       <label>
         <%= l10n('admin.verifications.reject_reason') %>
@@ -54,6 +56,7 @@
     <%= hidden_field_tag 'eligibility_kind', eligibility_kind %>
     <%= hidden_field_tag 'evidence_key', evidence_key %>
     <%= hidden_field_tag 'admin_action', 'hub_request' %>
+    <%= hidden_field_tag 'display_previous_evidences', display_previous_evidences %>
     <%= submit_tag "Confirm", class: "btn btn-default v-type-confirm-button" %>
   <% end %>
 </div>
@@ -69,6 +72,7 @@
     <%= hidden_field_tag 'eligibility_kind', eligibility_kind %>
     <%= hidden_field_tag 'evidence_key', evidence_key %>
     <%= hidden_field_tag 'admin_action', 'extend' %>
+    <%= hidden_field_tag 'display_previous_evidences', display_previous_evidences %>
     <% if EnrollRegistry.feature_enabled?(:verification_due_on_options) %>
       <label class="my-3" id="due-on-options">
         <%= l10n('admin.verifications.extend.due_date_options') %>

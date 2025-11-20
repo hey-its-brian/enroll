@@ -92,6 +92,113 @@ RSpec.describe Insured::Sbm::ApplicationsController, dbclean: :after_each do
     end
   end
 
+  describe 'GET #evidences' do
+    let(:person2) { FactoryBot.create(:person, :with_consumer_role)}
+    let(:application) do
+      FactoryBot.create(
+        :financial_assistance_application,
+        family_id: family.id,
+        aasm_state: 'determined',
+        submitted_at: Time.now,
+        assistance_year: TimeKeeper.date_of_record.year
+      )
+    end
+
+    let(:applicant1) do
+      FactoryBot.create(
+        :financial_assistance_applicant,
+        family_member_id: family.primary_applicant.id,
+        person_hbx_id: person.hbx_id,
+        application: application
+      )
+    end
+
+    let(:applicant2) do
+      FactoryBot.create(
+        :financial_assistance_applicant,
+        family_member_id: family.primary_applicant.id,
+        person_hbx_id: person2.hbx_id,
+        application: application
+      )
+    end
+    let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant1) }
+    let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant1) }
+    let(:aptc_csr_eligibility2) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant2) }
+    let(:ssn_evidence) { FactoryBot.create(:social_security_number_evidence, :with_verification_histories, :outstanding, eligibility: ivl_eligibility) }
+    let(:esi_evidence) { FactoryBot.create(:esi_mec_evidence, :with_verification_histories, :pending, eligibility: aptc_csr_eligibility) }
+    let(:esi_evidence2) { FactoryBot.create(:esi_mec_evidence, :with_verification_histories, :outstanding, eligibility: aptc_csr_eligibility2, due_on: Date.current + 40.days) }
+    let(:income_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories, :verified, eligibility: aptc_csr_eligibility) }
+    let(:application_gid) { application.to_global_id.to_s }
+
+    before do
+      ssn_evidence
+      esi_evidence
+      esi_evidence2
+      income_evidence
+      family.assign_latest_application_gid
+      family.save!
+    end
+
+    context 'when application exists' do
+      before do
+        get :evidences, params: { id: application.id, application_gid: application_gid }
+      end
+
+      it 'assigns the application' do
+        expect(assigns(:application)).to eq(application)
+      end
+
+      it 'assigns applicants from the application' do
+        expect(assigns(:applicants)).to eq(application.applicants)
+      end
+
+      it 'assigns sorted applicants by status and due date' do
+        expect(assigns(:sorted_applicants)).to eq([applicant1, applicant2])
+      end
+
+      it 'assigns flattened action items from all applicants' do
+        expect(assigns(:action_items).map(&:evidence_item_key)).to eq([:social_security_number_evidence, :esi_mec_evidence])
+      end
+
+      it 'renders the evidences template' do
+        expect(response).to render_template('evidences')
+      end
+
+      it 'assigns the family from the application' do
+        expect(assigns(:family)).to eq(application.family)
+      end
+    end
+
+    context 'when application does not exist' do
+      let(:invalid_gid) { 'invalid-gid' }
+
+      before do
+        allow(GlobalID::Locator).to receive(:locate).with(invalid_gid).and_return(nil)
+        get :evidences, params: { id: application.id, application_gid: invalid_gid }
+      end
+
+      it 'sets error flash message' do
+        expect(flash[:error]).to eq('Application not found')
+      end
+
+      it 'redirects to current applications page' do
+        expect(response).to redirect_to(current_applications_insured_sbm_applications_path)
+      end
+    end
+
+    context 'applicant sorting with nil due dates' do
+      before do
+        allow(applicant1).to receive(:earliest_due_date).and_return(nil)
+        allow(applicant2).to receive(:earliest_due_date).and_return(Date.current + 5.days)
+        get :evidences, params: {  id: application.id, application_gid: application_gid }
+      end
+
+      it 'sorts applicants with nil due dates last' do
+        expect(assigns(:sorted_applicants)).to eq([applicant1, applicant2])
+      end
+    end
+  end
+
   describe 'GET #index' do
     let(:filtered_applications_value) do
       {

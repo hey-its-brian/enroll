@@ -6,7 +6,7 @@
   title: l10n('insured.families.verifications.history.type_header', verification_type: display_verification_type_name(@evidence.evidence_item_key)),
   evidence: @evidence,
   member: @member,
-  navigation: verification_navigation(@member, @evidence),
+  navigation: verification_navigation(@member, @evidence, display_previous_evidences: false),
   summary_rows: [:member, :member_status, :status, :update_reason, :due_on],
   is_back_nav_primary: true,
   display_application_id: false

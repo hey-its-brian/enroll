@@ -3,10 +3,11 @@
 require 'rails_helper'
 
 RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_each do
-
+  let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+  let!(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
   let!(:application) do
     FactoryBot.create(:financial_assistance_application,
-                      family_id: BSON::ObjectId.new,
+                      family_id: family.id,
                       aasm_state: 'draft',
                       assistance_year: TimeKeeper.date_of_record.year,
                       effective_date: Date.today)
@@ -17,7 +18,7 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
                       application: application,
                       dob: Date.today - 40.years,
                       is_primary_applicant: true,
-                      family_member_id: BSON::ObjectId.new)
+                      family_member_id: family.primary_applicant.id)
   end
 
   let(:income) do
@@ -3019,6 +3020,154 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
       it 'returns the tribal_names' do
         expect(applicant.tribe_name_display).to eq('Cherokee, Navajo')
       end
+    end
+  end
+
+  describe '#uploadable_eligibilities' do
+    let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+    let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
+
+    before do
+      applicant.eligibilities << aptc_csr_eligibility
+      applicant.eligibilities << ivl_eligibility
+    end
+
+    it 'returns only AptcCsrEligibility and IndividualMarketEligibility' do
+      result = applicant.uploadable_eligibilities
+
+      expect(result.size).to eq(2)
+      expect(result).to include(aptc_csr_eligibility)
+      expect(result).to include(ivl_eligibility)
+    end
+  end
+
+  describe '#find_action_items_and_sort' do
+    let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+    let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
+    let(:outstanding_evidence) { FactoryBot.create(:esi_mec_evidence, :with_verification_histories, :outstanding, eligibility: aptc_csr_eligibility, due_on: 2.days.from_now) }
+    let(:verified_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories, :verified, eligibility: aptc_csr_eligibility) }
+    let(:rejected_evidence) { FactoryBot.create(:non_esi_mec_evidence, :with_verification_histories, :rejected, eligibility: aptc_csr_eligibility, due_on: 1.days.from_now) }
+
+    before do
+      aptc_csr_eligibility.evidences << outstanding_evidence
+      aptc_csr_eligibility.evidences << verified_evidence
+      aptc_csr_eligibility.evidences << rejected_evidence
+
+      applicant.eligibilities << aptc_csr_eligibility
+      applicant.eligibilities << ivl_eligibility
+
+      allow(::Adapters::EvidenceAdapter).to receive(:new).and_call_original
+    end
+
+    it 'returns only outstanding and rejected evidences' do
+      result = applicant.find_action_items_and_sort
+
+      expect(result.size).to eq(2)
+    end
+
+    it 'wraps each evidence in EvidenceAdapter' do
+      applicant.find_action_items_and_sort
+
+      expect(::Adapters::EvidenceAdapter).to have_received(:new).exactly(2).times
+    end
+
+    it 'returns empty array when no action items exist' do
+      aptc_csr_eligibility.evidences.clear
+      aptc_csr_eligibility.evidences << verified_evidence
+
+      expect(applicant.find_action_items_and_sort).to be_empty
+    end
+  end
+
+  describe '#documents_action_needed?' do
+    it 'returns true when cumulative_grouped_status is :action_needed' do
+      allow(applicant).to receive(:cumulative_grouped_status).and_return(:action_needed)
+
+      expect(applicant.documents_action_needed?).to be true
+    end
+
+    it 'returns false when cumulative_grouped_status is not :action_needed' do
+      allow(applicant).to receive(:cumulative_grouped_status).and_return(:verified)
+
+      expect(applicant.documents_action_needed?).to be false
+    end
+  end
+
+  describe '#cumulative_grouped_status' do
+    let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+    let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
+    let(:outstanding_evidence) { FactoryBot.create(:esi_mec_evidence, :with_verification_histories, :outstanding, eligibility: aptc_csr_eligibility, due_on: 2.days.from_now) }
+    let(:verified_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories, :verified, eligibility: aptc_csr_eligibility) }
+    let(:rejected_evidence) { FactoryBot.create(:non_esi_mec_evidence, :with_verification_histories, :rejected, eligibility: aptc_csr_eligibility, due_on: 1.days.from_now) }
+    let(:review_evidence) { FactoryBot.create(:social_security_number_evidence, :with_verification_histories, eligibility: ivl_eligibility, due_on: 1.days.from_now, current_state: :review) }
+    let(:ivl_verified_evidence) { FactoryBot.create(:citizenship_evidence, :with_verification_histories, :verified, eligibility: ivl_eligibility) }
+
+    before do
+      applicant.eligibilities << aptc_csr_eligibility
+      applicant.eligibilities << ivl_eligibility
+    end
+
+    it 'returns :action_needed when any evidence is outstanding' do
+      aptc_csr_eligibility.evidences << outstanding_evidence
+      aptc_csr_eligibility.evidences << verified_evidence
+
+      expect(applicant.cumulative_grouped_status).to eq(:action_needed)
+    end
+
+    it 'returns :action_needed when any evidence is rejected' do
+      aptc_csr_eligibility.evidences << rejected_evidence
+      aptc_csr_eligibility.evidences << verified_evidence
+
+      expect(applicant.cumulative_grouped_status).to eq(:action_needed)
+    end
+
+    it 'returns :review when no outstanding/rejected but has review evidence' do
+      ivl_eligibility.evidences << review_evidence
+      aptc_csr_eligibility.evidences << verified_evidence
+
+      expect(applicant.cumulative_grouped_status).to eq(:review)
+    end
+
+    it 'returns :verified when all evidences are verified' do
+      aptc_csr_eligibility.evidences << verified_evidence
+      ivl_eligibility.evidences << ivl_verified_evidence
+
+      expect(applicant.cumulative_grouped_status).to eq(:verified)
+    end
+
+    it 'returns :verified when no evidences exist' do
+      expect(applicant.cumulative_grouped_status).to eq(:verified)
+    end
+  end
+
+  describe '#earliest_due_date' do
+    let(:ivl_eligibility) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+    let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
+    let(:outstanding_evidence) { FactoryBot.create(:esi_mec_evidence, :with_verification_histories, :outstanding, eligibility: aptc_csr_eligibility, due_on: 3.days.from_now) }
+    let(:verified_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories, :verified, eligibility: aptc_csr_eligibility) }
+    let(:rejected_evidence) { FactoryBot.create(:non_esi_mec_evidence, :with_verification_histories, :rejected, eligibility: aptc_csr_eligibility, due_on: 1.days.from_now) }
+
+    before do
+      applicant.eligibilities << aptc_csr_eligibility
+      applicant.eligibilities << ivl_eligibility
+    end
+
+    it 'returns the earliest due date among all evidences' do
+      aptc_csr_eligibility.evidences << outstanding_evidence
+      aptc_csr_eligibility.evidences << verified_evidence
+      aptc_csr_eligibility.evidences << rejected_evidence
+
+      expect(applicant.earliest_due_date).to eq(rejected_evidence.due_on)
+    end
+
+    it 'returns nil when no evidences have due dates' do
+      aptc_csr_eligibility.evidences << verified_evidence
+
+      expect(applicant.earliest_due_date).to be_nil
+    end
+
+    it 'returns nil when no evidences exist' do
+      expect(applicant.earliest_due_date).to be_nil
     end
   end
 end

@@ -380,9 +380,10 @@ module VerificationHelper
     person.consumer_role.ridp_documents.select{|doc| doc.identifier && doc.ridp_verification_type == ridp_type } if person.consumer_role
   end
 
-  def admin_actions(obj, f_member)
+  def admin_actions(obj, f_member, display_previous_evidences: false)
     list = build_admin_actions_list(obj, f_member)
     if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary)
+      list.delete(::VlpDocument::CALL_HUB) if display_previous_evidences
       view_history = list.delete(::VlpDocument::VIEW_HISTORY)
       {options: list, can_view_history: view_history.present?}
     else
@@ -615,22 +616,23 @@ module VerificationHelper
     evidence&.documents&.most_recent_first || []
   end
 
-  def verification_upload_query(evidence, family)
-    group = evidence.evidence_group
+  def verification_upload_query(evidence, family, display_previous_evidences: false)
+    group = evidence.evidence_group.to_s
     return if group == 'ridp'
 
     person = evidence.person
     gid = GlobalID.parse(evidence.evidence_gid).model_id
     case group
-    when 'aca_individual_market_eligibility'
+    when 'aca_individual_market_eligibility', 'individual_market_eligibility'
       query = build_market_eligibility_query(evidence, person, gid)
-    when 'aptc_csr_credit'
+    when 'aptc_csr_credit', 'aptc_csr_eligibility'
       query = build_aptc_csr_query(evidence, person, gid)
     end
     query[:params][:person_id] = person.id
     query[:params][:eligibility_kind] = evidence.evidence_group
     query[:params][:evidence_key] = evidence.evidence_item_key
     query[:params][:family] = family.id
+    query[:params][:display_previous_evidences] = display_previous_evidences
     query
   end
 
@@ -650,22 +652,25 @@ module VerificationHelper
     end
   end
 
-  def evidence_document_history_link(evidence_delegator)
+  def evidence_document_history_link(evidence_delegator, display_previous_evidences: false)
     params = evidence_params(evidence_delegator)
+    merged_params = params.merge!(display_previous_evidences: display_previous_evidences)
 
-    eligibility_evidence_documents_path(params[:eligibility], params[:evidence], params)
+    eligibility_evidence_documents_path(params[:eligibility], params[:evidence], merged_params)
   end
 
-  def evidence_details_link(evidence_delegator)
+  def evidence_details_link(evidence_delegator, display_previous_evidences: false)
     params = evidence_params(evidence_delegator)
+    merged_params = params.merge!(display_previous_evidences: display_previous_evidences)
 
-    eligibility_evidence_path(params[:eligibility], params[:evidence], params)
+    eligibility_evidence_path(params[:eligibility], params[:evidence], merged_params)
   end
 
-  def evidence_history_link(evidence_delegator, evidence = nil)
+  def evidence_history_link(evidence_delegator, evidence: nil, display_previous_evidences: false)
     params = evidence_params(evidence_delegator, evidence)
+    merged_params = params.merge!(display_previous_evidences: display_previous_evidences)
 
-    history_eligibility_evidence_path(params[:eligibility], params[:evidence], params)
+    history_eligibility_evidence_path(params[:eligibility], params[:evidence], merged_params)
   end
 
   def evidence_params(evidence_delegator, evidence = nil)
@@ -727,7 +732,7 @@ module VerificationHelper
     }
   end
 
-  def qhp_enabled_evidence_admin_actions(evidence)
+  def qhp_enabled_evidence_admin_actions(evidence, display_previous_evidences)
     located_evidence = evidence.locate_evidence
     eligibility = located_evidence&.eligibility
     applicant = eligibility&.eligible
@@ -744,14 +749,15 @@ module VerificationHelper
                   eligibility_kind: evidence.evidence_group,
                   eligibility: eligibility,
                   evidence: located_evidence,
-                  evidence_key: evidence_key }
+                  evidence_key: evidence_key,
+                  display_previous_evidences: display_previous_evidences }
       }
     }
   end
 
-  def verification_admin_actions(evidence, family)
+  def verification_admin_actions(evidence, family, display_previous_evidences: false)
     return nil if evidence.evidence_group == 'ridp'
-    return qhp_enabled_evidence_admin_actions(evidence) if qhp_application_feature_enabled?
+    return qhp_enabled_evidence_admin_actions(evidence, display_previous_evidences) if qhp_application_feature_enabled?
 
     person = evidence.person
     case evidence.evidence_group

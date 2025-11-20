@@ -6,7 +6,8 @@
       </div>
       <div class="col mr-auto p-0 align-self-center">
         <!-- TODO: Update this to use the correct link once the link is implemented -->
-        <% link = financial_assistance.review_application_path(application) %>
+        <% application_gid = application.to_global_id.uri.to_s %>
+        <% link = main_app.evidences_insured_sbm_application_path(application, application_gid: application_gid) %>
         <%= l10n('insured.families.verifications.individual.faa_evidence_banner_text') %> <%= link_to l10n('insured.families.verifications.individual.faa_evidence_banner_link_text'), link, class: 'primary-text' %>.
       </div>
     </div>

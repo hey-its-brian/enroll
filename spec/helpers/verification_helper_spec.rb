@@ -1062,6 +1062,48 @@ describe '#display_upload_for_verification?' do
   end
 end
 
+describe "#admin_actions" do
+  let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+  let(:f_member) { family.family_members.first }
+  let(:obj) { double("verification_object") }
+
+  before do
+    allow(helper).to receive(:build_admin_actions_list).and_return(["Verify", "Reject", "Call HUB", "View History"])
+  end
+
+  context "when show_new_verifications_household_summary is enabled" do
+    before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(true)
+    end
+
+    it "returns hash with options and can_view_history" do
+      result = helper.admin_actions(obj, f_member)
+      expect(result).to be_a(Hash)
+      expect(result[:options]).to eq(["Verify", "Reject", "Call HUB"])
+      expect(result[:can_view_history]).to be_truthy
+    end
+
+    it "removes Call HUB when display_previous_evidences is true" do
+      result = helper.admin_actions(obj, f_member, display_previous_evidences: true)
+      expect(result[:options]).to eq(["Verify", "Reject"])
+      expect(result[:can_view_history]).to be_truthy
+    end
+  end
+
+  context "when show_new_verifications_household_summary is disabled" do
+    before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:show_new_verifications_household_summary).and_return(false)
+      allow(helper).to receive(:options_for_select).and_return("formatted_options")
+    end
+
+    it "returns options_for_select result" do
+      result = helper.admin_actions(obj, f_member)
+      expect(result).to eq("formatted_options")
+    end
+  end
+end
+
 describe 'verification actions' do
   let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
@@ -1146,7 +1188,7 @@ describe 'verification actions' do
       evidence_adapter = subject.eligibility_states.by_type_uploadable.flat_map do |state|
         state.evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
       end.first
-      result = helper.send(:verification_upload_query, evidence_adapter, family)
+      result = helper.send(:verification_upload_query, evidence_adapter, family, display_previous_evidences: false)
 
       expect(result[:params][:applicant_id]).to eq(applicant.id)
       expect(result[:params][:eligibility_kind]).to eq("aptc_csr_credit")
@@ -1159,7 +1201,7 @@ describe 'verification actions' do
       evidence_adapter = subject.eligibility_states.by_type_uploadable.flat_map do |state|
         state.evidence_states.map { |evidence| ::Adapters::EvidenceAdapter.new(evidence) }
       end.first
-      result = helper.send(:verification_admin_actions, evidence_adapter, family)
+      result = helper.send(:verification_admin_actions, evidence_adapter, family, display_previous_evidences: false)
 
       expect(result[:partial][:locals][:applicant].id).to eq(applicant.id)
       expect(result[:partial][:locals][:evidence_key]).to eq("income_evidence")

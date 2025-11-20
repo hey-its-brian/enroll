@@ -8,9 +8,20 @@ module Insured
       before_action :set_current_person
       before_action :set_family
       before_action :enable_bs4_layout
-      before_action :set_consumer_bookmark_url
+      before_action :set_consumer_bookmark_url, except: [:evidences]
+      before_action :fetch_application, only: [:evidences]
 
       layout "progress"
+
+      def evidences
+        authorize @family, :evidences?
+
+        @applicants = @application.applicants
+        @sorted_applicants = @applicants.sort_by do |applicant|
+          [applicant.cumulative_grouped_status.to_s, applicant.earliest_due_date || Float::INFINITY]
+        end
+        @action_items = @applicants.flat_map(&:find_action_items_and_sort)
+      end
 
       def current_applications
         authorize @family, :current_applications?
@@ -52,6 +63,18 @@ module Insured
       end
 
       private
+
+      def fetch_application
+        @application = GlobalID::Locator.locate(params[:application_gid])
+        return handle_not_found("Application not found") unless @application
+
+        @family = @application.family
+      end
+
+      def handle_not_found(error_message)
+        flash[:error] = error_message
+        redirect_to current_applications_insured_sbm_applications_path
+      end
 
       def set_prospective_year
         @prospective_year = @applicable_year + 1

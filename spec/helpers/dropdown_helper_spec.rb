@@ -997,14 +997,14 @@ RSpec.describe DropdownHelper, type: :helper do
 
     context 'when verification is active' do
       it 'returns both download and remove options' do
-        result = helper.qhp_enabled_verification_dropdowns(verification, document)
+        result = helper.qhp_enabled_verification_dropdowns(verification, document, evidence: nil, display_previous_evidences: false)
         expect(result.size).to eq(2)
         expect(result.first[:title]).to eq('Download')
         expect(result.last[:title]).to eq('Remove')
       end
 
       it 'sets correct link attributes' do
-        result = helper.qhp_enabled_verification_dropdowns(verification, document)
+        result = helper.qhp_enabled_verification_dropdowns(verification, document, evidence: nil, display_previous_evidences: false)
 
         expect(result.first[:attributes]).to eq({target: '_blank'})
         expect(result.last[:attributes]).to eq({data: {method: 'delete'}})
@@ -1017,14 +1017,14 @@ RSpec.describe DropdownHelper, type: :helper do
       end
 
       it 'returns only download option' do
-        result = helper.qhp_enabled_verification_dropdowns(verification, document)
+        result = helper.qhp_enabled_verification_dropdowns(verification, document, evidence: nil, display_previous_evidences: false)
 
         expect(result.size).to eq(1)
         expect(result.first[:title]).to eq('Download')
       end
 
       it 'does not include remove option' do
-        result = helper.qhp_enabled_verification_dropdowns(verification, document)
+        result = helper.qhp_enabled_verification_dropdowns(verification, document, evidence: nil, display_previous_evidences: false)
 
         expect(result.map { |option| option[:title] }).not_to include('Remove')
       end

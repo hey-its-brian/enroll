@@ -202,7 +202,7 @@ RSpec.describe NavigationHelper, :type => :helper, dbclean: :after_each do
       let(:action_name) { 'verification' }
 
       it 'returns the correct navigation structure with one breadcrumb' do
-        result = helper.verification_navigation(member, evidence)
+        result = helper.verification_navigation(member, evidence, display_previous_evidences: false)
 
         expect(result[:breadcrumbs].length).to eq(1)
         expect(result[:breadcrumbs][0][:title]).to eq('Verifications')
@@ -213,7 +213,7 @@ RSpec.describe NavigationHelper, :type => :helper, dbclean: :after_each do
       let(:action_name) { 'verification_individual' }
 
       it 'returns the correct navigation structure with two breadcrumbs' do
-        result = helper.verification_navigation(member, evidence)
+        result = helper.verification_navigation(member, evidence, display_previous_evidences: false)
 
         expect(result[:breadcrumbs].length).to eq(2)
         expect(result[:breadcrumbs][1][:title]).to eq('Individual')
@@ -225,7 +225,7 @@ RSpec.describe NavigationHelper, :type => :helper, dbclean: :after_each do
       let(:action_name) { 'verification_detail' }
 
       it 'returns the correct navigation structure with three breadcrumbs' do
-        result = helper.verification_navigation(member, evidence)
+        result = helper.verification_navigation(member, evidence, display_previous_evidences: false)
 
         expect(result[:breadcrumbs].length).to eq(3)
         expect(result[:breadcrumbs][2][:title]).to eq('Verification Detail')
@@ -237,7 +237,7 @@ RSpec.describe NavigationHelper, :type => :helper, dbclean: :after_each do
       let(:action_name) { 'verification_history' }
 
       it 'adds verification_history step to the navigation' do
-        result = helper.verification_navigation(member, evidence)
+        result = helper.verification_navigation(member, evidence, display_previous_evidences: false)
 
         expect(result[:breadcrumbs].length).to eq(4)
         expect(result[:breadcrumbs][3][:title]).to eq('Verification History')
@@ -254,7 +254,7 @@ RSpec.describe NavigationHelper, :type => :helper, dbclean: :after_each do
         end
 
         it 'adds index step to the navigation' do
-          result = helper.verification_navigation(member, evidence)
+          result = helper.verification_navigation(member, evidence, display_previous_evidences: false)
 
           expect(result[:breadcrumbs].length).to eq(4)
           expect(result[:breadcrumbs][3][:title]).to eq('Upload History')
@@ -269,7 +269,7 @@ RSpec.describe NavigationHelper, :type => :helper, dbclean: :after_each do
         end
 
         it 'does not add index step to the navigation' do
-          result = helper.verification_navigation(member, evidence)
+          result = helper.verification_navigation(member, evidence, display_previous_evidences: false)
 
           expect(result[:breadcrumbs].length).to eq(3)
           expect(result[:breadcrumbs][2][:title]).to eq('Verification Detail')

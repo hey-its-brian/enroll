@@ -43,8 +43,8 @@ module Adapters
       end
     end
 
-    def initialize(evidence)
-      @delegate = EvidenceAdapterFactory.for(evidence)
+    def initialize(evidence, type = nil)
+      @delegate = EvidenceAdapterFactory.for(evidence, type)
     end
 
     def detail_params
@@ -53,7 +53,7 @@ module Adapters
 
     # Creates an appropriate delegate based on the type of evidence provided.
     class EvidenceAdapterFactory
-      def self.for(evidence)
+      def self.for(evidence, type)
         case evidence
         when VerificationType
           Delegates::VerificationTypeDelegate.new(evidence)
@@ -62,7 +62,11 @@ module Adapters
         when Person
           Delegates::IdentityEvidenceDelegate.new(evidence)
         when Eligibilities::V3::Evidence
-          Delegates::InactiveEvidenceDelegate.new(evidence)
+          if type == :inactive
+            Delegates::InactiveEvidenceDelegate.new(evidence)
+          else
+            Delegates::V3EvidenceDelegate.new(evidence)
+          end
         else
           raise ArgumentError, "Unsupported evidence type: #{evidence.class}"
         end
@@ -141,6 +145,53 @@ module Adapters
 
         def locate_evidence
           @located_evidence
+        end
+
+        # Determines the update reason based on application configuration
+        #
+        # @param [Object] specific_evidence The specific evidence object
+        # @return [String, nil] The determined update reason
+        def determine_update_reason(specific_evidence)
+          specific_evidence.latest_rejected_verification_history&.update_reason
+        end
+      end
+
+      # Adapts a `Eligibilities::V3::Evidence` into a verification evidence interface.
+      #
+      # @see EvidenceAdapter The public interface that uses this delegate
+      class V3EvidenceDelegate
+        include HistoryHelper
+
+        attr_reader :person, :evidence_group, :evidence_item_key, :status, :due_on, :update_reason, :history, :history_tracks, :documents, :inactive
+
+        def initialize(evidence)
+          @located_evidence = evidence
+          @person = evidence.eligibility.eligible.family_member.person
+          @evidence_group = evidence.eligibility.key
+          @evidence_item_key = evidence.key.to_sym
+          @status = evidence.current_state
+          @due_on = evidence.due_on
+          @documents = evidence.documents
+          @update_reason = determine_update_reason(evidence)
+          @history = format_history(evidence.verification_histories + evidence.request_results)
+          @history_tracks = nil
+          @inactive = false
+        end
+
+        def is_action_needed?
+          false
+        end
+
+        def grouped_status
+          @located_evidence.current_state
+        end
+
+        def locate_evidence
+          @located_evidence
+        end
+
+        def evidence_gid
+          @located_evidence.to_global_id.uri.to_s
         end
 
         # Determines the update reason based on application configuration

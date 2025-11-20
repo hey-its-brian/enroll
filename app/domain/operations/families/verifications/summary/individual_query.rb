@@ -22,7 +22,7 @@ module Operations
             evidences        = yield find_all_evidences(subject)
             sorted_evidences = yield sort_evidences(evidences)
 
-            Success(member: member, evidences: sorted_evidences)
+            Success(member: member, evidences: sorted_evidences, display_previous_evidences: false)
           end
 
           private

@@ -276,6 +276,10 @@ Rails.application.routes.draw do
 
     namespace :sbm do
       resources :applications, only: [:index] do
+        member do
+          get :evidences
+        end
+
         collection do
           get :current_applications
         end

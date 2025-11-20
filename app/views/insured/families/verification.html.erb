@@ -59,7 +59,7 @@
                 </thead>
                 <tbody>
                   <% items.each do |item| %>
-                    <% link = qhp_application_feature_enabled? && item.evidence_group != "ridp" ? evidence_details_link(item) : verification_detail_insured_families_path(item.detail_params) %>
+                    <% link = qhp_application_feature_enabled? && item.evidence_group != "ridp" ? evidence_details_link(item, display_previous_evidences: false) : verification_detail_insured_families_path(item.detail_params) %>
                     <tr data-href=<%= link %>>
                       <td><b><%= item.person.full_name %></b></td>
                       <td><b><%= display_verification_type_name(item.evidence_item_key) %></b></td>

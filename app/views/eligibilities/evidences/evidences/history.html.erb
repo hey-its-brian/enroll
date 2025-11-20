@@ -8,7 +8,7 @@
   evidence: @evidence_delegator,
   member: @member,
   application: @application,
-  navigation: verification_navigation(@member, @evidence_delegator),
+  navigation: verification_navigation(@member, @evidence_delegator, display_previous_evidences: @display_previous_evidences),
   summary_rows: [:member, :member_status, :status, :update_reason, :due_on],
   is_back_nav_primary: true,
   display_application_id: true
