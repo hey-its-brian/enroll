@@ -12,6 +12,8 @@
 <% dont_show_next_button = local_assigns[:dont_show_next_button] ? dont_show_next_button : false %>
 <% next_link = local_assigns[:next_link] ? next_link : "" %>
 <% disable_link = local_assigns[:disable_link] ? disable_link : false %>
+<% button_type = local_assigns[:button_type] ? button_type : nil %>
+<% button_id = local_assigns[:button_id] ? button_id : "continue_button" %>
 <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
 <% continue_button_text = local_assigns[:next_button_text].present? ? next_button_text : l10n("continue_next") %>
 
@@ -32,9 +34,13 @@
   <% unless dont_show_next_button %>
     <% if content_for? :submit_button %>
       <%= yield :submit_button %>
+    <% elsif !button_type.nil? %>
+      <button id=<%= button_id %> <%= "disabled=#{disable_link}" if disable_link == true %> type="<%= button_type %>">
+        <%= l10n("continue_next") %>
+      </button>
     <% else %>
       <% unless (action_name == "eligibility_results" || action_name == "review") && (params.keys.exclude?"cur") %>
-        <%= h(link_to_with_noopener_noreferrer(continue_button_text, next_link, class: 'button btn-continue', :'data-turbolinks' => "#{genesys_feature_enabled ? false : true}",  id: 'btn-continue', disabled: disable_link)) %>
+        <%= h(link_to_with_noopener_noreferrer(continue_button_text, next_link, class: 'button btn-continue', :'data-turbolinks' => "#{genesys_feature_enabled ? false : true}", id: 'btn-continue', disabled: disable_link)) %>
       <% end %>
     <% end %>
   <% end %>

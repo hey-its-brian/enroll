@@ -137,6 +137,7 @@
       <%= f.submit l10n("submit_application"), class: "btn", id: 'btn-continue'  %>
     <% end %>
     <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
+      previous_link: (review_and_submit_application_path(@application) if qhp_application_feature_enabled?),
       show_back_to_household_button: !qhp_application_feature_enabled? } %>
     </div>
   <% end %>

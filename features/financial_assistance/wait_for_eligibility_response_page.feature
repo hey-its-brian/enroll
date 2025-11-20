@@ -24,7 +24,7 @@ Feature: The page that appears while the user is waiting for eligibility results
     And the user is on FAA Family Information page
     And user clicks continue to next step
     And primary applicant is in Info Completed state
-    And user clicks continue to next step
+    And user clicks on Continue to next step button
     And the user is on the Your Preferences page
     And user clicks on Continue to next step button
     Then the user is on the Review Your Application page

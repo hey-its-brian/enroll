@@ -123,6 +123,7 @@
     <% end %>
     <% show_back_to_household_button = qhp_enabled ? false : true %>
     <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
+      previous_link: (edit_application_path(@application) if qhp_enabled),
       show_back_to_household_button: show_back_to_household_button
     } %>
   <% end %>

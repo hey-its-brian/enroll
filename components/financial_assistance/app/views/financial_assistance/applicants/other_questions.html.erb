@@ -265,7 +265,10 @@
 
       <% end %>
 
-      <%= render partial: 'shared/progress_navigation_buttons', locals: {button_type: "submit"} %>
+      <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: {
+        previous_link: @applicant.is_applying_coverage ? application_applicant_benefits_path(@application, @applicant) : application_applicant_deductions_path(@application, @applicant),
+        button_type: "submit"
+      } %>
     </div>
   <% end %>
   <% if qhp_application_feature_enabled? %>

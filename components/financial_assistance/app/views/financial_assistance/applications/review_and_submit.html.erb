@@ -45,15 +45,20 @@
                      submit_your_application_application_path(@application)
                    else
                      go_to_step_application_path(@application, 1)
-                   end
-    %>
-    <div class="mt-3 mb-4">
-      <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_link, disable_link: !@application.valid_applicants? } %>
-    </div>
+                   end %>
+    <% previous_link = if qhp_enabled
+                         preferences_application_path(@application)
+                       end %>
+    <% progress_navigation_buttons = render partial: "financial_assistance/shared/progress_navigation_buttons", locals: {
+      previous_link: previous_link,
+      next_link: next_link, 
+      disable_link: !@application.valid_applicants? } %>
+
+    <div class="mt-3 mb-4"><%= progress_navigation_buttons %></div>
 
     <%= render partial: "summary" %>
 
-    <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_link, disable_link: !@application.valid_applicants? } %>
+    <%= progress_navigation_buttons %>
   </div>
   <% if qhp_application_feature_enabled? %>
     <%= render partial: 'shared/leaving_modal' %>

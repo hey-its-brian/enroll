@@ -20,7 +20,8 @@
     <% end %>
   <% end %>
   <% next_url = EnrollRegistry.feature_enabled?(:qhp_application) ? edit_application_path(@application.id) : review_and_submit_application_path(@application.id) %>
-  <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_url, disable_link: @missing_relationships.any? || @all_relationships.detect{|applicant| applicant[:error]}} %>
+  <% previous_url = application_applicants_path(@application) if EnrollRegistry.feature_enabled?(:qhp_application) %>
+  <%= render partial: 'financial_assistance/shared/progress_navigation_buttons', locals: { next_link: next_url, previous_link: previous_url, disable_link: @missing_relationships.any? || @all_relationships.detect{|applicant| applicant[:error]}} %>
 <% else %>
 <h1 class="darkblue">Family Relationships</h1>
 <p>We need to understand how members of your household are related. Select the relationship for each person listed

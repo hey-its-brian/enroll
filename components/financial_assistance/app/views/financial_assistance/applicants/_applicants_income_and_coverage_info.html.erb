@@ -62,11 +62,21 @@
 </div>
 
 <div class="mt-md-5">
-  <% if @change_plan.present? %>
-    <% group_selection_url = main_app.new_insured_group_selection_path(person_id: @person.id, employee_role_id: @employee_role.try(:id), consumer_role_id: @consumer_role.try(:id), change_plan: @change_plan, market_kind: @market_kind, sep_id: @sep.try(:id), qle_id: @qle.try(:id), effective_on_option_selected: params[:effective_on_option]) %>
-    <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: group_selection_url, disable_link: !@application.valid_applicants? } %>
-  <% else %>
-    <% next_link = qhp_application_feature_enabled? ? preferences_application_path : review_and_submit_application_path %>
-    <%= render partial: "shared/progress_navigation_buttons", locals: { next_link: next_link, disable_link: !@application.valid_applicants? } %>
-  <% end %>
+  <% previous_link = if qhp_application_feature_enabled?
+                       if @application.applicants.many?
+                         application_relationships_url(@application)
+                       else
+                         application_applicants_path(@application)
+                       end
+                     end %>
+  <% next_link = if @change_plan.present?
+                   main_app.new_insured_group_selection_path(person_id: @person.id, employee_role_id: @employee_role.try(:id), consumer_role_id: @consumer_role.try(:id), change_plan: @change_plan, market_kind: @market_kind, sep_id: @sep.try(:id), qle_id: @qle.try(:id), effective_on_option_selected: params[:effective_on_option])
+                 else
+                   qhp_application_feature_enabled? ? preferences_application_path : review_and_submit_application_path
+                 end %>
+  <%= render partial: "financial_assistance/shared/progress_navigation_buttons", locals: {
+    previous_link: previous_link,
+    next_link: next_link,
+    disable_link: !@application.valid_applicants?
+  } %>
 </div>
