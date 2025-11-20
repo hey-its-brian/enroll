@@ -120,16 +120,26 @@ describe RuleSet::HbxEnrollment::IndividualMarketVerification, :if => ExchangeTe
 
     context "enrollment with outstanding member" do
       let(:enrollment_status) { 'coverage_selected' }
-      it "return move_to_enrolled! event along with true value" do
+
+      before do
         allow(subject).to receive(:roles_for_determination).and_return([verification_outstanding_person.consumer_role])
+        allow(subject).to receive(:any_outstanding?).and_return(true)
+      end
+
+      it "return move_to_enrolled! event along with true value" do
         expect(subject.determine_next_state).to eq [true, :do_nothing]
       end
     end
 
     context "selected enrollment with outstanding member" do
       let(:enrollment_status) { 'coverage_selected' }
-      it "return move_to_enrolled! event along with true value" do
+
+      before do
         allow(subject).to receive(:roles_for_determination).and_return([verification_outstanding_person.consumer_role])
+        allow(subject).to receive(:any_outstanding?).and_return(true)
+      end
+
+      it "return move_to_enrolled! event along with true value" do
         expect(subject.determine_next_state).to eq [true, :do_nothing]
       end
     end
@@ -150,8 +160,13 @@ describe RuleSet::HbxEnrollment::IndividualMarketVerification, :if => ExchangeTe
 
     context "enrollment with mixed and outstanding members" do
       let(:enrollment_status) { 'unverified' }
-      it "return move_to_enrolled! event along with true value" do
+
+      before do
         allow(subject).to receive(:roles_for_determination).and_return([verification_outstanding_person.consumer_role, fully_verified_person.consumer_role, ssa_pending_person.consumer_role])
+        allow(subject).to receive(:any_outstanding?).and_return(true)
+      end
+
+      it "return move_to_enrolled! event along with true value" do
         expect(subject.determine_next_state).to eq [true, :move_to_enrolled!]
       end
     end
@@ -161,6 +176,274 @@ describe RuleSet::HbxEnrollment::IndividualMarketVerification, :if => ExchangeTe
         allow(subject).to receive(:roles_for_determination).and_return([ssa_pending_person.consumer_role, fully_verified_person.consumer_role, dhs_pending_person.consumer_role])
         expect(subject.determine_next_state).to eq [false,:move_to_pending!]
       end
+    end
+  end
+
+  describe "#any_outstanding?" do
+    let(:person1) { FactoryBot.create(:person, :with_consumer_role) }
+    let(:person2) { FactoryBot.create(:person, :with_consumer_role) }
+    let(:family) { FactoryBot.build(:family) }
+    let(:enrollment) do
+      FactoryBot.create(:hbx_enrollment,
+                        household: family.latest_household,
+                        family: family,
+                        effective_on: effective_on,
+                        kind: "individual",
+                        submitted_at: effective_on - 10.days,
+                        aasm_state: 'coverage_selected',
+                        product: product)
+    end
+    let(:eligibility_determination) do
+      family.build_eligibility_determination(
+        outstanding_verification_status: 'outstanding',
+        effective_date: TimeKeeper.date_of_record
+      )
+    end
+
+    before do
+      family.add_family_member(person1, is_primary_applicant: true)
+      family.relate_new_member(person2, "spouse")
+      family.save!
+
+      person1_family_member = family.family_members.detect { |fm| fm.person_id == person1.id }
+      person2_family_member = family.family_members.detect { |fm| fm.person_id == person2.id }
+
+      FactoryBot.create(:hbx_enrollment_member,
+                        hbx_enrollment: enrollment,
+                        applicant_id: person1_family_member.id,
+                        is_subscriber: true,
+                        eligibility_date: effective_on,
+                        coverage_start_on: effective_on)
+
+      FactoryBot.create(:hbx_enrollment_member,
+                        hbx_enrollment: enrollment,
+                        applicant_id: person2_family_member.id,
+                        is_subscriber: false,
+                        eligibility_date: effective_on,
+                        coverage_start_on: effective_on)
+
+      enrollment.reload
+      family.eligibility_determination = eligibility_determination
+      family.save!
+    end
+
+    context "when there are no active subjects" do
+      before do
+        allow(subject).to receive(:active_subjects).and_return([])
+      end
+
+      it "returns false" do
+        expect(subject.any_outstanding?).to be_falsey
+      end
+    end
+
+    context "when active enrollment subjects have outstanding status" do
+      before do
+        person1_family_member = family.family_members.detect { |fm| fm.person_id == person1.id }
+        person2_family_member = family.family_members.detect { |fm| fm.person_id == person2.id }
+
+        eligibility_determination.subjects.build(
+          gid: "gid://enroll/FamilyMember/#{person1_family_member.id}",
+          person_id: person1.id.to_s,
+          hbx_id: person1.hbx_id,
+          is_primary: true,
+          outstanding_verification_status: 'outstanding'
+        )
+
+        eligibility_determination.subjects.build(
+          gid: "gid://enroll/FamilyMember/#{person2_family_member.id}",
+          person_id: person2.id.to_s,
+          hbx_id: person2.hbx_id,
+          is_primary: false,
+          outstanding_verification_status: 'verified'
+        )
+
+        eligibility_determination.save!
+        family.save!
+        enrollment.reload
+      end
+
+      it "returns true" do
+        expect(subject.any_outstanding?).to be_truthy
+      end
+    end
+
+    context "when active enrollment subjects do NOT have outstanding status" do
+      before do
+        person1_family_member = family.family_members.detect { |fm| fm.person_id == person1.id }
+        person2_family_member = family.family_members.detect { |fm| fm.person_id == person2.id }
+
+        eligibility_determination.subjects.build(
+          gid: "gid://enroll/FamilyMember/#{person1_family_member.id}",
+          person_id: person1.id.to_s,
+          hbx_id: person1.hbx_id,
+          is_primary: true,
+          outstanding_verification_status: 'verified'
+        )
+
+        eligibility_determination.subjects.build(
+          gid: "gid://enroll/FamilyMember/#{person2_family_member.id}",
+          person_id: person2.id.to_s,
+          hbx_id: person2.hbx_id,
+          is_primary: false,
+          outstanding_verification_status: 'verified'
+        )
+
+        eligibility_determination.save!
+        family.save!
+        enrollment.reload
+      end
+
+      it "returns false" do
+        expect(subject.any_outstanding?).to be_falsey
+      end
+    end
+
+    context "when only inactive family members have outstanding status" do
+      let(:inactive_person) { FactoryBot.create(:person, :with_consumer_role) }
+
+      before do
+        family.relate_new_member(inactive_person, "child")
+        family.save!
+
+        inactive_family_member = family.family_members.detect { |fm| fm.person_id == inactive_person.id }
+        inactive_family_member.update_attributes(is_active: false)
+
+        FactoryBot.create(:hbx_enrollment_member,
+                          hbx_enrollment: enrollment,
+                          applicant_id: inactive_family_member.id,
+                          is_subscriber: false,
+                          eligibility_date: effective_on,
+                          coverage_start_on: effective_on)
+
+        person1_family_member = family.family_members.detect { |fm| fm.person_id == person1.id }
+        person2_family_member = family.family_members.detect { |fm| fm.person_id == person2.id }
+
+        eligibility_determination.subjects.build(
+          gid: "gid://enroll/FamilyMember/#{person1_family_member.id}",
+          person_id: person1.id.to_s,
+          hbx_id: person1.hbx_id,
+          is_primary: true,
+          outstanding_verification_status: 'verified'
+        )
+
+        eligibility_determination.subjects.build(
+          gid: "gid://enroll/FamilyMember/#{person2_family_member.id}",
+          person_id: person2.id.to_s,
+          hbx_id: person2.hbx_id,
+          is_primary: false,
+          outstanding_verification_status: 'verified'
+        )
+
+        eligibility_determination.subjects.build(
+          gid: "gid://enroll/FamilyMember/#{inactive_family_member.id}",
+          person_id: inactive_person.id.to_s,
+          hbx_id: inactive_person.hbx_id,
+          is_primary: false,
+          outstanding_verification_status: 'outstanding'
+        )
+
+        eligibility_determination.save!
+        family.save!
+        enrollment.reload
+      end
+
+      it "returns false because inactive members are excluded" do
+        expect(subject.any_outstanding?).to be_falsey
+      end
+    end
+
+    context "when family members not in enrollment have outstanding status" do
+      let(:non_enrolled_person) { FactoryBot.create(:person, :with_consumer_role) }
+
+      before do
+        family.relate_new_member(non_enrolled_person, "child")
+        family.save!
+
+        person1_family_member = family.family_members.detect { |fm| fm.person_id == person1.id }
+        person2_family_member = family.family_members.detect { |fm| fm.person_id == person2.id }
+        non_enrolled_member = family.family_members.detect { |fm| fm.person_id == non_enrolled_person.id }
+
+        eligibility_determination.subjects.build(
+          gid: "gid://enroll/FamilyMember/#{person1_family_member.id}",
+          person_id: person1.id.to_s,
+          hbx_id: person1.hbx_id,
+          is_primary: true,
+          outstanding_verification_status: 'verified'
+        )
+
+        eligibility_determination.subjects.build(
+          gid: "gid://enroll/FamilyMember/#{person2_family_member.id}",
+          person_id: person2.id.to_s,
+          hbx_id: person2.hbx_id,
+          is_primary: false,
+          outstanding_verification_status: 'verified'
+        )
+
+        eligibility_determination.subjects.build(
+          gid: "gid://enroll/FamilyMember/#{non_enrolled_member.id}",
+          person_id: non_enrolled_person.id.to_s,
+          hbx_id: non_enrolled_person.hbx_id,
+          is_primary: false,
+          outstanding_verification_status: 'outstanding'
+        )
+
+        eligibility_determination.save!
+        family.save!
+        enrollment.reload
+      end
+
+      it "returns false because non-enrolled members are excluded" do
+        expect(subject.any_outstanding?).to be_falsey
+      end
+    end
+
+    context "when multiple enrollment members have different statuses" do
+      before do
+        person1_family_member = family.family_members.detect { |fm| fm.person_id == person1.id }
+        person2_family_member = family.family_members.detect { |fm| fm.person_id == person2.id }
+
+        eligibility_determination.subjects.build(
+          gid: "gid://enroll/FamilyMember/#{person1_family_member.id}",
+          person_id: person1.id.to_s,
+          hbx_id: person1.hbx_id,
+          is_primary: true,
+          outstanding_verification_status: 'verified'
+        )
+
+        eligibility_determination.subjects.build(
+          gid: "gid://enroll/FamilyMember/#{person2_family_member.id}",
+          person_id: person2.id.to_s,
+          hbx_id: person2.hbx_id,
+          is_primary: false,
+          outstanding_verification_status: 'outstanding'
+        )
+
+        eligibility_determination.save!
+        family.save!
+        enrollment.reload
+      end
+
+      it "returns true if ANY active enrollment member has outstanding" do
+        expect(subject.any_outstanding?).to be_truthy
+      end
+    end
+  end
+
+  describe "#extract_family_member_id_from_gid" do
+    let(:object_id) { BSON::ObjectId.new }
+    let(:gid) { "gid://enroll/FamilyMember/#{object_id}" }
+
+    it "extracts ObjectId from gid string" do
+      result = subject.extract_family_member_id_from_gid(gid)
+      expect(result).to eq(object_id)
+      expect(result).to be_a(BSON::ObjectId)
+    end
+
+    it "handles gid as URI object" do
+      gid_uri = URI(gid)
+      result = subject.extract_family_member_id_from_gid(gid_uri)
+      expect(result).to eq(object_id)
     end
   end
 end

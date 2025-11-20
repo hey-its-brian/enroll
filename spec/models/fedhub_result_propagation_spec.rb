@@ -32,6 +32,26 @@ describe "A new consumer role with an individual market enrollment", :dbclean =>
     describe "when the enrollment is active" do
       before :each do
         enrollment
+
+        eligibility_determination = family.build_eligibility_determination(
+          outstanding_verification_status: 'outstanding',
+          effective_date: TimeKeeper.date_of_record
+        )
+
+        family_member = family.family_members.detect { |fm| fm.person_id == person.id }
+
+        eligibility_determination.subjects.build(
+          gid: "gid://enroll/FamilyMember/#{family_member.id}",
+          person_id: person.id.to_s,
+          hbx_id: person.hbx_id,
+          is_primary: true,
+          outstanding_verification_status: 'outstanding'
+        )
+
+        eligibility_determination.save!
+        family.eligibility_determination = eligibility_determination
+        family.save!
+
         person.consumer_role.ssn_invalid!(denial_information)
       end
 
