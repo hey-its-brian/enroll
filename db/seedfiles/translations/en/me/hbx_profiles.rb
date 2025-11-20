@@ -96,6 +96,7 @@ HBX_PROFILES_TRANSLATIONS = {
 	"en.hbx_profiles.reinstate.result.success" => "Enrollment Reinstated successfully",
 	"en.hbx_profiles.reinstate.result.failure" => "Unable to find Enrollment.",
 	"en.hbx_profiles.edit_dob_ssn.header" => "Edit DOB / SSN",
+	"en.hbx_profiles.dob_ssn.header" => "DOB / SSN",
 	"en.hbx_profiles.edit_dob_ssn.result.success" => "DOB / SSN Update Successful",
 	"en.hbx_profiles.edit_dob_ssn.result.cannot_remove" => "SSN cannot be removed from this person as they are linked to at least one employer roster that requires and SSN",
 	"en.hbx_profiles.edit_dob_ssn.result.failure" => "DOB / SSN Update Failed",

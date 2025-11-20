@@ -85,4 +85,27 @@ describe Effective::Datatables::PeopleDataTable, "with correct access permission
       end
     end
   end
+
+  describe '#can_display_view_dob_ssn?' do
+    context 'when user is not allowed' do
+      it 'returns disabled' do
+        result = subject.can_display_view_dob_ssn?(regular_person, false)
+        expect(result).to eq('disabled')
+      end
+    end
+
+    context 'when user is allowed' do
+      it 'returns ajax when person is active in any family' do
+        allow(regular_person).to receive(:is_active_in_any_family?).and_return(true)
+        result = subject.can_display_view_dob_ssn?(regular_person, true)
+        expect(result).to eq('ajax')
+      end
+
+      it 'returns disabled when person is not active in any family' do
+        allow(regular_person).to receive(:is_active_in_any_family?).and_return(false)
+        result = subject.can_display_view_dob_ssn?(regular_person, true)
+        expect(result).to eq('disabled')
+      end
+    end
+  end
 end

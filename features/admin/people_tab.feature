@@ -66,3 +66,15 @@ Feature: Persons tab
     And HBX Admin clicks on Edit DOB / SSN
     And the Hbx Admin updates the first person's SSN to match the second person's SSN
     Then the Hbx Admin should see an error message indicating the SSN is already taken
+
+  Scenario: Admin views a consumer's DOB and SSN
+    Given EnrollRegistry mask_ssn_ui_fields feature is enabled
+    Given EnrollRegistry qhp_application feature is enabled
+    Given Hbx Admin exists
+    And a consumer exists with an SSN
+    When Hbx Admin logs on to the Hbx Portal
+    And user visits the HBX Portal
+    And Hbx Admin navigates to the People tab
+    And the Hbx Admin clicks on the Actions dropdown for the first person
+    And HBX Admin clicks on View DOB / SSN
+    Then the Hbx Admin should see the consumer's DOB and SSN

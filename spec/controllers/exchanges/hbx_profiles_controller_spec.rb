@@ -527,6 +527,33 @@ RSpec.describe Exchanges::HbxProfilesController, dbclean: :around_each do
     end
   end
 
+  describe "GET view_dob_ssn" do
+    let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_employee_role) }
+    let(:user) { double("user", :person => person, :has_hbx_staff_role? => true) }
+    let(:hbx_staff_role) { FactoryBot.create(:hbx_staff_role, person: person)}
+    let(:hbx_profile) { FactoryBot.create(:hbx_profile)}
+    let(:permission_yes) { FactoryBot.create(:permission, :can_update_ssn => true)}
+    let(:permission_no) { FactoryBot.create(:permission, :can_update_ssn => false)}
+
+    it "should return authorization error for Non-Admin users" do
+      allow(hbx_staff_role).to receive(:permission).and_return permission_no
+      sign_in(user)
+      @params = {:id => person.id, :format => 'js'}
+      get :view_dob_ssn, params: @params,xhr: true
+      expect(response).not_to have_http_status(:success)
+      expect(response).not_to render_template('view_dob_ssn')
+    end
+
+    it "should render the view_dob_ssn partial for logged in users with an admin role" do
+      allow(hbx_staff_role).to receive(:permission).and_return permission_yes
+      sign_in(user)
+      @params = {:id => person.id, :format => 'js'}
+      get :view_dob_ssn, params: @params, xhr: true
+      expect(response).to have_http_status(:success)
+      expect(response).to render_template('view_dob_ssn')
+    end
+  end
+
   describe "GET edit_dob_ssn" do
 
     let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_employee_role) }

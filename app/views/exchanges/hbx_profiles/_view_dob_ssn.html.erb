@@ -1,0 +1,56 @@
+<% if @bs4 %>
+  <div>
+    <h3><%= l10n('hbx_profiles.dob_ssn.header') %></h3>
+    <% @person.reload %>
+    <table class="table table-border">
+      <thead>
+        <tr>
+          <th><%= l10n('name') %>: <span class="weight-n"><%= @person.first_name %> <%= @person.last_name %></span></th>
+          <th><%= l10n('hbx_id') %>: <span class="weight-n"><%= @person.hbx_id %></span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+        </tr>
+        <tr>
+          <td class="standard"><b><%= l10n('dob') %></b>: <%= @person.dob %></td>
+          <td>
+            <% if EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields) %>
+              <%= render partial: 'shared/person/ssn/admin_ssn_block',
+                locals: { presenter: organize_ssn_params(@person), include_label: true, emphasize_label: true }
+              %>
+            <% else %>
+              <%= l10n('ssn') %>: <b><%= @person.ssn %></b>
+            <% end %>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+<% else %>
+  <div class="container bottom-pd">
+    <h4 class="title">DOB / SSN</h4>
+    <% @person.reload %>
+    <table class="table table-border">
+      <thead></thead>
+      <tbody>
+        <tr>
+          <td><h5> <b>Name:</b> <%=@person.first_name%> <%=@person.last_name%></h5></td>
+          <td><h5> <b>HBX ID:</b> <%=@person.hbx_id%></h5></td>
+        </tr>
+        <tr>
+          <td><h5> <b>DOB:</b> <%=@person.dob%> </h5></td>
+          <td>
+            <% if EnrollRegistry.feature_enabled?(:mask_ssn_ui_fields) %>
+              <%= render partial: 'shared/person/ssn/admin_ssn_block',
+                locals: { presenter: organize_ssn_params(@person), include_label: true, emphasize_label: true }
+              %>
+            <% else %>
+              <h5> <b>SSN:</b> <%=@person.ssn%> </h5>
+            <% end %>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+<% end %>

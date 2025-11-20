@@ -74,10 +74,19 @@ When(/^the Hbx Admin clicks on the Actions dropdown for the first person$/) do
   end
 end
 
+Then(/^the Hbx Admin should see the consumer's DOB and SSN$/) do
+  expect(page).to have_content(Person.first.dob.strftime("%m/%d/%Y"))
+  expect(page).to have_selector("#admin-ssn-input-field")
+end
+
 When(/^the Hbx Admin updates the first person's SSN to match the second person's SSN$/) do
   fill_in IvlPersonalInformation.ssn, :with => "123-45-6789"
   find("input[type=submit]").click
   page.driver.browser.switch_to.alert.accept if page.driver.browser.switch_to.respond_to?(:alert)
+end
+
+And(/^a consumer exists with an SSN$/) do
+  Person.first.update_attributes!(ssn: "123456789")
 end
 
 Then(/^the Hbx Admin should see an error message indicating the SSN is already taken$/) do

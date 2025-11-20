@@ -692,6 +692,17 @@ class Exchanges::HbxProfilesController < ApplicationController
     end
   end
 
+  def view_dob_ssn
+    authorize HbxProfile, :view_dob_ssn?
+
+    @person = Person.find(params[:id])
+    @element_to_replace_id = params[:row_actions_id]
+
+    respond_to do |format|
+      format.js { render 'view_dob_ssn', locals: { person: @person } }
+    end
+  end
+
   def edit_dob_ssn
     authorize HbxProfile, :edit_dob_ssn?
 

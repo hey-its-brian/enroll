@@ -200,6 +200,10 @@ class HbxProfilePolicy < ApplicationPolicy
     staff_can_reinstate_enrollment?
   end
 
+  def view_dob_ssn?
+    staff_can_update_ssn?
+  end
+
   def edit_dob_ssn?
     staff_can_update_ssn?
   end
