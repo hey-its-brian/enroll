@@ -529,8 +529,10 @@ module FinancialAssistance
         if application_ready_for_attestation
           income_step[:link] = financial_assistance.edit_application_path(application)
           preferences_step[:link] = financial_assistance.preferences_application_path(application)
-          review_step[:link] = financial_assistance.review_and_submit_application_path(application)
-          submit_step[:link] = financial_assistance.submit_your_application_application_path(application)
+          if application.applicants_have_individual_market_eligibility?
+            review_step[:link] = financial_assistance.review_and_submit_application_path(application)
+            submit_step[:link] = financial_assistance.submit_your_application_application_path(application)
+          end
         end
         links.push(income_step, preferences_step, review_step, submit_step, eligibility_results)
       else

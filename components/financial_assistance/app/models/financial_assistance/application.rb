@@ -1618,6 +1618,13 @@ module FinancialAssistance
       applicants.each(&:build_aptc_eligibilities_evidences)
     end
 
+    # Describes if all applicants have individual market eligibility.
+    #
+    # @return [Boolean] true if all applicants have individual market eligibility, false otherwise
+    def applicants_have_individual_market_eligibility?
+      applicants.all?(&:has_individual_market_eligibility?)
+    end
+
     # Extends the income evidence due dates for each applicant.
     #
     # @return [void]

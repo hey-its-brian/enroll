@@ -1795,6 +1795,13 @@ module FinancialAssistance
       end
     end
 
+    # Describes if the applicant has an Individual Market eligibility.
+    #
+    # @return [Boolean] true if the applicant has an Individual Market eligibility, false otherwise.
+    def has_individual_market_eligibility?
+      individual_market_eligibility.present?
+    end
+
     def applicant_enrolled?(enrollment)
       enrollment.hbx_enrollment_members.any? { |member| member.applicant_id.to_s == family_member_id.to_s }
     end

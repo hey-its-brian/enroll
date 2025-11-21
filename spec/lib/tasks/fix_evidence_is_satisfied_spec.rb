@@ -159,18 +159,18 @@ RSpec.describe 'fix_evidence_is_satisfied rake tasks', type: :task, dbclean: :af
         FactoryBot.create(:income_evidence, eligibility: eligibility_2025, current_state: :verified, is_satisfied: false)
       end
 
-      let(:expected_app_count) { 1 }
+      let(:expected_app_count) { 2 }
 
       include_examples 'evidence processing'
 
-      it 'processes only 2026 applications (hardcoded year constraint)' do
-        expect { task.invoke }.to output(/is_satisfied updated for 1 evidences across 1 eligibilities/).to_stdout
+      it 'processes applications from all assistance years' do
+        expect { task.invoke }.to output(/is_satisfied updated for 2 evidences across 2 eligibilities/).to_stdout
 
         evidence_2026.reload
         evidence_2025.reload
 
         expect(evidence_2026.is_satisfied).to be true
-        expect(evidence_2025.is_satisfied).to be false # Should not be updated due to year constraint
+        expect(evidence_2025.is_satisfied).to be true # Both should be updated since task processes all years
       end
     end
 

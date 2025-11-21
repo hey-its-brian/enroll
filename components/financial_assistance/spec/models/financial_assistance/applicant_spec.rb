@@ -3170,4 +3170,46 @@ RSpec.describe ::FinancialAssistance::Applicant, type: :model, dbclean: :after_e
       expect(applicant.earliest_due_date).to be_nil
     end
   end
+
+  describe '#has_individual_market_eligibility?' do
+    context 'when applicant has individual market eligibility' do
+      before do
+        allow(applicant).to receive(:individual_market_eligibility).and_return(double('eligibility'))
+      end
+
+      it 'returns true' do
+        expect(applicant.has_individual_market_eligibility?).to be_truthy
+      end
+    end
+
+    context 'when applicant does not have individual market eligibility' do
+      before do
+        allow(applicant).to receive(:individual_market_eligibility).and_return(nil)
+      end
+
+      it 'returns false' do
+        expect(applicant.has_individual_market_eligibility?).to be_falsey
+      end
+    end
+
+    context 'when individual market eligibility is blank' do
+      before do
+        allow(applicant).to receive(:individual_market_eligibility).and_return('')
+      end
+
+      it 'returns false' do
+        expect(applicant.has_individual_market_eligibility?).to be_falsey
+      end
+    end
+
+    context 'when individual market eligibility is an empty array' do
+      before do
+        allow(applicant).to receive(:individual_market_eligibility).and_return([])
+      end
+
+      it 'returns false' do
+        expect(applicant.has_individual_market_eligibility?).to be_falsey
+      end
+    end
+  end
 end

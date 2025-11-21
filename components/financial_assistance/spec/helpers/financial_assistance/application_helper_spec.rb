@@ -1137,4 +1137,99 @@ RSpec.describe ::FinancialAssistance::ApplicationHelper, :type => :helper, dbcle
       end
     end
   end
+
+  describe '#no_applicant_faa_nav_options' do
+    let(:multiple_applicants) { true }
+
+    before do
+      allow(helper).to receive(:qhp_application_feature_enabled?).and_return(true)
+      allow(helper).to receive(:l10n).and_call_original
+      allow(helper).to receive(:financial_assistance).and_return(double(
+                                                                   application_applicants_path: "/financial_assistance/applications/#{application.id}/applicants",
+                                                                   edit_application_path: "/financial_assistance/applications/#{application.id}/edit",
+                                                                   application_relationships_path: "/financial_assistance/applications/#{application.id}/relationships",
+                                                                   preferences_application_path: "/financial_assistance/applications/#{application.id}/preferences",
+                                                                   review_and_submit_application_path: "/financial_assistance/applications/#{application.id}/review_and_submit",
+                                                                   submit_your_application_application_path: "/financial_assistance/applications/#{application.id}/submit_your_application"
+                                                                 ))
+      allow(application).to receive(:applicants).and_return(double(count: 2))
+      allow(application).to receive(:present?).and_return(true)
+    end
+
+    context 'when application is ready for attestation and is draft' do
+      before do
+        allow(application).to receive(:ready_for_attestation?).and_return(true)
+        allow(application).to receive(:is_draft?).and_return(true)
+      end
+
+      context 'when all applicants have individual market eligibility' do
+        before do
+          allow(application).to receive(:applicants_have_individual_market_eligibility?).and_return(true)
+        end
+
+        it 'includes review and submit step links' do
+          result = helper.no_applicant_faa_nav_options(application)
+
+          review_step = result.find { |step| step[:label] == helper.l10n('qhp_application.nav.review_label') }
+          submit_step = result.find { |step| step[:label] == helper.l10n('submit') }
+
+          expect(review_step[:link]).to eq(financial_assistance.review_and_submit_application_path(application))
+          expect(submit_step[:link]).to eq(financial_assistance.submit_your_application_application_path(application))
+        end
+      end
+
+      context 'when applicants do not have individual market eligibility' do
+        before do
+          allow(application).to receive(:applicants_have_individual_market_eligibility?).and_return(false)
+        end
+
+        it 'does not include review and submit step links' do
+          result = helper.no_applicant_faa_nav_options(application)
+
+          review_step = result.find { |step| step[:label] == helper.l10n('qhp_application.nav.review_label') }
+          submit_step = result.find { |step| step[:label] == helper.l10n('submit') }
+
+          expect(review_step[:link]).to eq('#')
+          expect(submit_step[:link]).to eq('#')
+        end
+      end
+    end
+
+    context 'when application is not ready for attestation' do
+      before do
+        allow(application).to receive(:ready_for_attestation?).and_return(false)
+        allow(application).to receive(:is_draft?).and_return(true)
+        allow(application).to receive(:applicants_have_individual_market_eligibility?).and_return(true)
+      end
+
+      it 'does not include review and submit step links' do
+        result = helper.no_applicant_faa_nav_options(application)
+
+        review_step = result.find { |step| step[:label] == helper.l10n('qhp_application.nav.review_label') }
+        submit_step = result.find { |step| step[:label] == helper.l10n('submit') }
+
+        expect(review_step[:link]).to eq('#')
+        expect(submit_step[:link]).to eq('#')
+      end
+    end
+
+    context 'when application is not in draft state' do
+      before do
+        allow(application).to receive(:ready_for_attestation?).and_return(true)
+        allow(application).to receive(:is_draft?).and_return(false)
+        allow(application).to receive(:applicants_have_individual_market_eligibility?).and_return(true)
+      end
+
+      it 'does not include review and submit step links' do
+        result = helper.no_applicant_faa_nav_options(application)
+
+        review_step = result.find { |step| step[:label] == helper.l10n('qhp_application.nav.review_label') }
+        submit_step = result.find { |step| step[:label] == helper.l10n('submit') }
+
+        expect(review_step[:link]).to eq('#')
+        expect(submit_step[:link]).to eq('#')
+      end
+    end
+  end
+
 end

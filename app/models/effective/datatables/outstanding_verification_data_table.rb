@@ -158,7 +158,7 @@ module Effective
           eligibility_state = subject.eligibility_states.where(eligibility_item_key: 'aca_individual_market_eligibility').first
           next result if eligibility_state.blank?
 
-          result << eligibility_state.evidence_states.where(:status.in => [:outstanding, :in_review, :rejected]).map(&:evidence_item_key)
+          result << eligibility_state.evidence_states.where(:status.in => [:outstanding, :review, :rejected]).map(&:evidence_item_key)
           result
         end.flatten.uniq
       end
@@ -168,7 +168,7 @@ module Effective
           eligibility_state = subject.eligibility_states.where(eligibility_item_key: 'aptc_csr_credit').first
           next result if eligibility_state.blank?
 
-          result << eligibility_state.evidence_states.where(:status.in => [:outstanding, :in_review, :rejected]).map(&:evidence_item_key)
+          result << eligibility_state.evidence_states.where(:status.in => [:outstanding, :review, :rejected]).map(&:evidence_item_key)
           result
         end.flatten.uniq
       end

@@ -57,8 +57,8 @@ namespace :fix_evidence_is_satisfied do
     updated_count = 0
     eligibility_count = 0
     
-    fa_apps = find_affected_applications(FinancialAssistance, 2026, satisfied_states)
-    im_apps = find_affected_applications(IndividualMarket, 2026, satisfied_states)
+    fa_apps = find_affected_applications(FinancialAssistance, nil, satisfied_states)
+    im_apps = find_affected_applications(IndividualMarket, nil, satisfied_states)
 
     total_apps = fa_apps.count + im_apps.count
     puts "Found #{total_apps} applications with evidences to process."

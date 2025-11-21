@@ -3174,6 +3174,57 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
       expect(faa_application.fetch_evidence(alive_evidence.id, BSON::ObjectId.new)).to be_nil
     end
   end
+
+  describe '#applicants_have_individual_market_eligibility?' do
+    let!(:applicant1) { FactoryBot.create(:financial_assistance_applicant, application: application) }
+    let!(:applicant2) { FactoryBot.create(:financial_assistance_applicant, application: application) }
+
+    context 'when all applicants have individual market eligibility' do
+      before do
+        allow(applicant1).to receive(:has_individual_market_eligibility?).and_return(true)
+        allow(applicant2).to receive(:has_individual_market_eligibility?).and_return(true)
+        allow(application).to receive(:applicants).and_return([applicant1, applicant2])
+      end
+
+      it 'returns true' do
+        expect(application.applicants_have_individual_market_eligibility?).to be_truthy
+      end
+    end
+
+    context 'when some applicants do not have individual market eligibility' do
+      before do
+        allow(applicant1).to receive(:has_individual_market_eligibility?).and_return(true)
+        allow(applicant2).to receive(:has_individual_market_eligibility?).and_return(false)
+        allow(application).to receive(:applicants).and_return([applicant1, applicant2])
+      end
+
+      it 'returns false' do
+        expect(application.applicants_have_individual_market_eligibility?).to be_falsey
+      end
+    end
+
+    context 'when no applicants have individual market eligibility' do
+      before do
+        allow(applicant1).to receive(:has_individual_market_eligibility?).and_return(false)
+        allow(applicant2).to receive(:has_individual_market_eligibility?).and_return(false)
+        allow(application).to receive(:applicants).and_return([applicant1, applicant2])
+      end
+
+      it 'returns false' do
+        expect(application.applicants_have_individual_market_eligibility?).to be_falsey
+      end
+    end
+
+    context 'when there are no applicants' do
+      before do
+        allow(application).to receive(:applicants).and_return([])
+      end
+
+      it 'returns true (vacuous truth)' do
+        expect(application.applicants_have_individual_market_eligibility?).to be_truthy
+      end
+    end
+  end
 end
 
 RSpec.describe ::FinancialAssistance::Application, "with correct index definitions", type: :model, dbclean: :after_each do
