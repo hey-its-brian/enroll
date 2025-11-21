@@ -139,8 +139,9 @@ RSpec.describe Insured::Sbm::ApplicationsController, dbclean: :after_each do
       family.save!
     end
 
-    context 'when application exists' do
+    context 'when application exists and it is eligible to display evidences' do
       before do
+        allow(controller).to receive(:ineligible_to_view_evidences?).with(application.family).and_return(false)
         get :evidences, params: { id: application.id, application_gid: application_gid }
       end
 
@@ -169,6 +170,17 @@ RSpec.describe Insured::Sbm::ApplicationsController, dbclean: :after_each do
       end
     end
 
+    context 'when application exists and it is ineligible to display evidences' do
+      before do
+        allow(controller).to receive(:ineligible_to_view_evidences?).with(application.family).and_return(true)
+        get :evidences, params: { id: application.id, application_gid: application_gid }
+      end
+
+      it 'redirects to verification page' do
+        expect(response).to redirect_to(verification_insured_families_url(family))
+      end
+    end
+
     context 'when application does not exist' do
       let(:invalid_gid) { 'invalid-gid' }
 
@@ -190,6 +202,7 @@ RSpec.describe Insured::Sbm::ApplicationsController, dbclean: :after_each do
       before do
         allow(applicant1).to receive(:earliest_due_date).and_return(nil)
         allow(applicant2).to receive(:earliest_due_date).and_return(Date.current + 5.days)
+        allow(controller).to receive(:ineligible_to_view_evidences?).with(application.family).and_return(false)
         get :evidences, params: {  id: application.id, application_gid: application_gid }
       end
 

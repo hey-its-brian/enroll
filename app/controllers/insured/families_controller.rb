@@ -267,7 +267,7 @@ class Insured::FamiliesController < FamiliesController
   def verification_individual
     authorize @family, :verification_individual?
 
-    result = if params[:application_gid].present? && params[:applicant_id].present?
+    result = if params[:application_gid].present? && params[:applicant_id].present? && @family.previous_year_faa_app_info_needing_evidence_display.present?
                Operations::Sbm::Applications::Applicants::ApplicantQuery.new.call({application_gid: params[:application_gid], applicant_id: params[:applicant_id]})
              else
                Operations::Families::Verifications::Summary::IndividualQuery.new.call(family: @family, person_id: params[:person_id])

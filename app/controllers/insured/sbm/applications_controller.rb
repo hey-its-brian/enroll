@@ -16,6 +16,11 @@ module Insured
       def evidences
         authorize @family, :evidences?
 
+        if ineligible_to_view_evidences?(@family)
+          # get endpoint verification of families controller under insured namespace
+          return (redirect_to verification_insured_families_url(@family))
+        end
+
         @applicants = @application.applicants
         @sorted_applicants = @applicants.sort_by do |applicant|
           [applicant.cumulative_grouped_status.to_s, applicant.earliest_due_date || Float::INFINITY]
@@ -63,6 +68,15 @@ module Insured
       end
 
       private
+
+      # Checks if family is ineligible to view evidences page
+      #
+      # @param [Family] family - family object
+      #
+      # @return [Boolean] true if ineligible, false otherwise
+      def ineligible_to_view_evidences?(family)
+        family.previous_year_faa_app_info_needing_evidence_display.blank?
+      end
 
       def fetch_application
         @application = GlobalID::Locator.locate(params[:application_gid])

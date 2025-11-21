@@ -128,7 +128,7 @@ module Eligibilities
       # @return [void]
       # @note This method is only used for the V3 evidence verification process.
       def set_evidence_context
-        result = if params[:display_previous_evidences] == 'true'
+        result = if params[:display_previous_evidences] == 'true' && @family.previous_year_faa_app_info_needing_evidence_display.present?
                    Operations::Sbm::Applications::Applicants::EvidenceQuery.new.call(
                      family: @family,
                      person_id: params[:person_id],

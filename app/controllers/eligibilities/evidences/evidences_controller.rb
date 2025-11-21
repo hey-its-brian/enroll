@@ -152,7 +152,7 @@ module Eligibilities
       private
 
       def set_evidence_context
-        result = if params[:display_previous_evidences].to_s.downcase == "true"
+        result = if params[:display_previous_evidences].to_s.downcase == "true" && @family.previous_year_faa_app_info_needing_evidence_display.present?
                    Operations::Sbm::Applications::Applicants::EvidenceQuery.new.call(
                      family: @family,
                      person_id: params[:person_id],
