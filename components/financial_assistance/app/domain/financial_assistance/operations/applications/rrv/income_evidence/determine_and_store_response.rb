@@ -92,12 +92,14 @@ module FinancialAssistance
             end
 
             def update_family_determination(application)
-              return Success(true) unless qhp_application_feature_enabled?
-
               family = application.family
-              return unless family.present?
+              return Failure("RRV INCOME: Family not found for application hbx_id: #{application.hbx_id}") unless family.present?
 
-              ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family}) if family.latest_application_gid == application.to_global_id&.uri&.to_s
+              if family.latest_application_gid == application.to_global_id&.uri&.to_s
+                ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family})
+              else
+                Success("Income response is loaded for application with hbx_id: #{application.hbx_id}, family determination is not updated as latest application gid does not match")
+              end
             end
           end
         end

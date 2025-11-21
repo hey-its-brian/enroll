@@ -17,10 +17,11 @@ module FinancialAssistance
               validated_params = yield validate_params(params)
               application_entity = yield initialize_application_entity(validated_params[:payload])
               application = yield find_application(application_entity)
-              result = update_applicant(application_entity, application, validated_params[:applicant_identifier])
-              result = save_application(application, validated_params[:applicant_identifier]) if result.success?
+              _applicant_result = yield update_applicant(application_entity, application, validated_params[:applicant_identifier])
+              result = yield save_application(application, validated_params[:applicant_identifier])
+              _determination = yield update_family_determination(application)
 
-              result
+              Success(result)
             end
 
             private
@@ -76,9 +77,18 @@ module FinancialAssistance
               if application.save
                 Success("Application is saved for application with hbx_id #{application.hbx_id} for applicant for identifier #{applicant_id}")
               else
-                error_msg = "Failed to save application: #{application.errors.full_messages.join(', ')}"
-                logger.error(error_msg)
-                Failure(error_msg)
+                Failure("Failed to save application: #{application.errors.full_messages.join(', ')}")
+              end
+            end
+
+            def update_family_determination(application)
+              family = application.family
+              return Failure("RRV NON ESI: Family not found for application hbx_id: #{application.hbx_id}") unless family.present?
+
+              if family.latest_application_gid == application.to_global_id&.uri&.to_s
+                ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family})
+              else
+                Success("Non ESI response is loaded for application with hbx_id: #{application.hbx_id}, family determination is not updated as latest application gid does not match")
               end
             end
           end

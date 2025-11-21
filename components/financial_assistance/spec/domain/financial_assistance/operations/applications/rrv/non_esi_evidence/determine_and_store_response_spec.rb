@@ -8,22 +8,49 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::NonEsiEvide
     DatabaseCleaner.clean
   end
 
-  let!(:family) { FactoryBot.create(:family, :with_primary_family_member)}
+  let!(:system_date) { Date.today }
+  let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+  let!(:application2) do
+    result = FactoryBot.create(:financial_assistance_application, hbx_id: '300000126', aasm_state: "determined", family_id: family.id, submitted_at: DateTime.new(system_date.year, system_date.month, system_date.day) - 30.minutes)
+    member = FactoryBot.create(:financial_assistance_applicant,
+                               eligibility_determination_id: nil,
+                               person_hbx_id: '262916542938597',
+                               is_primary_applicant: true,
+                               first_name: 'esi',
+                               last_name: 'evidence',
+                               ssn: "518124854",
+                               dob: Date.new(1988, 11, 11),
+                               family_member_id: family.primary_family_member.id,
+                               application: result)
+    member.build_aptc_eligibilities_evidences
+    member.build_ivl_eligibility_with_evidences
+    member.save!
+    family.assign_latest_application_gid
+    family.save!
+    ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family})
+
+    result
+  end
+
   let!(:application) do
-    FactoryBot.create(:financial_assistance_application, hbx_id: '200000126', aasm_state: "determined", family_id: family.id)
+    FactoryBot.create(:financial_assistance_application, hbx_id: '200000126', aasm_state: "determined", family_id: family.id, submitted_at: DateTime.new(system_date.year, system_date.month, system_date.day))
+
   end
 
   let!(:applicant) do
-    FactoryBot.create(:financial_assistance_applicant,
-                      eligibility_determination_id: nil,
-                      person_hbx_id: '1629165429385938',
-                      is_primary_applicant: true,
-                      first_name: 'esi',
-                      last_name: 'evidence',
-                      ssn: "518124854",
-                      dob: Date.new(1988, 11, 11),
-                      family_member_id: family.primary_family_member.id,
-                      application: application)
+    result = FactoryBot.create(:financial_assistance_applicant,
+                               eligibility_determination_id: nil,
+                               person_hbx_id: '1629165429385938',
+                               is_primary_applicant: true,
+                               first_name: 'esi',
+                               last_name: 'evidence',
+                               ssn: "518124854",
+                               dob: Date.new(1988, 11, 11),
+                               family_member_id: family.primary_family_member.id,
+                               application: application)
+
+    result
   end
 
   context 'success' do
@@ -32,9 +59,12 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::NonEsiEvide
       let!(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
 
       before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
         @applicant = application.applicants.first
         @applicant.build_aptc_eligibilities_evidences
+        @applicant.build_ivl_eligibility_with_evidences
         @applicant.save!
+        family.update_attributes(latest_application_gid: application.to_global_id.uri.to_s)
         @result = subject.call({payload: response_payload, applicant_identifier: '1629165429385938', call_type: 'hub_call'})
 
         @application = ::FinancialAssistance::Application.by_hbx_id(response_payload[:hbx_id]).first.reload
@@ -42,8 +72,10 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::NonEsiEvide
         @applicant.reload
       end
 
-      it 'should return success' do
+      it 'should return success and rebuild family determination' do
         expect(@result).to be_success
+        family.reload
+        expect(family.eligibility_determination.application_gid).to eq @application.to_global_id.uri.to_s
       end
 
       it 'should update applicant verification' do
