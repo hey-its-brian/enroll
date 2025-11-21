@@ -14,6 +14,8 @@ RSpec.describe Operations::Families::Verifications::Summary::IndividualQuery, db
     ENV['ENABLE_ALIVE_STATUS'] = 'true'
     ENV['LOCAL_MEC_EVIDENCE_IS_ENABLED'] = 'true'
     ENV['QHP_APPLICATION_IS_ENABLED'] = 'true'
+    ENV['SHOW_PREVIOUS_YEAR_FAA_VERIFICATIONS_IS_ENABLED'] = 'true'
+    ENV['SHOW_INACTIVE_VERIFICATIONS_IS_ENABLED'] = 'true'
 
     # Now load the registry initializer after ENV variables are set
     load Rails.root.join('config', 'initializers', 'enroll_registry.rb')
@@ -24,6 +26,8 @@ RSpec.describe Operations::Families::Verifications::Summary::IndividualQuery, db
     ENV['ENABLE_ALIVE_STATUS'] = nil
     ENV['LOCAL_MEC_EVIDENCE_IS_ENABLED'] = nil
     ENV['QHP_APPLICATION_IS_ENABLED'] = nil
+    ENV['SHOW_PREVIOUS_YEAR_FAA_VERIFICATIONS_IS_ENABLED'] = nil
+    ENV['SHOW_INACTIVE_VERIFICATIONS_IS_ENABLED'] = nil
 
     # Now load the registry initializer after ENV variables are reset
     load Rails.root.join('config', 'initializers', 'enroll_registry.rb')
@@ -101,8 +105,35 @@ RSpec.describe Operations::Families::Verifications::Summary::IndividualQuery, db
 
       expect(result.success?).to be true
       expect(result.success[:member]).to eq(family.primary_applicant)
-      expect(result.success[:evidences].size).to eq(8)
+      expect(result.success[:evidences].size).to eq(10)
       expect(result.success[:evidences].all? { |e| e.is_a?(Adapters::EvidenceAdapter) }).to be true
+    end
+  end
+
+  context 'when inactive verifications are present' do
+    let(:qhp_application) { FactoryBot.create(:individual_market_application, :determined, family_id: family.id) }
+    let(:qhp_applicant) { FactoryBot.create(:individual_market_applicant, :with_person_name, :with_demographics, :with_eligibilities, application: qhp_application, family_member_id: primary_applicant.id) }
+
+    before do
+      qhp_application
+      qhp_applicant.build_individual_market_evidences
+      qhp_application.save!
+      family.update_attributes!(latest_application_gid: qhp_application.to_global_id.to_s)
+    end
+
+    it 'returns member, evidences and inactive verifications for a valid family and person_id' do
+      determination
+      params = { family: family, person_id: person.id }
+      result = subject.call(params)
+      expect(result.success?).to be true
+      success = result.success
+      evidences = success[:evidences]
+      inactive_evidences = evidences.select(&:inactive)
+      expect(success[:member]).to eq(family.primary_applicant)
+      expect(evidences.size).to eq(8)
+      expect(evidences.all? { |e| e.is_a?(Adapters::EvidenceAdapter) }).to be true
+      expect(inactive_evidences.size).to eq(7)
+      expect(inactive_evidences.map(&:evidence_item_key)).to include(:income_evidence)
     end
   end
 end

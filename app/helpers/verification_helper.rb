@@ -66,11 +66,11 @@ module VerificationHelper
   def display_evidence_name(type)
     case type
     # Financial Assistance Evidences
-    when :esi_evidence
+    when :esi_evidence, :esi_mec_evidence
       l10n("faa.evidence_type_esi")
     when :local_mec_evidence
       l10n("faa.evidence_type_aces")
-    when :non_esi_evidence
+    when :non_esi_evidence, :non_esi_mec_evidence
       l10n("faa.evidence_type_non_esi")
     when :income_evidence
       l10n("faa.evidence_type_income")

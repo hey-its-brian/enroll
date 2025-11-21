@@ -616,17 +616,66 @@ Then(/^Individual should not see view history table$/) do
   expect(page).not_to have_content('Verification History')
 end
 
+Given(/^the consumer has an FAA application that was migrated$/) do
+  family = user.person.primary_family
+  current_year = TimeKeeper.date_of_record.year
+  application = FactoryBot.create(
+    :financial_assistance_application,
+    family_id: family.id,
+    assistance_year: current_year,
+    aasm_state: "determined",
+    origin: "migration",
+    generation_reason: "manual",
+    submitted_at: 10.days.ago
+  )
+  application.save!
+end
+
 Given(/^the consumer has a previous year FA application that needs verifications$/) do
   family = user.person.primary_family
-  previous_year = family.application_applicable_year - 1
-  # TODO: Create a proper previous year FA application that needs verifications, will need to update once logic finalized
-  FactoryBot.create(:financial_assistance_application, family_id: family.id, assistance_year: previous_year, aasm_state: 'determined')
+  current_year = TimeKeeper.date_of_record.year
+  application = FactoryBot.create(
+    :financial_assistance_application,
+    family_id: family.id,
+    assistance_year: current_year,
+    aasm_state: "determined",
+    submitted_at: 5.days.ago
+  )
+  applicant = FactoryBot.create(
+    :financial_assistance_applicant,
+    :with_work_email,
+    :with_work_phone,
+    application: application,
+    family_member_id: family.family_members.first.id
+  )
+  aptc_csr_eligibility = FactoryBot.create(:aptc_csr_eligibility, eligible: applicant)
+  FactoryBot.create(:income_evidence, :outstanding, eligibility: aptc_csr_eligibility)
 end
 
 Given(/^the consumer has a determined QHP application$/) do
   family = user.person.primary_family
-  application = FactoryBot.create(:individual_market_application, :determined, family: family)
+  renewal_year = TimeKeeper.date_of_record.year + 1
+  application = FactoryBot.create(
+    :individual_market_application,
+    family_id: family.id,
+    assistance_year: renewal_year,
+    current_state: "determined",
+    submitted_at: 3.days.ago
+  )
+  applicant = FactoryBot.create(
+    :individual_market_applicant,
+    :with_person_name,
+    :with_demographics,
+    :with_eligibilities,
+    :with_home_address,
+    application: application,
+    family_member_id: family.family_members.first.id
+  )
+  FactoryBot.create(:individual_market_demographics, applicant: applicant)
+  applicant.build_individual_market_evidences
+  application.save!
   family.update_attributes(latest_application_gid: application.to_global_id.to_s)
+  ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family.reload)
 end
 
 Then(/^.+ should see a previous year FA application needing verifications banner$/) do
@@ -639,4 +688,16 @@ end
 
 Then(/^.+ should see the application id link$/) do
   expect(page).to have_selector('div[data-cuke="application-id-link"] a')
+end
+
+Then(/^.+ should be on the previous application page$/) do
+  expect(page).to have_selector('h1[data-cuke="application-specific-verifications-title"]')
+end
+
+Then(/^there should be FA related inactive verifications listed$/) do
+  expect(page).to have_selector('[data-cuke="individual-inactive-verifications"]')
+  within('[data-cuke="individual-inactive-verifications"]') do
+    expect(page).to have_content('Income')
+    expect(page).to have_content('Outstanding')
+  end
 end

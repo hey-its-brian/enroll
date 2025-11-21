@@ -76,7 +76,7 @@ module Operations
             case valid_params[:eligibility_kind]
             when 'ridp'
               yield find_identity_verification(subject)
-            when 'individual_market_eligibility'
+            when 'individual_market_eligibility', 'aptc_csr_eligibility'
               yield find_inactive_evidence(subject, valid_params[:evidence_key])
             when 'aca_individual_market_eligibility', 'aptc_csr_credit'
               if valid_params[:inactive] == "true"

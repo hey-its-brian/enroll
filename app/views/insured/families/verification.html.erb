@@ -19,6 +19,18 @@
     <p><%= l10n('insured.families.verifications.must_submit_application_summary') %></p>
   <% else %>
     <h1><%= l10n("insured.families.verifications") %></h1>
+    <% if EnrollRegistry.feature_enabled?(:show_previous_year_faa_verifications) %>
+      <% application = @family.latest_application %>
+      <% if application.present? %>
+        <div data-cuke="application-id-link">
+          <dl class="parent">
+            <dt><%= l10n("application_id") %>:</dt>
+            <% link = application.is_a?(FinancialAssistance::Application) ? financial_assistance.review_application_path(application) : insured_individual_market_application_path(application) %>
+            <dd><%= link_to  application.hbx_id, link, class: 'primary-text' %></dd>
+          </dl>
+        </div>
+      <% end %>
+    <% end %>
     <% if EnrollRegistry.feature_enabled?(:show_new_verifications_household_summary) %>
       <% if EnrollRegistry.feature_enabled?(:verifications_household_summary_text_update) %>
         <p><%= l10n('insured.families.verifications.summary_disclaimer_1') %></p>

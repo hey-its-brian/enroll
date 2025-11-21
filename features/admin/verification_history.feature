@@ -41,13 +41,14 @@ Feature: Admin navigates to the verification history page of a consumer
     And admin clicks on the Document Detail breadcrumb
     Then admin should be in the Document Detail page
 
-  # TODO: Adding a flaky tag for now and this will be updated as part of a future PR related to the CR-120+ additional scope.
-  @flaky
   Scenario: Admin can see banner when there is a previous year faa application needing verifications
     Given the consumer has a verification with history elements that have varying dates
+    Given the consumer has an FAA application that was migrated
     Given the consumer has a previous year FA application that needs verifications
     Given the consumer has a determined QHP application
     And clicks on the person in families tab
     And admin lands in the Verifications page
     Then admin should see a previous year FA application needing verifications banner
+    Then admin should see the application id link
     And admin clicks the link in the previous year application banner
+    Then admin should be on the previous application page
