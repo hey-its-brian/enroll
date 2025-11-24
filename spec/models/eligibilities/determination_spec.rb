@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Eligibilities::Determination, type: :model do
+RSpec.describe Eligibilities::Determination, type: :model, dbclean: :after_each do
   let(:primary_person) { FactoryBot.create(:person, :with_consumer_role) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: primary_person) }
   let(:dependent_person) do
@@ -224,6 +224,230 @@ RSpec.describe Eligibilities::Determination, type: :model do
 
       it "returns an empty array" do
         expect(determination.shopping_eligible_member_ids(TimeKeeper.date_of_record.year)).to be_empty
+      end
+    end
+  end
+
+  describe '#refresh_enrollment_eligibilities' do
+    let(:product) { FactoryBot.create(:benefit_markets_products_health_products_health_product, benefit_market_kind: :aca_individual) }
+    let!(:enrollment) do
+      enr = FactoryBot.create(:hbx_enrollment,
+                              household: family.active_household,
+                              family: family,
+                              kind: "individual",
+                              aasm_state: 'coverage_selected',
+                              effective_on: TimeKeeper.date_of_record.beginning_of_month,
+                              product: product)
+
+      FactoryBot.create(:hbx_enrollment_member,
+                        hbx_enrollment: enr,
+                        applicant_id: family.primary_applicant.id,
+                        is_subscriber: true,
+                        eligibility_date: TimeKeeper.date_of_record.beginning_of_month,
+                        coverage_start_on: TimeKeeper.date_of_record.beginning_of_month)
+
+      enr.reload
+      enr
+    end
+
+    context 'when determination is created with outstanding subject' do
+      before do
+        enrollment.update_attributes!(is_any_enrollment_member_outstanding: false)
+
+        det = family.build_eligibility_determination(
+          effective_date: TimeKeeper.date_of_record.beginning_of_month
+        )
+
+        det.subjects.build(
+          person_id: primary_person.id.to_s,
+          gid: family.primary_applicant.to_global_id,
+          outstanding_verification_status: 'outstanding'
+        )
+
+        det.save!
+        family.save!
+      end
+
+      it 'updates enrollment is_any_enrollment_member_outstanding flag to true' do
+        enrollment.reload
+        expect(enrollment.is_any_enrollment_member_outstanding).to be_truthy
+      end
+    end
+
+    context 'when determination is updated from outstanding to verified' do
+      before do
+        det = family.build_eligibility_determination(
+          effective_date: TimeKeeper.date_of_record.beginning_of_month
+        )
+
+        det.subjects.build(
+          person_id: primary_person.id.to_s,
+          gid: family.primary_applicant.to_global_id,
+          outstanding_verification_status: 'outstanding'
+        )
+
+        det.save!
+        family.save!
+
+        enrollment.reload
+        expect(enrollment.is_any_enrollment_member_outstanding).to be_truthy
+      end
+
+      it 'updates enrollment flag to false when subject becomes verified' do
+        family.eligibility_determination.subjects.first.update_attributes(outstanding_verification_status: 'verified')
+        family.eligibility_determination.save!
+
+        enrollment.reload
+        expect(enrollment.is_any_enrollment_member_outstanding).to be_falsey
+      end
+    end
+
+    context 'when determination has mixed statuses' do
+      let(:spouse_person) { FactoryBot.create(:person, :with_consumer_role) }
+      let!(:spouse_family_member) do
+        family.add_family_member(spouse_person, is_primary_applicant: false)
+        family.relate_new_member(spouse_person, 'spouse')
+        family.save!
+        family.family_members.detect { |fm| fm.person_id == spouse_person.id }
+      end
+
+      let!(:enrollment_with_spouse) do
+        enr = FactoryBot.create(:hbx_enrollment,
+                                household: family.active_household,
+                                family: family,
+                                kind: "individual",
+                                aasm_state: 'coverage_selected',
+                                effective_on: TimeKeeper.date_of_record.beginning_of_month,
+                                product: product)
+
+        FactoryBot.create(:hbx_enrollment_member,
+                          hbx_enrollment: enr,
+                          applicant_id: family.primary_applicant.id,
+                          is_subscriber: true,
+                          eligibility_date: TimeKeeper.date_of_record.beginning_of_month,
+                          coverage_start_on: TimeKeeper.date_of_record.beginning_of_month)
+
+        FactoryBot.create(:hbx_enrollment_member,
+                          hbx_enrollment: enr,
+                          applicant_id: spouse_family_member.id,
+                          is_subscriber: false,
+                          eligibility_date: TimeKeeper.date_of_record.beginning_of_month,
+                          coverage_start_on: TimeKeeper.date_of_record.beginning_of_month)
+
+        enr.reload
+        enr
+      end
+
+      before do
+        enrollment_with_spouse.update_attributes!(is_any_enrollment_member_outstanding: false)
+
+        det = family.build_eligibility_determination(
+          effective_date: TimeKeeper.date_of_record.beginning_of_month
+        )
+
+        det.subjects.build(
+          person_id: primary_person.id.to_s,
+          gid: family.primary_applicant.to_global_id,
+          outstanding_verification_status: 'verified'
+        )
+
+        det.subjects.build(
+          person_id: spouse_person.id.to_s,
+          gid: spouse_family_member.to_global_id,
+          outstanding_verification_status: 'outstanding'
+        )
+
+        det.save!
+        family.save!
+      end
+
+      it 'updates enrollment flag to true when any enrolled member has outstanding' do
+        enrollment_with_spouse.reload
+        expect(enrollment_with_spouse.is_any_enrollment_member_outstanding).to be_truthy
+      end
+    end
+
+    context 'when enrollment is terminated' do
+      before do
+        enrollment.terminate_coverage!
+
+        det = family.build_eligibility_determination(
+          effective_date: TimeKeeper.date_of_record.beginning_of_month
+        )
+
+        det.subjects.build(
+          person_id: primary_person.id.to_s,
+          gid: family.primary_applicant.to_global_id,
+          outstanding_verification_status: 'outstanding'
+        )
+
+        det.save!
+        family.save!
+      end
+
+      it 'does not update terminated enrollments' do
+        enrollment.reload
+        expect(enrollment.aasm_state).to eq 'coverage_terminated'
+      end
+    end
+
+    context 'when family has multiple enrollments' do
+      let!(:enrollment2) do
+        enr = FactoryBot.create(:hbx_enrollment,
+                                household: family.active_household,
+                                family: family,
+                                kind: "individual",
+                                aasm_state: 'coverage_selected',
+                                effective_on: TimeKeeper.date_of_record.beginning_of_month,
+                                product: product)
+
+        FactoryBot.create(:hbx_enrollment_member,
+                          hbx_enrollment: enr,
+                          applicant_id: family.primary_applicant.id,
+                          is_subscriber: true,
+                          eligibility_date: TimeKeeper.date_of_record.beginning_of_month,
+                          coverage_start_on: TimeKeeper.date_of_record.beginning_of_month)
+
+        enr.reload
+        enr
+      end
+
+      before do
+        enrollment.update_attributes!(is_any_enrollment_member_outstanding: false)
+        enrollment2.update_attributes!(is_any_enrollment_member_outstanding: false)
+
+        det = family.build_eligibility_determination(
+          effective_date: TimeKeeper.date_of_record.beginning_of_month
+        )
+
+        det.subjects.build(
+          person_id: primary_person.id.to_s,
+          gid: family.primary_applicant.to_global_id,
+          outstanding_verification_status: 'outstanding'
+        )
+
+        det.save!
+        family.save!
+      end
+
+      it 'updates all active individual market enrollments' do
+        enrollment.reload
+        enrollment2.reload
+
+        expect(enrollment.is_any_enrollment_member_outstanding).to be_truthy
+        expect(enrollment2.is_any_enrollment_member_outstanding).to be_truthy
+      end
+    end
+
+    context 'when determinable is not a Family' do
+      let(:non_family_determinable) { double('NonFamily') }
+      let(:determination_non_family) do
+        FactoryBot.build(:eligibilities_determination)
+      end
+
+      it 'does not raise error' do
+        allow(determination_non_family).to receive(:determinable).and_return(non_family_determinable)
+        expect { determination_non_family.refresh_enrollment_eligibilities }.not_to raise_error
       end
     end
   end

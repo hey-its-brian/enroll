@@ -15,6 +15,8 @@ module Eligibilities
     field :outstanding_verification_earliest_due_date, type: Date
     field :outstanding_verification_document_status, type: String
 
+    after_save :refresh_enrollment_eligibilities
+
     # @!attribute application_gid
     #   @return [String] The global ID of the application associated with this determination.
     #
@@ -88,6 +90,16 @@ module Eligibilities
       end
       # Combine with APTC eligible members and ensure uniqueness
       (eligible_ids + aptc_eligible_member_ids(year)).flatten.compact.uniq
+    end
+
+    # Updates all individual market enrollments to reflect current determination
+    # This ensures is_any_enrollment_member_outstanding is in sync with subjects
+    def refresh_enrollment_eligibilities
+      return unless determinable.is_a?(Family)
+
+      determinable.households.each do |household|
+        household.hbx_enrollments.active.each(&:evaluate_individual_market_eligiblity)
+      end
     end
   end
 end

@@ -785,7 +785,8 @@ class HbxEnrollment
     eligibility_ruleset = ::RuleSet::HbxEnrollment::IndividualMarketVerification.new(self)
     if eligibility_ruleset.applicable?
       if self.is_any_enrollment_member_outstanding != eligibility_ruleset.determine_next_state[0]
-        self.update_attributes!(is_any_enrollment_member_outstanding: eligibility_ruleset.determine_next_state[0])
+        # TODO: update this after refactoring set_is_any_enrollment_member_outstanding
+        self.set(is_any_enrollment_member_outstanding: eligibility_ruleset.determine_next_state[0], updated_at: Time.current)
       end
 
       if eligibility_ruleset.determine_next_state[1] != :do_nothing
