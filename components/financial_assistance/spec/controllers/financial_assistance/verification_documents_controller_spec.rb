@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe FinancialAssistance::VerificationDocumentsController, type: :controller do
+RSpec.describe FinancialAssistance::VerificationDocumentsController, type: :controller, dbclean: :after_each do
   routes { FinancialAssistance::Engine.routes }
   let!(:fake_person) { FactoryBot.create(:person, :with_consumer_role) }
   let!(:fake_user) {FactoryBot.create(:user, :person => fake_person)}

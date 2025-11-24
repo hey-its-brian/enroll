@@ -781,4 +781,50 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
       end
     end
   end
+
+  describe 'with rerun_renewal flag' do
+    let(:renewal_year) { application.assistance_year.next }
+    let(:params) do
+      {
+        family_id: application.family_id,
+        renewal_year: renewal_year,
+        renewal_job_type: 'rerun_renewal'
+      }
+    end
+
+    context 'when expired application exists' do
+      let!(:expired_application) do
+
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          assistance_year: renewal_year,
+          years_to_renew: 5,
+          aasm_state: 'expired'
+        )
+      end
+
+      let!(:applicant) do
+        FactoryBot.create(:financial_assistance_applicant,
+                          person_hbx_id: person.hbx_id,
+                          is_primary_applicant: true,
+                          family_member_id: family.primary_applicant.id,
+                          application: expired_application)
+      end
+
+      it 'returns success' do
+        result = subject.call(params)
+        expect(result).to be_success
+        expect(result.success.aasm_state).to eq('renewal_draft')
+      end
+    end
+
+    context 'when no expired application exists' do
+      it 'returns failure' do
+        result = subject.call(params)
+        expect(result).to be_failure
+        expect(result.failure).to eq("Could not find any applications that are in expired state for the year: #{renewal_year}.")
+      end
+    end
+  end
 end

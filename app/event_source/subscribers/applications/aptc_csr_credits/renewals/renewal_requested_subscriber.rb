@@ -26,8 +26,8 @@ module Subscribers
               ::FinancialAssistance::Operations::Applications::AptcCsrCreditEligibilities::Renewals::Renew.new.call(payload)
 
             if result.success?
-              subscriber_logger.info "RenewalRequestSubscriber, success: app_hbx_id: #{result.success}"
-              logger.info "RenewalRequestSubscriber: acked, SuccessResult: #{result.success}"
+              subscriber_logger.info "RenewalRequestSubscriber, success: app_hbx_id: #{result.success.hbx_id}"
+              logger.info "RenewalRequestSubscriber: acked, SuccessResult app_hbx_id: #{result.success.hbx_id}"
             else
               errors =
                 if result.failure.is_a?(Dry::Validation::Result)

@@ -40,6 +40,8 @@ module FinancialAssistance
               return Failure('Missing renewal_year key') unless params.key?(:renewal_year)
               return Failure("Cannot find family with input value: #{params[:family_id]} for key family_id") if ::Family.where(id: params[:family_id]).first.nil?
               return Failure("Invalid value: #{params[:renewal_year]} for key renewal_year, must be an Integer") if params[:renewal_year].nil? || !params[:renewal_year].is_a?(Integer)
+              @renewal_job_type = params[:renewal_job_type]
+
               Success(params)
             end
 
@@ -90,22 +92,36 @@ module FinancialAssistance
             # @return [Dry::Monads::Result] Success with the latest application or Failure with an error message
             def find_latest_application(family, validated_params)
               applications_by_family = ::FinancialAssistance::Application.where(family_id: validated_params[:family_id])
-              return Failure("Renewal application already created for #{validated_params}") if applications_by_family.by_year(validated_params[:renewal_year]).present?
 
-              current_year = validated_params[:renewal_year].pred
-              application = if qhp_application_feature_enabled?
-                              app = family.latest_application
-                              return Failure("Family #{family.id} does not have a latest application for current year: #{current_year}") if invalid_app?(app, current_year)
-
-                              app
-                            else
-                              applications_by_family.newest_determined_by_year(current_year).first
-                            end
-
-              if application&.eligible_for_renewal?
-                Success(application)
+              if @renewal_job_type == 'rerun_renewal'
+                latest_app = applications_by_family.by_year(validated_params[:renewal_year]).order_by(created_at: :desc).first
+                if latest_app.present?
+                  if latest_app.expired?
+                    Success(latest_app)
+                  else
+                    Failure("Renewal application already created for the year: #{validated_params[:renewal_year]} in #{latest_app.aasm_state} state.")
+                  end
+                else
+                  Failure("Could not find any applications that are in expired state for the year: #{validated_params[:renewal_year]}.")
+                end
               else
-                Failure("Could not find any applications that are renewal eligible: #{validated_params}.")
+                return Failure("Renewal application already created for #{validated_params}") if applications_by_family.by_year(validated_params[:renewal_year]).present?
+
+                current_year = validated_params[:renewal_year].pred
+                application = if qhp_application_feature_enabled?
+                                app = family.latest_application
+                                return Failure("Family #{family.id} does not have a latest application for current year: #{current_year}") if invalid_app?(app, current_year)
+
+                                app
+                              else
+                                applications_by_family.newest_determined_by_year(current_year).first
+                              end
+
+                if application&.eligible_for_renewal?
+                  Success(application)
+                else
+                  Failure("Could not find any applications that are renewal eligible: #{validated_params}.")
+                end
               end
             rescue SystemStackError => e
               Failure("Critical Error: Unable to find application from database for family id: #{validated_params[:family_id]}.\n error_message: #{e.message} \n backtrace: #{e.backtrace.join("\n")}")
@@ -208,7 +224,7 @@ module FinancialAssistance
             end
 
             def find_aasm_state(application, renewal_application_factory)
-              if application.years_to_renew == 0 || application.years_to_renew.nil?
+              if !@renewal_job_type && (application.years_to_renew == 0 || application.years_to_renew.nil?)
                 @failure_reason = 'years_to_renew is 0 or nil'
                 return 'income_verification_extension_required'
               end
@@ -233,6 +249,8 @@ module FinancialAssistance
             end
 
             def calculate_years_to_renew(application)
+              return application.years_to_renew if @renewal_job_type == 'rerun_renewal'
+
               if application.years_to_renew.present? && application.years_to_renew > 0
                 application.years_to_renew.to_i - 1
               else
@@ -241,7 +259,9 @@ module FinancialAssistance
             end
 
             def calculate_renewal_base_year(application)
+              return application.renewal_base_year if @renewal_job_type == 'rerun_renewal'
               return application.renewal_base_year if application.renewal_base_year.present?
+
               application.calculate_renewal_base_year
             end
           end

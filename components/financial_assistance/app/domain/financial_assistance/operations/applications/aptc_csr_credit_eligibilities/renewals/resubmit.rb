@@ -45,6 +45,8 @@ module FinancialAssistance
               return Failure("No renewal eligible applications found for renewal year: #{renewal_year}") if applications.blank?
 
               applications.each do |application|
+                next application if application.submitted? && !application.previously_renewal_draft?
+
                 resubmission_details = {
                   application_hbx_id: application.hbx_id,
                   original_state: application.aasm_state

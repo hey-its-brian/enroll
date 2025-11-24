@@ -17,8 +17,8 @@ module FinancialAssistance
             include ::ResourceRegistryHelper
 
             def call(params)
-              family_ids = yield renewal_eligible_family_ids(params[:renewal_year])
-              family_ids = yield generate_renewal_events(params[:renewal_year], family_ids)
+              family_ids = yield renewal_eligible_family_ids(params[:renewal_year], params[:renewal_job_type])
+              family_ids = yield generate_renewal_events(params[:renewal_year], family_ids, params[:renewal_job_type])
 
               Success(family_ids)
             end
@@ -28,7 +28,16 @@ module FinancialAssistance
             # Returns all family_ids where the family has a current enrollment and their most recent determined
             # fa application for the previous year is renewal eligible
             # @return [Array] family_ids
-            def renewal_eligible_family_ids(renewal_year)
+            def renewal_eligible_family_ids(renewal_year, renewal_job_type)
+              if renewal_job_type == 'rerun_renewal'
+                return Success(
+                  ::FinancialAssistance::Application.where(
+                    aasm_state: 'expired',
+                    assistance_year: renewal_year
+                  ).distinct(:family_id)
+                )
+              end
+
               family_ids = ::HbxEnrollment.individual_market.enrolled.current_year.distinct(:family_id)
 
               if qhp_application_feature_enabled?
@@ -46,7 +55,7 @@ module FinancialAssistance
             end
 
             # rubocop:disable Style/MultilineBlockChain
-            def generate_renewal_events(renewal_year, family_ids)
+            def generate_renewal_events(renewal_year, family_ids, renewal_job_type)
               logger = Logger.new("#{Rails.root}/log/aptc_credit_eligibilities_request_all.log")
 
               logger.info 'Started publish_generate_draft_renewals process'
@@ -54,7 +63,7 @@ module FinancialAssistance
 
               family_ids.each_with_index do |family_id, index|
                 # EventSource Publishing
-                params = { payload: { index: index, family_id: family_id.to_s, renewal_year: renewal_year }, event_name: 'renewal.requested' }
+                params = { payload: { index: index, family_id: family_id.to_s, renewal_year: renewal_year, renewal_job_type: renewal_job_type }, event_name: 'renewal.requested' }
 
                 Try do
                   ::FinancialAssistance::Operations::Applications::AptcCsrCreditEligibilities::Renewals::PublishRenewalRequest.new.call(params)

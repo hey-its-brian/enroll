@@ -833,6 +833,19 @@ module FinancialAssistance
       # An application can be in the cancelled state if a new application is created.
       state :cancelled
 
+      # Application is transitioned to expired state when we want to depend on this application to generate a new renewal application
+      state :expired
+
+      event :expire, :after => :record_transition do
+        transitions from: [
+          :renewal_draft,
+          :applicants_update_required,
+          :income_verification_extension_required,
+          :submitted,
+          :determined
+        ], to: :expired
+      end
+
       event :set_magi_medicaid_eligibility_request_errored, :after => [:record_transition, :build_transition] do
         if FinancialAssistanceRegistry.feature_enabled?(:haven_determination)
           transitions from: :submitted, to: :haven_magi_medicaid_eligibility_request_errored

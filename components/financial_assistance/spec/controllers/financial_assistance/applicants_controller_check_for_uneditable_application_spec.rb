@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe FinancialAssistance::ApplicantsController, type: :controller do
+RSpec.describe FinancialAssistance::ApplicantsController, type: :controller, dbclean: :after_each do
   routes { FinancialAssistance::Engine.routes }
 
   let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }

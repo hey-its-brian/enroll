@@ -56,7 +56,7 @@ RSpec.describe 'resubmit', dbclean: :after_each do
                       full_medicaid_determination: true)
   end
   let!(:submitted_application) do
-    FactoryBot.create(:financial_assistance_application,
+    application = FactoryBot.create(:financial_assistance_application,
                       hbx_id: '111222333',
                       family_id: family.id,
                       is_renewal_authorized: false,
@@ -71,6 +71,8 @@ RSpec.describe 'resubmit', dbclean: :after_each do
                       aasm_state: 'submitted',
                       assistance_year: renewal_year,
                       full_medicaid_determination: true)
+    application.workflow_state_transitions.create(from_state: 'renewal_draft', to_state: 'submitted')
+    application
   end
   let(:effective_on) { TimeKeeper.date_of_record.beginning_of_year}
   let!(:active_enrollment) do

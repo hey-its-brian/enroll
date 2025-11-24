@@ -13,7 +13,7 @@ module FinancialAssistance
         include I18n
         include ::ResourceRegistryHelper
 
-        VALID_APPLICATION_STATES = ['submitted', 'determination_response_error', 'determined', 'imported', 'income_verification_extension_required', 'applicants_update_required'].freeze
+        VALID_APPLICATION_STATES = ['submitted', 'determination_response_error', 'determined', 'imported', 'income_verification_extension_required', 'applicants_update_required', 'expired'].freeze
 
         # FamilyMembers, Relationships, claimed_as_tax_dependent_by are the things that might need user interaction to update.
         attr_reader :family_members_changed, :relationships_changed, :claiming_applicants_missing

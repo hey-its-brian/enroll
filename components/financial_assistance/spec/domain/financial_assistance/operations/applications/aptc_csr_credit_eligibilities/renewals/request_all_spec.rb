@@ -235,5 +235,38 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
         expect(subject.call(renewal_year: renewal_year).success).not_to include(family.id)
       end
     end
+
+    context 'with rerun_renewal flag' do
+      let(:params) do
+        {
+          renewal_year: renewal_year,
+          renewal_job_type: 'rerun_renewal'
+        }
+      end
+
+      context 'when expired application exists' do
+        let!(:expired_application) do
+          FactoryBot.create(
+            :financial_assistance_application,
+            family_id: family.id,
+            assistance_year: renewal_year,
+            years_to_renew: 5,
+            aasm_state: 'expired'
+          )
+        end
+
+        it 'returns success with family ids' do
+          expect(subject.call(params).success).to include(family.id)
+        end
+      end
+
+      context 'when no expired application exists' do
+        it 'returns success with an empty list' do
+          result = subject.call(params)
+          expect(result).to be_success
+          expect(result.success).not_to include(family.id)
+        end
+      end
+    end
   end
 end

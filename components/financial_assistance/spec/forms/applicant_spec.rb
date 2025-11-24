@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe FinancialAssistance::Forms::Applicant, type: :model do
+RSpec.describe FinancialAssistance::Forms::Applicant, type: :model, dbclean: :after_each do
   let(:person) { FactoryBot.create(:person, :with_consumer_role) }
   let(:family) do
     FactoryBot.create(:family, :with_primary_family_member, :person => person)
