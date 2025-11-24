@@ -1795,9 +1795,9 @@ module FinancialAssistance
       end
     end
 
-    # Describes if the applicant has an Individual Market eligibility.
+    # Checks if an Individual Market eligibility exists for the applicant.
     #
-    # @return [Boolean] true if the applicant has an Individual Market eligibility, false otherwise.
+    # @return [Boolean] true if Individual Market eligibility exists, false otherwise
     def has_individual_market_eligibility?
       individual_market_eligibility.present?
     end

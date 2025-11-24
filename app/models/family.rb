@@ -1387,6 +1387,9 @@ class Family
       where({"e_case_id" => id}).to_a
     end
 
+    # Get the application applicable year based on current open enrollment period
+    #
+    # @return [ Integer ] The year of the applicable application's default assistance year
     def application_applicable_year
       bcp = HbxProfile.bcp_by_oe_dates
       bcp&.start_on&.year || TimeKeeper.date_of_record.year
@@ -1928,20 +1931,21 @@ class Family
   #
   # @return [Hash] Hash containing organized application data
   def fetch_application_data_for_evidence_display
-    current_year = TimeKeeper.date_of_record.year
-    renewal_year = current_year.next
+    return {} unless HbxProfile.current_hbx.under_open_enrollment?
 
-    qhp_apps = fetch_qhp_applications([current_year, renewal_year])
-    faa_apps = fetch_faa_applications([current_year, renewal_year])
+    assistance_year = Family.application_applicable_year
+    prev_assistance_year = assistance_year.pred
+
+    qhp_apps = fetch_qhp_applications([prev_assistance_year, assistance_year])
+    faa_apps = fetch_faa_applications([prev_assistance_year, assistance_year])
 
     {
-      current_year: current_year,
-      renewal_year: renewal_year,
-      most_recent_qhp_current_year: qhp_apps.select { |app| app.assistance_year == current_year }.max_by(&:submitted_at),
-      most_recent_faa_current_year: faa_apps.select { |app| app.assistance_year == current_year }.max_by(&:submitted_at),
-      most_recent_qhp_renewal_year: qhp_apps.select { |app| app.assistance_year == renewal_year }.max_by(&:submitted_at),
-      most_recent_faa_renewal_year: faa_apps.select { |app| app.assistance_year == renewal_year }.max_by(&:submitted_at),
-      migrated_faa_app: faa_apps.detect(&:manually_migrated?)
+      current_year: prev_assistance_year,
+      renewal_year: assistance_year,
+      most_recent_qhp_current_year: qhp_apps.select { |app| app.assistance_year == prev_assistance_year }.max_by(&:submitted_at),
+      most_recent_faa_current_year: faa_apps.select { |app| app.assistance_year == prev_assistance_year }.max_by(&:submitted_at),
+      most_recent_qhp_renewal_year: qhp_apps.select { |app| app.assistance_year == assistance_year }.max_by(&:submitted_at),
+      most_recent_faa_renewal_year: faa_apps.select { |app| app.assistance_year == assistance_year }.max_by(&:submitted_at)
     }
   end
 
@@ -1950,16 +1954,8 @@ class Family
   # @param application_data [Hash] Hash containing application data
   # @return [Hash] Hash with application info or empty hash
   def evaluate_faa_evidence_display_criteria(application_data)
-    current_year_app, current_year_app_type = determine_current_year_app_info(
-      application_data[:most_recent_qhp_current_year],
-      application_data[:most_recent_faa_current_year],
-      application_data[:migrated_faa_app]
-    )
-
-    renewal_year_app_type = determine_renewal_year_app_type(
-      application_data[:most_recent_qhp_renewal_year],
-      application_data[:most_recent_faa_renewal_year]
-    )
+    current_year_app_type, current_year_app = determine_latest_app_info(application_data[:most_recent_qhp_current_year], application_data[:most_recent_faa_current_year])
+    renewal_year_app_type, _renewal_year_app = determine_latest_app_info(application_data[:most_recent_qhp_renewal_year], application_data[:most_recent_faa_renewal_year])
 
     if meets_faa_evidence_display_criteria?(current_year_app_type, renewal_year_app_type, current_year_app)
       { application_type: :faa, application: application_data[:most_recent_faa_current_year] }
@@ -1975,12 +1971,12 @@ class Family
   # @param current_year_app [Application] Current year application object
   # @return [Boolean] true if criteria are met, false otherwise
   def meets_faa_evidence_display_criteria?(current_year_app_type, renewal_year_app_type, current_year_app)
-    current_year_app_type == :faa &&
+    current_year_app.present? &&
+      current_year_app_type == :faa &&
       renewal_year_app_type == :qhp &&
-      current_year_app&.has_actionable_aptc_evidences?
+      current_year_app.has_actionable_aptc_evidences? &&
+      current_year_app.has_individual_market_eligibility?
   end
-
-  private
 
   # Fetches QHP applications for this family for the specified years
   #
@@ -2008,59 +2004,22 @@ class Family
     ).to_a
   end
 
-  # Determines the most recent application type for current year
-  # Ensures FAA applications are either migrated or submitted after migration
+  # Determines the most recent application type
   #
-  # @param most_recent_qhp_current_year [IndividualMarket::Application, nil] most recent QHP app for current year
-  # @param most_recent_faa_current_year [FinancialAssistance::Application, nil] most recent FAA app for current year
-  # @param migrated_faa_app [FinancialAssistance::Application, nil] migrated FAA application
-  #
-  # @return [Array<(IndividualMarket::Application, Symbol), (nil, nil)>] most recent application and its type (:qhp, :faa, or nil)
-  def determine_current_year_app_info(most_recent_qhp_current_year, most_recent_faa_current_year, migrated_faa_app)
-    # Case 5 & 6: If no migrated app exists, return nil (leading to empty hash)
-    return [nil, nil] if migrated_faa_app.blank?
-
-    # If no current year applications exist
-    return [nil, nil] if most_recent_qhp_current_year.blank? && most_recent_faa_current_year.blank?
-
-    # If only QHP exists for current year
-    return [most_recent_qhp_current_year, :qhp] if most_recent_faa_current_year.blank?
-
-    # If only FAA exists for current year, check if it's migrated or after migration
-    if most_recent_qhp_current_year.blank?
-      return [most_recent_faa_current_year, :faa] if faa_is_migrated_or_later?(most_recent_faa_current_year, migrated_faa_app)
-      return [nil, nil]
-    end
-
-    # Both QHP and FAA exist - determine which is more recent
-    # FAA must be migrated or submitted after migration to be considered
-    if faa_is_migrated_or_later?(most_recent_faa_current_year, migrated_faa_app)
-      if most_recent_faa_current_year.submitted_at > most_recent_qhp_current_year.submitted_at
-        [most_recent_faa_current_year, :faa]
-      else
-        [most_recent_qhp_current_year, :qhp]
-      end
-    else
-      [most_recent_qhp_current_year, :qhp]
-    end
-  end
-
-  # Determines the most recent application type for renewal year
-  #
-  # @param most_recent_qhp_renewal_year [IndividualMarket::Application, nil] most recent QHP app for renewal year
-  # @param most_recent_faa_renewal_year [FinancialAssistance::Application, nil] most recent FAA app for renewal year
+  # @param most_recent_qhp [IndividualMarket::Application, nil] most recent QHP app
+  # @param most_recent_faa [FinancialAssistance::Application, nil] most recent FAA app
   #
   # @return [Symbol, nil] :qhp, :faa, or nil
-  def determine_renewal_year_app_type(most_recent_qhp_renewal_year, most_recent_faa_renewal_year)
+  def determine_latest_app_info(most_recent_qhp, most_recent_faa)
     # If no renewal year applications exist
-    return nil if most_recent_qhp_renewal_year.blank? && most_recent_faa_renewal_year.blank?
+    return [nil, nil] if most_recent_qhp.blank? && most_recent_faa.blank?
 
     # If only one type exists
-    return :qhp if most_recent_faa_renewal_year.blank?
-    return :faa if most_recent_qhp_renewal_year.blank?
+    return [:qhp, most_recent_qhp] if most_recent_faa.blank?
+    return [:faa, most_recent_faa] if most_recent_qhp.blank?
 
     # Both exist - determine which is more recent
-    most_recent_faa_renewal_year.submitted_at > most_recent_qhp_renewal_year.submitted_at ? :faa : :qhp
+    most_recent_faa.submitted_at > most_recent_qhp.submitted_at ? [:faa, most_recent_faa] : [:qhp, most_recent_qhp]
   end
 
   # Checks if FAA application is migrated or submitted after the migrated application

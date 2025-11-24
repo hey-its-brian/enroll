@@ -42,6 +42,7 @@ Feature: Admin navigates to the verification history page of a consumer
     Then admin should be in the Document Detail page
 
   Scenario: Admin can see banner when there is a previous year faa application needing verifications
+    Given system is under normal open enrollment with start date as today
     Given the consumer has a verification with history elements that have varying dates
     Given the consumer has an FAA application that was migrated
     Given the consumer has a previous year FA application that needs verifications

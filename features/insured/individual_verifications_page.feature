@@ -59,6 +59,7 @@ Feature: Individual Verifications Page
     Then the consumer should see the individual detail page
 
   Scenario: Consumer can see banner on the individual verification page when there is a previous year faa application needing verifications
+    Given system is under normal open enrollment with start date as today
     Given show_new_verifications_household_summary feature is enabled
     Given show_previous_year_faa_verifications feature is enabled
     Given qhp_application feature is enabled

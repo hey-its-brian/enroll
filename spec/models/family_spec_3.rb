@@ -9,7 +9,17 @@ RSpec.describe Family, dbclean: :after_each do
   let(:current_year) { TimeKeeper.date_of_record.year }
   let(:renewal_year) { current_year.next }
 
+  let(:hbx_profile) {FactoryBot.create(:hbx_profile)}
+  let(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
+  let(:benefit_coverage_period) { hbx_profile.benefit_sponsorship.benefit_coverage_periods.first }
+
   describe '#previous_year_faa_app_info_needing_evidence_display' do
+    before :each do
+      allow(HbxProfile).to receive(:current_hbx).and_return(hbx_profile)
+      allow(hbx_profile).to receive(:under_open_enrollment?).and_return(true)
+      allow(Family).to receive(:application_applicable_year).and_return(renewal_year)
+    end
+
     context 'Case 1:
       - current_year FAA (migrated or later) with actionable APTC evidences
       - renewal_year QHP' do
@@ -36,12 +46,15 @@ RSpec.describe Family, dbclean: :after_each do
       end
 
       let(:applicant) do
-        FactoryBot.create(
+        appli = FactoryBot.create(
           :financial_assistance_applicant,
           :with_work_email,
           :with_work_phone,
           application: current_year_faa_app
         )
+        appli.build_ivl_eligibility_with_evidences
+        appli.save!
+        appli
       end
       let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
       let(:evidence) { FactoryBot.create(:income_evidence, :outstanding, eligibility: aptc_csr_eligibility) }
@@ -310,7 +323,12 @@ RSpec.describe Family, dbclean: :after_each do
         )
       end
 
-      let(:applicant) { FactoryBot.create(:financial_assistance_applicant, application: current_year_faa_app) }
+      let(:applicant) do
+        appli = FactoryBot.create(:financial_assistance_applicant, application: current_year_faa_app)
+        appli.build_ivl_eligibility_with_evidences
+        appli.save!
+        appli
+      end
       let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
       let(:esi_mec_evidence) { FactoryBot.create(:esi_mec_evidence, :verified, eligibility: aptc_csr_eligibility) }
       let(:income_evidence) { FactoryBot.create(:income_evidence, :verified, eligibility: aptc_csr_eligibility) }
@@ -342,6 +360,17 @@ RSpec.describe Family, dbclean: :after_each do
       end
     end
 
+    context 'Case 8: when system is not under open enrollment' do
+      before do
+        allow(hbx_profile).to receive(:under_open_enrollment?).and_return(false)
+      end
+
+      it 'returns empty hash' do
+        result = family.previous_year_faa_app_info_needing_evidence_display
+        expect(result).to eq({})
+      end
+    end
+
     context 'Edge cases and complex scenarios' do
       context 'when FAA application exists before migration' do
         let(:migrated_faa_app) do
@@ -356,7 +385,13 @@ RSpec.describe Family, dbclean: :after_each do
           )
         end
 
-        let(:applicant) { FactoryBot.create(:financial_assistance_applicant, application: migrated_faa_app) }
+        let(:applicant) do
+          appli = FactoryBot.create(:financial_assistance_applicant, application: migrated_faa_app)
+          appli.build_ivl_eligibility_with_evidences
+          appli.save!
+          appli
+        end
+
         let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
         let(:evidence) { FactoryBot.create(:income_evidence, :outstanding, eligibility: aptc_csr_eligibility) }
 
@@ -415,7 +450,12 @@ RSpec.describe Family, dbclean: :after_each do
           )
         end
 
-        let(:applicant) { FactoryBot.create(:financial_assistance_applicant, application: current_year_faa_app) }
+        let(:applicant) do
+          appli = FactoryBot.create(:financial_assistance_applicant, application: current_year_faa_app)
+          appli.build_ivl_eligibility_with_evidences
+          appli.save!
+          appli
+        end
         let(:aptc_csr_eligibility) { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
         let(:evidence) { FactoryBot.create(:income_evidence, :outstanding, eligibility: aptc_csr_eligibility) }
 

@@ -648,6 +648,8 @@ Given(/^the consumer has a previous year FA application that needs verifications
     application: application,
     family_member_id: family.family_members.first.id
   )
+  applicant.build_ivl_eligibility_with_evidences
+  application.save!
   aptc_csr_eligibility = FactoryBot.create(:aptc_csr_eligibility, eligible: applicant)
   FactoryBot.create(:income_evidence, :outstanding, eligibility: aptc_csr_eligibility)
 end

@@ -11,6 +11,15 @@ When(/^Individual market is not under open enrollment period$/) do
   BenefitMarkets::Products::Product.all.where(title:  "IVL Test Plan Bronze")[0].update_attributes!(renewal_product_id: r_id)
 end
 
+When(/system is under normal open enrollment with start date as today$/) do
+  Organization.all.destroy_all
+  profile = FactoryBot.create(:hbx_profile, :normal_ivl_open_enrollment)
+  next_bcp = profile.benefit_sponsorship.benefit_coverage_periods.max_by(&:open_enrollment_start_on)
+  previous_bcp = profile.benefit_sponsorship.benefit_coverage_periods.min_by(&:open_enrollment_start_on)
+  next_bcp.update!(open_enrollment_start_on: TimeKeeper.date_of_record)
+  previous_bcp.update!(open_enrollment_end_on: TimeKeeper.date_of_record - 1.day)
+end
+
 And(/there exists (.*) with active individual market role and verified identity$/) do |named_person|
   consumer_with_verified_identity(named_person)
 end

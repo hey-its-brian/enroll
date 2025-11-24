@@ -1670,11 +1670,11 @@ module FinancialAssistance
       applicants.any?(&:has_actionable_aptc_evidences?)
     end
 
-    # Returns true if the application was manually migrated during a migration process.
+    # Returns true if any applicant has individual market eligibility.
     #
-    # @return [Boolean] true if the application was manually migrated, false otherwise
-    def manually_migrated?
-      origin == :migration && generation_reason == :manual
+    # @return [Boolean] true if any applicant has individual market eligibility, false otherwise
+    def has_individual_market_eligibility?
+      applicants.any?(&:has_individual_market_eligibility?)
     end
 
     private
