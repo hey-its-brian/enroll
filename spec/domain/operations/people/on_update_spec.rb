@@ -13,26 +13,6 @@ RSpec.describe Operations::People::OnUpdate, dbclean: :after_each do
         expect(result.failure).to eq('Invalid parameters, missing gid for {}')
       end
     end
-
-    context 'missing payload' do
-      let(:params) { { gid: 'some-gid' } }
-
-      it 'returns failure' do
-        result = described_class.new.call(params)
-        expect(result.failure?).to be true
-        expect(result.failure).to eq('Invalid parameters, missing payload for {:gid=>"some-gid"}')
-      end
-    end
-
-    context 'invalid payload type' do
-      let(:params) { { gid: 'some-gid', payload: 'not-a-hash' } }
-
-      it 'returns failure' do
-        result = described_class.new.call(params)
-        expect(result.failure?).to be true
-        expect(result.failure).to eq('Invalid parameters, missing payload for {:gid=>"some-gid", :payload=>"not-a-hash"}')
-      end
-    end
   end
 
   context 'with valid params' do

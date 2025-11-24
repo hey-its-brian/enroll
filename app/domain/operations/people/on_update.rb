@@ -20,7 +20,6 @@ module Operations
 
       def validate_params(params)
         return Failure("Invalid parameters, missing gid for #{params}") if params[:gid].blank?
-        return Failure("Invalid parameters, missing payload for #{params}") unless params[:payload].is_a?(Hash)
 
         Success(params)
       end

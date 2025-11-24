@@ -45,6 +45,8 @@ module Operations
       def update_consumer_role(consumer_role, person)
         attrs = OpenStruct.new({:determined_at => Time.now, :vlp_authority => 'hbx'})
 
+        return Success("Skipped legacy hub flow for QHP application") if EnrollRegistry.feature_enabled?(:qhp_application)
+
         consumer_role.revert!(attrs)
         add_verification_type_history(consumer_role) if EnrollRegistry.feature_enabled?(:validate_and_record_publish_errors)
         consumer_role.coverage_purchased_no_residency!(attrs)

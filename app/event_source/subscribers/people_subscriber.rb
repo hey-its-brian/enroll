@@ -54,7 +54,7 @@ module Subscribers
 
     def determine_verifications(payload, subscriber_logger)
       result = ::Operations::People::OnUpdate.new.call(
-        { payload: payload, subscriber_logger: subscriber_logger }
+        { gid: payload[:gid] }
       )
 
       if result.success?

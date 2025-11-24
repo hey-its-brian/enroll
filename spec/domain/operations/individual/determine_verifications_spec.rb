@@ -47,6 +47,7 @@ RSpec.describe Operations::Individual::DetermineVerifications, dbclean: :after_e
       context "when trigger_verifications_before_enrollment_purchase is enabled" do
         before do
           allow(EnrollRegistry[:trigger_verifications_before_enrollment_purchase].feature).to receive(:is_enabled).and_return(true)
+          allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(false)
         end
 
         it 'returns success' do
@@ -64,6 +65,7 @@ RSpec.describe Operations::Individual::DetermineVerifications, dbclean: :after_e
       context "when trigger_verifications_before_enrollment_purchase is disabled" do
         before do
           allow(EnrollRegistry[:trigger_verifications_before_enrollment_purchase].feature).to receive(:is_enabled).and_return(false)
+          allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(false)
         end
 
         context "if person don't have an active enrollment" do
@@ -104,6 +106,42 @@ RSpec.describe Operations::Individual::DetermineVerifications, dbclean: :after_e
           end
         end
       end
+
+      context "when qhp_application feature is enabled" do
+        let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+        let(:consumer_role) { person.consumer_role }
+
+        before do
+          allow(EnrollRegistry[:qhp_application].feature).to receive(:is_enabled).and_return(true)
+          allow(EnrollRegistry[:trigger_verifications_before_enrollment_purchase].feature).to receive(:is_enabled).and_return(true)
+        end
+
+        it 'returns success with skipped message' do
+          expect(subject.success?).to eq true
+          expect(subject.success).to eq "Skipped legacy hub flow for QHP application"
+        end
+
+        it 'does not change consumer_role state' do
+          expect(consumer_role.aasm_state).to eq 'unverified'
+          subject
+          expect(consumer_role.reload.aasm_state).to eq 'unverified'
+        end
+
+        it 'does not call revert! on consumer_role' do
+          expect(consumer_role).not_to receive(:revert!)
+          subject
+        end
+
+        it 'does not call coverage_purchased_no_residency! on consumer_role' do
+          expect(consumer_role).not_to receive(:coverage_purchased_no_residency!)
+          subject
+        end
+
+        it 'does not trigger hub calls' do
+          expect(consumer_role).not_to receive(:invoke_pending_verification!)
+          subject
+        end
+      end
     end
   end
 
@@ -116,6 +154,7 @@ RSpec.describe Operations::Individual::DetermineVerifications, dbclean: :after_e
       let(:result) {  described_class.new.call(id: consumer_role.id) }
       before :each do
         allow(EnrollRegistry).to receive(:feature_enabled?).and_return(false)
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:validate_and_record_publish_errors).and_return(true)
         allow(EnrollRegistry).to receive(:feature_enabled?).with(:trigger_verifications_before_enrollment_purchase).and_return(true)
         allow(ConsumerRole).to receive(:find).and_return(consumer_role)
@@ -125,15 +164,15 @@ RSpec.describe Operations::Individual::DetermineVerifications, dbclean: :after_e
       it 'should record history in ssn_type for requested hub calls' do
         types = consumer_role.verification_types
         ssn_type_histories = types.ssn_type.first.type_history_elements
-        ssn_type_histories.map(&:action).should include('Hub Request')
-        ssn_type_histories.map(&:update_reason).should include('Social Security Number call hub request was made due to demographic create/update')
+        expect(ssn_type_histories.map(&:action)).to include('Hub Request')
+        expect(ssn_type_histories.map(&:update_reason)).to include('Social Security Number call hub request was made due to demographic create/update')
       end
 
       it 'should record history in citizenship_type for requested hub calls' do
         types = consumer_role.verification_types
         citizenship_type_histories = types.citizenship_type.first.type_history_elements
-        citizenship_type_histories.map(&:action).should include('Hub Request')
-        citizenship_type_histories.map(&:update_reason).should include('Citizenship call hub request was made due to demographic create/update')
+        expect(citizenship_type_histories.map(&:action)).to include('Hub Request')
+        expect(citizenship_type_histories.map(&:update_reason)).to include('Citizenship call hub request was made due to demographic create/update')
       end
 
       it 'should set verification_type to pending' do
@@ -149,7 +188,7 @@ RSpec.describe Operations::Individual::DetermineVerifications, dbclean: :after_e
       end
 
       context 'when validate_and_record_publish_errors feature is enabled' do
-        let!(:person) {FactoryBot.create(:person, ssn: '999001234')}
+        let!(:person) {FactoryBot.create(:person, :with_ssn)}
         let!(:consumer_role) do
           consumer = ConsumerRole.new(person: person, is_applicant: true, citizen_status: 'naturalized_citizen')
           consumer.ensure_verification_types
@@ -189,7 +228,7 @@ RSpec.describe Operations::Individual::DetermineVerifications, dbclean: :after_e
       end
 
       context 'when validate_and_record_publish_errors feature is disabled' do
-        let!(:person) {FactoryBot.create(:person, ssn: '999001234')}
+        let!(:person) {FactoryBot.create(:person, :with_ssn)}
         let!(:consumer_role) do
           consumer = ConsumerRole.new(person: person, is_applicant: true, citizen_status: 'naturalized_citizen')
           consumer.ensure_verification_types
@@ -202,6 +241,7 @@ RSpec.describe Operations::Individual::DetermineVerifications, dbclean: :after_e
 
         before do
           allow(EnrollRegistry).to receive(:feature_enabled?).and_return(false)
+          allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
           allow(EnrollRegistry).to receive(:feature_enabled?).with(:ssa_h3).and_return(true)
           allow(EnrollRegistry).to receive(:feature_enabled?).with(:vlp_h92).and_return(true)
           allow(EnrollRegistry).to receive(:feature_enabled?).with(:validate_ssn).and_return(false)
