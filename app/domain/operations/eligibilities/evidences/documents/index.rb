@@ -41,15 +41,22 @@ module Operations
           def validate(params, evidence)
             return Failure("Evidence not found") if evidence.blank?
             return Failure("Family ID is required") if params[:family_id].blank?
+            validated_params = build_validated_params(params, evidence)
 
-            validated_params = {
+            Success(validated_params)
+          end
+
+          def build_validated_params(params, evidence)
+            # @evidence always corresponds to latest determined application for the family
+            # default year in dropdown always matches most recent determined application year
+            selected_year = params[:year].presence || evidence&.eligibility&.eligible&.application&.assistance_year&.to_s
+
+            {
               family_id: params[:family_id],
-              selected_year: params[:year].presence,
+              selected_year: selected_year,
               per_page: (params[:per_page] || 10).to_i,
               page: (params[:page] || 1).to_i
             }
-
-            Success(validated_params)
           end
 
           def fetch_assistance_years(applications)

@@ -24,7 +24,7 @@
     <label>
       <div class="mb-1"><%= l10n('application_year') %></div>
       <%= select_tag "year-select",
-                     options_for_select(@years, (@selected_year.presence || @years.first.to_s)),
+                     options_for_select(@years, (@selected_year.presence || @application.assistance_year)),
                      class: "col",
                      data: {
                        target: "evidence-documents.year",

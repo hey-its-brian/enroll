@@ -92,6 +92,76 @@ RSpec.describe Eligibilities::Evidences::DocumentsController, type: :controller 
 
           expect(response).to render_template(:index)
         end
+
+        context 'when most recent application year is different from current year' do
+          let(:newer_application) do
+            FactoryBot.create(
+              :financial_assistance_application,
+              family_id: family.id,
+              aasm_state: 'determined',
+              submitted_at: Time.now + 1.year,
+              assistance_year: TimeKeeper.date_of_record.year + 1
+            )
+          end
+
+          let(:newer_applicant) do
+            FactoryBot.create(
+              :financial_assistance_applicant,
+              family_member_id: primary_applicant.id,
+              person_hbx_id: person.hbx_id,
+              application: newer_application
+            )
+          end
+
+          let(:newer_aptc_csr_eligibility)  { FactoryBot.create(:aptc_csr_eligibility, eligible: newer_applicant) }
+          let(:newer_income_evidence) { FactoryBot.create(:income_evidence, :with_verification_histories,  :outstanding, eligibility: newer_aptc_csr_eligibility) }
+          let(:newer_determination) { ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family) }
+
+          let!(:newer_params) do
+            {
+              eligibility_id: newer_aptc_csr_eligibility.id,
+              evidence_id: newer_income_evidence.id,
+              application_gid: newer_application&.to_global_id&.uri&.to_s,
+              applicant_id: newer_applicant&.id,
+              person_id: person.id,
+              eligibility_kind: 'aptc_csr_eligibility',
+              evidence_key: :income_evidence,
+              family_id: newer_application.family&.id
+            }
+          end
+
+          before do
+            ::Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
+            newer_income_evidence.documents.create!(identifier: "test#sample-key",
+                                                    title: "sample-document.pdf", subject: "sample-document.pdf")
+            newer_income_evidence.reload
+          end
+
+          it 'returns success response' do
+            get :index, params: newer_params
+
+            expect(response).to be_successful
+          end
+
+          it 'sets expected instance variables from the operation result' do
+            get :index, params: newer_params
+
+            expect(assigns(:uploads)).to be_present
+            expect(assigns(:years)).to eq([newer_application.assistance_year, faa_application.assistance_year])
+          end
+
+          it 'renders the index template' do
+            get :index, params: newer_params
+
+            expect(response).to render_template(:index)
+          end
+
+          it 'will filter by most determined application assistance_year if no year parameter is provided' do
+            get :index, params: newer_params
+
+            expect(assigns(:uploads)).to eq(newer_income_evidence.documents)
+          end
+        end
       end
 
       context 'with failed operation' do
