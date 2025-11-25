@@ -49,7 +49,7 @@ module Subscribers
 
       family = families.first
 
-      Operations::Individual::OnNewDetermination.new.call({family: family, year: payload[:assistance_year]})
+      Operations::Individual::OnNewDetermination.new.call({family: family, year: payload[:assistance_year], determination_type: :financial_assistance})
     end
 
     def log_info(subscriber_logger, result, operation)

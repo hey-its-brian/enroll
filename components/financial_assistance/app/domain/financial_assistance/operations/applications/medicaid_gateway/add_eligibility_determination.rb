@@ -264,8 +264,7 @@ module FinancialAssistance
           # @return [Dry::Monads::Result]
           def generate_enrollments(application)
             return Success("apply aggregate to enrollment is disabled") unless EnrollRegistry.feature_enabled?(:apply_aggregate_to_enrollment)
-            return Success("No enrollments to generate") unless has_enrollments_to_generate?(application)
-            result = ::Operations::Individual::OnNewDetermination.new.call({family: application.family.reload, year: application.assistance_year})
+            result = ::Operations::Individual::OnNewDetermination.new.call({family: application.family.reload, year: application.assistance_year, determination_type: :financial_assistance})
 
             return result if result.success?
 
@@ -273,14 +272,6 @@ module FinancialAssistance
           rescue StandardError => e
             Rails.logger.error("Financial Assistance Application - Failed to generate enrollments due to #{e.message}, #{e.backtrace.join("\n")}")
             Failure("An error occurred while generating enrollments: #{e.message}")
-          end
-
-          # Checks if there are any enrollments to generate for the application
-          #
-          # @param application [FinancialAssistance::Application] The application to check for enrollments
-          # @return [Boolean] True if there are enrollments to generate, false otherwise
-          def has_enrollments_to_generate?(application)
-            application.family&.active_household&.hbx_enrollments&.enrolled_and_renewal&.individual_market&.by_health&.by_year(application.assistance_year)&.any?
           end
         end
       end

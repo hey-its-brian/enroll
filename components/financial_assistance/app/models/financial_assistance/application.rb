@@ -1066,8 +1066,13 @@ module FinancialAssistance
       return if retro_application
       on_new_determination = ::Operations::Individual::OnNewDetermination.new.call({family: self.family, year: self.effective_date.year})
       if on_new_determination.success?
-        Rails.logger.info { "Successfully created new enrollment on_new_determination: #{self.hbx_id}" }
-        true
+        did_apply_aptc = on_new_determination.success == :applied_aptc_to_enrollments
+        if did_apply_aptc
+          Rails.logger.info { "Successfully created new enrollment on_new_determination: #{self.hbx_id}" }
+        else
+          Rails.logger.info { "No enrollment updated on_new_determination: #{self.hbx_id}" }
+        end
+        did_apply_aptc
       else
         Rails.logger.error { "Failed while creating enrollment on_new_determination: #{self.hbx_id}, Failure Message: #{on_new_determination.failure}" }
         false

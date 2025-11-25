@@ -61,8 +61,12 @@ module Operations
       def create_new_enrollments
         return Success() unless EnrollRegistry.feature_enabled?(:apply_aggregate_to_enrollment)
 
-        ::Operations::Individual::OnNewDetermination.new.call({ family: @family.reload, year: @effective_date.year, generation_reason: :eligibility_creation })
-        Success()
+        Operations::Individual::OnNewDetermination.new.call({
+                                                              family: @family.reload,
+                                                              year: @effective_date.year,
+                                                              generation_reason: :eligibility_creation,
+                                                              determination_type: :financial_assistance
+                                                            })
       end
 
       def record_history_on_evidences(params)

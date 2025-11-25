@@ -191,6 +191,69 @@ RSpec.describe Operations::Individual::OnNewDetermination, type: :model, dbclean
         expect(new_enrollment.generation_reason).to eq(:application_determination)
       end
     end
+
+    context 'when family has an enrollment without product' do
+      before do
+        enrollment.update_attributes(product: nil)
+      end
+
+      it 'returns a failure without processing enrollments' do
+        result = subject.new.call({family: family, year: effective_date.year + 1})
+        expect(result.success?).to be_falsey
+        expect(result.failure).to eq "No enrollments with products"
+        new_enrollment = family.reload.active_household.hbx_enrollments.where.not(id: enrollment.id).first
+        expect(new_enrollment).to be_nil
+      end
+    end
+
+    context 'when family has a catastrophic plan' do
+      before do
+        enrollment.product.metal_level_kind = :catastrophic
+        enrollment.product.save!
+        expect(enrollment.applied_aptc_amount).to eq 0.0
+      end
+
+      context 'when determination_type is not provided' do
+        let(:determination_type) { nil }
+
+        it 'processes catastrophic plans' do
+          result = subject.new.call({family: family, year: effective_date.year + 1, determination_type: determination_type})
+          expect(result.success?).to be_truthy
+          expect(result.success).to eq :applied_aptc_to_enrollments
+          new_enrollment = family.reload.active_household.hbx_enrollments.where.not(id: enrollment.id).first
+          expect(new_enrollment).to be_present
+          expect(new_enrollment.applied_aptc_amount).to_not eq 0.0
+        end
+      end
+
+      context 'when determination_type is not :financial_assistance' do
+        let(:determination_type) { :other_type }
+
+        it 'processes catastrophic plans' do
+          result = subject.new.call({family: family, year: effective_date.year + 1, determination_type: determination_type})
+          expect(result.success?).to be_truthy
+          expect(result.success).to eq :applied_aptc_to_enrollments
+          new_enrollment = family.reload.active_household.hbx_enrollments.where.not(id: enrollment.id).first
+          expect(new_enrollment).to be_present
+          expect(new_enrollment.applied_aptc_amount).to_not eq 0.0
+        end
+      end
+
+      context 'when determination_type is :financial_assistance' do
+        let(:determination_type) { :financial_assistance }
+
+        it 'rejects catastrophic plans' do
+          enrollment.product.metal_level_kind = :catastrophic
+          enrollment.product.save!
+          expect(enrollment.applied_aptc_amount).to eq 0.0
+          result = subject.new.call({family: family, year: effective_date.year + 1, determination_type: determination_type})
+          expect(result.success?).to be_truthy
+          expect(result.success).to eq :no_eligible_enrollments
+          new_enrollment = family.reload.active_household.hbx_enrollments.where.not(id: enrollment.id).first
+          expect(new_enrollment).to be_nil
+        end
+      end
+    end
   end
 
   after(:all) do

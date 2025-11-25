@@ -8,29 +8,36 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
     DatabaseCleaner.clean
   end
 
+  let(:application_aasm_state) { 'submitted' }
+
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+  let(:ssn) { '123456789' }
+  let(:person) { FactoryBot.create(:person, ssn: ssn, age_off_excluded: true, dob: Date.new(Date.today.year - 22, Date.today.month, Date.today.beginning_of_month.day)) }
+  let(:application) do
+    FactoryBot.create(:financial_assistance_application, hbx_id: '200000126', aasm_state: application_aasm_state, family_id: family.id)
+  end
+
+  let(:ed) do
+    eli_d = FactoryBot.create(:financial_assistance_eligibility_determination, application: application)
+    eli_d.update_attributes!(hbx_assigned_id: '12345')
+    eli_d
+  end
+
+  let!(:applicant) do
+    FactoryBot.create(:financial_assistance_applicant,
+                      eligibility_determination_id: ed.id,
+                      person_hbx_id: '95',
+                      is_primary_applicant: true,
+                      first_name: person.first_name,
+                      last_name: person.last_name,
+                      encrypted_ssn: person.encrypted_ssn,
+                      dob: Date.new(Date.today.year - 22, Date.today.month, Date.today.beginning_of_month.day),
+                      application: application)
+  end
+
   context 'when qhp_application feature is disabled' do
     before :each do
       allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(false)
-    end
-
-    let(:application_aasm_state) { 'submitted' }
-    let(:application) do
-      FactoryBot.create(:financial_assistance_application, hbx_id: '200000126', aasm_state: application_aasm_state)
-    end
-    let!(:ed) do
-      eli_d = FactoryBot.create(:financial_assistance_eligibility_determination, application: application)
-      eli_d.update_attributes!(hbx_assigned_id: '12345')
-      eli_d
-    end
-    let!(:applicant) do
-      FactoryBot.create(:financial_assistance_applicant,
-                        eligibility_determination_id: ed.id,
-                        person_hbx_id: '95',
-                        is_primary_applicant: true,
-                        first_name: 'Gerald',
-                        last_name: 'Rivers',
-                        dob: Date.new(Date.today.year - 22, Date.today.month, Date.today.beginning_of_month.day),
-                        application: application)
     end
 
     context 'success' do
@@ -213,30 +220,6 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
       allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
     end
 
-    let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
-    let(:person) { FactoryBot.create(:person, ssn: ssn, age_off_excluded: true, dob: Date.new(Date.today.year - 22, Date.today.month, Date.today.beginning_of_month.day)) }
-    let(:application) do
-      FactoryBot.create(:financial_assistance_application, hbx_id: '200000126', aasm_state: "submitted", family_id: family.id)
-    end
-
-    let(:ed) do
-      eli_d = FactoryBot.create(:financial_assistance_eligibility_determination, application: application)
-      eli_d.update_attributes!(hbx_assigned_id: '12345')
-      eli_d
-    end
-
-    let(:applicant) do
-      FactoryBot.create(:financial_assistance_applicant,
-                        eligibility_determination_id: ed.id,
-                        person_hbx_id: '95',
-                        is_primary_applicant: true,
-                        first_name: person.first_name,
-                        last_name: person.last_name,
-                        encrypted_ssn: person.encrypted_ssn,
-                        dob: Date.new(Date.today.year - 22, Date.today.month, Date.today.beginning_of_month.day),
-                        application: application)
-    end
-
     let(:aptc_csr)  do
       eligibility = FactoryBot.create(:aptc_csr_eligibility, eligible: applicant)
       old_state = FactoryBot.build(:v3_state_history, created_at: 2.days.ago)
@@ -267,7 +250,6 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
     let(:benefit_sponsorship) { FactoryBot.create(:benefit_sponsorship, :open_enrollment_coverage_period, hbx_profile: hbx_profile) }
     let(:benefit_coverage_period) { hbx_profile.benefit_sponsorship.benefit_coverage_periods.first }
     context 'success' do
-      let(:ssn) { '123456789' }
       context 'applicant in valid' do
         include_context 'cms ME simple_scenarios test_case_d'
 

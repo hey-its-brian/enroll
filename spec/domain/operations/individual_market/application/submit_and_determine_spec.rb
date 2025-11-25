@@ -217,5 +217,56 @@ RSpec.describe Operations::IndividualMarket::Application::SubmitAndDetermine, db
         expect(family.active_household.hbx_enrollments.last.applied_aptc_amount).to eq(0) if new_effective_date.year == existing_aptc_enrollment.effective_on.year
       end
     end
+
+    context 'with an existing aptc enrollment with catastrophic plan' do
+      let(:existing_aptc_enrollment) do
+        FactoryBot.create(
+          :hbx_enrollment,
+          :individual_aptc,
+          :with_silver_health_product,
+          family: family,
+          household: family.active_household,
+          coverage_kind: 'health',
+          consumer_role: consumer_role,
+          effective_on: TimeKeeper.date_of_record.beginning_of_year,
+          rating_area_id: rating_area.id,
+          aasm_state: 'coverage_selected'
+        )
+      end
+
+      let(:new_effective_date) { Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date(existing_aptc_enrollment, nil) }
+
+      before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:apply_aggregate_to_enrollment).and_return(true)
+        existing_aptc_enrollment.product.update(metal_level_kind: :catastrophic)
+        primary_applicant.update_attributes(demographics: {no_ssn: 'false', ssn: '123456789', encrypted_ssn: SymmetricEncryption.encrypt('123456789'), indian_tribe_member: 'true'})
+        @result = subject.call(application: application)
+        application.reload
+        primary_applicant.reload
+      end
+
+      it "terminates the existing aptc enrollment if the new effective date year matches enrollment effective on year" do
+        if new_effective_date.year == existing_aptc_enrollment.effective_on.year
+          existing_aptc_enrollment.reload
+          expect(existing_aptc_enrollment.aasm_state).to eq('coverage_terminated')
+        end
+      end
+
+      it 'generates new enrollment' do
+        # if the existing enrollment was created after December 1,
+        # it will have a next year effective date and no new enrollments will generate
+        family.reload
+        if new_effective_date.year == existing_aptc_enrollment.effective_on.year
+          expect(family.active_household.hbx_enrollments.count).to eq(2)
+        else
+          expect(family.active_household.hbx_enrollments.count).to eq(1)
+        end
+      end
+
+      it 'applies no aptc to the new enrollment' do
+        family.reload
+        expect(family.active_household.hbx_enrollments.last.applied_aptc_amount).to eq(0) if new_effective_date.year == existing_aptc_enrollment.effective_on.year
+      end
+    end
   end
 end
