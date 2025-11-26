@@ -45,6 +45,8 @@ module Subscribers
     end
 
     def redetermine_family_eligibility(payload)
+      return if EnrollRegistry.feature_enabled?(:qhp_application)
+
       person = GlobalID::Locator.locate(payload[:gid])
 
       person.families.each do |family|

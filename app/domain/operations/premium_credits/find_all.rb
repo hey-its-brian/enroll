@@ -27,7 +27,10 @@ module Operations
       end
 
       def find_all(values)
-        grants = values[:family].eligibility_determination&.grants&.where(key: values[:kind], assistance_year: values[:year])
+        family = values[:family]
+        eligibility_determination = family.eligibility_determination
+        Rails.logger.info { "Finding APTC grants for family #{family.primary_applicant.hbx_id} using determination #{eligibility_determination&.id}" }
+        grants = eligibility_determination&.grants&.where(key: values[:kind], assistance_year: values[:year])
 
         Success(grants)
       end

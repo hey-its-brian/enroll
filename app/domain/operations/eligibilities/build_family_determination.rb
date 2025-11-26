@@ -9,6 +9,7 @@ module Operations
     class BuildFamilyDetermination
       include Dry::Monads[:do, :result]
       include ::ResourceRegistryHelper
+      include LoggerUtils
 
       # @param [Hash] opts Options to build determination
       # @option opts [Family] :family required
@@ -19,6 +20,7 @@ module Operations
         determination_entity  = yield build_determination(values)
         determination         = yield persist(values, determination_entity)
 
+        log_info("Successfully built determination #{determination.id} for family #{determination.determinable.primary_applicant.hbx_id}")
         Success(determination)
       end
 
