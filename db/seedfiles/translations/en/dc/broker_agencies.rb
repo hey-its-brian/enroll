@@ -257,6 +257,7 @@ BROKER_AGENCIES_TRANSLATIONS = {
 	"en.broker_carrier_appointments_enabled_note" => "Note: All Carrier appointments for brokers may not be necessary for participation in %{site_long_name}.",
 	"en.write_here" => "Write here",
 	"en.broker_agencies.profiles.npn_taken_error" => "NPN has already been claimed by another broker. Please contact HBX-Customer Service - Call (855) 532-5465.",
+  "en.broker_agencies.profiles.person_already_registered_as_primary_for_existing_broker" => "This individual is already associated with an existing broker. Please contact Health Connector for Business Customer Service at 1-888-813-9220",
   "en.broker_agencies.profiles.errors.language_options"=> "Languages cannot be blank",
 	"en.broker_agencies.broker_invitation.thank_you_registering" => "Thank you for registering as a broker through %{site_short_name}.",
 	"en.broker_agencies.broker_invitation.create_broker_acc" => "Please visit <a href= %{url} target='_blank' rel='noopener noreferrer'> %{site_short_name} </a> to create your broker account and manage your clients.",

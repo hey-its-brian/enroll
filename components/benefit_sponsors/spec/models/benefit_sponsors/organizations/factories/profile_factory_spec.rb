@@ -324,6 +324,39 @@ module BenefitSponsors
             expect(profile_factory.errors.messages[:organization].first).to match(/npn/i)
           end
         end
+
+        context 'when associated person already is already a primary broker' do
+          let!(:broker_organization)      { FactoryBot.create(:benefit_sponsors_organizations_general_organization, :with_broker_agency_profile, site: site) }
+          let(:person)                    { FactoryBot.create(:person, dob: dob) }
+          let!(:broker_role)              { FactoryBot.create(:broker_role, benefit_sponsors_broker_agency_profile_id: broker_organization.broker_agency_profile.id, person: person) }
+          let(:invalid_staff_role_params) do
+            {
+              0 =>
+              {
+                :npn => '3452345298',
+                :first_name => person.first_name,
+                :last_name => person.last_name,
+                :email => "tywin@lannister.com",
+                :phone => nil,
+                :status => nil,
+                :dob => dob,
+                :person_id => nil,
+                :area_code => nil,
+                :number => nil,
+                :extension => nil,
+                :profile_id => nil,
+                :profile_type => nil
+              }
+            }
+          end
+          let(:invalid_broker_params)     { valid_broker_params.merge({ staff_roles_attributes: invalid_staff_role_params }) }
+          let(:profile_factory)           { profile_factory_class.call(invalid_broker_params) }
+
+          it 'should throw an error' do
+            expect(profile_factory.errors.messages[:organization].first).to match(/existing/i)
+            expect(profile_factory.errors.messages[:organization].first).to match(/broker/i)
+          end
+        end
       end
 
       context 'when type is assister agency' do

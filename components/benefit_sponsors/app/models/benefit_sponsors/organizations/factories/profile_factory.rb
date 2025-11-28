@@ -662,7 +662,7 @@ module BenefitSponsors
         end
 
         def broker_agency_profile_validity_failed?
-          npn_already_taken?(npn) || !valid_office_location_kinds?
+          npn_already_taken?(npn) || !valid_office_location_kinds? || person_already_has_broker_role?(person)
         end
 
         def invalid_npn_format?
@@ -690,6 +690,17 @@ module BenefitSponsors
                 contact_center_short_number: EnrollRegistry[:enroll_app].setting(:contact_center_short_number).item,
                 contact_center_tty_number: EnrollRegistry[:enroll_app].settings(:contact_center_tty_number).item
               ))
+            )
+            return true
+          end
+          false
+        end
+
+        def person_already_has_broker_role?(person)
+          if is_broker_profile? && person.broker_role.present?
+            errors.add(
+              :organization,
+              l10n("broker_agencies.profiles.person_already_registered_as_primary_for_existing_broker")
             )
             return true
           end
