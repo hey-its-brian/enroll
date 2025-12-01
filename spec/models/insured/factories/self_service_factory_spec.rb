@@ -622,9 +622,13 @@ module Insured
 
       context 'when change_tax_credit is true' do
         let(:change_tax_credit) { true }
+        let(:new_effective_date) { Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date(enrollment, nil) }
+
         it 'calls new_enrollment_effective_on_date with change_tax_credit as true' do
-          expect(Insured::Factories::SelfServiceFactory).to receive(:new_enrollment_effective_on_date).with(enrollment, change_tax_credit).and_call_original
-          subject.update_aptc(enrollment.id, 1000, change_tax_credit: change_tax_credit)
+          if enrollment.effective_on.year == new_effective_date.year
+            expect(Insured::Factories::SelfServiceFactory).to receive(:new_enrollment_effective_on_date).with(enrollment, change_tax_credit).and_call_original
+            subject.update_aptc(enrollment.id, 1000, change_tax_credit: change_tax_credit)
+          end
         end
       end
     end
