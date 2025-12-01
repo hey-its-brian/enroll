@@ -95,6 +95,46 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
 
   let(:operation) { described_class.new }
 
+  let(:create_application_stack) do
+    lambda do |application_type, **options|
+
+      application_params = { family_id: family.id }.merge(options)
+
+      case application_type
+      when :faa
+        application = FactoryBot.create(
+          :financial_assistance_application,
+          **application_params
+        )
+
+        applicant = FactoryBot.create(
+          :financial_assistance_applicant,
+          application: application,
+          family_member_id: primary_applicant.id,
+          person_hbx_id: person.hbx_id
+        )
+
+      when :qhp, :individual_market
+        application = FactoryBot.create(
+          :individual_market_application,
+          :with_primary,
+          **application_params
+        )
+
+        applicant = FactoryBot.create(
+          :individual_market_applicant,
+          application: application,
+          family_member_id: primary_applicant.id
+        )
+      end
+
+      eligibility = FactoryBot.create(:individual_market_eligibility, eligible: applicant)
+      FactoryBot.create(:social_security_number_evidence, :verified, eligibility: eligibility)
+
+      application.reload
+    end
+  end
+
   describe '#call' do
     context 'with valid parameters' do
       let(:params) do
@@ -188,6 +228,45 @@ RSpec.describe Operations::Eligibilities::Evidences::Show, type: :operation do
 
         expect(result).to be_success
         expect(result.success[:years]).to eq([TimeKeeper.date_of_record.year, TimeKeeper.date_of_record.year - 1].sort.reverse)
+      end
+    end
+
+    context 'with multiple application types in different states' do
+      let(:params) { { family_id: family.id, filter: {} } }
+
+      let(:draft_faa_application) { create_application_stack.call(:faa, aasm_state: 'draft') }
+      let(:cancelled_faa_application) { create_application_stack.call(:faa, aasm_state: 'cancelled') }
+      let(:determined_qhp_application) { create_application_stack.call(:qhp, current_state: 'determined') }
+      let(:cancelled_qhp_application) { create_application_stack.call(:qhp, current_state: 'cancelled') }
+      let(:terminated_qhp_application) { create_application_stack.call(:qhp, current_state: 'terminated') }
+
+      let(:ivl_elig) { FactoryBot.create(:individual_market_eligibility, eligible: applicant) }
+      let(:ivl_ssn_evid) { FactoryBot.create(:social_security_number_evidence, :verified, eligibility: ivl_elig) }
+
+      before do
+        faa_application.reload
+
+        draft_faa_application
+        cancelled_faa_application
+        determined_qhp_application
+        cancelled_qhp_application
+        terminated_qhp_application
+      end
+
+      it 'fetches only determined or cancelled applications for the family' do
+        result = operation.call(params: params, family_member: family.primary_applicant, evidence: ivl_ssn_evid)
+
+        expect(result.success[:applications]).to include(faa_application)
+        expect(result.success[:applications]).to include(determined_qhp_application)
+        expect(result.success[:applications]).to include(cancelled_faa_application)
+        expect(result.success[:applications]).to include(cancelled_qhp_application)
+      end
+
+      it 'does not fetch non-determined or non-cancelled applications for the family' do
+        result = operation.call(params: params, family_member: family.primary_applicant, evidence: income_evidence)
+
+        expect(result.success[:applications]).to_not include(draft_faa_application)
+        expect(result.success[:applications]).to_not include(terminated_qhp_application)
       end
     end
 

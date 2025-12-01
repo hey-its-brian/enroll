@@ -63,13 +63,13 @@ module Operations
         end
 
         def fetch_qhp_applications(family_id)
-          query = ::IndividualMarket::Application.where(family_id: family_id)
+          query = ::IndividualMarket::Application.cancelled_or_determined_by_family(family_id)
 
           query.to_a
         end
 
         def fetch_faa_applications(family_id)
-          query = ::FinancialAssistance::Application.where(family_id: family_id)
+          query = ::FinancialAssistance::Application.cancelled_or_determined_by_family(family_id)
 
           query.to_a
         end

@@ -324,6 +324,11 @@ module FinancialAssistance
       where(aasm_state: 'determined', family_id: family_id)
     }
 
+    # @!scope class
+    # @return [Mongoid::Criteria] All applications in 'cancelled' or 'determined' state for a given family (used in verification history display)
+    # @param family_id [String] The family id year to filter applications.
+    scope :cancelled_or_determined_by_family, ->(family_id) { where(family_id: family_id, :aasm_state.in => ['cancelled', 'determined']) }
+
     # Applications that are in submitted and after submission states. Non work in progress applications.
     scope :submitted_and_after, lambda {
       where(

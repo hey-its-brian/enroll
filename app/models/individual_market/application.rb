@@ -154,6 +154,11 @@ module IndividualMarket
     }
 
     # @!scope class
+    # @return [Mongoid::Criteria] All applications in :cancelled or :determined state for a given family (used in verification history display)
+    # @param family_id [String] The family id year to filter applications.
+    scope :cancelled_or_determined_by_family, ->(family_id) { where(family_id: family_id, :current_state.in => [:cancelled, :determined]) }
+
+    # @!scope class
     # @return [Mongoid::Criteria] Applications with assistance year greater than or equal to the specified year
     scope :from_year, ->(year) { where(:assistance_year.gte => year) }
 
