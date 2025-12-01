@@ -97,7 +97,6 @@ module Operations
               middle_name: applicant.middle_name,
               last_name: applicant.last_name,
               name_sfx: applicant.name_sfx,
-              encrypted_ssn: applicant.encrypted_ssn,
               no_ssn: applicant.no_ssn,
               gender: applicant.gender,
               dob: applicant.dob,
@@ -115,6 +114,12 @@ module Operations
               is_homeless: applicant.is_homeless,
               is_temporarily_out_of_state: applicant.is_temporarily_out_of_state
             )
+
+            if applicant.encrypted_ssn.blank?
+              person.unset(:encrypted_ssn)
+            else
+              person.encrypted_ssn = applicant.encrypted_ssn
+            end
 
             Success(person)
           end
