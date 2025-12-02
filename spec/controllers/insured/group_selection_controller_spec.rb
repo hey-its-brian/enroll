@@ -2236,8 +2236,12 @@ RSpec.describe Insured::GroupSelectionController, :type => :controller, dbclean:
         }
       end
 
+      let!(:hbx_profile2) {FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period)}
+
       before do
         sign_in user
+        allow(hbx_profile2).to receive(:under_open_enrollment?).and_return true
+        allow(HbxProfile).to receive(:current_hbx).and_return hbx_profile2
       end
 
       it 'creates enrollment & sets generation_reason on enrollment and tobacco_use on hbx_enrollment member' do
