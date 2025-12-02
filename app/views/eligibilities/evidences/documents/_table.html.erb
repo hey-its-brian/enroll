@@ -24,7 +24,7 @@
           </td>
           <td><%= document.title %></td>
           <td><%= app_info[:assistance_year] %></td>
-          <td><%= document.created_at %></td>
+          <td><%= to_est document.created_at %></td>
           <td class='col-2'>
             <% dropdowns = qhp_enabled_verification_dropdowns(@evidence_delegator, document, evidence: document.documentable, display_previous_evidences: false)  %>
             <%= render partial: 'datatables/shared/dropdown', locals: {dropdowns: dropdowns} %>

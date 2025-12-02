@@ -99,7 +99,7 @@
         <% @evidence.documents&.each do |document| %>
           <tr>
             <td class='col-7'><%= document.title.titleize %></td>
-            <td class='col-3'><%= document.created_at %></td>
+            <td class='col-3'><%= to_est document.created_at %></td>
             <td class='col-2'>
               <% dropdowns = qhp_application_feature_enabled? ? qhp_enabled_verification_dropdowns(@evidence, document, evidence: nil, display_previous_evidences: false) : verification_dropdowns(@evidence, document)  %>
               <%= render partial: 'datatables/shared/dropdown', locals: {dropdowns: dropdowns} %>
