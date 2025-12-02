@@ -22,18 +22,18 @@
 
       <%# Person Name Form %>
       <%= f.fields_for :person_name, @person_name_form do |name| %>
-        <div class="d-flex mb-md-4">
+        <div class="d-flex mb-md-4" data-controller="name-validation">
           <div class="col-md-6 col-lg-3 p-0">
             <%= name.label :given_name, l10n("first_name"), class: "required" %>
-            <%= name.text_field :given_name, class: "required", required: true, placeholder: l10n("first_name"), autocomplete: :off %>
+            <%= name.text_field :given_name, class: "required", required: true, placeholder: l10n("first_name"), autocomplete: :off, data: { target: "name-validation.nameField" } %>
           </div>
           <div class="col-md-6 col-lg-3 p-0">
             <%= name.label :middle_name, l10n("middle_name") %>
-            <%= name.text_field :middle_name, placeholder: l10n("middle_name"), autocomplete: :off %>
+            <%= name.text_field :middle_name, placeholder: l10n("middle_name"), autocomplete: :off, data: { target: "name-validation.nameField" } %>
           </div>
           <div class="col-md-6 col-lg-3 p-0">
             <%= name.label :family_name, l10n("last_name"), class: "required" %>
-            <%= name.text_field :family_name, class: "required", required: true, placeholder: l10n("last_name"), autocomplete: :off %>
+            <%= name.text_field :family_name, class: "required", required: true, placeholder: l10n("last_name"), autocomplete: :off, data: { target: "name-validation.nameField" } %>
           </div>
           <div class="col-md-6 col-lg-3 p-0">
             <%= name.label :name_sfx, l10n("suffix") %>

@@ -29,18 +29,18 @@
       <% end %>
 
       <h3><%= l10n("personal_information") %></h3>
-      <div class="d-flex mb-md-4">
+      <div class="d-flex mb-md-4" data-controller="name-validation">
         <div class="col-md-6 col-lg-3 p-0">
           <%= f.label :first_name, l10n("first_name"), class: "required" %>
-          <%= f.text_field :first_name, class: "required", required: true, placeholder: l10n("first_name"), autocomplete: :off %>
+          <%= f.text_field :first_name, class: "required", required: true, placeholder: l10n("first_name"), autocomplete: :off, data: { target: "name-validation.nameField" } %>
         </div>
         <div class="col-md-6 col-lg-3 p-0">
           <%= f.label :middle_name, l10n("middle_name") %>
-          <%= f.text_field :middle_name, class: "required", required: false, placeholder: l10n("middle_name"), autocomplete: :off %>
+          <%= f.text_field :middle_name, class: "required", required: false, placeholder: l10n("middle_name"), autocomplete: :off, data: { target: "name-validation.nameField" } %>
         </div>
         <div class="col-md-6 col-lg-3 p-0">
           <%= f.label :last_name, l10n("last_name"), class: "required" %>
-          <%= f.text_field :last_name, class: "required", required: true, placeholder: l10n("last_name"), autocomplete: :off %>
+          <%= f.text_field :last_name, class: "required", required: true, placeholder: l10n("last_name"), autocomplete: :off, data: { target: "name-validation.nameField" } %>
         </div>
         <div class="col-md-6 col-lg-3 p-0">
           <%= f.label :name_sfx, l10n("suffix") %>

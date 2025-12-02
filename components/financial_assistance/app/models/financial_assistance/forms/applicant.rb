@@ -8,6 +8,7 @@ module FinancialAssistance
       include Config::AcaModelConcern
       include AddressValidator
       include ::ResourceRegistryHelper
+      include NameValidatable
 
       attr_accessor :id, :family_id, :is_consumer_role, :is_resident_role, :vlp_document_id, :application_id, :applicant_id, :gender, :relationship, :relation_with_primary, :no_dc_address, :is_homeless, :is_temporarily_out_of_state,
                     :tribe_codes, :same_with_primary, :is_applying_coverage, :immigration_doc_statuses, :addresses, :phones, :emails, :addresses_attributes, :phones_attributes, :emails_attributes, :is_dependent,
@@ -25,6 +26,7 @@ module FinancialAssistance
       validates_presence_of :first_name, :allow_blank => nil
       validates_presence_of :last_name, :allow_blank => nil
       validates_presence_of :gender, :allow_blank => nil
+      validates_name_format :first_name, :middle_name, :last_name
       validates_presence_of :dob
       validates :ssn,
                 length: {minimum: 9, maximum: 9, message: " must be 9 digits"},

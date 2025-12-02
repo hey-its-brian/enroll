@@ -173,7 +173,7 @@ RSpec.describe 'BenefitSponsors::ModelEvents::GeneralAgencyHiredNotice', dbclean
       end
 
       it 'should return broker primary fullname' do
-        expect(merge_model.broker.primary_fullname).to eq broker_role.person.full_name
+        expect(merge_model.broker.primary_fullname).to eq broker_role.person.full_name.titleize
       end
     end
   end

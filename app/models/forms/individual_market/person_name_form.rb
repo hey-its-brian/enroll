@@ -6,6 +6,7 @@ module Forms
     class PersonNameForm
       include ActiveModel::Model
       include ActiveModel::Validations
+      include NameValidatable
 
       attr_accessor :id,
                     :given_name,
@@ -16,6 +17,7 @@ module Forms
                     :alternate_name
 
       validates :given_name, :family_name, presence: true
+      validates_name_format :given_name, :family_name, :middle_name
       validate :suffix_validation
 
       def initialize(attributes = {})

@@ -52,7 +52,7 @@ RSpec.describe IvlNotices::FinalCatastrophicPlanNotice, dbclean: :after_each do
     end
 
     it "should receive a primary_fullname" do
-      expect(@catastrophic_plan_notice.notice.primary_fullname).to eq person.full_name
+      expect(@catastrophic_plan_notice.notice.primary_fullname).to eq person.full_name.titleize
     end
 
     it "should receive a primary_firstname" do

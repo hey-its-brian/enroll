@@ -195,7 +195,7 @@ RSpec.describe 'BenefitSponsors::ModelEvents::GeneralAgencyFiredNotice', dbclean
       end
 
       it 'should return broker last name ' do
-        expect(merge_model.broker.primary_last_name).to eq broker_role.person.last_name
+        expect(merge_model.broker.primary_last_name).to eq broker_role.person.last_name.titleize
       end
     end
   end

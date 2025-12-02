@@ -38,10 +38,138 @@ RSpec.describe FinancialAssistance::Forms::Applicant, type: :model, dbclean: :af
   end
 
   describe "validations" do
-    it { is_expected.to validate_presence_of(:first_name) }
-    it { is_expected.to validate_presence_of(:last_name) }
     it { is_expected.to validate_presence_of(:gender) }
     it { is_expected.to validate_presence_of(:dob) }
+
+    describe "first_name validation" do
+      it { is_expected.to validate_presence_of(:first_name) }
+
+      context "format validation" do
+        it "accepts valid names with letters only" do
+          subject.first_name = "John"
+          subject.valid?
+          expect(subject.errors[:first_name]).to be_empty
+        end
+
+        it "accepts names with spaces" do
+          subject.first_name = "Mary Jane"
+          subject.valid?
+          expect(subject.errors[:first_name]).to be_empty
+        end
+
+        it "accepts names with hyphens" do
+          subject.first_name = "Jean-Pierre"
+          subject.valid?
+          expect(subject.errors[:first_name]).to be_empty
+        end
+
+        it "accepts names with apostrophes" do
+          subject.first_name = "O'Connor"
+          subject.valid?
+          expect(subject.errors[:first_name]).to be_empty
+        end
+
+        it "rejects names with numbers" do
+          subject.first_name = "John123"
+          subject.valid?
+          expect(subject.errors[:first_name]).to include("can only contain letters, spaces, hyphens, and apostrophes.")
+        end
+
+        it "rejects names with special characters" do
+          subject.first_name = "John@Smith"
+          subject.valid?
+          expect(subject.errors[:first_name]).to include("can only contain letters, spaces, hyphens, and apostrophes.")
+        end
+      end
+    end
+
+    describe "last_name validation" do
+      it { is_expected.to validate_presence_of(:last_name) }
+
+      context "format validation" do
+        it "accepts valid names with letters only" do
+          subject.last_name = "Smith"
+          subject.valid?
+          expect(subject.errors[:last_name]).to be_empty
+        end
+
+        it "accepts names with spaces" do
+          subject.last_name = "Van Der Berg"
+          subject.valid?
+          expect(subject.errors[:last_name]).to be_empty
+        end
+
+        it "accepts names with hyphens" do
+          subject.last_name = "Smith-Jones"
+          subject.valid?
+          expect(subject.errors[:last_name]).to be_empty
+        end
+
+        it "accepts names with apostrophes" do
+          subject.last_name = "O'Brien"
+          subject.valid?
+          expect(subject.errors[:last_name]).to be_empty
+        end
+
+        it "rejects names with numbers" do
+          subject.last_name = "Smith123"
+          subject.valid?
+          expect(subject.errors[:last_name]).to include("can only contain letters, spaces, hyphens, and apostrophes.")
+        end
+
+        it "rejects names with special characters" do
+          subject.last_name = "Smith#Jones"
+          subject.valid?
+          expect(subject.errors[:last_name]).to include("can only contain letters, spaces, hyphens, and apostrophes.")
+        end
+      end
+    end
+
+    describe "middle_name validation" do
+      context "format validation" do
+        it "accepts valid names with letters only" do
+          subject.middle_name = "Michael"
+          subject.valid?
+          expect(subject.errors[:middle_name]).to be_empty
+        end
+
+        it "accepts names with spaces" do
+          subject.middle_name = "De La"
+          subject.valid?
+          expect(subject.errors[:middle_name]).to be_empty
+        end
+
+        it "accepts names with hyphens" do
+          subject.middle_name = "Marie-Claire"
+          subject.valid?
+          expect(subject.errors[:middle_name]).to be_empty
+        end
+
+        it "accepts names with apostrophes" do
+          subject.middle_name = "D'Angelo"
+          subject.valid?
+          expect(subject.errors[:middle_name]).to be_empty
+        end
+
+        it "rejects names with numbers" do
+          subject.middle_name = "Marie123"
+          subject.valid?
+          expect(subject.errors[:middle_name]).to include("can only contain letters, spaces, hyphens, and apostrophes.")
+        end
+
+        it "rejects names with special characters" do
+          subject.middle_name = "Marie@Claire"
+          subject.valid?
+          expect(subject.errors[:middle_name]).to include("can only contain letters, spaces, hyphens, and apostrophes.")
+        end
+
+        it "allows blank middle_name" do
+          subject.middle_name = ""
+          subject.valid?
+          expect(subject.errors[:middle_name]).to be_empty
+        end
+      end
+    end
 
     context "when ssn is provided" do
       it "validates length" do

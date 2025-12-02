@@ -389,7 +389,7 @@ RSpec.describe ::FinancialAssistance::Forms::Applicant, type: :model, dbclean: :
   context 'applicant without home addresses and same_with_primary as true' do
     let(:params2) do
       { same_with_primary: "true",
-        first_name: "test1",
+        first_name: "test",
         last_name: "test",
         middle_name: '',
         name_sfx: '',

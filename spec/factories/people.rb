@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :person do
     first_name { 'John' }
-    sequence(:last_name) {|n| "Smith#{n}" }
+    letter_sequence(:last_name) {|s| "Smith#{s}" }
     dob { "1972-04-04".to_date }
     is_incarcerated { false }
     is_active { true }
