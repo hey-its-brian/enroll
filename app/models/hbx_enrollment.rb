@@ -668,8 +668,9 @@ class HbxEnrollment
   end
 
   # checks possibility of coverage renewal for ivl enrollments
-  def can_renew_coverage?(new_effective_on)
+  def can_renew_coverage?(new_effective_on, renewal_job_type)
     return false unless is_ivl_by_kind?
+    return true if renewal_job_type == 'rerun_renewal'
 
     enrollments = family.active_household.hbx_enrollments.where(
       {:coverage_kind => coverage_kind,

@@ -291,6 +291,29 @@ RSpec.describe Operations::Individual::RenewEnrollment, type: :model, dbclean: :
       end
     end
 
+    context 'rerun_renewal' do
+      before :each do
+        tax_household.update_attributes!(effective_starting_on: enrollment.effective_on.beginning_of_year)
+        tax_household.tax_household_members.first.update_attributes!(applicant_id: family_member.id)
+      end
+
+      context 'ehb premium is less than the selected aptc' do
+        before do
+          @result = subject.call(hbx_enrollment: enrollment, effective_on: enrollment.effective_on.beginning_of_year, renewal_job_type: 'rerun_renewal')
+        end
+
+        it 'should return success' do
+          expect(@result).to be_a(Dry::Monads::Result::Success)
+        end
+
+        it 'should renew the given enrollment with current year' do
+          renewal = @result.success
+          expect(renewal).to be_a(HbxEnrollment)
+          expect(renewal.effective_on.year).to eq(enrollment.effective_on.year)
+        end
+      end
+    end
+
     context 'unassisted enrollment renewal' do
       before do
         @result = subject.call(hbx_enrollment: enrollment, effective_on: effective_on)

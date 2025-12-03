@@ -4,7 +4,7 @@ class Enrollments::IndividualMarket::FamilyEnrollmentRenewal
   include FloatHelper
   include Config::AcaHelper
 
-  attr_accessor :enrollment, :renewal_coverage_start, :assisted, :aptc_values, :eligible_determined_members
+  attr_accessor :enrollment, :renewal_coverage_start, :assisted, :aptc_values, :eligible_determined_members, :renewal_job_type
 
   CAT_AGE_OFF_HIOS_IDS = ["94506DC0390008", "86052DC0400004"]
 
@@ -204,7 +204,12 @@ class Enrollments::IndividualMarket::FamilyEnrollmentRenewal
 
   def fetch_cross_product
     renewal_year = renewal_coverage_start.year
-    default_renewal_product = enrollment.product.renewal_product
+
+    default_renewal_product = if renewal_job_type == 'rerun_renewal'
+                                enrollment.product
+                              else
+                                enrollment.product.renewal_product
+                              end
 
     # This is a temporary fix for renewal enrollments as the current Data Model does not support cross walk products by county.
     return default_renewal_product unless [2025, 2026].include?(renewal_year)

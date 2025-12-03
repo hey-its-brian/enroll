@@ -37,7 +37,7 @@ module FinancialAssistance
 
     # @!attribute REVIEWABLE_STATUSES
     # @return [Array<String>] Collection of Application statuses that are reviewable
-    REVIEWABLE_STATUSES = %w[submitted determination_response_error determined terminated].freeze
+    REVIEWABLE_STATUSES = %w[submitted determination_response_error determined terminated expired].freeze
 
     CLOSED_STATUSES = %w[cancelled terminated].freeze
 

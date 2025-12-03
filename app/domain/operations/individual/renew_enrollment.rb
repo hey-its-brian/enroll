@@ -28,21 +28,21 @@ module Operations
       # @param [ HbxEnrollment ] hbx_enrollment Enrollment that needs to be renewed.
       # @param [ Date ] effective_on Effective Date of the renewal enrollment.
       # @return [ HbxEnrollment ] renewal_enrollment.
-      def call(hbx_enrollment:, effective_on:)
-        validated_enrollment = yield validate(hbx_enrollment, effective_on)
+      def call(hbx_enrollment:, effective_on:, renewal_job_type: nil)
+        validated_enrollment = yield validate(hbx_enrollment, effective_on, renewal_job_type)
         eligibility_values   = yield fetch_eligibility_values(validated_enrollment, effective_on)
-        renewal_enrollment   = yield renew_enrollment(validated_enrollment, effective_on, eligibility_values)
+        renewal_enrollment   = yield renew_enrollment(validated_enrollment, effective_on, eligibility_values, renewal_job_type)
 
         Success(renewal_enrollment)
       end
 
       private
 
-      def validate(enrollment, effective_on)
+      def validate(enrollment, effective_on, renewal_job_type)
         return Failure('Given object is not a valid enrollment object') unless enrollment.is_a?(HbxEnrollment)
         return Failure('Given enrollment is not IVL by kind') unless enrollment.is_ivl_by_kind?
         return Failure('Given enrollment is a shopping enrollment by aasm_state') if enrollment.shopping?
-        return Failure('There exists active enrollments for the subscriber in the year with given effective_on') unless enrollment.can_renew_coverage?(effective_on)
+        return Failure('There exists active enrollments for the subscriber in the year with given effective_on') unless enrollment.can_renew_coverage?(effective_on, renewal_job_type)
 
         if EnrollRegistry.feature_enabled?(:qhp_application)
           @eligible_members = fetch_eligible_members_from_grants(enrollment, effective_on)
@@ -84,12 +84,13 @@ module Operations
         mthh_enabled || !enrollment.is_health_enrollment? || !enrollment.product.can_use_aptc? || enrollment.kind == 'coverall'
       end
 
-      def renew_enrollment(enrollment, effective_on, eligibility_values)
+      def renew_enrollment(enrollment, effective_on, eligibility_values, renewal_job_type)
         enrollment_renewal = Enrollments::IndividualMarket::FamilyEnrollmentRenewal.new
         enrollment_renewal.enrollment = enrollment
         enrollment_renewal.assisted = eligibility_values.present?
         enrollment_renewal.aptc_values = eligibility_values
         enrollment_renewal.eligible_determined_members = @eligible_members if @eligible_members.present?
+        enrollment_renewal.renewal_job_type = renewal_job_type
         enrollment_renewal.renewal_coverage_start = effective_on
         renewed_enrollment = enrollment_renewal.renew
         if renewed_enrollment.is_a?(HbxEnrollment)

@@ -36,7 +36,7 @@ module DropdownHelper
   end
 
   def add_eligibility_option(option_args, application)
-    return unless application.is_determined? || application.is_terminated?
+    return unless application.is_determined? || application.is_terminated? || application.expired?
 
     option_args << [l10n('insured.sbm.applications.actions.view_eligibility'), financial_assistance.eligibility_results_application_path(application), :default]
   end
@@ -94,7 +94,7 @@ module DropdownHelper
   #
   # @return [Boolean]
   def show_copy?(application, copyable_application_ids, current_year, logged_in_user)
-    ((logged_in_user.is_admin? && application.is_determined?) || copyable_application_ids.include?(application.id)) && current_year.present?
+    ((logged_in_user.is_admin? && (application.is_determined? || application.expired?)) || copyable_application_ids.include?(application.id)) && current_year.present?
   end
 
   def add_qhp_copy_option(option_args, application, current_user, copyable_application_ids, current_year)

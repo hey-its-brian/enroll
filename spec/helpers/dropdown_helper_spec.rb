@@ -203,6 +203,19 @@ RSpec.describe DropdownHelper, type: :helper do
       end
 
       context 'when:
+        - application is a expired
+        - logged in user is an admin
+        ' do
+        let(:app_state) { 'expired' }
+
+        it 'returns the copy option' do
+          expect(
+            helper.application_dropdowns(application, []).collect { |dropdwn| dropdwn[:title] }
+          ).to include(l10n('insured.sbm.applications.actions.copy'))
+        end
+      end
+
+      context 'when:
         - application is not determined
         - logged in user is a consumer or admin
         ' do
@@ -245,6 +258,19 @@ RSpec.describe DropdownHelper, type: :helper do
       end
 
       context 'when:
+        - application is a expired
+        - logged in user is an admin
+        ' do
+        let(:app_state) { 'expired' }
+
+        it 'returns the view eligibility option' do
+          expect(
+            helper.application_dropdowns(application, []).collect { |dropdwn| dropdwn[:title] }
+          ).to include(l10n('insured.sbm.applications.actions.view_eligibility'))
+        end
+      end
+
+      context 'when:
         - application is not determined
         - logged in user is a consumer or admin
         ' do
@@ -278,6 +304,19 @@ RSpec.describe DropdownHelper, type: :helper do
         - logged in user is an admin
         ' do
         let(:app_state) { 'determined' }
+
+        it 'returns the review option' do
+          expect(
+            helper.application_dropdowns(application, []).collect { |dropdwn| dropdwn[:title] }
+          ).to include(l10n('insured.sbm.applications.actions.review'))
+        end
+      end
+
+      context 'when:
+        - application is a expired
+        - logged in user is an admin
+        ' do
+        let(:app_state) { 'expired' }
 
         it 'returns the review option' do
           expect(

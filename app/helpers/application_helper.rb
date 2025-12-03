@@ -1242,7 +1242,7 @@ module ApplicationHelper
     return true if prospective_year_application?(application)
 
     if logged_in_user.person.hbx_staff_role.present?
-      !application.is_determined?
+      !['determined', 'expired'].include?(application.aasm_state)
     else
       !copyable_application_ids.include?(application.id)
     end
