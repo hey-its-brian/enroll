@@ -19,7 +19,8 @@ module FinancialAssistance
             application = yield fetch_application(values)
             _success = yield build_evidence_history(application, submitted_action, submitted_message, 'system')
             cv3_application = yield transform_and_validate_application(application)
-            _saved = yield save_application(application)
+            saved = yield save_application(application)
+            _determination = yield update_family_determination(saved)
             event = yield build_event(cv3_application)
             publish(event)
 
@@ -158,6 +159,21 @@ module FinancialAssistance
               error_msg = "Failed to save application: #{application.errors.full_messages.join(', ')}"
               logger.error(error_msg)
               Failure(error_msg)
+            end
+          end
+
+          def update_family_determination(application)
+            family = application.family
+            unless family.present?
+              logger.error("#{process_name} Non ESI: Family not found for application hbx_id: #{application.hbx_id}")
+              return Failure("#{process_name} Non ESI: Family not found for application hbx_id: #{application.hbx_id}")
+            end
+
+            if family.latest_application_gid == application.to_global_id&.uri&.to_s
+              ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family})
+            else
+              logger.error("#{process_name} Non ESI: latest application gid #{family.latest_application_gid} does not match with application gid #{application.to_global_id&.uri&.to_s} for family id: #{family.id}")
+              Success("#{process_name} Non ESI: request is recorded for application with hbx_id: #{application.hbx_id}, family determination is not updated as latest application gid does not match")
             end
           end
 

@@ -104,6 +104,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Shared::NonEsiEvid
       before do
         allow(operation).to receive(:build_evidence_history).and_return(Dry::Monads::Success(true))
         allow(operation).to receive(:transform_and_validate_application).and_return(Dry::Monads::Success(cv3_application))
+        allow(operation).to receive(:update_family_determination).and_return(Dry::Monads::Success(true))
         allow(operation).to receive(:build_event).and_return(Dry::Monads::Success(event))
       end
 

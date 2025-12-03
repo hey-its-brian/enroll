@@ -21,10 +21,11 @@ module FinancialAssistance
               yield is_application_valid?(application)
               _evidences = yield build_history_for_income_evidences(application)
               cv3_application = yield transform_and_validate_application(application)
+              determination_result = yield update_family_determination(application)
               event = yield build_event(cv3_application)
               publish(event)
 
-              Success("Successfully published payload for rrv ifsv and created history event")
+              Success("Successfully published payload for rrv ifsv and created history event | family_eligibility_determination: #{determination_result}")
             end
 
             private
@@ -109,6 +110,21 @@ module FinancialAssistance
                 evidence = applicant.aptc_csr_eligibility.income_evidence
                 next unless evidence.present?
                 evidence.build_verification_history(action, update_reason, update_by)
+              end
+            end
+
+            def update_family_determination(application)
+              family = application.family
+              unless family.present?
+                rrv_logger.error("RRV INCOME: Family not found for application hbx_id: #{application.hbx_id}")
+                return Failure("RRV INCOME: Family not found for application hbx_id: #{application.hbx_id}")
+              end
+
+              if family.latest_application_gid == application.to_global_id&.uri&.to_s
+                ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family})
+              else
+                rrv_logger.error("RRV INCOME: latest application gid #{family.latest_application_gid} does not match with application gid #{application.to_global_id&.uri&.to_s} for family id: #{family.id}")
+                Success("RRV INCOME: request is recorded for application with hbx_id: #{application.hbx_id}, family determination is not updated as latest application gid does not match")
               end
             end
 

@@ -9,6 +9,30 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
   let(:person2) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
   let(:person3) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+  let!(:system_date) { Date.today }
+  let!(:application2) do
+    result = FactoryBot.create(:financial_assistance_application, hbx_id: '300000126', aasm_state: "determined", family_id: family.id, submitted_at: DateTime.new(system_date.year, system_date.month, system_date.day) - 30.minutes)
+    member = FactoryBot.create(:financial_assistance_applicant,
+                               eligibility_determination_id: nil,
+                               person_hbx_id: person.hbx_id,
+                               is_primary_applicant: true,
+                               first_name: 'esi',
+                               last_name: 'evidence',
+                               ssn: "123456789",
+                               dob: Date.new(1994,11,17),
+                               family_member_id: family.primary_family_member.id,
+                               application: result)
+    member.build_aptc_eligibilities_evidences
+    member.build_ivl_eligibility_with_evidences
+    member.save!
+    family.assign_latest_application_gid
+    family.save!
+    ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family})
+
+    result
+  end
+
+
   let(:application) do
     FactoryBot.create(
       :financial_assistance_application,
@@ -138,17 +162,21 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
   describe '#call' do
     context 'success' do
       before do
+        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
         # Build aptc_csr_eligibility for applicants to ensure they can build evidences
         application.applicants.each do |applicant|
           allow(applicant).to receive(:is_applying_coverage).and_return(true)
           applicant.build_aptc_eligibilities_evidences
         end
         application.save!
+        family.update_attributes(latest_application_gid: application.to_global_id.uri.to_s)
       end
 
       it 'should return success if application hbx_id is passed' do
         result = subject.call({ application_hbx_id: application.hbx_id })
         expect(result).to be_success
+        family.reload
+        expect(family.eligibility_determination.application_gid).to eq application.to_global_id.uri.to_s
       end
 
       it 'builds non_esi_mec_evidence for active applicants' do

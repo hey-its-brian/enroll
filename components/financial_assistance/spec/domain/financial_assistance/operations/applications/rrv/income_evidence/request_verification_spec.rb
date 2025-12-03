@@ -8,7 +8,33 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::IncomeEvide
   let(:person_1) { FactoryBot.create(:person, :with_ssn, :with_consumer_role, :with_active_consumer_role) }
   let(:person_2) { FactoryBot.create(:person, :with_ssn, :with_consumer_role, :with_active_consumer_role) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person_1)}
-  let(:application) { FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: 'determined', hbx_id: "830293", effective_date: TimeKeeper.date_of_record.beginning_of_year) }
+  let!(:system_date) { Date.today }
+  let!(:application2) do
+    result = FactoryBot.create(:financial_assistance_application, hbx_id: '300000126', aasm_state: "determined", family_id: family.id, submitted_at: DateTime.new(system_date.year, system_date.month, system_date.day) - 30.minutes)
+    member = FactoryBot.create(:financial_assistance_applicant,
+                               eligibility_determination_id: nil,
+                               person_hbx_id: person_1.hbx_id,
+                               is_primary_applicant: true,
+                               first_name: 'esi',
+                               last_name: 'evidence',
+                               ssn: "889984400",
+                               dob: Date.new(1994,11,17),
+                               family_member_id: family.primary_family_member.id,
+                               application: result)
+    member.build_aptc_eligibilities_evidences
+    member.build_ivl_eligibility_with_evidences
+    member.save!
+    family.assign_latest_application_gid
+    family.save!
+    ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family})
+
+    result
+  end
+
+  let(:application) do
+    FactoryBot.create(:financial_assistance_application, family_id: family.id, aasm_state: 'determined', hbx_id: "830293", effective_date: TimeKeeper.date_of_record.beginning_of_year,
+                                                         submitted_at: DateTime.new(system_date.year, system_date.month, system_date.day))
+  end
   let(:eligibility_determination) { FactoryBot.create(:financial_assistance_eligibility_determination, application: application) }
 
   let(:applicant_1) do
@@ -33,8 +59,8 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::IncomeEvide
                      :with_income_evidence,
                      application: application,
                      is_primary_applicant: false,
-                     ssn: '889984400',
-                     dob: Date.new(1995,11,17),
+                     ssn: '889984401',
+                     dob: Date.new(1996,11,17),
                      first_name: person_2.first_name,
                      last_name: person_2.last_name,
                      gender: person_2.gender,
@@ -98,19 +124,22 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::IncomeEvide
     allow(HbxProfile).to receive(:current_hbx).and_return hbx_profile
     allow(hbx_profile).to receive(:benefit_sponsorship).and_return benefit_sponsorship
     allow(benefit_sponsorship).to receive(:current_benefit_period).and_return(benefit_coverage_period)
-    application.reload
+    family.update_attributes(latest_application_gid: application.to_global_id.uri.to_s)
   end
 
   let(:payload_entity) { ::Operations::Fdsh::BuildAndValidateApplicationPayload.new.call(application).value! }
 
   context 'with valid application' do
     before do
+      allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
       @result = subject.call({application_hbx_id: application.hbx_id})
       application.reload
     end
 
     it 'should return success' do
       expect(@result).to be_success
+      family.reload
+      expect(family.eligibility_determination.application_gid).to eq application.to_global_id.uri.to_s
     end
 
     it 'should record failure for valid applicant1' do
