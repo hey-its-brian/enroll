@@ -94,7 +94,7 @@ module FinancialAssistance
               applications_by_family = ::FinancialAssistance::Application.where(family_id: validated_params[:family_id])
 
               if @renewal_job_type == 'rerun_renewal'
-                latest_app = applications_by_family.by_year(validated_params[:renewal_year]).order_by(created_at: :desc).first
+                latest_app = applications_by_family.by_year(validated_params[:renewal_year]).non_draft.order_by(created_at: :desc).first
                 if latest_app.present?
                   if latest_app.expired?
                     Success(latest_app)

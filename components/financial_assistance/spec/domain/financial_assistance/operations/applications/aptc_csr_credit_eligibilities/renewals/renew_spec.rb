@@ -800,7 +800,8 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
           family_id: family.id,
           assistance_year: renewal_year,
           years_to_renew: 5,
-          aasm_state: 'expired'
+          aasm_state: 'expired',
+          created_at: TimeKeeper.date_of_record - 1.day
         )
       end
 
@@ -816,6 +817,33 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
         result = subject.call(params)
         expect(result).to be_success
         expect(result.success.aasm_state).to eq('renewal_draft')
+      end
+
+      context 'when their latest application is draft' do
+        let!(:draft_application) do
+          FactoryBot.create(
+            :financial_assistance_application,
+            family_id: family.id,
+            assistance_year: renewal_year,
+            years_to_renew: 5,
+            aasm_state: 'expired',
+            created_at: TimeKeeper.date_of_record
+          )
+        end
+
+        let!(:draft_applicant) do
+          FactoryBot.create(:financial_assistance_applicant,
+                            person_hbx_id: person.hbx_id,
+                            is_primary_applicant: true,
+                            family_member_id: family.primary_applicant.id,
+                            application: draft_application)
+        end
+
+        it 'returns success' do
+          result = subject.call(params)
+          expect(result).to be_success
+          expect(result.success.aasm_state).to eq('renewal_draft')
+        end
       end
     end
 
