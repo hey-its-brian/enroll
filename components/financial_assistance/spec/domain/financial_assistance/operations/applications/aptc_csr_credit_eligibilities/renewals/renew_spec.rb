@@ -819,24 +819,24 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
         expect(result.success.aasm_state).to eq('renewal_draft')
       end
 
-      context 'when their latest application is draft' do
-        let!(:draft_application) do
+      shared_examples_for "with an existing non expired application" do |aasm_state|
+        let!(:app) do
           FactoryBot.create(
             :financial_assistance_application,
             family_id: family.id,
             assistance_year: renewal_year,
             years_to_renew: 5,
-            aasm_state: 'expired',
+            aasm_state: aasm_state,
             created_at: TimeKeeper.date_of_record
           )
         end
 
-        let!(:draft_applicant) do
+        let!(:member) do
           FactoryBot.create(:financial_assistance_applicant,
                             person_hbx_id: person.hbx_id,
                             is_primary_applicant: true,
                             family_member_id: family.primary_applicant.id,
-                            application: draft_application)
+                            application: app)
         end
 
         it 'returns success' do
@@ -845,6 +845,9 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::AptcCsrCreditEli
           expect(result.success.aasm_state).to eq('renewal_draft')
         end
       end
+
+      it_behaves_like "with an existing non expired application", "draft"
+      it_behaves_like "with an existing non expired application", "cancelled"
     end
 
     context 'when no expired application exists' do
