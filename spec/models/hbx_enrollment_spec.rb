@@ -1000,6 +1000,64 @@ describe '#related_application' do
   end
 end
 
+describe "#has_catastrophic_product?" do
+  let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+  let!(:base_product)     { FactoryBot.create(:benefit_markets_products_health_products_health_product, hios_base_id: '33653ME0560001') }
+  let(:hbx_enrollment) { FactoryBot.create(:hbx_enrollment, family: family, household: family.active_household, product_id: base_product.id) }
+
+  context "when enrollment has catastrophic product" do
+    before do
+      base_product.update_attributes!(metal_level_kind: :catastrophic)
+    end
+    it "returns true" do
+      expect(hbx_enrollment.has_catastrophic_product?).to be true
+    end
+  end
+
+  context "when enrollment does not have catastrophic product" do
+    it "returns false" do
+      expect(hbx_enrollment.has_catastrophic_product?).to be false
+    end
+  end
+end
+
+describe "is_cat_product_ineligible?" do
+  let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+  let(:new_effective_on) { Date.new(Date.today.year, 1, 1) }
+  let(:hbx_enrollment_member) do
+    FactoryBot.build(
+      :hbx_enrollment_member,
+      is_subscriber: true,
+      applicant_id: family.primary_family_member.id,
+      coverage_start_on: TimeKeeper.date_of_record.beginning_of_month,
+      eligibility_date: TimeKeeper.date_of_record.beginning_of_month
+    )
+  end
+
+  let(:hbx_enrollment) { FactoryBot.create(:hbx_enrollment, family: family, household: family.active_household, hbx_enrollment_members: [hbx_enrollment_member]) }
+
+  context "when enrollment is cat product eligible" do
+    before do
+      person.update_attributes!(dob: new_effective_on)
+    end
+
+    it "returns false" do
+      expect(hbx_enrollment.is_cat_product_ineligible?(TimeKeeper.date_of_record)).to be false
+    end
+  end
+
+  context "when enrollment is cat product ineligible" do
+    it "returns true" do
+      expect(hbx_enrollment.is_cat_product_ineligible?(TimeKeeper.date_of_record)).to be true
+    end
+
+  end
+
+end
+
+
 describe '#can_make_changes_for_ivl_enrollment?' do
   let(:hbx_enrollment) { HbxEnrollment.new }
   context 'when enrollment_plan_tile_update feature is disabled' do

@@ -61,7 +61,7 @@ class Enrollments::IndividualMarket::FamilyEnrollmentRenewal
     # TODO: Fetch proper csr product as the family might be eligible for a
     # different csr value than that of given externally.
     # Sets the cross walk product
-    return renewal_product if has_catastrophic_product?
+    return renewal_product if @enrollment.has_catastrophic_product?
 
     if can_renew_assisted_product?(renewal_enrollment)
       assisted_renewal_product
@@ -172,35 +172,6 @@ class Enrollments::IndividualMarket::FamilyEnrollmentRenewal
   #  - max APTC
   def renewal_eligiblity_determination; end
 
-  def fetch_cross_walk_product_hios_base_id(county, current_hios_base_id, renewal_year)
-    counties = %w[
-      Aroostook
-      Hancock
-      Penobscot
-      Piscataquis
-      Somerset
-      Washington
-    ]
-
-    return if counties.exclude?(county)
-
-    crosswalk_mapping_for_year(renewal_year)[current_hios_base_id]
-  end
-
-  def crosswalk_mapping_for_year(renewal_year)
-    case renewal_year
-    when 2025
-      {
-        '33653ME0560001' => '33653ME0560006',
-        '33653ME0560005' => '33653ME0560003'
-      }.freeze
-    when 2026
-      {
-        '33653ME0530010' => '33653ME0560006',
-        '33653ME0530015' => '33653ME0560003'
-      }.freeze
-    end
-  end
 
   def fetch_cross_product
     renewal_year = renewal_coverage_start.year
@@ -211,19 +182,12 @@ class Enrollments::IndividualMarket::FamilyEnrollmentRenewal
                                 enrollment.product.renewal_product
                               end
 
-    # This is a temporary fix for renewal enrollments as the current Data Model does not support cross walk products by county.
-    return default_renewal_product unless [2025, 2026].include?(renewal_year)
-
-    cross_walk_product_hios_base_id = fetch_cross_walk_product_hios_base_id(
-      enrollment&.consumer_role&.rating_address&.county&.capitalize,
-      enrollment.product.hios_base_id,
-      renewal_year
-    )
-    return default_renewal_product if cross_walk_product_hios_base_id.blank?
-
-    ::BenefitMarkets::Products::HealthProducts::HealthProduct.by_year(renewal_year).where(
-      { hios_id: "#{cross_walk_product_hios_base_id}-01" }
-    ).first
+    cross_walk_product = ::Operations::Products::FetchCrossWalkProducts.new.call({
+                                                                                   base_enrollment: enrollment,
+                                                                                   renewal_year: renewal_year,
+                                                                                   renewal_product: default_renewal_product
+                                                                                 })
+    cross_walk_product.success? ? cross_walk_product.value! : nil
   end
 
   # Cat product ageoff
@@ -231,11 +195,11 @@ class Enrollments::IndividualMarket::FamilyEnrollmentRenewal
   def renewal_product
     if @enrollment.coverage_kind == 'dental'
       renewal_product = @cross_walk_product&.id
-    elsif has_catastrophic_product? && is_cat_product_ineligible?
+    elsif @enrollment.has_catastrophic_product? && @enrollment.is_cat_product_ineligible?(renewal_coverage_start)
       renewal_product = fetch_cat_age_off_product(@enrollment.product)
       raise "#{renewal_coverage_start.year} Catastrophic age off product missing on HIOS id #{@enrollment.product.hios_id}" if renewal_product.blank?
     else
-      renewal_product = if @enrollment.product.csr_variant_id == '01' || has_catastrophic_product?
+      renewal_product = if @enrollment.product.csr_variant_id == '01' || @enrollment.has_catastrophic_product?
                           @cross_walk_product&.id
                         else
                           ::BenefitMarkets::Products::HealthProducts::HealthProduct.by_year(renewal_coverage_start.year).where(
@@ -300,15 +264,6 @@ class Enrollments::IndividualMarket::FamilyEnrollmentRenewal
     ).first
   end
 
-  def has_catastrophic_product?
-    @enrollment.product.metal_level_kind == :catastrophic
-  end
-
-  def is_cat_product_ineligible?
-    @enrollment.hbx_enrollment_members.any? do |member|
-      member.person.age_on(renewal_coverage_start) > 29
-    end
-  end
 
   # Check if member turned 19 during renewal and has pediatric only Qualified Dental Plan
   def turned_19_during_renewal_with_pediatric_only_qdp?(member)

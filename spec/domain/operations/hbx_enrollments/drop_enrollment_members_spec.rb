@@ -588,5 +588,158 @@ RSpec.describe Operations::HbxEnrollments::DropEnrollmentMembers, :type => :mode
       expect(reinstatement.elected_aptc_pct).to eq 1.0
       expect(reinstatement.aggregate_aptc_amount.to_f).to eq 375.0
     end
+
+    describe "dropping a dependent on the last day of the year" do
+
+      let!(:service_area) do
+        ::BenefitMarkets::Locations::ServiceArea.service_areas_for(address,
+                                                                   during: TimeKeeper.date_of_record.next_year).first || FactoryBot.create_default(:benefit_markets_locations_service_area, active_year: TimeKeeper.date_of_record.next_year.year)
+      end
+
+      let!(:renewal_product) do
+        FactoryBot.create(:benefit_markets_products_health_products_health_product,
+                          metal_level_kind: :silver, benefit_market_kind: :aca_individual,
+                          application_period: (TimeKeeper.date_of_record.next_year.beginning_of_year..TimeKeeper.date_of_record.next_year.end_of_year),
+                          service_area_id: service_area.id, hios_id: hbx_enrollment.product.hios_id)
+      end
+
+      let!(:address) do
+        family.primary_family_member.person.addresses.first
+      end
+
+      context "when family does not have prospective year grants" do
+        context "when coverage kind is dental" do
+
+          before do
+            hbx_enrollment.update_attributes!(coverage_kind: 'dental')
+            hbx_enrollment.product.update_attributes!(renewal_product_id: renewal_product.id)
+            @dropped_members = subject.call({hbx_enrollment: hbx_enrollment,
+                                             options: {"termination_date_#{hbx_enrollment.id}" => Date.new(TimeKeeper.date_of_record.year,12,31).to_s,
+                                                       "terminate_member_#{dependent_member.id}" => dependent_member.id.to_s,
+                                                       "admin_permission" => true}}).success
+            family.reload
+            @reinstated_enrollment = family.hbx_enrollments.last
+          end
+
+
+          it 'drops dependent and rebuilds enrollment for prospective year' do
+            expect(@dropped_members.first[:hbx_id]).to eq dependent_member.hbx_id.to_s
+            family.reload
+            expect(@reinstated_enrollment.effective_on).to eq Date.new(TimeKeeper.date_of_record.year + 1, 1, 1)
+          end
+
+          it "has the enrollment member coverage start dates match the enrollment effective on date" do
+            family.reload
+            @reinstated_enrollment.hbx_enrollment_members.each do |enrollment_member|
+              expect(enrollment_member.coverage_start_on).to eql(@reinstated_enrollment.effective_on)
+            end
+          end
+
+          it "the reinstated enrollment has the renewal product" do
+
+            expect(@reinstated_enrollment.product).to eq renewal_product
+          end
+        end
+
+        context "dependent ageoff catastrophic plan" do
+          before do
+            hbx_enrollment.product.update_attributes!(metal_level_kind: 'catastrophic')
+            hbx_enrollment.product.update_attributes!(renewal_product_id: renewal_product.id)
+            hbx_enrollment.product.catastrophic_age_off_product_id = renewal_product.id
+            hbx_enrollment.save!
+            @dropped_members = subject.call({hbx_enrollment: hbx_enrollment,
+                                             options: {"termination_date_#{hbx_enrollment.id}" => Date.new(TimeKeeper.date_of_record.year,12,31).to_s,
+                                                       "terminate_member_#{dependent_member.id}" => dependent_member.id.to_s,
+                                                       "admin_permission" => true}}).success
+          end
+
+          it "reinstates in a non-catastrophic plan for the new year" do
+            expect(@dropped_members.first[:hbx_id]).to eq dependent_member.hbx_id.to_s
+            family.reload
+            reinstated_enrollment = family.hbx_enrollments.last
+            expect(reinstated_enrollment.effective_on).to eq Date.new(TimeKeeper.date_of_record.year + 1, 1, 1)
+            expect(reinstated_enrollment.product).to eq renewal_product
+          end
+        end
+
+        context "when coverage kind is health" do
+          before do
+            @dropped_members = subject.call({hbx_enrollment: hbx_enrollment,
+                                             options: {"termination_date_#{hbx_enrollment.id}" => Date.new(TimeKeeper.date_of_record.year,12,31).to_s,
+                                                       "terminate_member_#{dependent_member.id}" => dependent_member.id.to_s,
+                                                       "admin_permission" => true}}).success
+          end
+        end
+      end
+
+      context "when family does have prospective year grants" do
+        before do
+          @dropped_members = subject.call({hbx_enrollment: hbx_enrollment,
+                                           options: {"termination_date_#{hbx_enrollment.id}" => Date.new(TimeKeeper.date_of_record.year,12,31).to_s,
+                                                     "terminate_member_#{dependent_member.id}" => dependent_member.id.to_s,
+                                                     "admin_permission" => true}}).success
+        end
+
+        let!(:prospective_year_tax_household_group) do
+          family.tax_household_groups.create!(
+            assistance_year: TimeKeeper.date_of_record.year + 1,
+            source: 'Admin',
+            start_on: TimeKeeper.date_of_record.beginning_of_year.next_year,
+            tax_households: [
+              FactoryBot.build(:tax_household, household: family.active_household)
+            ]
+          )
+        end
+
+        let!(:eligibility_determination) do
+          determination = family.create_eligibility_determination(effective_date: TimeKeeper.date_of_record.beginning_of_year.next_year)
+          determination.grants.create(
+            key: "AdvancePremiumAdjustmentGrant",
+            value: yearly_expected_contribution,
+            start_on: TimeKeeper.date_of_record.beginning_of_year.next_year,
+            end_on: TimeKeeper.date_of_record.end_of_year.next_year,
+            assistance_year: TimeKeeper.date_of_record.year + 1,
+            member_ids: family.family_members.map(&:id).map(&:to_s),
+            tax_household_id: prospective_year_tax_household_group.tax_households.first.id
+          )
+          family.family_members.each do |family_member|
+            subject = determination.subjects.create(
+              gid: "gid://enroll/FamilyMember/#{family_member.id}",
+              is_primary: family_member.is_primary_applicant,
+              person_id: family_member.person.id
+            )
+            state = subject.eligibility_states.create(eligibility_item_key: 'aptc_csr_credit')
+            state.grants.create(
+              key: "CsrAdjustmentGrant",
+              value: '87',
+              start_on: TimeKeeper.date_of_record.beginning_of_year,
+              end_on: TimeKeeper.date_of_record.end_of_year,
+              assistance_year: TimeKeeper.date_of_record.year,
+              member_ids: family.family_members.map(&:id)
+            )
+          end
+
+          determination
+        end
+
+        it "drops dependent and rebuilds enrollment for prospective year" do
+          expect(@dropped_members.first[:hbx_id]).to eq dependent_member.hbx_id.to_s
+          family.reload
+          reinstated_enrollment = family.hbx_enrollments.last
+          expect(reinstated_enrollment.effective_on).to eq Date.new(TimeKeeper.date_of_record.year + 1, 1, 1)
+          reinstated_enrollment.hbx_enrollment_members.each do |enrollment_member|
+            expect(enrollment_member.coverage_start_on).to eql(reinstated_enrollment.effective_on)
+          end
+        end
+
+        it "has the enrollment member coverage start dates match the enrollment effective on date" do
+          family.reload
+          reinstated_enrollment = family.hbx_enrollments.last
+          reinstated_enrollment.hbx_enrollment_members.each do |enrollment_member|
+            expect(enrollment_member.coverage_start_on).to eql(reinstated_enrollment.effective_on)
+          end
+        end
+      end
+    end
   end
 end

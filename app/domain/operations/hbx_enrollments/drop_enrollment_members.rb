@@ -102,6 +102,8 @@ module Operations
           if same_product
             matched_member = match_member_on_enrollment(base_enrollment, member)
             member.update_attributes(eligibility_date: new_enrollment.effective_on, coverage_start_on: matched_member.coverage_start_on)
+          elsif base_enrollment.effective_on.year != new_enrollment.effective_on.year
+            member.update_attributes(eligibility_date: new_enrollment.effective_on, coverage_start_on: new_enrollment.effective_on)
           else
             member.update_attributes(eligibility_date: new_enrollment.effective_on)
           end
@@ -129,10 +131,12 @@ module Operations
       end
 
       def set_product_id
-        return Success() unless base_enrollment.is_health_enrollment?
-
+        return Success() unless base_enrollment.is_health_enrollment? || base_enrollment.effective_on.year != new_enrollment.effective_on.year
         if EnrollRegistry.feature_enabled?(:temporary_configuration_enable_multi_tax_household_feature)
-          return Success() unless is_mthh_assisted?
+          unless is_mthh_assisted?
+            return Success() if base_enrollment.effective_on.year == new_enrollment.effective_on.year
+            return determine_crosswalk_product
+          end
         else
           tax_household = base_enrollment.family.active_household.latest_active_thh_with_year(new_enrollment.effective_on.year)
           return Success() unless tax_household.present?
@@ -142,10 +146,43 @@ module Operations
         return Failure('Could not find product for new enrollment with present csr kind.') unless products.count >= 1
 
         new_enrollment.product_id = products.last.id
-        service_area_check = ::Operations::Products::ProductOfferedInServiceArea.new.call({enrollment: new_enrollment})
+
         return Failure('Product is NOT offered in service area.') if service_area_check.failure?
 
         Success()
+      end
+
+      def service_area_check
+        ::Operations::Products::ProductOfferedInServiceArea.new.call({enrollment: new_enrollment})
+      end
+
+      def determine_crosswalk_product
+        cross_walk_product = fetch_cross_walk_product
+        return Failure('Could not find crosswalk product for new enrollment.') unless cross_walk_product.present?
+
+        new_enrollment_product_id = if base_enrollment.coverage_kind == 'dental' || base_enrollment.product.csr_variant_id == '01'
+                                      cross_walk_product.id
+                                    elsif base_enrollment.has_catastrophic_product?
+                                      if base_enrollment.is_cat_product_ineligible?(@new_effective_date)
+                                        base_enrollment.product.catastrophic_age_off_product_id
+                                      else
+                                        cross_walk_product.id
+                                      end
+                                    else
+                                      ::BenefitMarkets::Products::HealthProducts::HealthProduct.by_year(new_enrollment.effective_on.year).where(
+                                        {:hios_id => "#{cross_walk_product&.hios_base_id}-01"}
+                                      ).first&.id
+                                    end
+
+        new_enrollment.product_id = new_enrollment_product_id
+        return Failure('Could not find product for new enrollment.') unless new_enrollment_product_id.present?
+        return Failure('Product is NOT offered in service area.') if service_area_check.failure?
+        Success()
+      end
+
+      def fetch_cross_walk_product
+        cross_walk_product = ::Operations::Products::FetchCrossWalkProducts.new.call({ base_enrollment: base_enrollment, renewal_year: new_enrollment.effective_on.year, renewal_product: base_enrollment.product.renewal_product })
+        cross_walk_product.success? ? cross_walk_product.value! : nil
       end
 
       def is_mthh_assisted?

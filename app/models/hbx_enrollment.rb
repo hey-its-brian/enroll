@@ -3137,6 +3137,17 @@ class HbxEnrollment
     application
   end
 
+  def has_catastrophic_product?
+    return false unless product.present?
+    product.metal_level_kind == :catastrophic
+  end
+
+  def is_cat_product_ineligible?(effective_date)
+    hbx_enrollment_members.any? do |member|
+      member.person.age_on(effective_date) > 29
+    end
+  end
+
   private
 
   # Calculates sum of enrolled aptc member's of TaxHouseholdEnrollment ehb_premiums including Minimum Responsibility.
