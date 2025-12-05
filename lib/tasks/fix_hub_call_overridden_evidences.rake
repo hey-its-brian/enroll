@@ -48,6 +48,7 @@ namespace :fix_hub_call_overridden_evidences do
       puts "Found #{total} families to process..."
       
       families.pluck('id').each.with_index(1) do |fam_id, index|
+        impacted = false
         puts "Processing family #{index} of #{total}" if (index % 1000).zero?
         
         family = Family.find(fam_id)
@@ -60,6 +61,7 @@ namespace :fix_hub_call_overridden_evidences do
           impacted_evidences = get_impacted_evidence(applicant)
           
           impacted_evidences.each do |evidence|
+            impacted = true
             states = evidence.state_histories
             state_1, state_2 = states.each_cons(2).to_a.last
             
@@ -90,6 +92,11 @@ namespace :fix_hub_call_overridden_evidences do
               }
             )
           end
+        end
+
+        if impacted
+          family.reset_latest_application
+          Operations::Eligibilities::BuildFamilyDetermination.new.call(family: family)
         end
       end
     end
