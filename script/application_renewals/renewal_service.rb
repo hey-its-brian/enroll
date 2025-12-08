@@ -67,7 +67,7 @@ class RenewalService
   def initialize(renewal_year:, primary_person_hbx_ids:)
     @renewal_year              = renewal_year
     @primary_person_hbx_ids    = primary_person_hbx_ids
-    @logger = Logger.new("#{Rails.root}/log/renewal_service_#{Time.now.strftime('%Y_%m_%d %H_%M_%S')}.log")
+    @logger = Logger.new("#{Rails.root}/log/renewal_service_#{Time.now.strftime('%Y_%m_%d_%H_%M_%S')}.log")
   end
 
   # Main entry point.

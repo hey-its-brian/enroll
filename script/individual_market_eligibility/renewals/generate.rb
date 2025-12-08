@@ -79,7 +79,7 @@ module Script
         def initialize(renewal_year:, primary_person_hbx_ids:)
           @renewal_year           = renewal_year
           @primary_person_hbx_ids = primary_person_hbx_ids
-          @qhp_logger = Logger.new("#{Rails.root}/log/qhp_renewal_generated_#{Time.now.strftime('%Y_%m_%d %H_%M_%S')}.log")
+          @qhp_logger = Logger.new("#{Rails.root}/log/qhp_renewal_generated_#{Time.now.strftime('%Y_%m_%d_%H_%M_%S')}.log")
         end
 
         def process
@@ -165,8 +165,4 @@ module Script
   end
 end
 
-if Rails.env.test? || (defined?(Rails) && $PROGRAM_NAME.include?('rails'))
-  Script::IndividualMarketEligibility::Renewals::Generate
-    .new(renewal_year: renewal_year_arg, primary_person_hbx_ids: primary_hbx_ids_arg)
-    .process
-end
+Script::IndividualMarketEligibility::Renewals::Generate.new(renewal_year: renewal_year_arg, primary_person_hbx_ids: primary_hbx_ids_arg).process
