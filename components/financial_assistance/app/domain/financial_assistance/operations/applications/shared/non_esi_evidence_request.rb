@@ -39,7 +39,6 @@ module FinancialAssistance
             if application.present?
               application.valid? ? Success(application) : Failure("Invalid application: #{params[:application_hbx_id]}")
             else
-              logger.error("No application found with hbx_id #{params[:application_hbx_id]}")
               Failure("No application found with hbx_id #{params[:application_hbx_id]}")
             end
           end
@@ -52,17 +51,19 @@ module FinancialAssistance
               move_applicant_eligibility_state(application)
               save_application(application)
               return payload_entity if all_applicants_valid.any?(&:last)
+              update_family_determination(application)
               return Failure("Failed to transform application with hbx_id #{application.hbx_id} due to all applicants are invalid")
             elsif payload_entity.failure?
-              move_applicant_eligibility_state(application)
               record_application_failure(application, payload_entity.failure.messages)
+              move_applicant_eligibility_state(application)
               save_application(application)
+              update_family_determination(application)
+              return Failure("Failed at validation for application with hbx_id #{application.hbx_id} due to #{payload_entity.failure.messages}")
             end
 
             payload_entity
           rescue StandardError => e
-            logger.error("#{process_name} process failed to publish event for the application with hbx_id #{application.hbx_id} due to #{e.inspect}")
-            Failure("#{process_name} process failed to publish event for the application with hbx_id #{application.hbx_id} due to #{e.inspect}")
+            Failure("Failed to publish event for the application with hbx_id #{application.hbx_id} due to #{e.inspect}")
           end
 
           def move_applicant_eligibility_state(application)
@@ -157,17 +158,13 @@ module FinancialAssistance
               Success(application)
             else
               error_msg = "Failed to save application: #{application.errors.full_messages.join(', ')}"
-              logger.error(error_msg)
               Failure(error_msg)
             end
           end
 
           def update_family_determination(application)
             family = application.family
-            unless family.present?
-              logger.error("#{process_name} Non ESI: Family not found for application hbx_id: #{application.hbx_id}")
-              return Failure("#{process_name} Non ESI: Family not found for application hbx_id: #{application.hbx_id}")
-            end
+            return Failure("#{process_name} Non ESI: Family not found for application hbx_id: #{application.hbx_id}") unless family.present?
 
             if family.latest_application_gid == application.to_global_id&.uri&.to_s
               ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family})

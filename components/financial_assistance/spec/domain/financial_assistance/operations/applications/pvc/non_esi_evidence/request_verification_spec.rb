@@ -9,6 +9,29 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
   let(:person2) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
   let(:person3) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+  let!(:system_date) { Date.today }
+  let!(:application2) do
+    result = FactoryBot.create(:financial_assistance_application, hbx_id: '300000126', aasm_state: "determined", family_id: family.id, submitted_at: DateTime.new(system_date.year, system_date.month, system_date.day) - 30.minutes)
+    member = FactoryBot.create(:financial_assistance_applicant,
+                               eligibility_determination_id: nil,
+                               person_hbx_id: person.hbx_id,
+                               is_primary_applicant: true,
+                               first_name: 'esi',
+                               last_name: 'evidence',
+                               ssn: "123456789",
+                               dob: Date.new(1994,11,17),
+                               family_member_id: family.primary_family_member.id,
+                               application: result)
+    member.build_aptc_eligibilities_evidences
+    member.build_ivl_eligibility_with_evidences
+    member.save!
+    family.assign_latest_application_gid
+    family.save!
+    ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family})
+
+    result
+  end
+
   let(:application) do
     FactoryBot.create(
       :financial_assistance_application,
@@ -16,7 +39,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
       aasm_state: 'determined',
       assistance_year: TimeKeeper.date_of_record.year,
       effective_date: TimeKeeper.date_of_record.beginning_of_year,
-      created_at: Date.new(2021, 10, 1)
+      submitted_at: DateTime.new(system_date.year, system_date.month, system_date.day)
     )
   end
 
@@ -122,6 +145,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
   end
 
   before do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
     allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:full_medicaid_determination_step).and_return(false)
     allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:indian_alaskan_tribe_details).and_return(false)
     allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:non_esi_mec_determination).and_return(true)
@@ -144,6 +168,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
           applicant.build_aptc_eligibilities_evidences
         end
         application.save!
+        family.update_attributes(latest_application_gid: application.to_global_id.uri.to_s)
       end
 
       it 'should return success if application hbx_id is passed' do
@@ -338,13 +363,8 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
         it 'handles the exception and returns failure' do
           result = subject.call({ application_hbx_id: application.hbx_id })
           expect(result).to be_failure
-          expect(result.failure).to include('PVC process failed to publish event')
+          expect(result.failure).to match(/Failed to publish event for the application/)
           expect(result.failure).to include('Unexpected error')
-        end
-
-        it 'logs the error' do
-          expect_any_instance_of(Logger).to receive(:error).with(/PVC process failed to publish event/)
-          subject.call({ application_hbx_id: application.hbx_id })
         end
       end
     end
@@ -446,11 +466,6 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
           result = subject.send(:save_application, test_application)
           expect(result).to be_failure
           expect(result.failure).to include('Failed to save application: Validation failed: Field is required')
-        end
-
-        it 'logs the error' do
-          expect(subject.send(:pvc_logger)).to receive(:error).with(/Failed to save application/)
-          subject.send(:save_application, test_application)
         end
       end
     end
@@ -579,6 +594,11 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
         # Make one applicant valid and one invalid
         applicant.update_attributes!(ssn: "123456789")
         applicant2.update_attributes!(ssn: nil) # Invalid
+        application.applicants.each do |applicant|
+          allow(applicant).to receive(:is_applying_coverage).and_return(true)
+          applicant.build_aptc_eligibilities_evidences
+        end
+        application.save!
       end
 
       it 'handles mixed scenarios correctly' do
@@ -613,7 +633,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Pvc::NonEsiEvidenc
         result = subject.call({ application_hbx_id: application.hbx_id })
 
         expect(result).to be_failure
-        expect(result.failure).to include('PVC process failed to publish event')
+        expect(result.failure).to match(/Failed to publish event for the application with hbx_id/)
         expect(result.failure).to include('Event building failed')
 
         # Since the error occurs during transform_and_validate_application (before evidence creation),

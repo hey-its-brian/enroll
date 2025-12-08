@@ -25,13 +25,13 @@ module FinancialAssistance
               event = yield build_event(cv3_application)
               publish(event)
 
-              Success("Successfully published payload for rrv ifsv and created history event | family_eligibility_determination: #{determination_result}")
+              Success("RRV INCOME: Successfully published payload for rrv ifsv and created history event | family_eligibility_determination: #{determination_result}")
             end
 
             private
 
             def validate(params)
-              return Failure('application_hbx_id is missing') unless params[:application_hbx_id].present?
+              return Failure('RRV INCOME: application_hbx_id is missing') unless params[:application_hbx_id].present?
 
               Success(params[:application_hbx_id])
             end
@@ -41,8 +41,7 @@ module FinancialAssistance
               if application.present?
                 Success(application)
               else
-                rrv_logger.info("No application found with hbx_id #{application_hbx_id}")
-                Failure("No application found with hbx_id #{application_hbx_id}")
+                Failure("RRV INCOME: No application found with hbx_id #{application_hbx_id}")
               end
             end
 
@@ -50,8 +49,7 @@ module FinancialAssistance
               if application.valid?
                 Success(true)
               else
-                rrv_logger.error("Application with hbx_id #{application.hbx_id} is invalid: #{application.errors.full_messages.join(', ')}")
-                Failure("Application with hbx_id #{application.hbx_id} is invalid")
+                Failure("RRV INCOME: Application with hbx_id #{application.hbx_id} is invalid")
               end
             end
 
@@ -68,18 +66,21 @@ module FinancialAssistance
                 if result.any?(Failure)
                   errors = result.select { |r| r.is_a?(Failure) }.map(&:failure)
                   record_application_failure(application, errors)
+                  rrv_logger.error("RRV INCOME: Failed to publish: Applicants validation failed with hbx_id #{application.hbx_id} due to #{errors}")
+                  update_family_determination(application)
                   return Failure(errors)
                 else
                   application.save!
                 end
               else
                 record_application_failure(application, payload_entity.failure.messages)
+                rrv_logger.error("RRV INCOME: Failed to publish: Application validation failed with hbx_id #{application.hbx_id} due to #{payload_entity.failure.messages}")
+                update_family_determination(application)
               end
 
               payload_entity
             rescue StandardError => e
-              rrv_logger.error("Failed to transform application with hbx_id #{application.hbx_id} due to #{e.inspect}")
-              Failure("Failed to transform application with hbx_id #{application.hbx_id} due to #{e.inspect}")
+              Failure("RRV INCOME: Failed to transform application with hbx_id #{application.hbx_id} due to #{e.inspect}")
             end
 
             def validate_applicants(payload_entity)
@@ -114,11 +115,9 @@ module FinancialAssistance
             end
 
             def update_family_determination(application)
-              family = application.family
-              unless family.present?
-                rrv_logger.error("RRV INCOME: Family not found for application hbx_id: #{application.hbx_id}")
-                return Failure("RRV INCOME: Family not found for application hbx_id: #{application.hbx_id}")
-              end
+              family_id = application.family_id
+              family = Family.where(id: family_id).first
+              return Failure("RRV INCOME: Family not found for application hbx_id: #{application.hbx_id}")  unless family.present?
 
               if family.latest_application_gid == application.to_global_id&.uri&.to_s
                 ::Operations::Eligibilities::BuildFamilyDetermination.new.call({family: family})

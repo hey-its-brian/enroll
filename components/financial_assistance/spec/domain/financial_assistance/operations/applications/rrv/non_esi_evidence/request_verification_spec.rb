@@ -40,7 +40,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
       aasm_state: 'determined',
       assistance_year: TimeKeeper.date_of_record.year,
       effective_date: TimeKeeper.date_of_record.beginning_of_year,
-      created_at: Date.new(2021, 10, 1)
+      submitted_at: DateTime.new(system_date.year, system_date.month, system_date.day)
     )
   end
 
@@ -146,6 +146,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
   end
 
   before do
+    allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
     allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:full_medicaid_determination_step).and_return(false)
     allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:indian_alaskan_tribe_details).and_return(false)
     allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:non_esi_mec_determination).and_return(true)
@@ -162,7 +163,6 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
   describe '#call' do
     context 'success' do
       before do
-        allow(EnrollRegistry).to receive(:feature_enabled?).with(:qhp_application).and_return(true)
         # Build aptc_csr_eligibility for applicants to ensure they can build evidences
         application.applicants.each do |applicant|
           allow(applicant).to receive(:is_applying_coverage).and_return(true)
@@ -216,11 +216,16 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
           applicant.build_aptc_eligibilities_evidences
         end
         application.save!
+        family.remove_instance_variable(:@fetch_latest_determined_application)
+        family.assign_latest_application_gid
+        family.save!
       end
 
       it 'should return failure if application hbx_id is passed' do
         result = subject.call({ application_hbx_id: application.hbx_id })
         expect(result).to be_failure
+        family.reload
+        expect(family.eligibility_determination.application_gid).to eq application.to_global_id.uri.to_s
       end
 
       it 'builds non_esi_mec_evidence for active applicants before failure processing' do
@@ -444,13 +449,8 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
         it 'handles the exception and returns failure' do
           result = subject.call({ application_hbx_id: application.hbx_id })
           expect(result).to be_failure
-          expect(result.failure).to include('RRV process failed to publish event')
+          expect(result.failure).to match(/Failed to publish event for the application with hbx_id/)
           expect(result.failure).to include('Unexpected error')
-        end
-
-        it 'logs the error' do
-          expect_any_instance_of(Logger).to receive(:error).with(/RRV process failed to publish event/)
-          subject.call({ application_hbx_id: application.hbx_id })
         end
       end
     end
@@ -566,11 +566,6 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
           result = subject.send(:save_application, test_application)
           expect(result).to be_failure
           expect(result.failure).to include('Failed to save application: Validation failed: Field is required')
-        end
-
-        it 'logs the error' do
-          expect(subject.send(:rrv_logger)).to receive(:error).with(/Failed to save application/)
-          subject.send(:save_application, test_application)
         end
       end
     end
@@ -699,6 +694,11 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
         # Make one applicant valid and one invalid
         applicant.update_attributes!(ssn: "123456789")
         applicant2.update_attributes!(ssn: nil) # Invalid
+        application.applicants.each do |applicant|
+          allow(applicant).to receive(:is_applying_coverage).and_return(true)
+          applicant.build_aptc_eligibilities_evidences
+        end
+        application.save!
       end
 
       it 'handles mixed scenarios correctly' do
@@ -733,7 +733,7 @@ RSpec.describe FinancialAssistance::Operations::Applications::Rrv::NonEsiEvidenc
         result = subject.call({ application_hbx_id: application.hbx_id })
 
         expect(result).to be_failure
-        expect(result.failure).to include('RRV process failed to publish event')
+        expect(result.failure).to match(/Failed to publish event for the application with hbx_id/)
         expect(result.failure).to include('Event building failed')
 
         # Since the error occurs during transform_and_validate_application (before evidence creation),
