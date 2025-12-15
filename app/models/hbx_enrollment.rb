@@ -651,6 +651,16 @@ class HbxEnrollment
     )
   end
 
+  # Only use for the events move_to_pending and move_to_enrolled
+  # Do not publish any other events
+  def record_state_transition
+    self.workflow_state_transitions << WorkflowStateTransition.new(
+      from_state: aasm.from_state,
+      to_state: aasm.to_state,
+      event: aasm.current_event
+    )
+  end
+
   def renew_benefit(new_benefit_package, result_reporter = ::BenefitSponsors::BenefitPackages::SilentRenewalReporter.new)
     begin
       enrollment = BenefitSponsors::Factories::EnrollmentRenewalFactory.call(self, new_benefit_package)
@@ -2375,12 +2385,37 @@ class HbxEnrollment
                   to:  :void
     end
 
-    event :move_to_enrolled, :after => :record_transition do
+    # @note
+    #   These workflow-only events record state transitions without publishing events
+    #   or triggering side effects. They are used when external processes (e.g., family eligibility
+    #   determination) have already synchronized data from evidences and enrollment statuses.
+    #
+    # @see #record_state_transition Records a WorkflowStateTransition; no external messages
+    #
+    # @return [void]
+    # @!method move_to_enrolled
+    # Transitions:
+    #   - from :unverified to :coverage_selected
+    event :move_to_enrolled, :after => :record_state_transition do
       transitions from: :unverified, to: :coverage_selected
     end
 
-    event :move_to_pending, :after => :record_transition do
-      transitions from: :shopping, to: :unverified
+    # @note
+    #   These workflow-only events record state transitions without publishing events
+    #   or triggering side effects. They are used when external processes (e.g., family eligibility
+    #   determination) have already synchronized data from evidences and enrollment statuses.
+    #
+    # @see #record_state_transition Records a WorkflowStateTransition; no external messages
+    #
+    # @return [void]
+    # @!method move_to_pending
+    # Transitions:
+    #   - from :shopping            to :unverified
+    #   - from :coverage_selected   to :unverified
+    #   - from :coverage_enrolled   to :unverified
+    #   - from :auto_renewing       to :unverified
+    event :move_to_pending, :after => :record_state_transition do
+      transitions from: :shopping,          to: :unverified
       transitions from: :coverage_selected, to: :unverified
       transitions from: :coverage_enrolled, to: :unverified
       transitions from: :auto_renewing, to: :unverified
