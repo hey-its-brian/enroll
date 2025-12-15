@@ -636,6 +636,16 @@ module Eligibilities
         def has_results_after_timestamp?(timestamp)
           request_results.where(:created_at.gte => timestamp).present?
         end
+
+        def manually_extend_due_date(extended_date, modified_by)
+          return if OUTSTANDING_STATUSES.exclude?(self.current_state)
+
+          current_due_on = self.due_on
+          return if extended_date == self.due_on
+
+          self.due_on = extended_date
+          build_verification_history('manually_extend_due_on', "Manually extended due date from #{current_due_on.strftime('%m/%d/%Y')} to #{self.due_on.strftime('%m/%d/%Y')}", modified_by)
+        end
       end
     end
   end

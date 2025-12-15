@@ -20,7 +20,7 @@ elapsed_time = Caches::BenchmarkCache.with_benchmark do
   # Calls the operation to redetermine family eligibility for all the families with outstanding verifications.
   params = {
     data_source: 'families_with_id',
-    migration_handler_name: '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally',
+    migration_handler_name: 'redetermine_family_eligibility_unconditionally',
     batch_size: 3000,
   }
 

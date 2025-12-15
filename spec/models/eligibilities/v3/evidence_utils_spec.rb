@@ -410,6 +410,18 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
     end
   end
 
+  describe "#manually_extend_due_date" do
+    it "manually extends the due_on date" do
+      dummy_evidence.mark_as_outstanding
+      dummy_evidence.update_attributes(due_on: Date.today + 7.days)
+      dummy_evidence.manually_extend_due_date(Date.today + 96.days, 'Admin')
+      expect(dummy_evidence.current_state).to eq(:outstanding)
+      expect(dummy_evidence.due_on).to eq(Date.today + 96.days)
+      expect(dummy_evidence.verification_histories.last.action).to eq('manually_extend_due_on')
+      expect(dummy_evidence.verification_histories.last.updated_by).to eq('Admin')
+    end
+  end
+
   describe "#mark_as_review" do
     it "marks the evidence as review" do
       dummy_evidence.mark_as_review

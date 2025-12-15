@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally, dbclean: :after_each do
+RSpec.describe Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineUnconditionally, dbclean: :after_each do
   let(:subject) { described_class.new }
   let(:person) { create(:person, :with_consumer_role) }
   let(:family) do
@@ -67,10 +67,9 @@ RSpec.describe Operations::AsyncMigrations::Handlers::Families::Eligibility::Red
       let(:person) { create(:person) }
       let(:family) { create(:family, :with_primary_family_member, person: person) }
 
-
-      it 'returns a failure monad with the result because person has no consumer role' do
+      it 'records a failure and return success' do
         result = subject.call(params)
-        expect(result).to be_a(Dry::Monads::Result::Failure)
+        expect(result).to be_a(Dry::Monads::Result::Success)
       end
     end
   end

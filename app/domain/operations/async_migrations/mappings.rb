@@ -15,7 +15,8 @@ module Operations
         'latest_determined_fa_application_with_ids' => ::Operations::AsyncMigrations::Handlers::Families::FetchLatestDeterminedFAApplicationHbxIds.new,
         'families_without_determined_fa_applications_for_current_year' => ::Operations::AsyncMigrations::Handlers::Families::FetchFamiliesWithoutDeterminedFAApplication.new,
         'families_with_tax_household_groups' => Family.exists(:tax_household_groups => true).only(:_id),
-        'people_with_ridp_verified' => ::Operations::AsyncMigrations::Handlers::People::BookmarkURL::FetchEligiblePersonRecords.new
+        'people_with_ridp_verified' => ::Operations::AsyncMigrations::Handlers::People::BookmarkURL::FetchEligiblePersonRecords.new,
+        'fetch_rrv_eligible_family_ids' => ::Operations::AsyncMigrations::Handlers::FAApplication::FetchRRVEligibleFamilies.new
       }.freeze
 
       # Mapping of event handler names to their corresponding classes.
@@ -23,7 +24,7 @@ module Operations
       # @return [Hash] The mapping of event handler names to their corresponding classes.
       EVENT_HANDLER_MAP = {
         '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibility,
-        '::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineFamilyEligibilityUnconditionally,
+        'redetermine_family_eligibility_unconditionally' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::RedetermineUnconditionally,
         'remove_family_eligibility' => ::Operations::AsyncMigrations::Handlers::Families::Eligibility::Remove,
         'migrate_fa_evidences' => ::Operations::AsyncMigrations::Handlers::FAApplication::MigrateEvidence,
         'create_financial_assistance_application' => ::Operations::AsyncMigrations::Handlers::FAApplication::CreateApplication,
