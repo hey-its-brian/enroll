@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module BrokerAgencyWorld
   def create_prospect_employer(broker_agency_name)
     broker_agency_profile = broker_agency_profile(broker_agency_name)
@@ -69,7 +71,7 @@ module BrokerAgencyWorld
     broker_agency_profile = broker_agency_profile(legal_name)
     person = FactoryBot.create(:person, :with_work_email, first_name: broker_name.split(/\s/)[0], last_name: broker_name.split(/\s/)[1])
     @brokers[broker_name] = create(:broker_role, aasm_state: 'active', benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id, person: person)
-    person.broker_agency_staff_roles << build(:broker_agency_staff_role, broker_agency_profile_id: broker_agency_profile.id)
+    person.broker_agency_staff_roles << build(:broker_agency_staff_role, benefit_sponsors_broker_agency_profile_id: broker_agency_profile.id)
     @broker_agency_staff = create(:user, person: person, email: people[broker_name][:email], password: people[broker_name][:password], password_confirmation: people[broker_name][:password])
     @broker_agency_staff.update_attributes(last_portal_visited: "/benefit_sponsors/profiles/broker_agencies/broker_agency_profiles/#{broker_agency_profile.id}")
   end

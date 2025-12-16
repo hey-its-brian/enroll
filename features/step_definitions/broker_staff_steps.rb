@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 When(/^Broker staff enters his personal information$/) do
   find('a', :text => "Broker Staff", wait: 5).click
   fill_in 'staff[first_name]', with: 'Ricky'
@@ -50,7 +52,7 @@ Then(/^Broker Staff should receive an invitation email from his Employer$/) do
 end
 
 When(/^the Broker removes Broker staff from Broker staff table$/) do
-  page.execute_script("document.querySelector('#destroy').click()")
+  find_all('#destroy').last.click
 end
 
 Then(/^Broker should see the staff successfully removed message$/) do
