@@ -21,9 +21,8 @@ module Operations
             def validate(params)
               return Failure("Invalid params provided") if params.empty? || params[:additional_params].nil? || params[:additional_params][:created_at].nil?
               created_at = params[:additional_params][:created_at]
-              return Failure("Invalid created_at provided") unless created_at.is_a?(Date)
 
-              Success(created_at)
+              Success(created_at.to_date)
             end
 
             # Since the batch requester is expecting an operation, we cannot use the query directly in the mappings file
