@@ -90,19 +90,21 @@ module Operations
       csv_data
     end
 
-    def process_single_applicant(family, applicant)
+    def process_single_applicant(_family, applicant)
       individual_market_eligibility = applicant.individual_market_eligibility
       evidences = get_relevant_evidences(individual_market_eligibility)
       eligible_evidences = filter_eligible_evidences(evidences)
 
       ssn_evidence = evidences.find { |e| e.key == "social_security_number_evidence" }
+      ssn_state_before_call = ssn_evidence&.current_state
       citizenship_evidence = evidences.find { |e| e.key == "citizenship_evidence" }
+      citizenship_state_before_call = citizenship_evidence&.current_state
 
       hub_call_made = make_hub_call_if_eligible(applicant, eligible_evidences)
 
       return nil unless hub_call_made
 
-      build_csv_row(family, applicant, ssn_evidence, citizenship_evidence, hub_call_made)
+      build_csv_row(applicant, ssn_evidence, ssn_state_before_call, citizenship_evidence, citizenship_state_before_call)
     end
 
     def get_relevant_evidences(individual_market_eligibility)
@@ -113,8 +115,9 @@ module Operations
     end
 
     def filter_eligible_evidences(evidences)
+      eligible_states = [:pending, :outstanding]
       evidences.select do |evidence|
-        evidence.verification_histories.present? && evidence.request_results.blank? && evidence.current_state == :pending
+        evidence.verification_histories.any? { |history| history.action == 'SSA VLP Hub Request' } && evidence.request_results.blank? && eligible_states.include?(evidence.current_state)
       end
     end
 
@@ -132,8 +135,9 @@ module Operations
       true
     end
 
-    def build_csv_row(family, applicant, ssn_evidence, citizenship_evidence, hub_call_made)
+    def build_csv_row(applicant, ssn_evidence, ssn_state_before_call, citizenship_evidence, citizenship_state_before_call)
       application = applicant.application
+      family = application.family
 
       [
         family.primary_person.hbx_id.to_s,
@@ -141,14 +145,16 @@ module Operations
         application.assistance_year.to_s,
         application.submitted_at.to_s,
         fetch_applicant_hbx_id(applicant),
+        ssn_state_before_call || 'N/A',
         ssn_evidence&.current_state || 'N/A',
-        citizenship_evidence&.current_state || 'N/A',
-        hub_call_made
+        citizenship_state_before_call || 'N/A',
+        citizenship_evidence&.current_state || 'N/A'
       ]
     end
 
     def generate_csv_report(csv_data)
-      csv_headers = ['Primary Person Hbx Id', 'Application ID', 'Application Assistance Year', 'Application Submitted At', 'Applicant HBX ID', 'SSN Evidence Status', 'Citizenship Evidence Status', 'Hub Call Made']
+      csv_headers = ['Primary Person Hbx Id', 'Application ID', 'Application Assistance Year', 'Application Submitted At', 'Applicant HBX ID', 'SSN Evidence Status Before Call', 'SSN Evidence Status After Call',
+                     'Citizenship Evidence Status Before Call', 'Citizenship Evidence Status After Call']
 
       timestamp = Time.current.strftime("%Y_%m_%d")
       filename = "hub_call_results_#{timestamp}.csv"

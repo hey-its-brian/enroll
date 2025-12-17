@@ -78,7 +78,8 @@ RSpec.describe Operations::CallHubForNoSsnUsCitizenApplicants, type: :model, dbc
           csv_file_name = @result.success.split(': ').last
           csv_data = CSV.parse(File.read(csv_file_name))
 
-          expect(csv_data[0]).to eq(["Primary Person Hbx Id", "Application ID", "Application Assistance Year", "Application Submitted At", "Applicant HBX ID", "SSN Evidence Status", "Citizenship Evidence Status", "Hub Call Made"])
+          expect(csv_data[0]).to eq(["Primary Person Hbx Id", "Application ID", "Application Assistance Year", "Application Submitted At", "Applicant HBX ID", "SSN Evidence Status Before Call", "SSN Evidence Status After Call",
+                                     "Citizenship Evidence Status Before Call", "Citizenship Evidence Status After Call"])
 
           row1 = csv_data[1]
           expect(row1[0]).to eq(person.hbx_id)
@@ -86,9 +87,54 @@ RSpec.describe Operations::CallHubForNoSsnUsCitizenApplicants, type: :model, dbc
           expect(row1[2]).to eq(application.assistance_year.to_s)
           expect(row1[3]).to eq(application.submitted_at.to_s)
           expect(row1[4]).to eq(applicant.person_hbx_id)
-          expect(row1[5]).to eq("pending")
-          expect(row1[6]).to eq("pending")
-          expect(row1[7]).to eq("true")
+          expect(row1[5]).to eq("pending") # SSN before call
+          expect(row1[6]).to eq("pending") # SSN after call
+          expect(row1[7]).to eq("pending") # Citizenship before call
+          expect(row1[8]).to eq("pending") # Citizenship after call
+        end
+      end
+
+      context 'when evidences are in outstanding state' do
+        let(:ssn_evidence) do
+          double('Evidence',
+                 key: 'social_security_number_evidence',
+                 current_state: :outstanding,
+                 verification_histories: [double('History', action: 'SSA VLP Hub Request')],
+                 request_results: [])
+        end
+        let(:citizenship_evidence) do
+          double('Evidence',
+                 key: 'citizenship_evidence',
+                 current_state: :outstanding,
+                 verification_histories: [double('History', action: 'SSA VLP Hub Request')],
+                 request_results: [])
+        end
+        let(:hub_verification_service) { double('SsaVlpVerification') }
+
+        before do
+          allow(individual_market_eligibility).to receive(:evidences).and_return([ssn_evidence, citizenship_evidence])
+          allow(Operations::Eligibilities::V3::IndividualMarket::SsaVlpVerification).to receive(:new).and_return(hub_verification_service)
+          allow(hub_verification_service).to receive(:call).and_return(double('result'))
+          @result = operation.call
+        end
+
+        it 'generates CSV with hub call made' do
+          csv_file_name = @result.success.split(': ').last
+          csv_data = CSV.parse(File.read(csv_file_name))
+
+          expect(csv_data[0]).to eq(["Primary Person Hbx Id", "Application ID", "Application Assistance Year", "Application Submitted At", "Applicant HBX ID", "SSN Evidence Status Before Call", "SSN Evidence Status After Call",
+                                     "Citizenship Evidence Status Before Call", "Citizenship Evidence Status After Call"])
+
+          row1 = csv_data[1]
+          expect(row1[0]).to eq(person.hbx_id)
+          expect(row1[1]).to eq(application.hbx_id)
+          expect(row1[2]).to eq(application.assistance_year.to_s)
+          expect(row1[3]).to eq(application.submitted_at.to_s)
+          expect(row1[4]).to eq(applicant.person_hbx_id)
+          expect(row1[5]).to eq("outstanding") # SSN before call
+          expect(row1[6]).to eq("outstanding") # SSN after call
+          expect(row1[7]).to eq("outstanding") # Citizenship before call
+          expect(row1[8]).to eq("outstanding") # Citizenship after call
         end
       end
 
@@ -97,7 +143,8 @@ RSpec.describe Operations::CallHubForNoSsnUsCitizenApplicants, type: :model, dbc
           double('Evidence',
                  key: 'social_security_number_evidence',
                  verification_histories: [double('History', action: 'SSA VLP Hub Request')],
-                 request_results: [double('Result')])
+                 request_results: [double('Result')],
+                 current_state: :pending)
         end
 
         before do
