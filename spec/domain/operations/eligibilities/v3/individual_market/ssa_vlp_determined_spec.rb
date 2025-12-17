@@ -111,147 +111,177 @@ RSpec.describe ::Operations::Eligibilities::V3::IndividualMarket::SsaVlpDetermin
         expect(applicant.citizenship_result).to eq 'not_lawfully_present_in_us'
       end
 
-      context 'when evidence current_state is attested' do
+      context 'when both evidence request results and verification histories are empty' do
         let(:ssn_eligibility_hash) do
           {key: "individual_market_eligibility",
            evidences: [{key: "social_security_number_evidence",
-                        request_results: [rr], current_state: :attested}]}
+                        verification_histories: [], request_results: [], current_state: :outstanding}]}
         end
         let(:params) do
           {call_type: 'application_determination', job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
            response: @application_hash.to_json, app_type: 'faa',
            determinations: {ssa: @determinations, vlp: @determinations}}
         end
-
         before do
           @application_hash[:applicants].each do |applicant|
             applicant[:eligibilities] = [ssn_eligibility_hash]
           end
         end
 
-        it 'marks evidence as verified' do
+        it 'does not update the evidence status' do
+          subject.call(params)
           application.reload
           applicant = application.applicants.first
           individual_market_eligibility = applicant.individual_market_eligibility
           ssn_evidence = individual_market_eligibility.evidences.detect { |e| e.key.to_sym == :social_security_number_evidence }
 
           expect(ssn_evidence.current_state).to eq(:verified)
-          expect(ssn_evidence.verification_outstanding).to eq false
-          expect(ssn_evidence.is_satisfied).to eq true
-          expect(ssn_evidence.due_on).to be_nil
         end
       end
 
-      context 'when evidence current_state is failed' do
-        let(:ssn_eligibility_hash) do
-          {key: "individual_market_eligibility",
-           evidences: [{key: "social_security_number_evidence",
-                        request_results: [rr], current_state: :failed}]}
-        end
-        let(:params) do
-          {call_type: 'application_determination', job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
-           response: @application_hash.to_json, app_type: 'faa',
-           determinations: {ssa: @determinations, vlp: @determinations}}
-        end
-
-        before do
-          @application_hash[:applicants].each do |applicant|
-            applicant[:eligibilities] = [ssn_eligibility_hash]
+      context 'when evidence has request_results' do
+        context 'when evidence current_state is attested' do
+          let(:ssn_eligibility_hash) do
+            {key: "individual_market_eligibility",
+             evidences: [{key: "social_security_number_evidence",
+                          request_results: [rr], current_state: :attested}]}
           end
-        end
+          let(:params) do
+            {call_type: 'application_determination', job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
+             response: @application_hash.to_json, app_type: 'faa',
+             determinations: {ssa: @determinations, vlp: @determinations}}
+          end
 
-        context 'when applicant is not enrolled' do
-          it 'moves evidence to negative response received state' do
-            subject.call(params)
+          before do
+            @application_hash[:applicants].each do |applicant|
+              applicant[:eligibilities] = [ssn_eligibility_hash]
+            end
+          end
+
+          it 'marks evidence as verified' do
             application.reload
             applicant = application.applicants.first
             individual_market_eligibility = applicant.individual_market_eligibility
             ssn_evidence = individual_market_eligibility.evidences.detect { |e| e.key.to_sym == :social_security_number_evidence }
 
-            expect(ssn_evidence.current_state).to eq(:negative_response_received)
+            expect(ssn_evidence.current_state).to eq(:verified)
             expect(ssn_evidence.verification_outstanding).to eq false
             expect(ssn_evidence.is_satisfied).to eq true
             expect(ssn_evidence.due_on).to be_nil
           end
         end
 
-        context 'when applicant is enrolled' do
+        context 'when evidence current_state is failed' do
+          let(:ssn_eligibility_hash) do
+            {key: "individual_market_eligibility",
+             evidences: [{key: "social_security_number_evidence",
+                          request_results: [rr], current_state: :failed}]}
+          end
+          let(:params) do
+            {call_type: 'application_determination', job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
+             response: @application_hash.to_json, app_type: 'faa',
+             determinations: {ssa: @determinations, vlp: @determinations}}
+          end
+
           before do
-            FactoryBot.create(:hbx_enrollment,
-                              family: family,
-                              aasm_state: 'coverage_selected',
-                              household: family.active_household,
-                              hbx_enrollment_members: [FactoryBot.build(:hbx_enrollment_member, applicant_id: applicant.family_member_id)])
+            @application_hash[:applicants].each do |applicant|
+              applicant[:eligibilities] = [ssn_eligibility_hash]
+            end
           end
 
-          it 'moves evidence to outstanding state with due date' do
-            subject.call(params)
-            application.reload
-            applicant = application.applicants.first
-            individual_market_eligibility = applicant.individual_market_eligibility
-            ssn_evidence = individual_market_eligibility.evidences.detect { |e| e.key.to_sym == :social_security_number_evidence }
+          context 'when applicant is not enrolled' do
+            it 'moves evidence to negative response received state' do
+              subject.call(params)
+              application.reload
+              applicant = application.applicants.first
+              individual_market_eligibility = applicant.individual_market_eligibility
+              ssn_evidence = individual_market_eligibility.evidences.detect { |e| e.key.to_sym == :social_security_number_evidence }
 
-            expect(ssn_evidence.current_state).to eq(:outstanding)
-            expect(ssn_evidence.verification_outstanding).to eq true
-            expect(ssn_evidence.is_satisfied).to eq false
-            expect(ssn_evidence.due_on).to be_present
+              expect(ssn_evidence.current_state).to eq(:negative_response_received)
+              expect(ssn_evidence.verification_outstanding).to eq false
+              expect(ssn_evidence.is_satisfied).to eq true
+              expect(ssn_evidence.due_on).to be_nil
+            end
           end
-        end
-      end
 
-      context 'when evidence current_state is other states (outstanding, pending, etc.)' do
-        let(:ssn_eligibility_hash) do
-          {key: "individual_market_eligibility",
-           evidences: [{key: "social_security_number_evidence",
-                        request_results: [rr], current_state: :outstanding}]}
-        end
-        let(:params) do
-          {call_type: 'application_determination', job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
-           response: @application_hash.to_json, app_type: 'faa',
-           determinations: {ssa: @determinations, vlp: @determinations}}
-        end
+          context 'when applicant is enrolled' do
+            before do
+              FactoryBot.create(:hbx_enrollment,
+                                family: family,
+                                aasm_state: 'coverage_selected',
+                                household: family.active_household,
+                                hbx_enrollment_members: [FactoryBot.build(:hbx_enrollment_member, applicant_id: applicant.family_member_id)])
+            end
 
-        before do
-          @application_hash[:applicants].each do |applicant|
-            applicant[:eligibilities] = [ssn_eligibility_hash]
-          end
-        end
+            it 'moves evidence to outstanding state with due date' do
+              subject.call(params)
+              application.reload
+              applicant = application.applicants.first
+              individual_market_eligibility = applicant.individual_market_eligibility
+              ssn_evidence = individual_market_eligibility.evidences.detect { |e| e.key.to_sym == :social_security_number_evidence }
 
-        context 'when applicant is not enrolled' do
-          it 'moves evidence to negative response received state' do
-            subject.call(params)
-            application.reload
-            applicant = application.applicants.first
-            individual_market_eligibility = applicant.individual_market_eligibility
-            ssn_evidence = individual_market_eligibility.evidences.detect { |e| e.key.to_sym == :social_security_number_evidence }
-
-            expect(ssn_evidence.current_state).to eq(:negative_response_received)
-            expect(ssn_evidence.verification_outstanding).to eq false
-            expect(ssn_evidence.is_satisfied).to eq true
-            expect(ssn_evidence.due_on).to be_nil
+              expect(ssn_evidence.current_state).to eq(:outstanding)
+              expect(ssn_evidence.verification_outstanding).to eq true
+              expect(ssn_evidence.is_satisfied).to eq false
+              expect(ssn_evidence.due_on).to be_present
+            end
           end
         end
 
-        context 'when applicant is enrolled' do
+        context 'when evidence current_state is other states (outstanding, pending, etc.)' do
+          let(:ssn_eligibility_hash) do
+            {key: "individual_market_eligibility",
+             evidences: [{key: "social_security_number_evidence",
+                          request_results: [rr], current_state: :outstanding}]}
+          end
+          let(:params) do
+            {call_type: 'application_determination', job_id: job.job_id, application_hbx_id: @application_hash[:hbx_id],
+             response: @application_hash.to_json, app_type: 'faa',
+             determinations: {ssa: @determinations, vlp: @determinations}}
+          end
+
           before do
-            FactoryBot.create(:hbx_enrollment,
-                              family: family,
-                              aasm_state: 'coverage_selected',
-                              household: family.active_household,
-                              hbx_enrollment_members: [FactoryBot.build(:hbx_enrollment_member, applicant_id: applicant.family_member_id)])
+            @application_hash[:applicants].each do |applicant|
+              applicant[:eligibilities] = [ssn_eligibility_hash]
+            end
           end
 
-          it 'moves evidence to outstanding state with due date' do
-            subject.call(params)
-            application.reload
-            applicant = application.applicants.first
-            individual_market_eligibility = applicant.individual_market_eligibility
-            ssn_evidence = individual_market_eligibility.evidences.detect { |e| e.key.to_sym == :social_security_number_evidence }
+          context 'when applicant is not enrolled' do
+            it 'moves evidence to negative response received state' do
+              subject.call(params)
+              application.reload
+              applicant = application.applicants.first
+              individual_market_eligibility = applicant.individual_market_eligibility
+              ssn_evidence = individual_market_eligibility.evidences.detect { |e| e.key.to_sym == :social_security_number_evidence }
 
-            expect(ssn_evidence.current_state).to eq(:outstanding)
-            expect(ssn_evidence.verification_outstanding).to eq true
-            expect(ssn_evidence.is_satisfied).to eq false
-            expect(ssn_evidence.due_on).to be_present
+              expect(ssn_evidence.current_state).to eq(:negative_response_received)
+              expect(ssn_evidence.verification_outstanding).to eq false
+              expect(ssn_evidence.is_satisfied).to eq true
+              expect(ssn_evidence.due_on).to be_nil
+            end
+          end
+
+          context 'when applicant is enrolled' do
+            before do
+              FactoryBot.create(:hbx_enrollment,
+                                family: family,
+                                aasm_state: 'coverage_selected',
+                                household: family.active_household,
+                                hbx_enrollment_members: [FactoryBot.build(:hbx_enrollment_member, applicant_id: applicant.family_member_id)])
+            end
+
+            it 'moves evidence to outstanding state with due date' do
+              subject.call(params)
+              application.reload
+              applicant = application.applicants.first
+              individual_market_eligibility = applicant.individual_market_eligibility
+              ssn_evidence = individual_market_eligibility.evidences.detect { |e| e.key.to_sym == :social_security_number_evidence }
+
+              expect(ssn_evidence.current_state).to eq(:outstanding)
+              expect(ssn_evidence.verification_outstanding).to eq true
+              expect(ssn_evidence.is_satisfied).to eq false
+              expect(ssn_evidence.due_on).to be_present
+            end
           end
         end
       end

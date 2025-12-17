@@ -205,6 +205,7 @@ module Operations
             eligibility_entity.evidences.each do |evidence_entity|
               evidence = eligibility.evidences.detect { |e| e.key.to_sym == evidence_entity.key.to_sym }
               next unless evidence
+              update_evidence(evidence, evidence_entity) if evidence_entity.request_results.present? || evidence_entity.verification_histories.present?
               record_request_result(evidence, evidence_entity, applicant) if evidence_entity.request_results.present?
               record_verification_result(evidence, evidence_entity) if evidence_entity.verification_histories.present?
             end
@@ -212,7 +213,6 @@ module Operations
           end
 
           def record_request_result(evidence, evidence_entity, applicant)
-            update_evidence(evidence, evidence_entity)
             result_result_entity = evidence_entity.request_results.first
             evidence.request_results.new(result_result_entity.to_h)
             assign_citizen_status(evidence_entity, applicant) if result_result_entity.source.to_s == "FDSH SSA"
@@ -349,8 +349,6 @@ module Operations
             case evidence_entity.current_state
             when :attested
               evidence.mark_as_verified
-            when :failed
-              evidence.eligible_state(@call_type)
             else
               evidence.determine_outstanding_state(@call_type)
             end
