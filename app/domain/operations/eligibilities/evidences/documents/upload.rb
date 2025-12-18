@@ -8,6 +8,7 @@ module Operations
         class Upload
           include Dry::Monads[:do, :result]
           include FileUploadHelper
+          include L10nHelper
 
           # Handles the upload of documents for evidence verification
           #
@@ -23,6 +24,18 @@ module Operations
           end
 
           private
+
+          def valid_file_uploads?(files, content_types)
+            return false if files.blank?
+
+            files.all? do |file|
+              file_validator = FileUploadValidator.new(
+                file_data: file,
+                content_types: content_types
+              )
+              file_validator.valid?
+            end
+          end
 
           def validate(params)
             return Failure("Unable to fetch application") if params[:application].blank?
@@ -40,9 +53,22 @@ module Operations
           def validate_files(files)
             return Failure("File not uploaded. Please select the file to upload.") if files.blank?
 
-            return Failure("Invalid file type uploaded") unless valid_file_uploads?(files, FileUploadValidator::VERIFICATION_DOC_TYPES)
+            return Failure(generate_file_type_error) unless valid_file_uploads?(files, FileUploadValidator::VERIFICATION_DOC_TYPES)
 
             Success(files)
+          end
+
+          def generate_file_type_error
+            file_validator = FileUploadValidator.new(
+              file_data: nil,
+              content_types: FileUploadValidator::VERIFICATION_DOC_TYPES
+            )
+
+            l10n(
+              "upload_doc_error",
+              file_types: file_validator.human_readable_file_types,
+              size_in_mb: EnrollRegistry[:upload_file_size_limit_in_mb].item
+            )
           end
 
           # Processes all file uploads

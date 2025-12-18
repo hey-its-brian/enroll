@@ -36,6 +36,11 @@ RSpec.describe Operations::Eligibilities::Evidences::Documents::Upload, type: :o
 
   let(:operation) { described_class.new }
 
+  let(:error_message_params) do
+    {file_types: FileUploadValidator.new(file_data: nil, content_types: FileUploadValidator::VERIFICATION_DOC_TYPES).human_readable_file_types,
+     size_in_mb: EnrollRegistry[:upload_file_size_limit_in_mb].item}
+  end
+
   before do
     allow(operation).to receive(:valid_file_uploads?).and_return(true)
     allow(Aws::S3Storage).to receive(:save).and_return(doc_uri)
@@ -195,11 +200,35 @@ RSpec.describe Operations::Eligibilities::Evidences::Documents::Upload, type: :o
         allow(operation).to receive(:valid_file_uploads?).and_return(false)
       end
 
-      it 'returns failure with invalid file type message' do
+      it 'returns failure with detailed file type error message' do
         result = operation.call(params)
 
         expect(result).to be_failure
-        expect(result.failure).to eq("Invalid file type uploaded")
+        expect(result.failure).to include(l10n(
+                                            "upload_doc_error", error_message_params
+                                          ))
+      end
+
+      it 'calls l10n with correct parameters' do
+        expect(operation).to receive(:l10n).with(
+          "upload_doc_error",
+          hash_including(:file_types, :size_in_mb)
+        )
+
+        operation.call(params)
+      end
+
+      it 'returns error message matching expected localized text' do
+        allow(operation).to receive(:valid_file_uploads?).and_return(false)
+
+        result = operation.call(params)
+        expected_message = l10n(
+          "upload_doc_error",
+          error_message_params
+        )
+
+        expect(result).to be_failure
+        expect(result.failure).to eq(expected_message)
       end
     end
 
