@@ -106,7 +106,6 @@ end
 
 # Download this file and attach it on story by doing password protect.
 
-
 ##### Step 3: Enroll script to identify families for redetermination - Only if the application with lt 100 is there latest determined application
 
 # Upload downloaded file on enroll pod.
@@ -127,6 +126,8 @@ logger.info "::::: Started Expiring Applications :::::"
 redetermined_families = []
 
 family_ids.each do |family_id|
+  FinancialAssistance::Application.where(family_id: family_id, assistance_year: 2026).where(:aasm_state => 'applicants_update_required').each {|app| app.update(aasm_state: 'cancelled') }
+
   latest_determined_application = FinancialAssistance::Application.where(family_id: family_id, assistance_year: 2026).determined.order_by(created_at: :desc).first
 
   if mg_hbx_ids.include?(latest_determined_application.hbx_id)
@@ -138,8 +139,8 @@ family_ids.each do |family_id|
 
     redetermined_families << family_id
   else
-    puts "NOT EXISTS: latest_determined_application is not in list of hbx_ids: #{family_id} :: #{latest_determined_application.hbx_id}"
-    logger.info "NOT EXISTS: latest_determined_application is not in list of hbx_ids: #{family_id} :: #{latest_determined_application.hbx_id}"
+    puts "NO ACTION NEEDED: latest_determined_application has > 100 fpl: #{family_id} :: #{latest_determined_application.hbx_id}"
+    logger.info "NO ACTION NEEDED: latest_determined_application has > 100 fpl: #{family_id} :: #{latest_determined_application.hbx_id}"
   end
 rescue StandardError => e
   puts "Error processing application: #{family_id} :: Error: #{e}"
@@ -149,54 +150,151 @@ end
 
 logger.info "::::: Finished Expiring Applications :::::"
 
+redetermined_primary_hbx_ids = redetermined_families.map {|id| Family.find(id).primary_person.hbx_id}
+
+logger.info "::::: Processing families list for renewal rerun: #{redetermined_primary_hbx_ids}"
+puts "::::: Processing families list for renewal rerun: #{redetermined_primary_hbx_ids}"
+
 
 ##### Step 4: This is to generate renewal drafts for given hbx ids
 
 
 FinancialAssistance::Operations::Applications::AptcCsrCreditEligibilities::Renewals::RequestAll.new.call({renewal_year: 2026, renewal_job_type: 'rerun_renewal'})
 
+renewal_missing_families = redetermined_families - FinancialAssistance::Application.where(:family_id.in => redetermined_families, assistance_year: 2026, :aasm_state.in => ['renewal_draft', 'applicants_update_required']).map(&:family_id)
+renewal_missing_hbx_ids = renewal_missing_families.map {|id| Family.find(id).primary_person.hbx_id}
+
+renewal_update_required_families = FinancialAssistance::Application.where(:family_id.in => redetermined_families, assistance_year: 2026, :aasm_state.in => ['applicants_update_required']).map(&:family_id)
+renewal_update_required_hbx_ids = renewal_update_required_families.map {|id| Family.find(id).primary_person.hbx_id }
+
+
+logger.info "::::: Renewal application not created for: #{renewal_missing_hbx_ids}"
+puts "::::: Renewal application not created for: #{renewal_missing_hbx_ids}"
+
+logger.info "::::: Renewal application is in update required status for: #{renewal_update_required_hbx_ids}"
+puts "::::: Renewal application is in update required status for: #{renewal_update_required_hbx_ids}"
 
 ##### Step 5: This is to run determination
 
 FinancialAssistance::Operations::Applications::AptcCsrCreditEligibilities::Renewals::DetermineAll.new.call({renewal_year: 2026})
 
+renewal_draft_families = FinancialAssistance::Application.where(:family_id.in => redetermined_families, assistance_year: 2026, aasm_state: 'renewal_draft').map(&:family_id)
+renewal_draft_hbx_ids = renewal_draft_families.map {|id| Family.find(id).primary_person.hbx_id }
+
+logger.info "::::: Renewal application is still in renewal draft status: #{renewal_draft_hbx_ids}"
+puts "::::: Renewal application is still in renewal draft status: #{renewal_draft_hbx_ids}"
+
 ##### Step 6:
 
 ::FinancialAssistance::Operations::Applications::AptcCsrCreditEligibilities::Renewals::Resubmit.new.call({renewal_year: 2026})
 
+renewal_draft_families = FinancialAssistance::Application.where(:family_id.in => redetermined_families, assistance_year: 2026, aasm_state: 'renewal_draft').map(&:family_id)
+renewal_draft_hbx_ids = renewal_draft_families.map {|id| Family.find(id).primary_person.hbx_id }
+
+logger.info "::::: Renewal application is still in renewal draft status after resubmit: #{renewal_draft_hbx_ids}"
+puts "::::: Renewal application is still in renewal draft status after resubmit: #{renewal_draft_hbx_ids}"
 
 #### Step 7:
 
 logger.info "::::: Started Enrollment Generation :::::"
 
+include Acapi::Notifiers
 
-redetermined_families.each do |family_id|
+manual_required = renewal_missing_families + renewal_update_required_families + renewal_draft_families
+
+logger.info "MANUAL CHECK REQUIRED: #{manual_required.map {|id| Family.find(id).primary_person.hbx_id }} :: NOT PROCESSING ENROLLMENT TRANSACTIONS"
+
+missing_th_group_families = redetermined_families - Family.where(:_id.in => redetermined_families, :'tax_household_groups.created_at'.gte => Date.today).map(&:id) - manual_required
+
+logger.info "MANUAL CHECK REQUIRED: Missing TH group. #{missing_th_group_families.map {|id| Family.find(id).primary_person.hbx_id }} :: NOT PROCESSING ENROLLMENT TRANSACTIONS"
+
+enrollment_update_families = redetermined_families - manual_required - missing_th_group_families
+
+config = Rails.application.config.acapi
+
+enrollment_update_families.each do |family_id|
   family = Family.find(family_id)
   person_hbx_id = family.primary_person.hbx_id
 
-  enrollment = family.active_household.hbx_enrollments.by_year(2026).enrolled.individual_market.by_health.first
-  unless enrollment
+  enrollments = family.active_household.hbx_enrollments.by_year(2026).enrolled_and_renewal.individual_market.by_health
+  if enrollments.blank?
     puts "Enrollment does not exist for person: #{person_hbx_id}"
     logger.info "Enrollment does not exist for person: #{person_hbx_id}"
     next
   end
 
-  result = ::Operations::Individual::RenewEnrollment.new.call(
-    hbx_enrollment: enrollment,
-    effective_on: Date.new(2026, 1, 1)
-  )
+  enrollments.each do |enrollment|
+    if enrollment.applied_aptc_amount.to_f <= 0
+      puts "Enrollment is UQHP for person: #{person_hbx_id} :: #{enrollment.hbx_id}"
+      logger.info "Enrollment is UQHP for person: #{person_hbx_id} :: #{enrollment.hbx_id}"
+      next
+    end
 
-  if result.failure?
-    puts "Failed Enrollment Renewal: Person: #{person_hbx_id} :: Enrollment: #{enrollment.hbx_id}; Error: #{result.failure};"
-    logger.info "Failed Enrollment Renewal: Person: #{person_hbx_id} :: Enrollment: #{enrollment.hbx_id}; Error: #{result.failure};"
-  else
-    puts "Renewed Person: #{person_hbx_id} :: Enrollment: #{enrollment.hbx_id}"
-    logger.info "Renewed Person: #{person_hbx_id} :: Enrollment: #{enrollment.hbx_id}"
+    enrollment.terminate_coverage!(Date.new(2026, 1, 31))
+
+    notify(
+      "acapi.info.events.hbx_enrollment.terminated",
+      {
+        :reply_to => "#{config.hbx_id}.#{config.environment_name}.q.glue.enrollment_event_batch_handler",
+        "hbx_enrollment_id" => enrollment.hbx_id,
+        "enrollment_action_uri" => "urn:openhbx:terms:v1:enrollment#terminate_enrollment",
+        "is_trading_partner_publishable" => true
+      }
+    )
+
+    result = ::Operations::Individual::RenewEnrollment.new.call(
+      hbx_enrollment: enrollment,
+      effective_on: Date.new(2026, 2, 1),
+      renewal_job_type: 'rerun_renewal'
+    )
+
+    if result.failure?
+      puts "Failed Enrollment Renewal: Person: #{person_hbx_id} :: Enrollment: #{enrollment.hbx_id}; Error: #{result.failure};"
+      logger.info "Failed Enrollment Renewal: Person: #{person_hbx_id} :: Enrollment: #{enrollment.hbx_id}; Error: #{result.failure};"
+    else
+      puts "Renewed Person: #{person_hbx_id} :: Term Enrollment: #{enrollment.hbx_id} :: Renewal enrollment: #{result.success.hbx_id}"
+      logger.info "Renewed Person: #{person_hbx_id} :: Term Enrollment: #{enrollment.hbx_id} :: Renewal enrollment: #{result.success.hbx_id}"
+    end
   end
 rescue => e
   puts "Error renewing family_id: #{family_id} :: Error: #{e}"
   logger.info "Error renewing family_id: #{family_id} :: Error: #{e}"
 end
+
+grouped_families = HbxEnrollment.where(
+  :family_id.in => enrollment_update_families,
+  :coverage_kind => 'health',
+  :updated_at.gte => Date.today,
+  :effective_on.gte => Date.new(2026, 1, 1),
+  :aasm_state.nin => ['coverage_canceled', 'shopping']
+).group_by(&:family_id)
+
+same_hios_id_families = []
+different_hios_id_families = []
+
+grouped_families.each_pair do |family_id, enrollments|
+  feb_enr = enrollments.select { |enr| enr.effective_on == Date.new(2026, 2, 1) }.last
+  jan_enr = enrollments.select { |enr| enr.effective_on == Date.new(2026, 1, 1) }.last
+
+  next if jan_enr.blank? || feb_enr.blank?
+
+  if feb_enr.product.hios_id == jan_enr.product.hios_id
+    same_hios_id_families << family_id
+  else
+    different_hios_id_families << family_id
+  end
+end
+
+same_hios_id_person_hbx_ids = same_hios_id_families.map {|f_id| Family.find(f_id).primary_person.hbx_id }
+different_hios_id_person_hbx_ids = different_hios_id_families.map {|f_id| Family.find(f_id).primary_person.hbx_id }
+
+puts "SAME HIOS_ID families: #{same_hios_id_person_hbx_ids}"
+logger.info "SAME HIOS_ID families: #{same_hios_id_person_hbx_ids}"
+
+
+puts "DIFFERENT HIOS_ID families: #{different_hios_id_person_hbx_ids}"
+logger.info "DIFFERENT HIOS_ID families: #{different_hios_id_person_hbx_ids}"
+
 
 puts "::::: Finished Enrollment Generation :::::"
 logger.info "::::: Finished Enrollment Generation :::::"
