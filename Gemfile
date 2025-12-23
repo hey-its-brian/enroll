@@ -55,6 +55,10 @@ gem 'aasm',                     '~> 4.8'
 gem 'recurring_select'
 
 gem 'aws-sdk',                  '~> 3.2'
+# Security fix for CVE-2025-14762; try removing aws-sdk-s3 after next upgrade of aws-sdk
+gem 'aws-sdk-s3',               '>= 1.208.0'
+# Ruby 3.1.6 ships with logger 1.5.0 but aws-sdk-core 3.240.0 requires logger 1.7.0; try removing logger dependency after next ruby upgrade
+gem 'logger',                   '~> 1.7.0'  
 gem 'bcrypt',                   '~> 3.1'
 gem 'bootsnap',                 '>= 1.1', require: false
 gem 'browser',                  '2.7.0'

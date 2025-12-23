@@ -37,6 +37,12 @@ RSpec.describe "ManuallyTriggerSavedEvent", type: :script do
     end
   end
 
+  describe 'without date argument' do
+    it 'should raise ArgumentError' do
+      expect { invoke_enrollment_saved_event_script(nil) }.to raise_error(ArgumentError, /Date argument is required/)
+    end
+  end
+
   after do
     csv_files = Dir.glob("#{Rails.root}/enrollments_requiring_reconciliation_*.csv")
     csv_files.each { |file| File.delete(file) if File.exist?(file) }
@@ -45,7 +51,7 @@ end
 
 def invoke_enrollment_saved_event_script(date)
   original_argv = ARGV.dup
-  ARGV.replace([date.to_s])
+  ARGV.replace(date ? [date.strftime("%Y-%m-%d")] : [])
   enrollment_saved_event_script = File.join(Rails.root, "script/hbx_enrollments/manually_trigger_saved_event.rb")
   load enrollment_saved_event_script
 ensure

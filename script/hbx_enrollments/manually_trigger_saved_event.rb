@@ -49,7 +49,10 @@ FILTERED_GENERATION_REASONS = [
   :age_off, :date_change, :migration, :import, :unknown
 ].freeze
 
-from_date = ARGV[0]&.to_date
+date_arg = ARGV[0]
+raise ArgumentError, "Date argument is required (format: YYYY-MM-DD)" if date_arg.nil? || date_arg.strip.empty?
+
+from_date = Date.parse(date_arg)
 file_name = "enrollments_requiring_reconciliation_#{Date.today.strftime("%Y-%m-%d")}.csv"
 
 CSV.open(file_name, "w") do |csv|
