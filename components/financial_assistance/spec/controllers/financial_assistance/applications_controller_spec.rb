@@ -1323,6 +1323,112 @@ RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each
       end
     end
   end
+
+  describe '#submit_and_publish_application_redirect_path' do
+    let!(:application) do
+      FactoryBot.create(:financial_assistance_application,
+                        family_id: family.id,
+                        aasm_state: 'submitted',
+                        submitted_at: Time.current,
+                        assistance_year: TimeKeeper.date_of_record.year)
+    end
+    let!(:applicant) do
+      FactoryBot.create(:financial_assistance_applicant,
+                        :with_home_address,
+                        application: application,
+                        family_member_id: family.primary_family_member.id,
+                        eligibility_determination_id: BSON::ObjectId.new,
+                        gender: 'male',
+                        dob: Date.today - 30.years)
+    end
+    let(:determination_service) { double('DeterminationService') }
+    let(:failure_result) { double('FailureResult', success?: false, failure: 'Test error message') }
+
+    before do
+      sign_in user
+      allow(application).to receive(:complete?).and_return(true)
+      allow(controller).to receive(:determination_request_class).and_return(determination_service)
+      allow(determination_service).to receive(:new).and_return(determination_service)
+      controller.instance_variable_set(:@application, application)
+    end
+
+    context 'when publish fails and unsubmit is triggered' do
+      before do
+        allow(determination_service).to receive(:call).with(application_id: application.id).and_return(failure_result)
+      end
+
+      it 'calls unsubmit! if may_unsubmit? returns true' do
+        allow(application).to receive(:may_unsubmit?).and_return(true)
+        expect(application).to receive(:unsubmit).and_call_original
+        controller.send(:submit_and_publish_application_redirect_path)
+      end
+
+      it 'calls save! after unsubmit!' do
+        allow(application).to receive(:may_unsubmit?).and_return(true)
+        expect(application).to receive(:save!).and_call_original
+        controller.send(:submit_and_publish_application_redirect_path)
+      end
+
+      it 'persists the state change to draft' do
+        allow(application).to receive(:may_unsubmit?).and_return(true)
+        controller.send(:submit_and_publish_application_redirect_path)
+        expect(application.reload.draft?).to be_truthy
+      end
+
+      it 'persists clearing of eligibility_determination_id on applicants' do
+        allow(application).to receive(:may_unsubmit?).and_return(true)
+        expect(application.applicants.first.eligibility_determination_id).to be_present
+        controller.send(:submit_and_publish_application_redirect_path)
+        expect(application.reload.applicants.first.eligibility_determination_id).to be_nil
+      end
+
+      it 'returns error path with flash message' do
+        result = controller.send(:submit_and_publish_application_redirect_path)
+        expect(result[:path]).to eq(controller.send(:application_publish_error_application_path, application))
+        expect(result[:flash][:error]).to be_present
+      end
+
+      context 'when save! is stubbed to not persist' do
+        before do
+          allow(application).to receive(:may_unsubmit?).and_return(true)
+          # Stub save! to prevent actual database persistence
+          allow(application).to receive(:save!).and_return(true)
+        end
+
+        it 'does not persist clearing of eligibility_determination_id to database' do
+          original_ed_id = application.applicants.first.eligibility_determination_id
+          expect(original_ed_id).to be_present
+
+          controller.send(:submit_and_publish_application_redirect_path)
+
+          # Reload to get fresh data from database
+          reloaded_app = FinancialAssistance::Application.find(application.id)
+
+          # In database: still present (not persisted because save! was stubbed)
+          expect(reloaded_app.applicants.first.eligibility_determination_id).to eq(original_ed_id)
+        end
+      end
+    end
+
+    context 'when save! raises an error' do
+      before do
+        allow(application).to receive(:may_unsubmit?).and_return(true)
+        allow(determination_service).to receive(:call).with(application_id: application.id).and_return(failure_result)
+        allow(application).to receive(:save!).and_raise(StandardError.new('Database error'))
+      end
+
+      it 'logs the error' do
+        expect(Rails.logger).to receive(:error)
+        controller.send(:submit_and_publish_application_redirect_path)
+      end
+
+      it 'returns error path' do
+        allow(Rails.logger).to receive(:error)
+        result = controller.send(:submit_and_publish_application_redirect_path)
+        expect(result[:path]).to eq(controller.send(:application_publish_error_application_path, application))
+      end
+    end
+  end
 end
 
 RSpec.describe FinancialAssistance::ApplicationsController, dbclean: :after_each, type: :controller do

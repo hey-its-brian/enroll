@@ -695,8 +695,6 @@ module FinancialAssistance
       publish_result = determination_request_class.new.call(application_id: @application.id)
       return { path: wait_for_eligibility_response_application_path(@application) } if publish_result.success?
 
-      @application.unsubmit! if @application.may_unsubmit?
-
       flash_message = case publish_result.failure
                       when Dry::Validation::Result
                         { error: validation_errors_parser(publish_result.failure) }
@@ -705,6 +703,17 @@ module FinancialAssistance
                       else
                         { error: "Submission Error: #{publish_result.failure}" }
                       end
+
+      if @application.may_unsubmit?
+        @application.unsubmit
+        @application.save!
+      end
+      { path: application_publish_error_application_path(@application), flash: flash_message }
+    rescue StandardError => e
+      Rails.logger.error do
+        "FAA submit_and_publish save after unsubmit failed for application hbx_id: #{@application.hbx_id}, " \
+        "id: #{@application.id}, message: #{e.message}, backtrace: #{e.backtrace.join('\n')}"
+      end
       { path: application_publish_error_application_path(@application), flash: flash_message }
     end
 

@@ -1454,6 +1454,7 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
               expect(application.reload.draft?).to be_truthy
             end
           end
+
         end
       end
     end
