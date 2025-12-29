@@ -59,19 +59,24 @@ module Operations
       # Iterates families and initiates Hub calls for eligible applicants
       def process_families(family_ids, evidence_type)
         rows = []
+        counter = 0
+        total = family_ids.size
 
         Family.where(:id.in => family_ids).each do |family|
+          counter += 1
+          puts "Processing family #{counter}/#{total} with ID: #{family.id}"
           process_family(family, evidence_type, rows)
         rescue StandardError => e
           rows << ['N/A', 'N/A', 'N/A', evidence_type, 'N/A', "error processing family #{family.id}: #{e.message}"]
         end
 
+        puts "Processed #{counter} families out of #{total}."
         Success(rows)
       end
 
       def process_family(family, evidence_type, rows)
         application      = family.latest_application
-        application_type = family.application_type
+        application_type = family.latest_application_type
 
         return rows << build_error_row('N/A', 'N/A', 'N/A', evidence_type, 'no latest application found') if application.blank?
 
@@ -145,6 +150,7 @@ module Operations
 
       # generates CSV report from the processed rows
       def generate_csv(rows)
+        puts "Generating CSV report with #{rows.size} rows..."
         date = DateTime.now
         file_name = File.join(Rails.root.to_s, "#{REPORT_PREFIX}_#{date.strftime('%Y_%m_%d_%H_%M_%S')}.csv")
 
@@ -156,6 +162,8 @@ module Operations
         end
 
         File.write(file_name, csv_content)
+
+        puts "CSV report generated at: #{file_name}"
         Success("Finished Bulk Hub Call. Report: #{file_name}")
       rescue StandardError => e
         Failure("Failed to generate CSV report: #{e.message}")
