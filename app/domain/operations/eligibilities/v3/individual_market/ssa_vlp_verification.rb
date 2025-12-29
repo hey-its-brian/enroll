@@ -58,6 +58,7 @@ module Operations
             @call_type = params[:call_type]
             @updated_by = params[:updated_by] || 'System'
             @request_hbx_ids = params[:request_hbx_ids]
+            @reason_for_verification_request = params[:reason_for_verification_request]
             application = params[:application]
             if application.is_a?(::FinancialAssistance::Application) || application.is_a?(::IndividualMarket::Application)
               Success(application)
@@ -188,7 +189,7 @@ module Operations
 
           def add_verification_histories(update_reason)
             # matching current behavior
-            update_reason = @call_type == 'application determination' ? update_reason : nil
+            update_reason = @call_type == 'application determination' ? update_reason : @reason_for_verification_request
             requested_applicants = @request_hbx_ids.present? ? @application.applicants_by_hbx_ids(@request_hbx_ids) : @application.applicants
             requested_applicants.each do |applicant|
               eligibility = applicant.eligibilities.detect {|eli| eli.key.to_s == 'individual_market_eligibility' }
