@@ -29,7 +29,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Rrv::Medicare::A
   context 'success' do
     context 'FDSH RRV Medicare outstanding response when enrolled with aptc' do
       include_context 'FDSH RRV Medicare sample response'
-      let!(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+      let!(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members, effective_on: Date.new(application.assistance_year)) }
 
       before do
         @applicant = application.applicants.first

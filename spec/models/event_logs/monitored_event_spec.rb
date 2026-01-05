@@ -208,7 +208,7 @@ RSpec.describe EventLogs::MonitoredEvent, type: :model, dbclean: :around_each do
         {
           current_state: current_state,
           title: "Aca Shop Osse Eligibility #{current_year}",
-          state_histories: [{ effective_on: Date.new(2025, 1, 1) }]
+          state_histories: [{ effective_on: initial_application.effective_period.min }]
         }
       end
 

@@ -3,16 +3,21 @@
 require 'rails_helper'
 
 describe 'Reinstate HBX terminated enrollments', :dbclean => :around_each do
+  let(:family) { FactoryBot.create(:family, :with_primary_family_member) }
   let(:enrollment) do
-    enr = FactoryBot.build(:hbx_enrollment, :terminated, family: FactoryBot.create(:family, :with_primary_family_member))
+    enr = FactoryBot.build(:hbx_enrollment,
+                           :terminated,
+                           family: family,
+                           effective_on: Date.new(2025, 1, 1),
+                           terminated_on: Date.new(2025, 1, 31))
     enr.workflow_state_transitions = [
       FactoryBot.build(:workflow_state_transition, from_state: 'shopping', to_state: 'coverage_terminated', transition_at: enr.terminated_on)
     ]
     enr.save!
     enr
   end
+
   before do
-    allow_any_instance_of(HbxEnrollment).to receive(:coverage_year).and_return(TimeKeeper.date_of_record.year)
     allow_any_instance_of(HbxEnrollment).to receive(:is_shop?).and_return(false)
   end
 

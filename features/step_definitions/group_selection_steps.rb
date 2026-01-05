@@ -667,10 +667,9 @@ end
 
 Then(/^\w+ should see the dental plan below the health plan$/) do
   if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
-    if page.has_css?('.plan-year', text: '2025 HEALTH COVERAGE INDIVIDUAL & FAMILY')
-      # This string is build out for 2025 enrollment tiles for DC. It needs to be cleaned up once we can separate the cucumbers from DC context.
-      expect(page).to have_css('.plan-year', text: '2025 HEALTH COVERAGE INDIVIDUAL & FAMILY')
-      expect(page).to have_css('.plan-year', text: '2025 DENTAL COVERAGE INDIVIDUAL & FAMILY')
+    if page.has_css?('.plan-year', text: 'HEALTH COVERAGE INDIVIDUAL & FAMILY')
+      expect(page).to have_css('.plan-year', text: 'HEALTH COVERAGE INDIVIDUAL & FAMILY')
+      expect(page).to have_css('.plan-year', text: 'DENTAL COVERAGE INDIVIDUAL & FAMILY')
     else
       expect(find_all(".plan-type")[0].text.downcase).to include('health')
       expect(find_all(".plan-type")[0].text.downcase).not_to include('dental')

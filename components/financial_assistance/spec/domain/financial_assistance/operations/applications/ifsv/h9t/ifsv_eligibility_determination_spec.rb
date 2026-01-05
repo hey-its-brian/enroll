@@ -122,7 +122,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
           end
 
           context 'when enrolled' do
-            let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+            let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members, effective_on: Date.new(application.assistance_year)) }
 
             it 'should return success' do
               expect(@result).to be_success
@@ -130,7 +130,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
 
             context 'with aptc used' do
 
-              let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_aptc_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+              let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_aptc_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members, effective_on: Date.new(application.assistance_year)) }
 
               it 'returns outstanding' do
                 subject.call({payload: response_payload, call_type: nil})
@@ -163,7 +163,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
             end
 
             context 'without aptc used' do
-              let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+              let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members, effective_on: Date.new(application.assistance_year)) }
 
               it 'returns negative_response_received' do
                 enrollment.product.update(csr_variant_id: '01')
@@ -178,7 +178,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::Ifsv::H9t::IfsvE
             end
 
             context 'with csr used' do
-              let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+              let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members, effective_on: Date.new(application.assistance_year)) }
 
               let!(:applicant) do
                 FactoryBot.create(:financial_assistance_applicant,

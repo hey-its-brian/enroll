@@ -6,8 +6,8 @@ RSpec.describe Operations::RemoveHbxEnrollmentSpecialEnrollmentPeriod, type: :mo
   let(:operation) { described_class.new }
   let(:year) { TimeKeeper.date_of_record.year }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member) }
-  let(:sep) { FactoryBot.create(:special_enrollment_period, family: family, start_on: Date.today.beginning_of_year, end_on: Date.today - 2.days) }
-  let(:new_sep) { FactoryBot.create(:special_enrollment_period, family: family, start_on: Date.today.beginning_of_year, end_on: Date.today + 1.day) }
+  let(:sep) { FactoryBot.create(:special_enrollment_period, family: family, start_on: Date.today - 10.days, end_on: Date.today - 2.days) }
+  let(:new_sep) { FactoryBot.create(:special_enrollment_period, family: family, start_on: Date.today - 10.days, end_on: Date.today + 1.day) }
   let(:predecessor_enrollment) { FactoryBot.create(:hbx_enrollment, family: family, special_enrollment_period_id: sep.id) }
   let!(:enrollment) do
     FactoryBot.create(
@@ -33,7 +33,7 @@ RSpec.describe Operations::RemoveHbxEnrollmentSpecialEnrollmentPeriod, type: :mo
     subject(:operation) { described_class.new }
 
     before do
-      @result = operation.call({ year: Date.today.year })
+      @result = operation.call({ year: sep.start_on.year })
     end
 
     it "removes the enrollment SEP id" do
@@ -87,7 +87,7 @@ RSpec.describe Operations::RemoveHbxEnrollmentSpecialEnrollmentPeriod, type: :mo
     end
 
     it "removes the SEP id from the enrollment" do
-      result = operation.call({ year: Date.today.year })
+      result = operation.call({ year: sep.start_on.year })
       expect(result).to be_success
       enrollment.reload
       expect(enrollment.special_enrollment_period_id).to be_nil
@@ -107,7 +107,7 @@ RSpec.describe Operations::RemoveHbxEnrollmentSpecialEnrollmentPeriod, type: :mo
     end
 
     it "returns true and removes the SEP id from the enrollment" do
-      operation.call({ year: Date.today.year })
+      operation.call({ year: sep.start_on.year })
       enrollment.reload
       expect(enrollment.special_enrollment_period_id).to be_nil
     end

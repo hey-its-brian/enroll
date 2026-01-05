@@ -127,7 +127,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
         end
 
         context 'Bulk Local Mec call, enrolled and due date already exists on evidence' do
-          let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+          let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members, effective_on: Date.new(application.assistance_year)) }
           let(:due_on) { TimeKeeper.date_of_record }
           let(:aasm_state) { 'outstanding' }
 
@@ -143,7 +143,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
         end
 
         context 'when enrolled' do
-          let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+          let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members, effective_on: Date.new(application.assistance_year)) }
 
           it 'should return success' do
             expect(@result).to be_success
@@ -211,7 +211,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
         end
 
         context "Bulk Local Mec call and enrolled" do
-          let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+          let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members, effective_on: Date.new(application.assistance_year)) }
           let(:request_result_hash) do
             {
               :result => "eligible",
@@ -237,7 +237,18 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::MedicaidGateway:
         context 'Negative Response Received logic update' do
           RSpec.shared_examples_for "enrollment with csr_variant_id" do |csr_variant_id, is_aptc_zero, expected_evidence_status|
             let(:product) { FactoryBot.create(:benefit_markets_products_health_products_health_product, csr_variant_id: csr_variant_id)}
-            let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, family: family, enrollment_members: family.family_members, product: product, applied_aptc_amount: is_aptc_zero ? 0.00 : 100.00) }
+            let(:enrollment) do
+              FactoryBot.create(
+                :hbx_enrollment,
+                :with_enrollment_members,
+                family: family,
+                enrollment_members: family.family_members,
+                product: product,
+                effective_on: Date.new(application.assistance_year),
+                applied_aptc_amount: is_aptc_zero ? 0.00 : 100.00
+              )
+            end
+
             before :each do
               @result = subject.call({payload: payload})
             end

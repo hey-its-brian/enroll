@@ -84,6 +84,7 @@ RSpec.describe Operations::Individual::RenewEnrollment, type: :model, dbclean: :
                       kind: 'individual',
                       family: family,
                       rating_area_id: rating_area.id,
+                      effective_on: TimeKeeper.date_of_record.beginning_of_year,
                       consumer_role_id: family.primary_person.consumer_role.id)
   end
 
@@ -107,6 +108,7 @@ RSpec.describe Operations::Individual::RenewEnrollment, type: :model, dbclean: :
       }
     end
 
+    let(:assistance_year) { next_year_date.year }
     let(:family) do
       FactoryBot.create(:family,
                         :with_primary_family_member,
@@ -114,7 +116,7 @@ RSpec.describe Operations::Individual::RenewEnrollment, type: :model, dbclean: :
                         person: person,
                         outstanding_verification_status: 'not_enrolled',
                         eligibility_item_keys: ['aptc_csr_credit'],
-                        assistance_year: next_year_date.year,
+                        assistance_year: assistance_year,
                         use_family_member_ids: true,
                         grants_config: grants_config)
     end
@@ -292,6 +294,8 @@ RSpec.describe Operations::Individual::RenewEnrollment, type: :model, dbclean: :
     end
 
     context 'rerun_renewal' do
+      let(:assistance_year) {TimeKeeper.date_of_record.year }
+
       before :each do
         tax_household.update_attributes!(effective_starting_on: enrollment.effective_on.beginning_of_year)
         tax_household.tax_household_members.first.update_attributes!(applicant_id: family_member.id)

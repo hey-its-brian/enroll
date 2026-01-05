@@ -234,7 +234,7 @@ RSpec.describe ::Operations::DataFixes::CreateV3IndividualMarketEvidences, dbcle
       before do
         submission_time = TimeKeeper.date_of_record - 10.days
         effective_date = (TimeKeeper.date_of_record - 5.days)
-        FactoryBot.create(:application, family_id: family.id, aasm_state: 'determined', effective_date: effective_date, assistance_year: effective_date.year, submitted_at: submission_time)
+        FactoryBot.create(:application, family_id: family.id, aasm_state: 'determined', effective_date: effective_date, assistance_year: TimeKeeper.date_of_record.year, submitted_at: submission_time)
         family.assign_latest_application_gid
       end
 

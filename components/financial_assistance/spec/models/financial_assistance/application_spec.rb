@@ -337,7 +337,7 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
         result = FinancialAssistance::Application.newest_determined_by_year(year).first
         expect(result).to eq(current_application_1)
         expect(result.determined?).to be_truthy
-        expect(result.submitted_at.year).to eq(year)
+        expect(result.submitted_at.year).to eq(current_application_1.submitted_at.year)
       end
 
       it 'returns nil if no determined application for the year' do

@@ -1421,7 +1421,11 @@ end
 When(/^\w+ checks? the Insured portal open enrollment dates$/) do
   current_day = TimeKeeper.date_of_record
   if (Date.new(current_day.year - 1, 11, 1)..Date.new(current_day.year, 1, 31)).include?(current_day)
-    expect(page).to have_content "Confirm Your Plan Selection"
+    if EnrollRegistry[:bs4_consumer_flow].enabled?
+      expect(page).to have_content l10n("insured.plan_shoppings.thankyou.selected_enrollment")
+    else
+      expect(page).to have_content "Confirm Your Plan Selection"
+    end
   else
     next_year_date = current_day.next_year
     bcp = HbxProfile.current_hbx.benefit_sponsorship.benefit_coverage_periods.first

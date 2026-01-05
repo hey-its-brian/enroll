@@ -7,8 +7,8 @@ RSpec.describe Operations::UpdateHbxEnrollmentSpecialEnrollmentPeriodId, type: :
 
   let!(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
   let!(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
-  let(:year) { TimeKeeper.date_of_record.year }
-  let(:today) { TimeKeeper.date_of_record }
+  let(:today) { Date.new(2025, 12, 12) }
+  let(:year) { today.year }
   let(:yesterday) { today - 1.day }
   let(:tomorrow) { today + 1.day }
 

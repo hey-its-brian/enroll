@@ -89,7 +89,7 @@ RSpec.describe ::FinancialAssistance::Operations::Applications::NonEsi::H31::Add
           context 'when enrolled' do
             context 'health' do
               context 'with aptc' do
-                let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+                let(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members, effective_on: Date.new(application.assistance_year)) }
 
                 it 'should return success' do
                   expect(@result).to be_success
