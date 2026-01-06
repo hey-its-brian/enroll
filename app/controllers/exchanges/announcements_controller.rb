@@ -1,7 +1,7 @@
 class Exchanges::AnnouncementsController < ApplicationController
   before_action :check_hbx_staff_role, except: [:dismiss]
   before_action :updateable?, :only => [:create, :destroy]
-  before_action :set_cache_headers, only: [:index]
+  before_action :set_cache_headers, only: [:index, :create]
   before_action :enable_bs4_layout if EnrollRegistry.feature_enabled?(:bs4_admin_flow)
 
   layout 'progress' if EnrollRegistry.feature_enabled?(:bs4_admin_flow)

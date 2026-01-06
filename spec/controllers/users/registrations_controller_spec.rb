@@ -4,6 +4,27 @@ require 'rails_helper'
 
 RSpec.describe Users::RegistrationsController, type: :controller, dbclean: :after_each do
 
+  describe "GET #new" do
+    before do
+      @request.env["devise.mapping"] = Devise.mappings[:user]
+      get :new
+    end
+
+    it "returns http success" do
+      expect(response).to be_successful
+    end
+
+    it "renders the new template" do
+      expect(response).to render_template("new")
+    end
+
+    it "should have no cache headers" do
+      expect(response.headers['Cache-Control']).to include("no-store")
+      expect(response.headers['Cache-Control']).to include("private")
+      expect(response.headers['Pragma']).to eql("no-cache")
+    end
+  end
+
   context "create" do
     let(:curam_user){ double("CuramUser") }
     let(:email){ "test@example.com" }

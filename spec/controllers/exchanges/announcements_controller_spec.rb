@@ -72,6 +72,12 @@ RSpec.describe Exchanges::AnnouncementsController do
       it "should get successful notice" do
         expect(flash[:success]).to eq "Create Announcement Successful."
       end
+
+      it "should have no cache headers" do
+        expect(response.headers['Cache-Control']).to include("no-store")
+        expect(response.headers['Cache-Control']).to include("private")
+        expect(response.headers['Pragma']).to eql("no-cache")
+      end
     end
 
     context "with hbx_readonly" do

@@ -412,6 +412,12 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
               post :create, params: {:agency => self.send("#{profile_type}_params")}
             end
 
+            it "should have no cache headers" do
+              expect(response.headers['Cache-Control']).to include("no-store")
+              expect(response.headers['Cache-Control']).to include("private")
+              expect(response.headers['Pragma']).to eql("no-cache")
+            end
+
             it "should redirect for benefit_sponsor and general agency" do
               expect(response).to have_http_status(:redirect) if profile_type != 'broker_agency'
             end

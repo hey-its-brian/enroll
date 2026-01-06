@@ -1103,6 +1103,14 @@ RSpec.describe Exchanges::HbxProfilesController, dbclean: :around_each do
       expect(response).to have_http_status(:success)
     end
 
+    it "should have no cache headers" do
+      get :people_index, format: :html, xhr: true
+
+      expect(response.headers['Cache-Control']).to include("no-store")
+      expect(response.headers['Cache-Control']).to include("private")
+      expect(response.headers['Pragma']).to eql("no-cache")
+    end
+
     context 'when people index is disabled' do
       before do
         allow(EnrollRegistry[:people_tab].feature).to receive(:is_enabled).and_return(false)

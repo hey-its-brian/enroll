@@ -11,7 +11,7 @@ module BenefitSponsors
       rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
       # TODO: Let's just doo this for now
       before_action :redirect_if_general_agency_disabled, only: %i[new create edit update destroy]
-      before_action :set_cache_headers, only: [:edit, :new]
+      before_action :set_cache_headers, only: [:edit, :new, :create]
       before_action :enable_bs4_layout, only: [:new, :create, :edit] if EnrollRegistry.feature_enabled?(:bs4_broker_flow)
 
       layout :resolve_edit_layout, :only => :edit
