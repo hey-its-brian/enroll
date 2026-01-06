@@ -30,7 +30,7 @@
 #   bundle exec rake fix_hub_call_overridden_evidences:fix[rejected,fix]
 #
 #   # Process specific families only (comma-separated Family IDs):
-#   bundle exec rake fix_hub_call_overridden_evidences:fix[rejected,report,"6957ade255d0cf0001996286,6957ade255d0cf0001996286"]
+#   FAMILY_IDS="6957ade255d0cf0001996286,6957ade255d0cf0001996287" bundle exec rake fix_hub_call_overridden_evidences:fix[rejected,report]
 #
 # Output: Creates a detailed report of impacted families and their evidence
 
@@ -39,10 +39,10 @@ require 'csv'
 
 namespace :fix_hub_call_overridden_evidences do
   desc "Generate impact report for families with rapid evidence state transitions"
-  task :fix, [:status_type, :mode, :family_ids] => :environment do |_t, args|
+  task :fix, [:status_type, :mode] => :environment do |_t, args|
     status_type = args[:status_type] || 'outstanding'
     mode = args[:mode] || 'report'
-    family_ids = args[:family_ids]&.split(',')&.map(&:strip)&.reject(&:blank?)
+    family_ids = ENV['FAMILY_IDS']&.split(',')&.map(&:strip)&.reject(&:blank?)&.uniq
 
     call_hub = (mode == 'fix')
 

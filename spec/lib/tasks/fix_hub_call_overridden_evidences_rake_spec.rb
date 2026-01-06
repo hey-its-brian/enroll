@@ -121,10 +121,29 @@ RSpec.describe 'fix_hub_call_overridden_evidences rake tasks', type: :task, dbcl
         allow(csv_mock).to receive(:<<) { |row| csv_data << row }
         allow(CSV).to receive(:open).and_yield(csv_mock)
 
-        Rake::Task['fix_hub_call_overridden_evidences:fix'].invoke('outstanding', 'report', family.id.to_s)
+        ENV['FAMILY_IDS'] = family.id.to_s
+        Rake::Task['fix_hub_call_overridden_evidences:fix'].invoke('outstanding', 'report')
+        ENV.delete('FAMILY_IDS')
 
         expect(csv_data.size).to eq(1)
         expect(csv_data.first.first).to eq(family.id.to_s)
+      end
+
+      it 'processes multiple families when provided via FAMILY_IDS' do
+        csv_data = []
+        csv_mock = double('csv')
+        allow(csv_mock).to receive(:<<) { |row| csv_data << row }
+        allow(CSV).to receive(:open).and_yield(csv_mock)
+
+        ENV['FAMILY_IDS'] = "#{family.id},#{other_family.id}"
+        Rake::Task['fix_hub_call_overridden_evidences:fix'].reenable
+        Rake::Task['fix_hub_call_overridden_evidences:fix'].invoke('outstanding', 'report')
+        ENV.delete('FAMILY_IDS')
+
+        expect(csv_data.size).to eq(2)
+        family_ids_in_csv = csv_data.map(&:first)
+        expect(family_ids_in_csv).to include(family.id.to_s)
+        expect(family_ids_in_csv).to include(other_family.id.to_s)
       end
     end
 
