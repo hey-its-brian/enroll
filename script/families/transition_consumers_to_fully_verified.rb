@@ -3,7 +3,7 @@
 # @file Script to transition consumer roles to "fully verified" state and produce a CSV report.
 # @note Expects Rails environment and the operation: Operations::DataFixes::TransitionConsumerRolesToFullyVerified.
 # @example Run from terminal
-#   rails runner script/families/transition_consumers_to_fully_verified.rb "12345,67890"
+#   rails runner script/families/transition_consumers_to_fully_verified.rb "family_id_1,family_id_2,family_id_3"
 # @see Operations::DataFixes::TransitionConsumerRolesToFullyVerified
 
 require 'csv'
@@ -21,12 +21,12 @@ def runner
   result_collection = []
 
   family_ids.each do |family_id|
-
-    result = Operations::DataFixes::TransitionConsumerRolesToFullyVerified
-             .new
-             .call({ family_id: family_id, logger: logger, result_collection: result_collection })
+    result = Operations::DataFixes::TransitionConsumerRolesToFullyVerified.new.call({ family_id: family_id, logger: logger })
 
     if result.success?
+      result.success.each do |row|
+        result_collection << row
+      end
       puts "Successfully processed family id: #{family_id}"
     else
       puts "Failed to process family id: #{family_id}, error: #{result.failure}"
@@ -37,6 +37,7 @@ def runner
 
   end
 
+  puts "result_collection size: #{result_collection.size}"
   filenames = generate_csv_file(result_collection)
   puts "Generated CSV files: #{filenames.join(', ')}"
 

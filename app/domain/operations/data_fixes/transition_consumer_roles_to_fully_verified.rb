@@ -15,7 +15,7 @@ module Operations
         family, members = yield fetch_active_family_members
         _result = yield process_members(members, family) { |member| process(member) }
 
-        Success("Processed family id: #{@family_id}")
+        Success(@result_collection)
       end
 
       private
@@ -28,7 +28,7 @@ module Operations
                     Logger.new($stdout)
                   end
 
-        @result_collection = params[:result_collection] if params[:result_collection].present?
+        @result_collection = []
 
         Success(params[:family_id])
       end
@@ -95,14 +95,14 @@ module Operations
         end
 
         consumer_role.notify_of_eligibility_change
-        csv_row("Triggered consumer role notify_of_eligibility_change")
+        csv_row(person, consumer_role, "Triggered consumer role notify_of_eligibility_change")
       end
 
       def csv_error_row(unverified_enrollments_count, message)
         @result_collection << [@family_id,  'n/a', 'n/a', 'n/a', unverified_enrollments_count, message] if @result_collection
       end
 
-      def csv_row(message)
+      def csv_row(person, consumer_role, message)
         @result_collection << [@family_id,  @primary_hbx_id, person.hbx_id, consumer_role.aasm_state, @unverified_enrollment_hbx_ids&.count, message] if @result_collection
       end
     end
