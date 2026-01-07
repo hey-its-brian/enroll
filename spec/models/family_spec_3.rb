@@ -16,7 +16,6 @@ RSpec.describe Family, dbclean: :after_each do
   describe '#previous_year_faa_app_info_needing_evidence_display' do
     before :each do
       allow(HbxProfile).to receive(:current_hbx).and_return(hbx_profile)
-      allow(hbx_profile).to receive(:under_open_enrollment?).and_return(true)
       allow(Family).to receive(:application_applicable_year).and_return(renewal_year)
     end
 
@@ -354,20 +353,62 @@ RSpec.describe Family, dbclean: :after_each do
         renewal_year_qhp_app
       end
 
-      it 'does not return FAA application info when current year FAA lacks actionable APTC evidences' do
+      it 'returns FAA application info when current year FAA lacks actionable APTC evidences' do
         result = family.previous_year_faa_app_info_needing_evidence_display
-        expect(result).to be_empty
+        expect(result).to eq({ application_type: :faa, application: current_year_faa_app })
       end
     end
 
     context 'Case 8: when system is not under open enrollment' do
-      before do
-        allow(hbx_profile).to receive(:under_open_enrollment?).and_return(false)
+      let(:migrated_faa_app) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          assistance_year: current_year,
+          aasm_state: "determined",
+          origin: "migration",
+          generation_reason: "manual",
+          submitted_at: 10.days.ago
+        )
       end
 
-      it 'returns empty hash' do
+      let(:current_year_faa_app) do
+        FactoryBot.create(
+          :financial_assistance_application,
+          family_id: family.id,
+          assistance_year: current_year,
+          aasm_state: "determined",
+          submitted_at: 5.days.ago
+        )
+      end
+
+      let(:applicant) do
+        appli = FactoryBot.create(:financial_assistance_applicant, application: current_year_faa_app)
+        appli.build_ivl_eligibility_with_evidences
+        appli.save!
+        appli
+      end
+
+      let(:renewal_year_qhp_app) do
+        FactoryBot.create(
+          :individual_market_application,
+          family_id: family.id,
+          assistance_year: renewal_year,
+          current_state: "determined",
+          submitted_at: 3.days.ago
+        )
+      end
+
+      before do
+        allow(hbx_profile).to receive(:under_open_enrollment?).and_return(false)
+        migrated_faa_app
+        applicant
+        renewal_year_qhp_app
+      end
+
+      it 'returns non-empty hash' do
         result = family.previous_year_faa_app_info_needing_evidence_display
-        expect(result).to eq({})
+        expect(result).to_not eq({})
       end
     end
 

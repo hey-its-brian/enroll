@@ -1931,8 +1931,6 @@ class Family
   #
   # @return [Hash] Hash containing organized application data
   def fetch_application_data_for_evidence_display
-    return {} unless HbxProfile.current_hbx.under_open_enrollment?
-
     assistance_year = Family.application_applicable_year
     prev_assistance_year = assistance_year.pred
 
@@ -1974,7 +1972,6 @@ class Family
     current_year_app.present? &&
       current_year_app_type == :faa &&
       renewal_year_app_type == :qhp &&
-      current_year_app.has_actionable_aptc_evidences? &&
       current_year_app.has_individual_market_eligibility?
   end
 
