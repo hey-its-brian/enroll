@@ -160,7 +160,8 @@ RSpec.describe ::FinancialAssistance::Forms::Applicant, type: :model, dbclean: :
       let(:relationship) {'child'}
 
       it 'should add error when ssn is matching' do
-        expect(@applicant_form.errors.full_messages).to include('ssn is already taken')
+        error_text = l10n('insured.consumer_roles.ssn_already_taken_error', contact_center_phone_number: EnrollRegistry[:enroll_app].settings(:contact_center_full_number).item)
+        expect(@applicant_form.errors.full_messages).to include(error_text)
       end
     end
 

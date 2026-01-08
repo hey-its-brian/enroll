@@ -12,7 +12,11 @@
           </button>
         </div>
         <div class="modal-body">
-        <%= l10n("support_texts.#{key}") %>
+          <% if key == 'no_ssn_info' %>
+            <%= sanitize_html(l10n("support_texts.#{key}", ssa_gov_url: EnrollRegistry[:enroll_app].setting(:ssa_gov_url).item, ssa_gov_short_name: EnrollRegistry[:enroll_app].setting(:ssa_gov_short_name).item)) %>
+          <% else %>
+            <%= l10n("support_texts.#{key}") %>
+          <% end %>
         </div>
       </div>
     </div>

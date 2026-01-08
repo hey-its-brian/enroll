@@ -43,6 +43,7 @@ The I-94 number is also called the admissions number. It is an 11 character sequ
   :'en.insured.consumer_roles.immigration_field_warning1' => "It's important to enter as many fields from your immigration documents as possible",
   :'en.insured.consumer_roles.immigration_field_warning2' => " even though some fields may be labeled 'optional'. Entering all of your document information makes the application process go smoother and faster, helps make sure your eligibility results are correct, and may prevent you from needing to come back later and provide information.",
   :'en.insured.consumer_roles.invalid_ssn_error' => "Invalid Social Security number",
+  :'en.insured.consumer_roles.ssn_already_taken_error' => "There was an issue with the SSN provided. Please check the number or contact the Consumer Assistance Center at %{contact_center_phone_number} for assistance.",
   :'en.insured.consumer_roles.dependent_error.header' => "Correct the following to add this family member:",
   :'en.insured.consumer_roles.dependent_error.gender' => "Gender can't be blank",
   :'en.insured.consumer_roles.dependent_error.sex' => "Sex can't be blank",

@@ -9,6 +9,7 @@ module FinancialAssistance
       include AddressValidator
       include ::ResourceRegistryHelper
       include NameValidatable
+      include ::L10nHelper
 
       attr_accessor :id, :family_id, :is_consumer_role, :is_resident_role, :vlp_document_id, :application_id, :applicant_id, :gender, :relationship, :relation_with_primary, :no_dc_address, :is_homeless, :is_temporarily_out_of_state,
                     :tribe_codes, :same_with_primary, :is_applying_coverage, :immigration_doc_statuses, :addresses, :phones, :emails, :addresses_attributes, :phones_attributes, :emails_attributes, :is_dependent,
@@ -303,7 +304,7 @@ module FinancialAssistance
           errors.add(:base, 'The entered SSN is already taken by another applicant in this application.')
         else
           same_ssn = ::FinancialAssistance::Application.where("applicants.encrypted_ssn" => encrypted_ssn)
-          errors.add(:base, "ssn is already taken") if same_ssn.present?
+          errors.add(:base, l10n('insured.consumer_roles.ssn_already_taken_error', contact_center_phone_number: EnrollRegistry[:enroll_app].settings(:contact_center_full_number).item)) if same_ssn.present?
         end
       end
 
@@ -331,7 +332,7 @@ module FinancialAssistance
 
         if result.success?
           if result.success
-            errors.add(:base, 'ssn is already taken')
+            errors.add(:base, l10n('insured.consumer_roles.ssn_already_taken_error', contact_center_phone_number: EnrollRegistry[:enroll_app].settings(:contact_center_full_number).item))
             [result.success, 'ssn is already taken']
           else
             [result.success, nil]

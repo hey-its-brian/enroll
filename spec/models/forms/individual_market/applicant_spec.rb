@@ -508,7 +508,9 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
       applicant_form = described_class.new(params)
       applicant_form.save
       expect(applicant_form.save[0]).to be_falsey
-      expect(applicant_form.errors.full_messages).to include("ssn is already taken")
+
+      error_text = l10n('insured.consumer_roles.ssn_already_taken_error', contact_center_phone_number: EnrollRegistry[:enroll_app].settings(:contact_center_full_number).item)
+      expect(applicant_form.errors.full_messages).to include(error_text)
     end
   end
 
@@ -717,7 +719,9 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
 
         applicant_form = described_class.new(params)
         applicant_form.valid?
-        expect(applicant_form.errors.full_messages).to include('ssn is already taken')
+
+        error_text = l10n('insured.consumer_roles.ssn_already_taken_error', contact_center_phone_number: EnrollRegistry[:enroll_app].settings(:contact_center_full_number).item)
+        expect(applicant_form.errors.full_messages).to include(error_text)
       end
 
       it 'does not add error when ssn_is_taken operation returns success false (ssn is not taken)' do
@@ -729,7 +733,9 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
 
         applicant_form = described_class.new(params)
         applicant_form.valid?
-        expect(applicant_form.errors.full_messages).not_to include('ssn is already taken')
+
+        error_text = l10n('insured.consumer_roles.ssn_already_taken_error', contact_center_phone_number: EnrollRegistry[:enroll_app].settings(:contact_center_full_number).item)
+        expect(applicant_form.errors.full_messages).not_to include(error_text)
       end
 
       it 'adds error when ssn_is_taken operation fails' do

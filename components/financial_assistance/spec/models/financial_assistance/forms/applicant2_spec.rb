@@ -94,8 +94,10 @@ RSpec.describe FinancialAssistance::Forms::Applicant, type: :model, dbclean: :af
           let(:input_dob) { (TimeKeeper.date_of_record - 10.years).strftime('%Y-%m-%d') }
 
           it 'returns false with errors' do
+            error_text = l10n('insured.consumer_roles.ssn_already_taken_error', contact_center_phone_number: EnrollRegistry[:enroll_app].settings(:contact_center_full_number).item)
+
             expect(applicant_form.save[0]).to be_falsey
-            expect(applicant_form.errors.full_messages).to include('ssn is already taken')
+            expect(applicant_form.errors.full_messages).to include(error_text)
           end
         end
 

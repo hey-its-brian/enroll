@@ -576,7 +576,7 @@ module Forms
 
         if result.success?
           if result.success
-            errors.add(:base, 'ssn is already taken')
+            errors.add(:base, l10n('insured.consumer_roles.ssn_already_taken_error', contact_center_phone_number: EnrollRegistry[:enroll_app].settings(:contact_center_full_number).item))
             [result.success, 'ssn is already taken']
           else
             [result.success, nil]

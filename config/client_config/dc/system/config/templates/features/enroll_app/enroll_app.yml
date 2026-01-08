@@ -131,6 +131,10 @@ registry:
             item: "https://www.healthcare.gov/"
           - key: :irs_url
             item: "https://www.irs.gov/"
+          - key: :ssa_gov_url
+            item: "https://ssa.gov/"
+          - key: :ssa_gov_short_name
+            item: "ssa.gov"
           - key: :exchange_hbx_id
             item: "DC0"
           - key: :no_reply_email
@@ -199,6 +203,8 @@ registry:
             item: "info@dchealthlink.com"
           - key: :contact_center_short_number
             item: "1-855-532-5465"
+          - key: :contact_center_full_number
+            item: '1-866-636-0355'
           - key: :contact_center_tty_number
             item: "711"
           - key: :producer_advisory_committee_url

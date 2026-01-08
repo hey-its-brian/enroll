@@ -146,6 +146,10 @@ registry:
             item: 'https://www.healthcare.gov/'
           - key: :irs_url
             item: 'https://www.irs.gov/'
+          - key: :ssa_gov_url
+            item: "https://ssa.gov/"
+          - key: :ssa_gov_short_name
+            item: "ssa.gov"
           - key: :exchange_hbx_id
             item: 'ME0'
           - key: :mail_address
@@ -216,6 +220,8 @@ registry:
             item: 'CoverME.gov Customer Assistance Center'
           - key: :contact_center_short_number
             item: '(866) 636-0355'
+          - key: :contact_center_full_number
+            item: '1-866-636-0355'
           - key: :contact_center_tty_number # Need to figure out what this should be for Maine
             item: '711'
           - key: :producer_advisory_committee_url
