@@ -16,6 +16,11 @@ describe UpdateMissingCounty do
   describe "migrate" do
     let!(:county_zip) { FactoryBot.create(:benefit_markets_locations_county_zip, zip: "12345", state: "ME", county_name: "Valid County") }
 
+    before do
+      # Mock CSV file creation to avoid actual file creation during tests
+      allow(CSV).to receive(:open).and_yield(double('csv', :<< => nil))
+    end
+
     context "when person has invalid county with valid zip" do
       let!(:person) do
         FactoryBot.create(:person).tap do |person|
