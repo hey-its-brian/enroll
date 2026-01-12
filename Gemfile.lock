@@ -1951,6 +1951,7 @@ GEM
       bigdecimal
       rexml
     crass (1.0.6)
+    csv (3.3.5)
     cucumber (3.2.0)
       builder (>= 2.1.2)
       cucumber-core (~> 3.2.0)
@@ -2108,7 +2109,8 @@ GEM
     highline (2.0.3)
     holidays (8.7.1)
     htmlentities (4.3.4)
-    httparty (0.21.0)
+    httparty (0.24.0)
+      csv
       mini_mime (>= 1.0.0)
       multi_xml (>= 0.5.2)
     i18n (1.14.7)
@@ -2237,7 +2239,8 @@ GEM
     msgpack (1.7.2)
     multi_json (1.15.0)
     multi_test (1.1.0)
-    multi_xml (0.6.0)
+    multi_xml (0.7.1)
+      bigdecimal (~> 3.1)
     multipart-post (2.4.1)
     mustermann (2.0.2)
       ruby2_keywords (~> 0.0.1)
@@ -2647,7 +2650,7 @@ DEPENDENCIES
   globalid
   haml (~> 5.0)
   holidays (~> 8.6)
-  httparty (~> 0.21)
+  httparty (~> 0.24)
   i18n (~> 1.5)
   i18n-tasks (~> 0.9.33)
   interactor (~> 3.0)

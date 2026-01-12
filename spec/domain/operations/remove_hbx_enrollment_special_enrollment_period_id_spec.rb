@@ -4,10 +4,9 @@ require 'rails_helper'
 
 RSpec.describe Operations::RemoveHbxEnrollmentSpecialEnrollmentPeriod, type: :model, dbclean: :after_each do
   let(:operation) { described_class.new }
-  let(:year) { TimeKeeper.date_of_record.year }
   let(:family) { FactoryBot.create(:family, :with_primary_family_member) }
-  let(:sep) { FactoryBot.create(:special_enrollment_period, family: family, start_on: Date.today - 10.days, end_on: Date.today - 2.days) }
-  let(:new_sep) { FactoryBot.create(:special_enrollment_period, family: family, start_on: Date.today - 10.days, end_on: Date.today + 1.day) }
+  let(:sep) { FactoryBot.create(:special_enrollment_period, family: family, start_on: TimeKeeper.date_of_record - 10.days, end_on: TimeKeeper.date_of_record - 2.days) }
+  let(:new_sep) { FactoryBot.create(:special_enrollment_period, family: family, start_on: TimeKeeper.date_of_record - 10.days, end_on: TimeKeeper.date_of_record + 1.day) }
   let(:predecessor_enrollment) { FactoryBot.create(:hbx_enrollment, family: family, special_enrollment_period_id: sep.id) }
   let!(:enrollment) do
     FactoryBot.create(
@@ -16,7 +15,7 @@ RSpec.describe Operations::RemoveHbxEnrollmentSpecialEnrollmentPeriod, type: :mo
       aasm_state: "coverage_selected",
       predecessor_enrollment_id: predecessor_enrollment.id,
       special_enrollment_period_id: sep.id,
-      created_at: Date.today
+      effective_on: TimeKeeper.date_of_record
     )
   end
 
@@ -33,11 +32,11 @@ RSpec.describe Operations::RemoveHbxEnrollmentSpecialEnrollmentPeriod, type: :mo
     subject(:operation) { described_class.new }
 
     before do
+      expect(enrollment.special_enrollment_period_id).not_to be_nil
       @result = operation.call({ year: sep.start_on.year })
     end
 
     it "removes the enrollment SEP id" do
-
       expect(@result).to be_success
       enrollment.reload
       expect(enrollment.special_enrollment_period_id).to be_nil
