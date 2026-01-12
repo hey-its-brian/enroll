@@ -90,5 +90,17 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
         end
       end
     end
+
+    context "COUNTRIES_LIST" do
+      it "includes correctly spelled country names" do
+        expect(VlpDocument::COUNTRIES_LIST).to include("Colombia")
+        expect(VlpDocument::COUNTRIES_LIST).to include("Vietnam")
+      end
+
+      it "does not include misspelled country names" do
+        expect(VlpDocument::COUNTRIES_LIST).not_to include("Colombi")
+        expect(VlpDocument::COUNTRIES_LIST).not_to include("Viet nam")
+      end
+    end
   end
 end

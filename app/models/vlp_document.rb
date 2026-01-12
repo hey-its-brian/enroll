@@ -37,7 +37,7 @@ class VlpDocument < Document
                     "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh",
                     "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina",
                     "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cambodia", "Cameroon",
-                    "Canada", "Cabo Verde", "Central African Republic", "Chad", "Chile", "China", "Colombi",
+                    "Canada", "Cabo Verde", "Central African Republic", "Chad", "Chile", "China", "Colombia",
                     "Comoros", "Congo", "Costa Rica", "Cote d'Ivoire", "Croatia", "Cuba",
                     "Cyprus", "Czech Republic", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "East Timor (Timor Timur)",
                     "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Ethiopia", "Fiji", "Finland",
@@ -57,7 +57,7 @@ class VlpDocument < Document
                     "Suriname", "Swaziland", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan",
                     "Tanzania", "Thailand", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey",
                     "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom",
-                    "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Viet nam",
+                    "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
                     "Yemen", "Zambia","Zimbabwe"].freeze
 
   VERIFY = 'Verify'.freeze
