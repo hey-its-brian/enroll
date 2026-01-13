@@ -594,8 +594,7 @@ module Forms
 
       def matching_criteria_changed?(matching_params, person)
         # return true if the ssn has changed as still want to check in that case
-        return false unless matching_params[:ssn] == person.ssn
-        matching_params[:dob] != person.dob || matching_params[:first_name] != person.first_name || matching_params[:last_name] != person.last_name
+        matching_params[:dob] != person.dob || matching_params[:first_name] != person.first_name || matching_params[:last_name] != person.last_name || matching_params[:ssn] != person.ssn
       end
 
     end

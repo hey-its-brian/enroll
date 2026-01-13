@@ -279,13 +279,14 @@ RSpec.describe FinancialAssistance::Forms::Applicant, type: :model, dbclean: :af
             subject.check_same_ssn
           end
 
-          it 'calls operation without skipped_person when the ssn has changed' do
+          it 'calls operation with skipped_person when the ssn has changed' do
             subject.ssn = "555443333"
             expect(ssn_taken_operation).to receive(:call).with({
                                                                  dob: subject.dob.to_date,
                                                                  first_name: subject.first_name,
                                                                  last_name: subject.last_name,
-                                                                 ssn: "555443333"
+                                                                 ssn: "555443333",
+                                                                 skipped_person: primary_applicant.family_member.person.hbx_id
                                                                }).and_return(double(success?: true, success: false))
 
             subject.check_same_ssn

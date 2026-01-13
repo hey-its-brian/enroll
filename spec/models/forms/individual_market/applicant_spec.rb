@@ -675,13 +675,14 @@ RSpec.describe ::Forms::IndividualMarket::Applicant, type: :model, dbclean: :aft
         applicant_form.valid?
       end
 
-      it "calls operation without skipped_person when the ssn has changed" do
+      it "calls operation with skipped_person when the ssn has changed" do
         params[:demographics_attributes][:ssn] = "555443333"
         expect(ssn_taken_operation).to receive(:call).with({
                                                              dob: applicant.demographics.dob.to_date,
                                                              first_name: applicant.person_name.given_name,
                                                              last_name: applicant.person_name.family_name,
-                                                             ssn: "555443333"
+                                                             ssn: "555443333",
+                                                             skipped_person: applicant.family_member.person.hbx_id
                                                            }).and_return(double(success?: true, success: false))
 
         applicant_form = described_class.new(params)

@@ -329,7 +329,6 @@ module FinancialAssistance
         end
 
         result = ::Operations::People::SsnTaken.new.call(matching_params)
-
         if result.success?
           if result.success
             errors.add(:base, l10n('insured.consumer_roles.ssn_already_taken_error', contact_center_phone_number: EnrollRegistry[:enroll_app].settings(:contact_center_full_number).item))
@@ -349,8 +348,7 @@ module FinancialAssistance
       end
 
       def matching_criteria_changed?(matching_params, person)
-        return false unless matching_params[:ssn] == person.ssn
-        matching_params[:dob] != person.dob || matching_params[:first_name] != person.first_name || matching_params[:last_name] != person.last_name
+        matching_params[:dob] != person.dob || matching_params[:first_name] != person.first_name || matching_params[:last_name] != person.last_name || matching_params[:ssn] != person.ssn
       end
     end
   end

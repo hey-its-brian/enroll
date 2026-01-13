@@ -180,6 +180,33 @@ RSpec.describe Operations::People::SsnTaken, type: :model, dbclean: :after_each 
           context 'when:
             - all params are valid
             - there is a person with the same ssn, dob, first_name, and last_name
+            - but different cases
+            ' do
+
+            let(:params) do
+              {
+                dob: TimeKeeper.date_of_record,
+                ssn: '123456789',
+                first_name: 'john',
+                last_name: 'doe',
+                skipped_person: '12345'
+              }
+            end
+
+            let(:first_name) { params[:first_name] }
+            let(:last_name) { params[:last_name] }
+            let(:dob) { params[:dob] }
+            let(:ssn) { params[:ssn] }
+
+            it 'returns a success with the params' do
+              person
+              expect(subject.call(params).success).to eq(true)
+            end
+          end
+
+          context 'when:
+            - all params are valid
+            - there is a person with the same ssn, dob, first_name, and last_name
             ' do
 
             let(:params) do

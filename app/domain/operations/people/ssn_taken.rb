@@ -143,6 +143,9 @@ module Operations
         # if the person is the same person as the skipped person, we can skip the check
         return Success(false) if valid_params[:skipped_person] && valid_params[:skipped_person] == person.hbx_id
 
+        # if the person has the same SSN, but a different hbx_id than the skipped person, it's a taken SSN case
+        return Success(true) if valid_params[:skipped_person] && valid_params[:skipped_person] != person.hbx_id
+
         expected_params.each do |param|
           case param
           when :dob
