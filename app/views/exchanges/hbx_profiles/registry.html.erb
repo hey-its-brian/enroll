@@ -20,6 +20,8 @@
           <dt><%= l10n("admin.rr.item") %>:</dt>
           <dd><%= feature.item.to_s %></dd>
         <% end %>
+        <dt><%= l10n("admin.rr.env_variable") %></dt>
+        <dd><%= find_env_variable_for_feature(f) %></dd>
         <% feature.settings.each do |s| %>
           <dt><%= s.key %>:</dt>
           <dd><%= s.item %></dd>

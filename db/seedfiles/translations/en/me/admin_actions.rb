@@ -3,6 +3,7 @@ ADMIN_ACTIONS_TRANSLATIONS = {
   'en.admin.rr.heading' => 'Resource Registry Settings',
   'en.admin.rr.note' => 'Note: The following features are enabled in the Resource Registry for web pods some configs may vary for other pods.',
   'en.admin.rr.item' => 'Item',
+  'en.admin.rr.env_variable' => 'Mapping ENV Variable',
   'en.admin.applicants' => "Applicants",
   'en.admin.applicant' => "Applicant",
   'en.admin.accepted' => "Accepted",
