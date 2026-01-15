@@ -44,11 +44,12 @@ module BenefitSponsors
         end
 
         def staff_index
+          permitted_params = params.permit(:utf8, :q, :bs4, :page)
           # a specific instance of BenefitSponsors::Organizations::BrokerAgencyProfile is not needed to test this endpoint
           authorize BenefitSponsors::Organizations::BrokerAgencyProfile
-          bs4 = params.permit(:bs4)[:bs4]
+          bs4 = permitted_params[:bs4]
           @bs4 = bs4 == "true" if bs4
-          @q = params.permit(:q)[:q]
+          @q = permitted_params[:q]
 
           @staff = eligible_brokers
           @page_alphabets = if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
@@ -59,11 +60,15 @@ module BenefitSponsors
           @alph_labels = @page_alphabets.map{|alph| [alph.first, alph.last].join("–")} if EnrollRegistry.feature_enabled?(:bs4_consumer_flow)
           page_no = cur_page_no(@page_alphabets.first)
           @staff = if @q.nil?
-                     @staff.where(last_name: /^#{page_no}/i)
+                     page_letters = Array(page_no).map(&:to_s)
+                     safe_letters = page_letters.map { |letter| Regexp.escape(letter) }
+                     pattern = /^[#{safe_letters.join}]/
+                     @staff.where(last_name: pattern).to_a
                    elsif @q.blank?
-                     @staff.uniq.sort_by(&:last_name)
+                     # When no search query, show all staff sorted by last name
+                     @staff.order_by(last_name: 1).to_a
                    else
-                     broker_profile_ids = BenefitSponsors::Organizations::Organization.where(legal_name: /^#{Regexp.escape(@q)}/i).map(&:profiles).flatten.map(&:id)
+                     broker_profile_ids = BenefitSponsors::Organizations::Organization.where(legal_name: /^#{Regexp.escape(@q)}/i).pluck('profiles._id').flatten
                      find_by_agency_name = @staff.where(:'broker_role.benefit_sponsors_broker_agency_profile_id'.in => broker_profile_ids)
                      search_hash = @staff.search_hash(@q)
                      find_by_search_hash = @staff.where(search_hash)
@@ -223,7 +228,7 @@ module BenefitSponsors
 
         def eligible_brokers
           broker_profile_ids = BenefitSponsors::Organizations::Organization.broker_agency_profiles.approved_broker_agencies.broker_agencies_by_market_kind(['both', person_market_kind]).map(&:broker_agency_profile).pluck(:id)
-          Person.where(:"broker_role.benefit_sponsors_broker_agency_profile_id".in => broker_profile_ids, :"broker_role.aasm_state" => "active")
+          Person.where(:"broker_role.benefit_sponsors_broker_agency_profile_id".in => broker_profile_ids, :"broker_role.aasm_state" => "active", :broker_role.ne => nil)
         end
 
         def update_ga_for_employers(broker_agency_profile, old_default_ga = nil); end

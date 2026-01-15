@@ -244,6 +244,26 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
           it "should assign a staff var" do
             expect(assigns(:staff).count).to eq(1)
           end
+
+          it "should handle array page parameters without error" do
+            # Test the grouped alphabet page parameter that was causing 500 errors
+            get :staff_index, params: { page: ["M", "N", "O", "P", "Q", "R"], bs4: "true" }, xhr: true
+            expect(response).to have_http_status(:success)
+            expect(response).to render_template("staff_index")
+            expect(assigns(:staff)).to be_present
+          end
+
+          it "should handle JSON encoded array page parameters without error" do
+            # Create a test broker with a last name starting with M
+            test_person = FactoryBot.create(:person, :with_broker_role, first_name: "Test", last_name: "Norris")
+            test_person.broker_role.update_attributes!(benefit_sponsors_broker_agency_profile_id: broker_agency1.id, aasm_state: 'active')
+
+            # Test the JSON encoded array that comes from the pagination links
+            get :staff_index, params: { page: '["M", "N", "O", "P", "Q", "R"]', bs4: "true" }, xhr: true
+            expect(response).to have_http_status(:success)
+            expect(response).to render_template("staff_index")
+            expect(assigns(:staff)).to be_present
+          end
         end
 
         context "with the incorrect permissions" do

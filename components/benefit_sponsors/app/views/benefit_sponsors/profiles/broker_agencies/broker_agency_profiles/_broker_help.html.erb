@@ -1,7 +1,8 @@
 <% active_broker = @broker %>
-<% broker_agency_profile =  active_broker.broker_agency_profile%>
+<% broker_agency_profile = active_broker&.broker_agency_profile %>
 <% genesys_feature_enabled = EnrollRegistry.feature_enabled?(:genesys_cloud_messenger) %>
 
+<% if active_broker.present? && broker_agency_profile.present? %>
 <div id="broker_show_<%= active_broker.id %>" tabindex="-1" class='hide broker_selection_choice'>
 <% if @bs4 %>
   <section id="active_broker_tab">
@@ -128,3 +129,4 @@
   </div>
   <% end %>
 </div>
+<% end %>
