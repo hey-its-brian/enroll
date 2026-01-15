@@ -86,7 +86,6 @@ module Operations
           @enrollment.family
                      .hbx_enrollments
                      .enrolled_and_renewing
-                     .by_health
                      .by_year(@enrollment.effective_on.year)
         end
 

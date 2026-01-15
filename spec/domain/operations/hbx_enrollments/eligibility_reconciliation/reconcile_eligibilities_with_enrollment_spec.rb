@@ -41,11 +41,6 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::ReconcileE
                           aasm_state: 'coverage_selected')
       end
 
-      before do
-        allow(TaxHouseholdEnrollment).to receive(:find_by).and_return(nil)
-        allow(family).to receive(:latest_determined_application_for_year).and_return(nil)
-      end
-
       it 'returns failure with missing application message' do
         result = operation.call({enrollment: enrollment})
         expect(result).to be_failure
@@ -84,7 +79,7 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::ReconcileE
     before do
       allow(enrollment).to receive(:related_application).and_return(application)
 
-      allow(family).to receive_message_chain(:hbx_enrollments, :enrolled_and_renewing, :by_health, :by_year)
+      allow(family).to receive_message_chain(:hbx_enrollments, :enrolled_and_renewing, :by_year)
         .and_return([enrollment])
 
       allow(Operations::HbxEnrollments::EligibilityReconciliation::Applicants::ReconcileApplicant)
@@ -192,7 +187,7 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::ReconcileE
 
     context 'when fetch_active_enrollments fails' do
       before do
-        allow(enrollment).to receive_message_chain(:family, :hbx_enrollments, :enrolled_and_renewing, :by_health, :by_year)
+        allow(enrollment).to receive_message_chain(:family, :hbx_enrollments, :enrolled_and_renewing, :by_year)
           .and_raise(StandardError.new('Database connection failed'))
       end
 
@@ -222,7 +217,6 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::ReconcileE
         operation.instance_variable_set(:@enrollment, enrollment)
 
         expect(family.hbx_enrollments).to receive(:enrolled_and_renewing).and_return(family.hbx_enrollments)
-        expect(family.hbx_enrollments).to receive(:by_health).and_return(family.hbx_enrollments)
         expect(family.hbx_enrollments).to receive(:by_year).with(2025).and_return([enrollment])
 
         result = operation.send(:fetch_active_enrollments)

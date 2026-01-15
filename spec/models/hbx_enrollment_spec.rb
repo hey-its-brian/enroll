@@ -945,40 +945,90 @@ describe '#new_enrollment?' do
   end
 end
 
-describe '#related_application' do
-  let(:person) { FactoryBot.create(:person, :with_consumer_role) }
-  let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
-  let(:hbx_enrollment) { FactoryBot.create(:hbx_enrollment, family: family, household: family.active_household) }
+describe '#related_application', dbclean: :around_each do
+  let!(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+  let!(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+  let(:household) { family.active_household }
+  let(:effective_on) { TimeKeeper.date_of_record.beginning_of_year }
+
+  let!(:hbx_enrollment) do
+    FactoryBot.create(
+      :hbx_enrollment,
+      :individual_unassisted,
+      family: family,
+      household: household,
+      effective_on: effective_on,
+      kind: 'individual'
+    )
+  end
+
+  let!(:application) do
+    FactoryBot.create(
+      :financial_assistance_application,
+      family_id: family.id,
+      assistance_year: effective_on.year,
+      aasm_state: 'determined',
+      hbx_id: '12345'
+    )
+  end
+
+  let!(:tax_household_group) do
+    family.tax_household_groups.create!(
+      assistance_year: effective_on.year,
+      source: 'Admin',
+      start_on: effective_on,
+      tax_households: [FactoryBot.build(:tax_household, household: household)]
+    )
+  end
+
+  let(:tax_household) { tax_household_group.tax_households.first }
 
   context 'when tax household enrollment relationship exists' do
-    let(:application) { double('Application') }
-
-    before do
-      allow(hbx_enrollment).to receive(:find_application_via_tax_household).and_return(application)
+    let!(:tax_household_enrollment) do
+      thhe = TaxHouseholdEnrollment.create!(
+        enrollment_id: hbx_enrollment.id,
+        tax_household_id: tax_household.id,
+        household_benchmark_ehb_premium: 500.00,
+        available_max_aptc: 250.00
+      )
+      thhe.tax_household.tax_household_group.update!(application_gid: "gid://enroll/FinancialAssistance::Application/#{application.id}")
+      thhe.reload
     end
 
     it 'returns the application from tax household relationship' do
       expect(hbx_enrollment.related_application).to eq(application)
     end
+
+    it 'prioritizes tax household relationship over family application' do
+      family_application = FactoryBot.create(
+        :financial_assistance_application,
+        family_id: family.id,
+        assistance_year: effective_on.year,
+        aasm_state: 'determined',
+        hbx_id: '67890'
+      )
+
+      expect(hbx_enrollment.related_application).to eq(application)
+      expect(hbx_enrollment.related_application).not_to eq(family_application)
+    end
   end
 
   context 'when no tax household enrollment relationship exists' do
-    let(:application) { double('Application') }
-
-    before do
-      allow(hbx_enrollment).to receive(:find_application_via_tax_household).and_return(nil)
-      allow(family).to receive(:latest_determined_application_for_year).with(hbx_enrollment.effective_on.year).and_return(application)
-    end
-
     it 'returns the latest determined application for the enrollment year' do
       expect(hbx_enrollment.related_application).to eq(application)
+    end
+
+    it 'calls family method with correct year parameter' do
+      expect(family).to receive(:latest_determined_application_for_year)
+        .with(effective_on.year).and_return(application)
+
+      hbx_enrollment.related_application
     end
   end
 
   context 'when no application is found through either method' do
     before do
-      allow(hbx_enrollment).to receive(:find_application_via_tax_household).and_return(nil)
-      allow(family).to receive(:latest_determined_application_for_year).with(hbx_enrollment.effective_on.year).and_return(nil)
+      application.destroy!
     end
 
     it 'returns nil' do
@@ -987,15 +1037,34 @@ describe '#related_application' do
   end
 
   context 'when find_application_via_tax_household returns blank object' do
-    let(:application) { double('Application') }
+    it 'falls back to latest determined application for blank string' do
+      expect(hbx_enrollment.related_application).to eq(application)
+    end
+  end
 
-    before do
-      allow(hbx_enrollment).to receive(:find_application_via_tax_household).and_return('')
-      allow(family).to receive(:latest_determined_application_for_year).with(hbx_enrollment.effective_on.year).and_return(application)
+  context 'when find_application_via_tax_household returns empty array' do
+    it 'falls back to latest determined application for empty array' do
+      expect(hbx_enrollment.related_application).to eq(application)
+    end
+  end
+
+  context 'with different assistance years' do
+    let(:previous_year_application) do
+      FactoryBot.create(
+        :financial_assistance_application,
+        family_id: family.id,
+        assistance_year: effective_on.year - 1,
+        aasm_state: 'determined'
+      )
     end
 
-    it 'falls back to latest determined application' do
-      expect(hbx_enrollment.related_application).to eq(application)
+    before do
+      previous_year_application
+      application.destroy!
+    end
+
+    it 'does not return application from different year' do
+      expect(hbx_enrollment.related_application).to be_nil
     end
   end
 end

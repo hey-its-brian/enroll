@@ -36,7 +36,7 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Applicants
                       family_member_id: family.primary_family_member.id)
   end
 
-  let(:active_enrollments) { [enrollment] }
+  let(:active_enrollments) { HbxEnrollment.where(id: enrollment.id) }
 
   let(:reconciler) { described_class.new }
 
@@ -197,7 +197,7 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Applicants
     let(:other_person) { FactoryBot.create(:person, :with_consumer_role) }
     let(:other_family_member) { FactoryBot.create(:family_member, family: family, person: other_person) }
 
-    let(:enrollment_with_applicant) do
+    let!(:enrollment_with_applicant) do
       enr = FactoryBot.create(:hbx_enrollment, family: family, product: product, hbx_id: 'with-applicant')
       FactoryBot.create(:hbx_enrollment_member,
                         hbx_enrollment: enr,
@@ -206,7 +206,7 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Applicants
       enr
     end
 
-    let(:enrollment_without_applicant) do
+    let!(:enrollment_without_applicant) do
       enr = FactoryBot.create(:hbx_enrollment, family: family, product: product, hbx_id: 'without-applicant')
       FactoryBot.create(:hbx_enrollment_member,
                         hbx_enrollment: enr,
@@ -215,7 +215,7 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Applicants
       enr
     end
 
-    let(:mixed_enrollments) { [enrollment_with_applicant, enrollment_without_applicant] }
+    let(:mixed_enrollments) { HbxEnrollment.where(:id.in => [enrollment_with_applicant.id, enrollment_without_applicant.id]) }
     let(:aptc_reconciler_double) { instance_double(Operations::HbxEnrollments::EligibilityReconciliation::Eligibilities::ReconcileAptcCsrEligibility) }
     let(:individual_reconciler_double) { instance_double(Operations::HbxEnrollments::EligibilityReconciliation::Eligibilities::ReconcileIndividualMarketEligibility) }
 
@@ -250,7 +250,7 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Applicants
     end
 
     it 'passes empty array when no enrollments include the applicant' do
-      params = valid_params.merge(active_enrollments: [enrollment_without_applicant])
+      params = valid_params.merge(active_enrollments: HbxEnrollment.where(id: enrollment_without_applicant.id))
 
       result = reconciler.call(params)
 
@@ -294,11 +294,11 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Applicants
       end
 
       before do
-        reconciler.send(:validate, valid_params.merge(active_enrollments: [enrollment_with_applicant, enrollment_without_applicant]))
+        reconciler.send(:validate, valid_params.merge(active_enrollments: HbxEnrollment.where(:id.in => [enrollment_with_applicant.id, enrollment_without_applicant.id])))
       end
 
       it 'returns only enrollments where applicant is a member' do
-        result = reconciler.send(:filter_active_applicant_enrollments)
+        result = reconciler.send(:filter_active_applicant_enrollments, :aptc_csr_eligibility)
 
         expect(result).to include(enrollment_with_applicant)
         expect(result).not_to include(enrollment_without_applicant)
@@ -306,9 +306,9 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Applicants
       end
 
       it 'returns empty array when applicant is not in any enrollments' do
-        reconciler.send(:validate, valid_params.merge(active_enrollments: [enrollment_without_applicant]))
+        reconciler.send(:validate, valid_params.merge(active_enrollments: HbxEnrollment.where(id: enrollment_without_applicant.id)))
 
-        result = reconciler.send(:filter_active_applicant_enrollments)
+        result = reconciler.send(:filter_active_applicant_enrollments, :individual_market_eligibility)
 
         expect(result).to be_empty
       end

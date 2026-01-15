@@ -38,8 +38,7 @@ module Operations
           # @return [Dry::Monads::Success, Dry::Monads::Failure] Success with reconciliation results or Failure with error
           def call(params)
             yield validate(params)
-            active_applicant_enrollments = filter_active_applicant_enrollments
-            results = yield reconcile_eligibilities(active_applicant_enrollments)
+            results = yield reconcile_eligibilities
             Success(results)
           end
 
@@ -68,8 +67,10 @@ module Operations
 
           # Selects active enrollments where the applicant is a member
           # @return [Array<HbxEnrollment>] Active enrollments where the applicant is a member
-          def filter_active_applicant_enrollments
-            @active_enrollments.select do |active_enrollment|
+          def filter_active_applicant_enrollments(type)
+            active_enrollments = (type == :aptc_csr_eligibility) ? @active_enrollments.by_health : @active_enrollments
+
+            active_enrollments.select do |active_enrollment|
               active_enrollment.hbx_enrollment_members.where(applicant_id: @applicant.family_member_id).exists?
             end
           end
@@ -78,12 +79,13 @@ module Operations
           #
           # @param active_applicant_enrollments [Array<HbxEnrollment>] Active enrollments where the applicant is a member
           # @return [Dry::Monads::Success, Dry::Monads::Failure] Success with results or Failure with error
-          def reconcile_eligibilities(active_applicant_enrollments)
-            results = ELIGIBILITY_KEYS.reduce({}) do |reconciler_accumulator, type|
+          def reconcile_eligibilities
+            results = ELIGIBILITY_KEYS.reduce({}) do |accumulator, type|
+              active_applicant_enrollments = filter_active_applicant_enrollments(type)
               reconciliation_result = reconcile_eligibility_type(type, active_applicant_enrollments)
               return reconciliation_result if reconciliation_result.failure?
-              reconciler_accumulator[type] = reconciliation_result.value!
-              reconciler_accumulator
+              accumulator[type] = reconciliation_result.value!
+              accumulator
             end
 
             Success(results)

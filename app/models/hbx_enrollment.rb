@@ -3292,7 +3292,7 @@ class HbxEnrollment
   # @return [FinancialAssistance::Application, IndividualMarket::Application, nil]
   #   Application if found via tax household relationship, nil otherwise
   def find_application_via_tax_household
-    tax_household_enrollment = TaxHouseholdEnrollment.find_by(enrollment_id: id)
+    tax_household_enrollment = TaxHouseholdEnrollment.where(enrollment_id: id).first
     return nil unless tax_household_enrollment
 
     application_gid = tax_household_enrollment.tax_household&.tax_household_group&.application_gid
