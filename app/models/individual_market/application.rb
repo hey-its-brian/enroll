@@ -177,6 +177,9 @@ module IndividualMarket
       only(:assistance_year, :current_state, :family_id).where(assistance_year: year, family_id: family_id)
     }
 
+    # Applications that are in submitted and after submission states. Non work in progress applications.
+    scope :submitted_and_after, -> { where(:current_state.in => REVIEWABLE_STATUSES) }
+
     # All possible states for an application
     # @!attribute ALL_STATES
     # @return [Array<Symbol>] Collection of all possible states
