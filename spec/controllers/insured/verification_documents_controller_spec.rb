@@ -90,7 +90,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
               params = { person: {consumer_role: consumer_role}, file: [file] }
               post :upload, params: params
 
-              expect(flash[:error]).to include("Unable to upload file.")
+              expect(flash[:error]).to include("Upload failed.")
             end
 
           end
@@ -182,7 +182,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
               params = { person: {consumer_role: consumer_role}, file: [file] }
               post :upload, params: params
 
-              expect(flash[:error]).to include("Unable to upload file.")
+              expect(flash[:error]).to include("Upload failed.")
             end
 
             it "does not allow docx files to be uploaded" do
@@ -190,7 +190,7 @@ if ExchangeTestingConfigurationHelper.individual_market_is_enabled?
               params = { person: {consumer_role: consumer_role}, file: [file] }
               post :upload, params: params
 
-              expect(flash[:error]).to include("Unable to upload file.")
+              expect(flash[:error]).to include("Upload failed.")
             end
           end
         end

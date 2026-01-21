@@ -908,7 +908,7 @@ RSpec.describe Exchanges::HbxProfilesController, dbclean: :around_each do
       profile_valid_params[:file] = file
       post :create_send_secure_message, xhr:  true, params:  profile_valid_params
 
-      expect(flash[:error]).to include("Unable to upload file.")
+      expect(flash[:error]).to include("Upload failed.")
     end
 
     context 'when resource is profile' do

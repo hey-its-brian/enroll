@@ -143,7 +143,7 @@ module BenefitSponsors
           file = fixture_file_upload("#{Rails.root}/test/sample.docx")
           post :bulk_employee_upload, :params => {:employer_profile_id => benefit_sponsor.profiles.first.id, :file => file}
 
-          expect(flash[:error]).to include("Unable to upload file.")
+          expect(flash[:error]).to include("Upload failed.")
           expect(response).to render_template("benefit_sponsors/profiles/employers/employer_profiles/_employee_csv_upload_errors", "layouts/two_column")
         end
       end

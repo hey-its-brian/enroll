@@ -212,7 +212,7 @@ RSpec.describe Operations::Eligibilities::Evidences::Documents::Upload, type: :o
       it 'calls l10n with correct parameters' do
         expect(operation).to receive(:l10n).with(
           "upload_doc_error",
-          hash_including(:file_types, :size_in_mb)
+          hash_including(:size_in_mb)
         )
 
         operation.call(params)

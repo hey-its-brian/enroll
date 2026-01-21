@@ -17,7 +17,6 @@ module FileUploadHelper
     else
       flash[:error] = l10n(
         "upload_doc_error",
-        file_types: file_validator.human_readable_file_types,
         size_in_mb: EnrollRegistry[:upload_file_size_limit_in_mb].item
       )
       false # Return false to indicate failure

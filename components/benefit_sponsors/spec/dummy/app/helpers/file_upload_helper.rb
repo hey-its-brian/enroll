@@ -15,7 +15,7 @@ module FileUploadHelper
     if file_validator.valid?
       true # Valid file, return true to indicate success
     else
-      flash[:error] = "Unable to upload file."
+      flash[:error] = "Upload failed. Please upload a PDF, JPEG, PNG, or GIF that is 10 MB or smaller."
       false # Return false to indicate failure
     end
   end
