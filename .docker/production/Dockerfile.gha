@@ -46,11 +46,12 @@ RUN curl -sSL https://ssl.com/repo/certs/SSLcom-TLS-Root-2022-RSA.pem?_gl=1*11wu
 RUN update-ca-certificates
 
 # Add NodeJS to sources list
-RUN curl -fsSL https://deb.nodesource.com/setup_$NODE_MAJOR.x | bash -
+# RUN curl -fsSL https://deb.nodesource.com/setup_$NODE_MAJOR.x | bash -
+RUN cat ../hacks/setup_${NODE_MAJOR}.x | bash -
 
 # Install Nodejs & Yarn
-RUN apt-get update -qq \
-  && apt-get install -yq --no-install-recommends \
+RUN apt-get update -qq --allow-unauthenticated \
+  && apt-get install -yq --no-install-recommends --allow-unauthenticated \
     nodejs \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
@@ -99,13 +100,16 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -qq && \
     apt-get install -yq --no-install-recommends \
-      curl \
+      curl gnupg2 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     && truncate -s 0 /var/log/*log
 
 # Add Yarn to the sources list
-RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
+# RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
+#   && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
+
+RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com 23E7166788B63E1E \
   && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
 
 RUN apt-get update -qq \
