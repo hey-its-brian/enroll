@@ -57,6 +57,13 @@ module Insured
         # field :applied_aptc_amount, type: Money, default: 0.0
         enrollment = HbxEnrollment.find(BSON::ObjectId.from_string(enrollment_id))
 
+        # Prevent APTC updates for past year enrollments when current date is in future years
+        current_year = TimeKeeper.date_of_record.year
+        if enrollment.effective_on.year < current_year
+          log("ERROR in SelfServiceFactory: Cannot update APTC for past year enrollment. enrollment_year: #{enrollment.effective_on.year}, current_year: #{current_year}, enrollment_hbx_id: #{enrollment.hbx_id}")
+          raise "Cannot update APTC for past year enrollment. This operation is not allowed."
+        end
+
         new_effective_date = Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date(enrollment, change_tax_credit)
         reinstatement = Enrollments::Replicator::Reinstatement.new(enrollment, new_effective_date, applied_aptc_amount, generation_reason: generation_reason).build
         drop_invalid_enrollment_members(reinstatement) if EnrollRegistry[:check_enrollment_member_eligibility].feature.is_enabled
@@ -286,6 +293,13 @@ module Insured
 
       # Checks if case is eligible for 1/1 effective date for Prospective Year's enrollments.
       def self.eligible_for_1_1_effective_date?(system_date, current_effective_on)
+        # Prevent creating enrollments for past years when in current or future years
+        current_year = system_date.year
+        effective_year = current_effective_on.year
+
+        # If trying to create an enrollment for a past year, reject it
+        return false if effective_year < current_year
+
         last_eligible_date_for_1_1_effective_date = Date.new(system_date.year, system_date.end_of_year.month, HbxProfile::IndividualEnrollmentDueDayOfMonth)
         current_effective_on.year > system_date.year && HbxProfile.current_hbx.under_open_enrollment? && last_eligible_date_for_1_1_effective_date > system_date
       end

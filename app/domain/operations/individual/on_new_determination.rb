@@ -33,8 +33,22 @@ module Operations
       # @param values [Hash] the input parameters containing family and year
       # @return [Dry::Monads::Result] Success with array of enrollments or Failure with error message
       def fetch_enrollments_to_renew(values)
+        # Prevent auto-generation of enrollments for past years
+        current_year = TimeKeeper.date_of_record.year
+        if values[:year] < current_year
+          Rails.logger.info("Enrollment auto-generation prevented for past year #{values[:year]} when current year is #{current_year}")
+          return Success([])
+        end
+
         enrollments = values[:family].active_household.hbx_enrollments.enrolled_and_renewal.individual_market.by_health.by_year(values[:year])
-        enrollments_for_determination = enrollments.reject { |enrollment| should_reject_enrollment?(enrollment) }
+
+        # Filter out enrollments that should not be processed based on current date
+        valid_enrollments = enrollments.reject do |enrollment|
+          # Reject if enrollment is for a past year and we're in a future year
+          enrollment.effective_on.year < current_year
+        end
+
+        enrollments_for_determination = valid_enrollments.reject { |enrollment| should_reject_enrollment?(enrollment) }
         return Success([]) if enrollments_for_determination.blank?
 
         enrollments_with_products = enrollments_for_determination.reject { |enrollment| enrollment.product.blank? }

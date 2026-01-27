@@ -42,7 +42,15 @@ module Insured
         enrollment = HbxEnrollment.find(attrs[:enrollment_id])
         new_effective_date = Insured::Factories::SelfServiceFactory.new_enrollment_effective_on_date(enrollment, attrs[:change_tax_credit])
 
+        current_year = TimeKeeper.date_of_record.year
+        enrollment_year = enrollment.effective_on.year
+        new_effective_year = new_effective_date.year
+
         # Can't create a corresponding enrollment during the end of the year due to overlapping plan year issue and hence disabling the change tax credit button
+        # Also prevent changes for past years when current date is in future years
+        return false if enrollment_year < current_year
+        return false if new_effective_year < current_year
+
         new_effective_date.year == enrollment.effective_on.year
       end
 
