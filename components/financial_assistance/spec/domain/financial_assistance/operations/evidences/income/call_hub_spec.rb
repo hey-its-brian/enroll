@@ -39,7 +39,6 @@ RSpec.describe FinancialAssistance::Operations::Evidences::Income::CallHub, dbcl
                       key: :income_evidence)
   end
 
-
   let(:action_name) { 'hub_request' }
   let(:update_reason) { 'Requesting determination' }
   let(:updated_by) { 'admin@user.com' }
@@ -69,6 +68,13 @@ RSpec.describe FinancialAssistance::Operations::Evidences::Income::CallHub, dbcl
       end
 
       context 'when evidence has APTC/CSR eligibility type' do
+        before do
+          family.family_members.each do |fm|
+            family.build_consumer_role(fm)
+            fm.person.reload
+          end
+        end
+
         context 'when hub call succeeds' do
           it 'returns success' do
             result = operation.call(valid_params)
@@ -82,6 +88,71 @@ RSpec.describe FinancialAssistance::Operations::Evidences::Income::CallHub, dbcl
             expect(aptc_csr_eligibility.state_histories.count).to eq(1)
             expect(aptc_csr_eligibility.state_histories.last.to_state).to eq(:verification_in_progress)
             expect(aptc_csr_eligibility.state_histories.last.from_state).to eq(:initial)
+          end
+
+          context 'when there are multiple applicants' do
+            let(:person2) do
+              p = family.dependents.first.person
+              p.update_attributes(ssn: '725-73-9934')
+              p
+            end
+
+            let(:applicant2) do
+              FactoryBot.create(:applicant,
+                                application: application,
+                                dob: TimeKeeper.date_of_record - 40.years,
+                                is_primary_applicant: false,
+                                family_member_id: family.family_members[1].id,
+                                person_hbx_id: person2.hbx_id,
+                                first_name: person2.first_name,
+                                last_name: person2.last_name,
+                                gender: person2.gender,
+                                ssn: person2.ssn,
+                                addresses: [FactoryBot.build(:financial_assistance_address)])
+            end
+
+            let(:aptc_csr_eligibility2)  do
+              eligibility = FactoryBot.create(:aptc_csr_eligibility, eligible: applicant2, current_state: :initial)
+              eligibility.save!
+              eligibility
+            end
+
+            let(:income_evidence2) do
+              FactoryBot.create(:income_evidence,
+                                eligibility: aptc_csr_eligibility2,
+                                _type: 'FinancialAssistance::Evidences::IncomeEvidence',
+                                key: :income_evidence)
+            end
+
+            before do
+              applicant2
+              aptc_csr_eligibility2
+              income_evidence2
+
+              operation.call(valid_params)
+              applicant2.reload
+            end
+
+            it "updates non requesting applicants' evidence state to pending" do
+              evidence = applicant2.aptc_csr_eligibility.income_evidence
+
+              expect(evidence.current_state).to be(:pending)
+            end
+
+            it 'creates verification history for non-requesting applicant' do
+              evidence = applicant2.aptc_csr_eligibility.income_evidence
+
+              expect(evidence.verification_histories.count).to eq(1)
+              expect(evidence.verification_histories.last.action).to eq('hub_request')
+              expect(evidence.verification_histories.last.update_reason).to eq("Requested Hub for verification, triggered via applicant HBX ID #{applicant.person_hbx_id}")
+            end
+
+            it 'updates eligibility state for non-requesting applicant' do
+              eligibility = applicant2.aptc_csr_eligibility
+
+              expect(eligibility.current_state).to be(:verification_in_progress)
+              expect(eligibility.is_satisfied).to be_falsey
+            end
           end
         end
       end

@@ -43,6 +43,7 @@ module FinancialAssistance
           yield handle_successful_request(evidence, application)
           event_result = yield build_event(payload_entity.to_h)
           publish_result = yield publish_event_result(event_result)
+          _update_non_requesting_evidences = yield update_non_requesting_applicant_evidences(application, evidence, updated_by)
 
           Success(publish_result)
         end
@@ -241,6 +242,28 @@ module FinancialAssistance
           determine_eligibility_state(evidence)
           application.save!
           Failure(false)
+        end
+
+        def update_non_requesting_applicant_evidences(application, requesting_evidence, updated_by)
+          requesting_hbx_id = requesting_evidence.eligibility.eligible.person_hbx_id
+
+          application.applicants.where(:person_hbx_id.ne => requesting_hbx_id).each do |applicant|
+            eligibility = applicant.aptc_csr_eligibility
+            next unless eligibility
+
+            evidence = eligibility.evidences.detect { |ev| ev.key == requesting_evidence.key }
+            next unless evidence
+
+            next if evidence.key.to_s != 'income_evidence' && applicant.is_applying_coverage == false
+            next unless evidence.can_move_to_pending?
+
+            record_history(evidence, 'hub_request', "Requested Hub for verification, triggered via applicant HBX ID #{requesting_hbx_id}", updated_by)
+            evidence.mark_as_pending
+            determine_eligibility_state(evidence)
+          end
+
+          application.save!
+          Success(true)
         end
       end
     end
