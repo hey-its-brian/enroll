@@ -164,4 +164,36 @@ RSpec.describe Operations::Individual::OnNewDetermination, type: :model, dbclean
       subject.call({ family: family, year: 2025 })
     end
   end
+
+  describe 'APTC update mechanism year validation' do
+    context 'when past year enrollments somehow reach generate_enrollments' do
+      let(:operation) { described_class.new }
+
+      it 'should prevent APTC updates for past year enrollments' do
+        allow(operation).to receive(:fetch_enrollments_to_renew).and_return(Dry::Monads::Success([enrollment_2025]))
+
+        expect(Rails.logger).to receive(:info).with(/APTC update prevented for past year enrollment/)
+        expect(::Insured::Forms::SelfTermOrCancelForm).not_to receive(:for_aptc_update_post)
+
+        result = operation.call({ family: family, year: 2025 })
+        expect(result).to be_success
+        expect(result.success).to eq(:no_eligible_enrollments)
+      end
+    end
+
+    context 'when current year enrollments reach generate_enrollments' do
+      let(:operation) { described_class.new }
+
+      it 'should allow APTC updates for current year enrollments' do
+        allow(operation).to receive(:fetch_enrollments_to_renew).and_return(Dry::Monads::Success([enrollment_2026]))
+
+        expect(Rails.logger).not_to receive(:info).with(/APTC update prevented for past year enrollment/)
+        expect(::Insured::Forms::SelfTermOrCancelForm).to receive(:for_aptc_update_post)
+
+        result = operation.call({ family: family, year: 2026 })
+        expect(result).to be_success
+        expect(result.success).to eq(:applied_aptc_to_enrollments)
+      end
+    end
+  end
 end

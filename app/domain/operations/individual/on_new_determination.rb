@@ -60,8 +60,20 @@ module Operations
       def generate_enrollments(enrollments)
         return Success(:no_eligible_enrollments) if enrollments.empty?
 
-        exclude_enrollments_list = enrollments.map(&:hbx_id)
-        enrollments.each do |enrollment|
+        current_year = TimeKeeper.date_of_record.year
+        current_year_enrollments = enrollments.reject do |enrollment|
+          if enrollment.effective_on.year < current_year
+            Rails.logger.info("APTC update prevented for past year enrollment. enrollment_year: #{enrollment.effective_on.year}, current_year: #{current_year}, enrollment_hbx_id: #{enrollment.hbx_id}")
+            true
+          else
+            false
+          end
+        end
+
+        return Success(:no_eligible_enrollments) if current_year_enrollments.empty?
+
+        exclude_enrollments_list = current_year_enrollments.map(&:hbx_id)
+        current_year_enrollments.each do |enrollment|
           elected_aptc_pct = if EnrollRegistry.feature_enabled?(:temporary_configuration_enable_multi_tax_household_feature)
                                default_percentage = EnrollRegistry[:aca_individual_assistance_benefits].setting(:default_applied_aptc_percentage).item
                                enrollment.elected_aptc_pct.to_f > 0.0 ? enrollment.elected_aptc_pct.to_f : default_percentage
