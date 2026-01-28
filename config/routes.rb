@@ -167,6 +167,8 @@ Rails.application.routes.draw do
         get :add_sep_form
         get :hide_form
         get :show_sep_history
+        get :show_tax_forms
+        post :resend_tax_form_document
         get :view_terminated_hbx_enrollments
         get :view_enrollment_to_update_end_date
         post :update_enrollment_terminated_on_date

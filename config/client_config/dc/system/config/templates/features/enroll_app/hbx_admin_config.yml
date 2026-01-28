@@ -31,3 +31,5 @@ registry:
           is_enabled: <%= ENV['TIME_JUMP_IS_ENABLED'] || false %>
         - key: :people_tab
           is_enabled: <%= ENV['PEOPLE_TAB_IS_ENABLED'] || false %>
+        - key: :reprint_tax_documents
+          is_enabled: <%= ENV['REPRINT_TAX_DOCUMENTS_IS_ENABLED'] || false %>

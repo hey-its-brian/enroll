@@ -370,6 +370,13 @@ class HbxProfilePolicy < ApplicationPolicy
     role.permission.can_send_secure_message
   end
 
+  def can_reprint_tax_documents?
+    role = user_hbx_staff_role
+    return false unless role
+
+    role.permission.can_reprint_tax_documents
+  end
+
   def employer_index?
     index?
   end

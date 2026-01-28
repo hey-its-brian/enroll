@@ -375,6 +375,14 @@ module Insured::FamiliesHelper
     is_under_open_enrollment? && @family.active_seps.blank?
   end
 
+  def cartafact_params_from(text)
+    return unless text.present?
+
+    text.match(
+      %r{cartafact_download/(?<model>[^/]+)/(?<model_id>[^/]+)/(?<relation>[^/]+)/(?<relation_id>[^?&/]+)}
+    )&.named_captures
+  end
+
   def tax_info_url
     if ENV['AWS_ENV'] == 'prod'
       EnrollRegistry[:enroll_app].setting(:prod_tax_info).item

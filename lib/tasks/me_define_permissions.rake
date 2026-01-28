@@ -179,6 +179,12 @@ namespace :me_permissions do
   MeDefinePermissions.define_task :hbx_admin_can_change_username_and_email => :environment
 end
 
+# RAILS_ENV=production bundle exec rake me_permissions:hbx_admin_can_reprint_tax_documents
+namespace :me_permissions do
+  desc 'assign the most current permissions'
+  MeDefinePermissions.define_task :hbx_admin_can_reprint_tax_documents => :environment
+end
+
 #rake me_permissions:hbx_admin_can_reset_password
 
 #rake me_permissions:hbx_admin_access_new_consumer_application_sub_tab

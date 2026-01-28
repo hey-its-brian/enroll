@@ -67,6 +67,7 @@ class Permission
   field :can_view_notice_templates, type: Boolean, default: false
   field :can_edit_notice_templates, type: Boolean, default: false
   field :can_view_audit_log, type: Boolean, default: false
+  field :can_reprint_tax_documents, type: Boolean, default: false
 
   class << self
     def hbx_staff

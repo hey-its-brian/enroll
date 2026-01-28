@@ -53,5 +53,14 @@ HBX_PROFILES_TRANSLATIONS = {
 	"en.hbx_profiles.people.table.name" => "Name",
 	"en.hbx_profiles.people.table.dob" => "DOB",
 	"en.hbx_profiles.people.table.hbx_id" => "HBX ID",
-	"en.hbx_profiles.people.active_roles" => "Active Roles"
+	"en.hbx_profiles.people.active_roles" => "Active Roles",
+
+  "en.hbx_profiles.tax_form_messages.tax_documents" => "Tax Documents",
+  "en.hbx_profiles.copy_tax_form_document.resend" => "Resend",
+  "en.hbx_profiles.copy_tax_form_document.subject" => "Your Requested Copy of 1095-A Tax Form",
+  "en.hbx_profiles.copy_tax_form_document.success_message" => "Requested reprint of Tax Document(s) have been sent to the mailing center and the consumer's CoverME message inbox. Hardcopy will be mailed next business day.",
+  "en.hbx_profiles.copy_tax_form_document.failure_message" => "Unable to send requested copy of 1095-A Tax Form",
+  "en.hbx_profiles.tax_form_messages.failure" => "Unable to fetch tax form messages due to %{failure}",
+  "en.hbx_profiles.tax_form_messages.no_messages" => "No tax forms available",
+  "en.hbx_profiles.copy_tax_form_document.modal.body" => "Confirm reprint request",
 }

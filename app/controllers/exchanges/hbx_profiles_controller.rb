@@ -459,6 +459,51 @@ class Exchanges::HbxProfilesController < ApplicationController
     respond_to :js
   end
 
+  def show_tax_forms
+    authorize HbxProfile, :can_reprint_tax_documents?
+
+    @element_to_replace_id = params[:family_actions_id]
+    result = ::Operations::TaxForms::FetchTaxFormMessages.new.call({person_id: params[:person_id], family_id: params[:family]})
+
+    respond_to do |format|
+      if result.success?
+        @result = result.value!
+      else
+        flash[:alert] = l10n("hbx_profiles.tax_form_messages.failure", failure: result.failure)
+      end
+      format.js
+    end
+  end
+
+  def resend_tax_form_document
+    authorize HbxProfile, :can_reprint_tax_documents?
+
+    @element_to_replace_id = params[:actions_id]
+    regen_result = ::Operations::TaxForms::RegenerateTaxForm.new.call({
+                                                                        params: tax_document_params.to_h.deep_symbolize_keys,
+                                                                        user: current_user
+                                                                      })
+
+    respond_to do |format|
+      if regen_result.success?
+        format.js { l10n("hbx_profiles.copy_tax_form_document.success_message")  }
+      else
+        @error_on_save = regen_result.failure
+        fetch_result = ::Operations::TaxForms::FetchTaxFormMessages.new.call({
+                                                                               person_id: params[:person_id],
+                                                                               family_id: params[:family_id]
+                                                                             })
+
+        if fetch_result.success?
+          @result = fetch_result.value!
+        else
+          flash[:alert] = l10n("hbx_profiles.tax_form_messages.failure", failure: fetch_result.failure)
+        end
+        format.js { render "show_tax_forms" }
+      end
+    end
+  end
+
   # SHOP and IVL Feature
   def get_user_info
     authorize HbxProfile, :get_user_info?
@@ -1029,6 +1074,10 @@ class Exchanges::HbxProfilesController < ApplicationController
   end
 
   private
+
+  def tax_document_params
+    params.permit(:person_id, :family_id, :model, :model_id, :relation, :actions_id, :relation_id)
+  end
 
   # Fetches the family by ID or Primary person's HBX ID.
   # If the family is not found by ID, it attempts to find the person by HBX ID and returns their primary family.

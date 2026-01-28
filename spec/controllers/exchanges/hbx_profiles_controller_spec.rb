@@ -949,6 +949,144 @@ RSpec.describe Exchanges::HbxProfilesController, dbclean: :around_each do
 
   end
 
+  describe "GET show_tax_forms" do
+    let(:user) { FactoryBot.create(:user, roles: ["hbx_staff"]) }
+    let(:staff_person) { double('Person', hbx_staff_role: hbx_staff_role) }
+    let(:hbx_staff_role) { double('HbxStaffRole', permission: permission) }
+    let(:permission) { double('Permission', can_reprint_tax_documents: true)}
+    let(:person) { FactoryBot.create(:person, :with_family) }
+    let(:family) { person.primary_family }
+    let(:fetch_operation) { instance_double(Operations::TaxForms::FetchTaxFormMessages) }
+    let(:success_result) { double('Result', success?: true, value!: { messages: ['tax form data'] }) }
+    let(:failure_result) { double('Result', success?: false, failure: 'Error fetching tax forms') }
+
+    before do
+      allow(user).to receive(:has_hbx_staff_role?).and_return(true)
+      allow(user).to receive(:person).and_return(staff_person)
+      sign_in(user)
+    end
+
+    context "when operation is successful" do
+      it "renders the show_tax_forms template" do
+        get :show_tax_forms, params: { person_id: person.id, family: family.id, family_actions_id: "family_actions_123" }, format: :js, xhr: true
+        expect(response).to have_http_status(:success)
+        expect(response).to render_template('show_tax_forms')
+        expect(assigns(:result)[:person]).to eq(person)
+        expect(assigns(:element_to_replace_id)).to eq("family_actions_123")
+      end
+    end
+
+    context "when operation fails" do
+      it "redirects to family index with error message" do
+        get :show_tax_forms, params: { person_id: nil, family: family.id, family_actions_id: "family_actions_123" }, format: :js, xhr: true
+        expect(response).to have_http_status(:success)
+        expect(flash[:alert]).to eq("Unable to fetch tax form messages due to Missing person_id")
+      end
+    end
+
+    context "when request format is not js" do
+      it "should not render show_tax_forms" do
+        get :show_tax_forms, params: { person_id: person.id, family: family.id, family_actions_id: "family_actions_123" }
+        expect(response).to have_http_status(:not_acceptable)
+      end
+    end
+  end
+
+  describe "POST resend_tax_form_document" do
+    let(:user) { FactoryBot.create(:user, roles: ["hbx_staff"]) }
+    let(:staff_person) { double('Person', hbx_staff_role: hbx_staff_role) }
+    let(:hbx_staff_role) { double('HbxStaffRole', permission: permission) }
+    let(:permission) { double('Permission', can_reprint_tax_documents: true)}
+    let(:person) { FactoryBot.create(:person, :with_family) }
+    let(:family) { person.primary_family }
+    let(:regen_operation) { instance_double(Operations::TaxForms::RegenerateTaxForm) }
+    let(:fetch_operation) { instance_double(Operations::TaxForms::FetchTaxFormMessages) }
+    let(:success_result) { double('Result', success?: true, value!: { messages: ['regenerated tax form'] }) }
+    let(:failure_result) { double('Result', success?: false, failure: 'Error regenerating tax form') }
+    let(:fetch_success_result) { double('Result', success?: true, value!: { messages: ['tax form data'] }) }
+    let(:fetch_failure_result) { double('Result', success?: false, failure: 'Error fetching tax forms') }
+
+    before do
+      allow(user).to receive(:has_hbx_staff_role?).and_return(true)
+      allow(user).to receive(:person).and_return(staff_person)
+      allow(Operations::TaxForms::RegenerateTaxForm).to receive(:new).and_return(regen_operation)
+      allow(Operations::TaxForms::FetchTaxFormMessages).to receive(:new).and_return(fetch_operation)
+      sign_in(user)
+    end
+
+    context "when regenerate operation is successful" do
+      before do
+        allow(regen_operation).to receive(:call).and_return(success_result)
+      end
+
+      it "returns success message" do
+        post :resend_tax_form_document, params: {
+          person_id: person.id,
+          family_id: family.id,
+          actions_id: "actions_123",
+          model: "TaxForm",
+          model_id: "123",
+          relation: "primary"
+        }, format: :js, xhr: true
+
+        expect(response).to have_http_status(:success)
+        expect(assigns(:element_to_replace_id)).to eq("actions_123")
+      end
+    end
+
+    context "when regenerate operation fails" do
+      before do
+        allow(regen_operation).to receive(:call).and_return(failure_result)
+      end
+
+      context "and fetch operation is successful" do
+        before do
+          allow(fetch_operation).to receive(:call).and_return(fetch_success_result)
+        end
+
+        it "renders show_tax_forms template with error" do
+          post :resend_tax_form_document, params: {
+            person_id: person.id,
+            family_id: family.id,
+            actions_id: "actions_123",
+            model: "TaxForm",
+            model_id: "123",
+            relation: "primary"
+          }, format: :js, xhr: true
+
+          expect(response).to have_http_status(:success)
+          expect(response).to render_template('show_tax_forms')
+          expect(assigns(:error_on_save)).to eq('Error regenerating tax form')
+          expect(assigns(:result)).to eq(fetch_success_result.value!)
+          expect(assigns(:element_to_replace_id)).to eq("actions_123")
+        end
+      end
+
+      context "and fetch operation fails" do
+        before do
+          allow(fetch_operation).to receive(:call).and_return(fetch_failure_result)
+        end
+
+        it "renders show_tax_forms template with flash alert" do
+          post :resend_tax_form_document, params: {
+            person_id: person.id,
+            family_id: family.id,
+            actions_id: "actions_123",
+            model: "TaxForm",
+            model_id: "123",
+            relation: "primary"
+          }, format: :js, xhr: true
+
+          expect(response).to have_http_status(:success)
+          expect(response).to render_template('show_tax_forms')
+          expect(assigns(:error_on_save)).to eq('Error regenerating tax form')
+          expect(flash[:alert]).to include("Unable to fetch tax form messages")
+          expect(assigns(:element_to_replace_id)).to eq("actions_123")
+        end
+      end
+    end
+  end
+
   describe "POST update_dob_ssn", :dbclean => :after_each do
     render_views
 

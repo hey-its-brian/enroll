@@ -1,0 +1,78 @@
+<%if @error_on_save %>
+  <div class="alert alert-error d-flex align-items-start">
+    <div class="col mr-auto p-0 align-self-center">
+      <% @error_on_save.each do |error| %>
+        <%= error[1] %>
+      <% end %>
+    </div>
+    <div class="d-flex pl-1">
+      <a class="close-icon icon icon-sm pr-1" data-dismiss="alert" alt="<%= l10n("close") %>" href="#">&nbsp;<span class="sr-only"><%= l10n("close") %></span></a>
+    </div>
+  </div>
+<%end%>
+
+<div class="container-fluid">
+  <div class="row" data-controller="tax-forms">
+    <div class="col-md-12">
+      <h4 class="mb-3"><%= l10n("hbx_profiles.tax_form_messages.tax_documents") %></h4>
+      <% if messages.present? %>
+        <%= form_tag resend_tax_form_document_exchanges_hbx_profiles_path, method: :post, remote: true, id: "tax_form_process_document_form_#{person_id}" do %>
+          <%= hidden_field_tag :person_id, person_id %>
+          <%= hidden_field_tag :family_id, family_id %>
+          <div class="tax-documents-list">
+            <% messages.each_with_index do |message, index| %>
+              <% cartafact_params = cartafact_params_from(message.body) %>
+
+              <div class="tax-documents-item d-flex align-items-center mb-2">
+                <div class="mr-2">
+                  <%= radio_button_tag(
+                        "relation_id",
+                        cartafact_params["relation_id"],
+                        index.zero?,
+                        "aria-label": "Tax document from #{message.created_at.in_time_zone('Eastern Time (US & Canada)').strftime('%m/%d/%Y')}"
+                      ) %>
+                </div>
+                <span class="mr-2">
+                  <%= message.created_at.in_time_zone("Eastern Time (US & Canada)").strftime("%m/%d/%Y") %>
+                </span>
+                <%= sanitize_html(message&.body&.match(/<a[^>]*>.*?<\/a>/m).to_s) %>
+                <%= hidden_field_tag :model, cartafact_params["model"] %>
+                <%= hidden_field_tag :model_id, cartafact_params["model_id"] %>
+                <%= hidden_field_tag :relation, cartafact_params["relation"] %>
+                <%= hidden_field_tag :actions_id, @element_to_replace_id %>
+              </div>
+            <% end %>
+          </div>
+          <div class="row">
+            <span class="btn btn-default remove-child-row-btn mr-2"><%= l10n('cancel') %></span>
+            <button class='btn btn-primary' id="submit_tax_form_button_<%= person_id %>" type="button" data-action="click->tax-forms#submit" data-modal-id="tax_form_confirm_modal_<%= person_id %>" data-trigger-id="trigger_tax_form_modal_<%= person_id %>">
+              <%= l10n('hbx_profiles.copy_tax_form_document.resend') %>
+            </button>
+            <button type="submit" class="hidden" id="real_submit_tax_form_<%= person_id %>" aria-label="Submit Tax Form"></button>
+            <button type="button" class="hidden" id="trigger_tax_form_modal_<%= person_id %>" data-toggle="modal" data-target="#tax_form_confirm_modal_<%= person_id %>" aria-label="Open Tax Form Modal"></button>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="alert alert-info"><%= l10n("hbx_profiles.tax_form_messages.no_messages") %></div>
+        <div class="row">
+          <span class="btn btn-default remove-child-row-btn"><%= l10n('cancel') %></span>
+        </div>
+      <% end %>
+
+      <div class="modal" id="tax_form_confirm_modal_<%= person_id %>" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-body text-center">
+              <p><%= l10n("hbx_profiles.copy_tax_form_document.modal.body") %></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary btn-confirmation" id="confirm_tax_form_submit_<%= person_id %>" data-action="click->tax-forms#confirm" data-form-id="tax_form_process_document_form_<%= person_id %>"><%= l10n('confirm_selection') %></button>
+              <button type="button" class="btn btn-default pull-left" data-dismiss="modal"><%= l10n('cancel') %></button>
+              <button type="button" class="hidden" data-dismiss="modal" id="close_tax_form_modal_<%= person_id %>" aria-label="Tax modal dismiss"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -78,6 +78,11 @@ module Effective
                              edit_dob_ssn_path(id: row.primary_applicant.person.id, row_actions_id: "family_actions_#{row.id}"), 'ajax'])
           end
 
+          if ::EnrollRegistry.feature_enabled?(:reprint_tax_documents)
+            dropdown.insert(10, ['Tax Documents', show_tax_forms_exchanges_hbx_profiles_path(person_id: row.primary_applicant.person.id, family: row.id,
+                                                                                             family_actions_id: "family_actions_#{row.id}"), pundit_allow(HbxProfile, :can_reprint_tax_documents?) ? "ajax" : "hide"])
+          end
+
           dropdown += if individual_market_is_enabled?
                         [
                           ['Paper', resume_enrollment_exchanges_agents_path(person_id: row.primary_applicant.person.id, original_application_type: 'paper'), no_transition_families_is_enabled? ? 'static' : ''],
