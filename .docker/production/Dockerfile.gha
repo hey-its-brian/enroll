@@ -106,11 +106,11 @@ RUN apt-get update -qq && \
     && truncate -s 0 /var/log/*log
 
 # Add Yarn to the sources list
-# RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
-#   && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-
-RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com 23E7166788B63E1E \
+RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
   && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
+
+# RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com 23E7166788B63E1E \
+#   && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
 
 RUN apt-get update -qq \
   && apt-get install -yq --no-install-recommends \
