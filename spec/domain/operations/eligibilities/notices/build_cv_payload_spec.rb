@@ -89,6 +89,37 @@ RSpec.describe ::Operations::Eligibilities::Notices::BuildCvPayload,
         expect(result.success?).to be_truthy
       end
 
+      context "when another, older QHP application is submitted more recently" do
+        let!(:newest_assistance_year_application) do
+          FactoryBot.create(:individual_market_application,
+                            :with_applicants,
+                            hbx_id: SecureRandom.uuid,
+                            family_id: family.id,
+                            current_state: "determined",
+                            assistance_year: TimeKeeper.date_of_record.year,
+                            created_at: TimeKeeper.date_of_record,
+                            submitted_at: TimeKeeper.date_of_record)
+        end
+        let!(:recent_qhp_application) do
+          FactoryBot.create(:individual_market_application,
+                            :with_applicants,
+                            hbx_id: SecureRandom.uuid,
+                            family_id: family.id,
+                            current_state: "determined",
+                            created_at: newest_assistance_year_application.created_at - 1.day,
+                            assistance_year: (TimeKeeper.date_of_record.beginning_of_year - 1.day).year,
+                            submitted_at: newest_assistance_year_application.submitted_at + 1.day)
+        end
+
+        it 'returns most recent application by assistance year' do
+          result = subject.call(params)
+
+          app_entities = result.value![:individual_market_applications]
+          expect(app_entities.count).to eq(1)
+          expect(app_entities.first[:hbx_id]).to eq(newest_assistance_year_application.hbx_id)
+        end
+      end
+
       context 'when another, older application is submitted more recently' do
         let!(:hbx_profile) { FactoryBot.create(:hbx_profile, :open_enrollment_coverage_period) }
         let!(:application) do

@@ -37,6 +37,7 @@ module Operations
             Operations::Transformers::FamilyTo::Cv3Family.new.call(family)
           if result.success?
             application = family.latest_determined_faa_application
+            qhp_application = ::IndividualMarket::Application.newest_determined_by_family_id(family.id).first
             family_hash = result.value!
             if application.present?
               app_hash =
@@ -44,6 +45,13 @@ module Operations
                   a[:hbx_id] == application.hbx_id
                 end
               family_hash[:magi_medicaid_applications] = [app_hash]
+            end
+            if qhp_application.present?
+              app_hash =
+                family_hash[:individual_market_applications].find do |a|
+                  a[:hbx_id] == qhp_application.hbx_id
+                end
+              family_hash[:individual_market_applications] = [app_hash]
             end
             family_hash[:min_verification_due_date] = family.eligibility_determination&.outstanding_verification_earliest_due_date
             updated_hash = modify_enrollments_hash(family_hash, family)
