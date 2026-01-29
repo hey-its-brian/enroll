@@ -269,10 +269,14 @@ module Eligibilities
         #
         # @return [void]
         def eligible_state(call_type)
-          if rop_in_progress?(call_type)
+          eligible = eligibility&.eligible
+          person = eligible&.find_person
+          return mark_as_negative_response_received unless person
+
+          if rop_in_progress?(call_type) && is_enrolled?(eligible, person)
             rop_eligible_state(call_type)
           else
-            non_rop_eligible_state(call_type)
+            non_rop_eligible_state(call_type, eligible, person)
           end
         end
 
@@ -292,7 +296,6 @@ module Eligibilities
           prev_evidence = fetch_last_determined_evidence(call_type)
           prev_evidence_state = prev_evidence_state(call_type)
           return unless prev_evidence_state
-
           case prev_evidence_state.to_s
           when 'review'
             copied_review(prev_evidence, call_type)
@@ -312,14 +315,9 @@ module Eligibilities
         #  When evidence is in NRR
         #  # if enrolled, evidence should be in outstanding and new due date is assigned
         #  # if not enrolled, evidence should be in NRR and no due date
-        def non_rop_eligible_state(call_type)
-          eligible = eligibility&.eligible
-          person = eligible&.find_person
-          return mark_as_negative_response_received unless person
+        def non_rop_eligible_state(call_type, eligible, person)
 
-          is_enrolled = enrolled_for_non_rop?(eligible, person)
-
-          if is_enrolled
+          if is_enrolled?(eligible, person)
             self.due_on = determine_outstanding_due_on_date(call_type)
             assign_attributes(verification_outstanding: true, is_satisfied: false)
 
@@ -332,7 +330,7 @@ module Eligibilities
           end
         end
 
-        def enrolled_for_non_rop?(eligible, person)
+        def is_enrolled?(eligible, person)
           if Eligibilities::V3::AptcCsrEligibility::EVIDENCES.include?(key)
             family = fetch_family
             enrollments = HbxEnrollment.where(:aasm_state.in => HbxEnrollment::ENROLLED_STATUSES, family_id: family.id)

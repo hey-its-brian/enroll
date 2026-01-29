@@ -676,18 +676,47 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
           citizenship_evidence1.save
         end
 
+        context "when person is not found" do
+          before { allow(citizenship_evidence1.eligibility.eligible).to receive(:find_person).and_return(nil) }
+
+          it "moves to negative_response_received" do
+            citizenship_evidence1.eligible_state(call_type)
+            expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
+          end
+        end
+
         context "when ROP is in progress" do
           before do
             allow(citizenship_evidence1).to receive(:rop_in_progress?).and_return(true)
             allow(citizenship_evidence1).to receive(:can_move_to_rejected?).and_return(true)
           end
 
-          it "calls rop_eligible_state" do
-            citizenship_evidence1.eligible_state(call_type)
-            citizenship_evidence1.save
-            expect(citizenship_evidence1.current_state).to eq(citizenship_evidence.current_state)
-            expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_rejected')
-            expect(citizenship_evidence1.verification_histories.first.update_reason).to include('State updated from outstanding to rejected based on previous application')
+          context "when consumer is not enrolled in coverage" do
+            before do
+              allow(citizenship_evidence1.eligibility.eligible).to receive(:find_person).and_return(person)
+            end
+
+            it "calls non_rop_eligible_state" do
+              citizenship_evidence1.eligible_state(call_type)
+              citizenship_evidence1.save
+              expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
+            end
+          end
+
+          context "when consumer is enrolled in coverage" do
+            let!(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_aptc_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+
+            before do
+              allow(citizenship_evidence1.eligibility.eligible).to receive(:find_person).and_return(person)
+            end
+
+            it "calls rop_eligible_state" do
+              citizenship_evidence1.eligible_state(call_type)
+              citizenship_evidence1.save
+              expect(citizenship_evidence1.current_state).to eq(citizenship_evidence.current_state)
+              expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_rejected')
+              expect(citizenship_evidence1.verification_histories.first.update_reason).to include('State updated from outstanding to rejected based on previous application')
+            end
           end
         end
 
@@ -856,14 +885,6 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
       end
 
       describe "#non_rop_eligible_state" do
-        context "when person is not found" do
-          before { allow(citizenship_evidence1.eligibility.eligible).to receive(:find_person).and_return(nil) }
-
-          it "moves to negative_response_received" do
-            citizenship_evidence1.non_rop_eligible_state(call_type)
-            expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
-          end
-        end
 
         context 'when person has active enrollment' do
           before do
@@ -875,7 +896,7 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
           end
 
           it "moves current_state to 'outstanding'" do
-            citizenship_evidence1.non_rop_eligible_state(call_type)
+            citizenship_evidence1.non_rop_eligible_state(call_type, ivl_eligibility1.eligible, person)
             expect(citizenship_evidence1.current_state).to eq(:outstanding)
           end
 
@@ -883,14 +904,14 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
             it 'updates to the correct date if not a bulk call' do
               expected_due_date = (today + EnrollRegistry[:verification_document_due_in_days].item)
 
-              citizenship_evidence1.non_rop_eligible_state(call_type)
+              citizenship_evidence1.non_rop_eligible_state(call_type, ivl_eligibility1.eligible, person)
               expect(citizenship_evidence1.due_on).to eq(expected_due_date)
             end
 
             it 'updates the due_date_type and due_on to the correct date if it is a bulk call' do
               expected_due_date = (today + EnrollRegistry[:bulk_call_verification_due_in_days].item)
 
-              citizenship_evidence1.non_rop_eligible_state('bulk_call')
+              citizenship_evidence1.non_rop_eligible_state('bulk_call', ivl_eligibility1.eligible, person)
               expect(citizenship_evidence1.due_on).to eq(expected_due_date)
               expect(citizenship_evidence1.due_on_type).to eq('bulk_response_from_hub')
             end
@@ -905,7 +926,7 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
           end
 
           it "moves to negative_response_received" do
-            citizenship_evidence1.non_rop_eligible_state(call_type)
+            citizenship_evidence1.non_rop_eligible_state(call_type, ivl_eligibility1.eligible, person)
             expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
           end
         end
