@@ -612,12 +612,79 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
               post :update, params: { application_id: application.id, id: applicant.id, applicant: { first_name: "John", last_name: "Smith" } }
             end
 
-            it "sets a flash message if the applicant is not saved" do
-              expect(flash[:error]).to include("Failed to update applicant due to")
+            it "stores error in session if the applicant is not saved" do
+              expect(session[:applicant_form_errors]).to be_present
             end
 
             it "redirects to the applicants index page" do
               expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
+            end
+          end
+
+          context "SSN validation during update" do
+            let(:dependent_applicant) do
+              applicant = FactoryBot.build(:individual_market_applicant,
+                                           :with_demographics,
+                                           :with_eligibilities,
+                                           :dependent,
+                                           application: application)
+              application.applicants << applicant
+              application.save!
+              applicant
+            end
+
+            before do
+              application.primary_applicant.demographics.update!(ssn: "123456789", no_ssn: false)
+            end
+
+            let(:update_params_with_duplicate_ssn) do
+              {
+                applicant: {
+                  person_name_attributes: {
+                    given_name: "Dependent",
+                    family_name: "User"
+                  },
+                  demographics_attributes: {
+                    dob: "1985-05-15",
+                    gender: "female",
+                    ssn: "123456789",
+                    no_ssn: 0,
+                    us_citizen: 'true',
+                    naturalized_citizen: 'false',
+                    eligible_immigration_status: 'false',
+                    indian_tribe_member: 'false',
+                    tribal_state: '',
+                    tribe_codes: [],
+                    is_incarcerated: 'false',
+                    ethnicity: []
+                  },
+                  relationship: "spouse",
+                  is_applying_coverage: true,
+                  age_off_excluded: "false",
+                  address_same_as_primary: true
+                },
+                application_id: application.id,
+                id: dependent_applicant.id
+              }
+            end
+
+            context "when updating with duplicate SSN within application" do
+              it "fails to update and stores error in session" do
+                post :update, params: update_params_with_duplicate_ssn
+                expect(session[:applicant_form_errors]).to be_present
+                expect(session[:applicant_form_errors]).to include(a_string_matching(/SSN|Social Security/))
+              end
+
+              it "redirects to the applicants index page" do
+                post :update, params: update_params_with_duplicate_ssn
+                expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
+              end
+
+              it "does not update the applicant's SSN" do
+                original_ssn = dependent_applicant.demographics.ssn
+                post :update, params: update_params_with_duplicate_ssn
+                expect(dependent_applicant.demographics.ssn).to eq(original_ssn)
+              end
             end
           end
         end

@@ -26,7 +26,8 @@ RSpec.describe Operations::UpdateHbxEnrollmentSpecialEnrollmentPeriodId, type: :
       aasm_state: state,
       enrollment_kind: kind,
       special_enrollment_period_id: sep_id,
-      created_at: created_at_date
+      created_at: created_at_date,
+      effective_on: Date.new(created_at_date.year, 11, 1)
     )
   end
 

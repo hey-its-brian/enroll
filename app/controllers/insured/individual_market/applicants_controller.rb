@@ -22,6 +22,11 @@ module Insured
       def index
         authorize @application, :applicants?
 
+        if session[:applicant_form_errors].present? && session[:applicant_form_errors].any?
+          @applicant_form = OpenStruct.new(errors: OpenStruct.new(full_messages: session[:applicant_form_errors], any?: true))
+          session.delete(:applicant_form_errors)
+        end
+
         respond_to :html
       end
 
@@ -88,12 +93,10 @@ module Insured
 
         respond_to do |format|
           format.html do
-            if success
-              redirect_to insured_individual_market_application_applicants_path(@application)
-            else
-              flash.now[:error] = result
-              redirect_to insured_individual_market_application_applicants_path(@application), :flash => { :error => "Failed to update applicant due to #{result}" }
+            unless success
+              session[:applicant_form_errors] = result.is_a?(Array) ? result : [result]
             end
+            redirect_to insured_individual_market_application_applicants_path(@application)
           end
         end
       end

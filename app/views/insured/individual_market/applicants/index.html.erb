@@ -1,5 +1,20 @@
 <%= render partial: 'shared/progress_side_nav', locals: {nav: individual_market_nav_options(1, @application, show_account_button: @family.eligibility_determination.present?  )} %>
 <%= javascript_pack_tag 'benefit_sponsors', 'data-turbolinks-track': 'reload' %>
+
+<% if @applicant_form.present? && @applicant_form.errors.any? %>
+  <div class="alert alert-error">
+    <h4>
+      <%= l10n("insured.consumer_roles.dependent_error.header") %>
+    </h4>
+    <ul>
+      <% @applicant_form.errors.full_messages.each do |msg| %>
+        <% msg = (msg == l10n("insured.consumer_roles.dependent_error.gender") && EnrollRegistry.feature_enabled?(:gender_to_sex)) ? l10n("insured.consumer_roles.dependent_error.sex") : msg %>
+        <li> <%= msg %> </li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
 <h1 data-cuke="family-information-header"><%= l10n("family_information") %></h1>
 <h2><%= l10n("application_for_coverage", year: @application.assistance_year )%></h2>
 <p><%= l10n('qhp_application.nav.family_info_details') %></p>
