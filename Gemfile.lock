@@ -1899,7 +1899,7 @@ GEM
     benchmark-malloc (0.2.0)
     benchmark-perf (0.6.0)
     benchmark-trend (0.4.0)
-    bigdecimal (3.1.8)
+    bigdecimal (3.3.1)
     bindex (0.8.1)
     bootsnap (1.18.3)
       msgpack (~> 1.2)
@@ -2109,7 +2109,7 @@ GEM
     highline (2.0.3)
     holidays (8.7.1)
     htmlentities (4.3.4)
-    httparty (0.24.0)
+    httparty (0.24.2)
       csv
       mini_mime (>= 1.0.0)
       multi_xml (>= 0.5.2)
