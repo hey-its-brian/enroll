@@ -62,8 +62,13 @@
       <div class="modal" id="tax_form_confirm_modal_<%= person_id %>" role="dialog">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
+            <div class="modal-header modal-header-no-border">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
             <div class="modal-body text-center">
-              <p><%= l10n("hbx_profiles.copy_tax_form_document.modal.body") %></p>
+              <h4><%= l10n("hbx_profiles.copy_tax_form_document.modal.body") %></h4>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-primary btn-confirmation" id="confirm_tax_form_submit_<%= person_id %>" data-action="click->tax-forms#confirm" data-form-id="tax_form_process_document_form_<%= person_id %>"><%= l10n('confirm_selection') %></button>

@@ -41,7 +41,6 @@ module Operations
 
       def fetch_document(resource, document_id)
         document = resource.documents.where(id: document_id).first
-
         if document.present?
           Success(document)
         else
@@ -52,7 +51,7 @@ module Operations
       def generate_inbox_message(resource, document)
         payload = {
           subjects: [{:id => resource.hbx_id, :type => "Person"}],
-          file_name: l10n('hbx_profiles.copy_tax_form_document.subject'),
+          file_name: fetch_file_name(document),
           id: document.doc_identifier,
           file_content_type: "application/pdf"
         }
@@ -62,6 +61,25 @@ module Operations
           Success(result.success)
         else
           Failure(result.failure)
+        end
+      end
+
+      def fetch_file_name(document)
+        notice_type = determine_notice_type(document.title)
+
+        if notice_type
+          l10n('hbx_profiles.copy_tax_form_document.corrected_and_void_subject', notice_type: notice_type)
+        else
+          l10n('hbx_profiles.copy_tax_form_document.original_subject')
+        end
+      end
+
+      def determine_notice_type(title)
+        case title
+        when /Corrected/i
+          'Corrected'
+        when /Void/i
+          'Voided'
         end
       end
 

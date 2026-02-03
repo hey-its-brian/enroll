@@ -197,4 +197,68 @@ RSpec.describe Operations::TaxForms::RegenerateTaxForm, type: :operation do
       end
     end
   end
+
+  describe '#fetch_file_name' do
+    context 'when document title contains Corrected' do
+      let(:corrected_document) { create(:document, title: 'Corrected 1095-A Tax Form', documentable: person) }
+
+      it 'returns corrected subject text' do
+        result = subject.send(:fetch_file_name, corrected_document)
+
+        expect(result).to eq('Your Requested Copy of Corrected 1095-A Tax Form')
+      end
+    end
+
+    context 'when document title contains Void' do
+      let(:void_document) { create(:document, title: 'Void 1095-A Tax Form', documentable: person) }
+
+      it 'returns void subject text' do
+        result = subject.send(:fetch_file_name, void_document)
+
+        expect(result).to eq('Your Requested Copy of Voided 1095-A Tax Form')
+      end
+    end
+
+    context 'when document title is original' do
+      let(:original_document) { create(:document, title: '1095-A Tax Form', documentable: person) }
+
+      it 'returns original subject text' do
+        result = subject.send(:fetch_file_name, original_document)
+
+        expect(result).to eq('Your Requested Copy of 1095-A Tax Form')
+      end
+    end
+  end
+
+  describe '#determine_notice_type' do
+    it 'returns Corrected for title containing Corrected' do
+      result = subject.send(:determine_notice_type, 'Corrected 1095-A')
+
+      expect(result).to eq('Corrected')
+    end
+
+    it 'returns Void for title containing Void' do
+      result = subject.send(:determine_notice_type, 'Void 1095-A')
+
+      expect(result).to eq('Voided')
+    end
+
+    it 'returns nil for original title' do
+      result = subject.send(:determine_notice_type, '1095-A Tax Form')
+
+      expect(result).to be_nil
+    end
+
+    it 'is case insensitive for Corrected' do
+      result = subject.send(:determine_notice_type, 'CORRECTED 1095-A')
+
+      expect(result).to eq('Corrected')
+    end
+
+    it 'is case insensitive for Void' do
+      result = subject.send(:determine_notice_type, 'void 1095-A')
+
+      expect(result).to eq('Voided')
+    end
+  end
 end
