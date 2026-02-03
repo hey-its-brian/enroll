@@ -34,7 +34,7 @@ RSpec.describe 'financial_assistance/applicants/docs_shared/_country_of_citizens
     render partial: 'financial_assistance/applicants/docs_shared/country_of_citizenship', locals: { v: form_builder }
     expect(form_builder).to have_received(:select).with(
       :country_of_citizenship,
-      ::VlpDocument::COUNTRIES_LIST,
+      [''] + ::VlpDocument::COUNTRIES_LIST,
       { prompt: "Country of Citizenship" },
       { class: "select_tag", id: "country_of_citizenship" }
     )

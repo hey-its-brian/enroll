@@ -33,7 +33,7 @@ module Forms
       end
 
       def to_h
-        {
+        base_hash = {
           subject: subject,
           alien_number: alien_number,
           i94_number: i94_number,
@@ -44,12 +44,15 @@ module Forms
           receipt_number: receipt_number,
           citizenship_number: citizenship_number,
           card_number: card_number,
-          country_of_citizenship: country_of_citizenship,
           expiration_date: expiration_date,
           issuing_country: issuing_country,
           description: description,
           immigration_doc_statuses: immigration_doc_statuses
         }.compact
+
+        # Always include country_of_citizenship since it is not a required field
+        base_hash[:country_of_citizenship] = country_of_citizenship
+        base_hash
       end
 
       private

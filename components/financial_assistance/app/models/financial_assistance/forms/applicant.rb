@@ -221,7 +221,7 @@ module FinancialAssistance
         [:vlp_subject, :alien_number, :i94_number, :visa_number, :passport_number, :sevis_id,
          :naturalization_number, :receipt_number, :citizenship_number, :card_number,
          :country_of_citizenship, :expiration_date, :issuing_country, :status, :vlp_description].inject({}) do |attrs, attribute|
-          attrs[attribute] = self.send(attribute) if self.send(attribute).present?
+          attrs[attribute] = self.send(attribute) if attribute == :country_of_citizenship || self.send(attribute).present?
           attrs
         end
       end

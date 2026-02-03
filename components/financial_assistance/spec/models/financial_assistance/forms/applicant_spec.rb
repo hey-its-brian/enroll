@@ -512,4 +512,76 @@ RSpec.describe ::FinancialAssistance::Forms::Applicant, type: :model, dbclean: :
       end
     end
   end
+
+  describe "#vlp_parameters" do
+    let(:input_applicant) { applicant }
+    let(:relationship) { nil }
+    let(:applicant_form) { described_class.new(params) }
+
+    before do
+      applicant_form.application_id = application.id
+      applicant_form.applicant_id = input_applicant.id
+    end
+
+    context "when all VLP attributes are blank" do
+      it "returns only country_of_citizenship even when nil" do
+        expect(applicant_form.vlp_parameters).to eq({ country_of_citizenship: nil })
+      end
+    end
+
+    context "when country_of_citizenship is present" do
+      before do
+        allow(applicant_form).to receive(:country_of_citizenship).and_return("US")
+      end
+
+      it "includes country_of_citizenship even if blank" do
+        allow(applicant_form).to receive(:country_of_citizenship).and_return("")
+        result = applicant_form.vlp_parameters
+        expect(result).to have_key(:country_of_citizenship)
+        expect(result[:country_of_citizenship]).to eq("")
+      end
+
+      it "includes country_of_citizenship when present" do
+        result = applicant_form.vlp_parameters
+        expect(result).to eq({ country_of_citizenship: "US" })
+      end
+    end
+
+    context "when other VLP attributes are present" do
+      before do
+        allow(applicant_form).to receive(:alien_number).and_return("123456789")
+        allow(applicant_form).to receive(:i94_number).and_return("I94123456")
+        allow(applicant_form).to receive(:visa_number).and_return("VISA123")
+        allow(applicant_form).to receive(:passport_number).and_return("PASS123456")
+        allow(applicant_form).to receive(:sevis_id).and_return("SEVIS123")
+        allow(applicant_form).to receive(:naturalization_number).and_return("NAT123456")
+        allow(applicant_form).to receive(:receipt_number).and_return("REC123456")
+        allow(applicant_form).to receive(:citizenship_number).and_return("CIT123456")
+        allow(applicant_form).to receive(:card_number).and_return("CARD123456")
+        allow(applicant_form).to receive(:expiration_date).and_return("2025-12-31")
+        allow(applicant_form).to receive(:issuing_country).and_return("US")
+        allow(applicant_form).to receive(:status).and_return("Valid")
+        allow(applicant_form).to receive(:vlp_description).and_return("Test description")
+      end
+
+      it "includes all present VLP attributes" do
+        result = applicant_form.vlp_parameters
+        expect(result).to include(
+          alien_number: "123456789",
+          i94_number: "I94123456",
+          visa_number: "VISA123",
+          passport_number: "PASS123456",
+          sevis_id: "SEVIS123",
+          naturalization_number: "NAT123456",
+          receipt_number: "REC123456",
+          citizenship_number: "CIT123456",
+          card_number: "CARD123456",
+          expiration_date: "2025-12-31",
+          issuing_country: "US",
+          status: "Valid",
+          vlp_description: "Test description"
+        )
+      end
+    end
+  end
 end

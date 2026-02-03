@@ -65,6 +65,20 @@ RSpec.describe ::Forms::IndividualMarket::ImmigrationInformationForm, type: :mod
     expect(form.country_of_citizenship).to be_nil
   end
 
+  it 'should include nil country_of_citizenship in to_h output' do
+    params[:country_of_citizenship] = nil
+    form = described_class.new(params)
+    expect(form.to_h).to have_key(:country_of_citizenship)
+    expect(form.to_h[:country_of_citizenship]).to be_nil
+  end
+
+  it 'should include nil country_of_citizenship when sanitized to nil' do
+    params[:country_of_citizenship] = "Country of Citizenship"
+    form = described_class.new(params)
+    expect(form.to_h).to have_key(:country_of_citizenship)
+    expect(form.to_h[:country_of_citizenship]).to be_nil
+  end
+
   it 'should remove blank items from the immigration_doc_statuses array' do
     params[:immigration_doc_statuses] = ["", "Member of a Federally Recognized Indian Tribe", "Cuban/Haitian Entrant"]
     form = described_class.new(params)
