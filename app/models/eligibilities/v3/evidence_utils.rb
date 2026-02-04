@@ -333,7 +333,10 @@ module Eligibilities
         def is_enrolled?(eligible, person)
           if Eligibilities::V3::AptcCsrEligibility::EVIDENCES.include?(key)
             family = fetch_family
-            enrollments = HbxEnrollment.where(:aasm_state.in => HbxEnrollment::ENROLLED_STATUSES, family_id: family.id)
+            enrollments = HbxEnrollment
+                          .where(family_id: family.id)
+                          .enrolled
+                          .by_year(eligible.application.assistance_year)
             eligible.enrolled_in_any_aptc_csr_enrollments?(enrollments)
           else
             person.families&.any? { |f| f.person_has_an_active_enrollment?(person) }

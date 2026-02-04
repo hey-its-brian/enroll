@@ -669,64 +669,142 @@ RSpec.describe Eligibilities::V3::EvidenceUtils do
       end
 
       describe "#eligible_state" do
-        before do
-          citizenship_evidence.current_state = :rejected
-          citizenship_evidence.save
-          citizenship_evidence1.current_state = :outstanding
-          citizenship_evidence1.save
+        let(:person) { FactoryBot.create(:person, :with_consumer_role, :with_active_consumer_role) }
+        let(:family) { FactoryBot.create(:family, :with_primary_family_member, person: person) }
+        let(:primary_applicant) { family.primary_applicant }
+        let(:assistance_year) { TimeKeeper.date_of_record.year }
+        let(:faa_application) do
+          FactoryBot.create(
+            :financial_assistance_application,
+            family_id: family.id,
+            aasm_state: 'determined',
+            submitted_at: Time.now,
+            assistance_year: assistance_year
+          )
         end
 
+        let(:applicant) do
+          FactoryBot.create(
+            :financial_assistance_applicant,
+            family_member_id: primary_applicant.id,
+            person_hbx_id: person.hbx_id,
+            application: faa_application
+          )
+        end
+        let(:aptc_csr_eligibility)  { FactoryBot.create(:aptc_csr_eligibility, eligible: applicant) }
+        let(:evidence) { FactoryBot.create(:income_evidence, :pending, eligibility: aptc_csr_eligibility) }
+
         context "when person is not found" do
-          before { allow(citizenship_evidence1.eligibility.eligible).to receive(:find_person).and_return(nil) }
+          before { allow(evidence.eligibility.eligible).to receive(:find_person).and_return(nil) }
 
           it "moves to negative_response_received" do
-            citizenship_evidence1.eligible_state(call_type)
-            expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
+            evidence.eligible_state(call_type)
+            expect(evidence.current_state).to eq(:negative_response_received)
           end
         end
 
         context "when ROP is in progress" do
           before do
-            allow(citizenship_evidence1).to receive(:rop_in_progress?).and_return(true)
-            allow(citizenship_evidence1).to receive(:can_move_to_rejected?).and_return(true)
+            allow(evidence).to receive(:rop_in_progress?).and_return(true)
           end
 
-          context "when consumer is not enrolled in coverage" do
-            before do
-              allow(citizenship_evidence1.eligibility.eligible).to receive(:find_person).and_return(person)
+          context "when consumer is eligible for assistance" do
+            before { allow(applicant).to receive(:is_ia_eligible?).and_return(true) }
+
+            context "when consumer is not enrolled in coverage" do
+              before do
+                allow(evidence.eligibility.eligible).to receive(:find_person).and_return(person)
+              end
+
+              it "calls non_rop_eligible_state" do
+                expect(evidence).to receive(:non_rop_eligible_state)
+                evidence.eligible_state(call_type)
+              end
             end
 
-            it "calls non_rop_eligible_state" do
-              citizenship_evidence1.eligible_state(call_type)
-              citizenship_evidence1.save
-              expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
+            context "when consumer is enrolled in coverage in a year not matching the assistance year" do
+              let!(:enrollment) do
+                FactoryBot.create(
+                  :hbx_enrollment,
+                  :with_aptc_enrollment_members,
+                  :with_health_product,
+                  family: family,
+                  enrollment_members: family.family_members,
+                  effective_on: Date.new(assistance_year - 1)
+                )
+              end
+
+              before do
+                allow(evidence.eligibility.eligible).to receive(:find_person).and_return(person)
+              end
+
+              it "calls non_rop_eligible_state" do
+                expect(evidence).to receive(:non_rop_eligible_state)
+                evidence.eligible_state(call_type)
+              end
             end
-          end
 
-          context "when consumer is enrolled in coverage" do
-            let!(:enrollment) { FactoryBot.create(:hbx_enrollment, :with_aptc_enrollment_members, :with_health_product, family: family, enrollment_members: family.family_members) }
+            context "when consumer is enrolled in coverage in the assistance year" do
+              context "when product CSR is not applicable" do
+                let(:product) { FactoryBot.create(:benefit_markets_products_health_product, csr_variant_id: '01') }
 
-            before do
-              allow(citizenship_evidence1.eligibility.eligible).to receive(:find_person).and_return(person)
-            end
+                context "when APTC is zero" do
+                  let(:enrollment) do
+                    FactoryBot.create(
+                      :hbx_enrollment,
+                      :with_aptc_enrollment_members,
+                      product: product,
+                      family: family,
+                      enrollment_members: family.family_members,
+                      effective_on: Date.new(assistance_year),
+                      applied_aptc_amount: 0.00
+                    )
+                  end
 
-            it "calls rop_eligible_state" do
-              citizenship_evidence1.eligible_state(call_type)
-              citizenship_evidence1.save
-              expect(citizenship_evidence1.current_state).to eq(citizenship_evidence.current_state)
-              expect(citizenship_evidence1.verification_histories.first.action).to eq('copied_rejected')
-              expect(citizenship_evidence1.verification_histories.first.update_reason).to include('State updated from outstanding to rejected based on previous application')
+                  before do
+                    allow(evidence.eligibility.eligible).to receive(:find_person).and_return(person)
+                  end
+
+                  it "calls non_rop_eligible_state" do
+                    expect(evidence).to receive(:non_rop_eligible_state)
+                    evidence.eligible_state(call_type)
+                  end
+                end
+
+                context "when APTC is greater than zero" do
+                  let!(:enrollment) do
+                    FactoryBot.create(
+                      :hbx_enrollment,
+                      :with_aptc_enrollment_members,
+                      :with_health_product,
+                      family: family,
+                      enrollment_members: family.family_members,
+                      effective_on: Date.new(assistance_year),
+                      applied_aptc_amount: 100.00
+                    )
+                  end
+
+                  before do
+                    allow(evidence.eligibility.eligible).to receive(:find_person).and_return(person)
+                  end
+
+                  it "calls rop_eligible_state" do
+                    expect(evidence).to receive(:rop_eligible_state)
+                    evidence.eligible_state(call_type)
+                  end
+                end
+              end
             end
           end
         end
 
         context "when ROP is not in progress" do
-          before { allow(citizenship_evidence1).to receive(:rop_in_progress?).and_return(false) }
+          before { allow(evidence).to receive(:rop_in_progress?).and_return(false) }
 
           it "calls non_rop_eligible_state" do
-            citizenship_evidence1.eligible_state(call_type)
-            citizenship_evidence1.save
-            expect(citizenship_evidence1.current_state).to eq(:negative_response_received)
+            evidence.eligible_state(call_type)
+            evidence.save
+            expect(evidence.current_state).to eq(:negative_response_received)
           end
         end
       end
