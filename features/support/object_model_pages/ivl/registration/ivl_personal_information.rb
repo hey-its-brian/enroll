@@ -334,7 +334,7 @@ class IvlPersonalInformation
   end
 
   def self.other_race_checkbox
-    'div.col-md-3.col-xs-6 input#person_ethnicity_other'
+    'input#person_ethnicity_other'
   end
 
   def self.mexican_checkbox
