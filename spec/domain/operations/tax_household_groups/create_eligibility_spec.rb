@@ -191,5 +191,89 @@ RSpec.describe ::Operations::TaxHouseholdGroups::CreateEligibility, dbclean: :af
         expect(subject.call(params).failure).to eq(l10n('create_eligibility_tool.no_members_applying_coverage'))
       end
     end
+
+    [
+      {
+        pdc_type: 'is_ia_eligible',
+        csr: '87',
+        expected: {
+          is_ia_eligible: true,
+          is_uqhp_eligible: false,
+          is_medicaid_chip_eligible: false,
+          is_without_assistance: false,
+          is_totally_ineligible: false,
+          csr_percent_as_integer: 87
+        }
+      },
+      {
+        pdc_type: 'is_uqhp_eligible',
+        csr: '0',
+        expected: {
+          is_ia_eligible: false,
+          is_uqhp_eligible: true,
+          is_medicaid_chip_eligible: false,
+          is_without_assistance: true,
+          is_totally_ineligible: false,
+          csr_percent_as_integer: 0
+        }
+      },
+      {
+        pdc_type: 'is_medicaid_chip_eligible',
+        csr: '0',
+        expected: {
+          is_ia_eligible: false,
+          is_uqhp_eligible: false,
+          is_medicaid_chip_eligible: true,
+          is_without_assistance: false,
+          is_totally_ineligible: false,
+          csr_percent_as_integer: 0
+        }
+      },
+      {
+        pdc_type: 'is_totally_ineligible',
+        csr: '0',
+        expected: {
+          is_ia_eligible: false,
+          is_uqhp_eligible: false,
+          is_medicaid_chip_eligible: false,
+          is_without_assistance: false,
+          is_totally_ineligible: true,
+          csr_percent_as_integer: 0
+        }
+      }
+    ].each do |test_case|
+      context "when pdc_type is #{test_case[:pdc_type]}" do
+        let(:th_group_info) do
+          {
+            "effective_date" => TimeKeeper.date_of_record.strftime('%m/%d/%Y'),
+            "tax_households" => {
+              "0" => {
+                "members" => [{
+                  "pdc_type" => test_case[:pdc_type],
+                  "csr" => test_case[:csr],
+                  "family_member_id" => family.primary_applicant.id.to_s,
+                  "is_filer" => "on"
+                }].to_json,
+                "monthly_expected_contribution" => "400"
+              }
+            }
+          }.deep_symbolize_keys!
+        end
+
+        let(:params) { { family: family, th_group_info: th_group_info } }
+
+        it 'sets correct eligibility flags on tax household member' do
+          subject.call(params)
+          th_member = family.reload.tax_household_groups.last
+                            .tax_households.first
+                            .tax_household_members.first
+
+          test_case[:expected].each do |attr, expected_value|
+            expect(th_member.send(attr)).to eq(expected_value),
+                                            "Expected #{attr} to be #{expected_value} for pdc_type: #{test_case[:pdc_type]}"
+          end
+        end
+      end
+    end
   end
 end

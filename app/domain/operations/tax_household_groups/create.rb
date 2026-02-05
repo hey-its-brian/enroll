@@ -47,12 +47,14 @@ module Operations
         members.inject([]) do |result, member_info|
           member_info.deep_symbolize_keys!
           is_ia_eligible = member_info[:pdc_type] == 'is_ia_eligible'
+          is_uqhp_eligible = member_info[:pdc_type] == 'is_uqhp_eligible'
 
           result << {
             applicant_id: member_info[:family_member_id],
             is_ia_eligible: is_ia_eligible,
             is_medicaid_chip_eligible: member_info[:pdc_type] == 'is_medicaid_chip_eligible',
-            is_uqhp_eligible: member_info[:pdc_type] == 'is_uqhp_eligible',
+            is_uqhp_eligible: is_uqhp_eligible,
+            is_without_assistance: is_uqhp_eligible,
             is_totally_ineligible: member_info[:pdc_type] == 'is_totally_ineligible',
             csr_percent_as_integer: (is_ia_eligible ? member_info[:csr].to_i : 0),
             is_filer: member_info[:is_filer]
