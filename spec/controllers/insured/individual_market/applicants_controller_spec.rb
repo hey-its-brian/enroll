@@ -282,8 +282,8 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
               expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
             end
 
-            it "does not have a flash error" do
-              expect(flash[:error]).to be_nil
+            it "does not have session errors" do
+              expect(session[:applicant_form_errors]).to be_nil
             end
           end
 
@@ -292,9 +292,9 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
               post :create, params: { application_id: application.id, applicant: { first_name: "John", last_name: "Smith" } }
             end
 
-            it "sets a flash message if the applicant is not saved" do
+            it "stores errors in session if the applicant is not saved" do
               post :create, params: { application_id: application.id, applicant: { first_name: "John", last_name: "Smith" } }
-              expect(flash[:error]).to include("Failed to create applicant due to response:")
+              expect(session[:applicant_form_errors]).to be_present
             end
           end
 
@@ -418,7 +418,7 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
                   post :create, params: applicant_params_with_ssn
                 end.not_to change(application.reload.applicants, :count)
 
-                expect(flash[:error]).to include("Failed to create applicant")
+                expect(session[:applicant_form_errors]).to be_present
                 expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
               end
             end
@@ -436,7 +436,7 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
                   post :create, params: applicant_params_same_person
                 end.to change { application.reload.applicants.count }.by(1)
 
-                expect(flash[:error]).to be_nil
+                expect(session[:applicant_form_errors]).to be_nil
                 expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
               end
             end
@@ -453,7 +453,7 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
                   post :create, params: duplicate_ssn_within_app_params
                 end.not_to change(application.reload.applicants, :count)
 
-                expect(flash[:error]).to include("Failed to create applicant")
+                expect(session[:applicant_form_errors]).to be_present
                 expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
               end
             end
@@ -469,7 +469,7 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
                   post :create, params: applicant_params_with_ssn
                 end.not_to change(application.reload.applicants, :count)
 
-                expect(flash[:error]).to include("Failed to create applicant")
+                expect(session[:applicant_form_errors]).to be_present
                 expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
               end
             end
@@ -492,7 +492,7 @@ RSpec.describe Insured::IndividualMarket::ApplicantsController, dbclean: :after_
                   post :create, params: applicant_params_with_ssn
                 end.not_to change(application.reload.applicants, :count)
 
-                expect(flash[:error]).to include("Failed to create applicant")
+                expect(session[:applicant_form_errors]).to be_present
                 expect(response).to redirect_to(insured_individual_market_application_applicants_path(application))
               end
             end

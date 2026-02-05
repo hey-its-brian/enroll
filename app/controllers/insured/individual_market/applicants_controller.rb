@@ -59,12 +59,10 @@ module Insured
 
         respond_to do |format|
           format.html do
-            if success
-              redirect_to insured_individual_market_application_applicants_path(@application)
-            else
-              flash.now[:error] = result
-              redirect_to insured_individual_market_application_applicants_path(@application), :flash => { :error => "Failed to create applicant due to response: #{result}" }
+            unless success
+              session[:applicant_form_errors] = result.is_a?(Array) ? result : [result]
             end
+            redirect_to insured_individual_market_application_applicants_path(@application)
           end
 
           format.js
