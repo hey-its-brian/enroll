@@ -145,6 +145,53 @@ RSpec.describe ConsumerRole, dbclean: :after_each, type: :model do
     end
   end
 
+  describe "#ensure_ssn_validation_status" do
+    let(:person) { FactoryBot.create(:person, :with_consumer_role) }
+    let(:consumer_role) { person.consumer_role }
+
+    context "when person has no SSN" do
+      before do
+        person.update!(encrypted_ssn: nil, ssn: nil)
+      end
+
+      it "sets ssn_validation to 'na'" do
+        consumer_role.ssn_validation = "pending"
+        consumer_role.send(:ensure_ssn_validation_status)
+        expect(consumer_role.ssn_validation).to eq("na")
+      end
+
+      it "keeps ssn_validation as 'na' when already 'na'" do
+        consumer_role.ssn_validation = "na"
+        consumer_role.send(:ensure_ssn_validation_status)
+        expect(consumer_role.ssn_validation).to eq("na")
+      end
+    end
+
+    context "when person has SSN and ssn_validation is 'na'" do
+      before do
+        person.update!(encrypted_ssn: Person.encrypt_ssn("123456789"))
+      end
+
+      it "transitions from 'na' to 'pending'" do
+        consumer_role.ssn_validation = "na"
+        consumer_role.send(:ensure_ssn_validation_status)
+        expect(consumer_role.ssn_validation).to eq("pending")
+      end
+    end
+
+    context "when SSN is added after being previously blank" do
+      it "transitions from 'na' to 'pending' when SSN becomes available" do
+        person.update!(encrypted_ssn: nil, ssn: nil)
+        consumer_role.send(:ensure_ssn_validation_status)
+        expect(consumer_role.ssn_validation).to eq("na")
+
+        person.update!(encrypted_ssn: Person.encrypt_ssn("123456789"))
+        consumer_role.send(:ensure_ssn_validation_status)
+        expect(consumer_role.ssn_validation).to eq("pending")
+      end
+    end
+  end
+
   describe "update_is_applying_coverage_status" do
     let(:person) {FactoryBot.create(:person, :with_consumer_role)}
     let(:consumer_role) { person.consumer_role }

@@ -1362,6 +1362,8 @@ class ConsumerRole
   def ensure_ssn_validation_status
     if self.person && self.person.ssn.blank?
       self.ssn_validation = "na"
+    elsif self.person && self.person.ssn.present? && self.ssn_validation == "na"
+      self.ssn_validation = "pending"
     end
   end
 
