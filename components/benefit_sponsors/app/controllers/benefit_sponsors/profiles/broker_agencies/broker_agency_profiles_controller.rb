@@ -166,7 +166,6 @@ module BenefitSponsors
           # don't use current_user
           # messages are different for current_user is admin and broker account login
           @broker_agency_profile = ::BenefitSponsors::Organizations::BrokerAgencyProfile.find(params[:id])
-          @broker_provider = @broker_agency_profile.primary_broker_role.person
           authorize @broker_agency_profile
 
           respond_to do |format|
@@ -176,20 +175,10 @@ module BenefitSponsors
 
         def inbox
           @sent_box = true
-          if params["id"].present?
-            provider_id = params["id"]
-            @broker_agency_provider = Person.find(provider_id)
-            @broker_agency_profile = @broker_agency_provider.broker_role.broker_agency_profile
-            authorize @broker_agency_profile
-          elsif params['profile_id'].present?
-            provider_id = params['profile_id']
-            @broker_agency_provider = find_broker_agency_profile(BSON::ObjectId(provider_id))
-            authorize @broker_agency_provider
-          end
+          @provider = ::BenefitSponsors::Organizations::BrokerAgencyProfile.find(params[:id])
+          authorize @provider
 
           @folder = (params[:folder] || 'Inbox').capitalize
-
-          @provider = (current_user.person._id.to_s == provider_id) ? current_user.person : @broker_agency_provider
         end
 
         # no auth required for this action: it is used to send an email for prospective brokers, which can be non-users
@@ -227,7 +216,7 @@ module BenefitSponsors
         def send_general_agency_assign_msg(general_agency, employer_profile, status); end
 
         def eligible_brokers
-          broker_profile_ids = BenefitSponsors::Organizations::Organization.broker_agency_profiles.approved_broker_agencies.broker_agencies_by_market_kind(['both', person_market_kind]).map(&:broker_agency_profile).pluck(:id)
+          broker_profile_ids = BenefitSponsors::Organizations::Organization.broker_agency_profiles.approved_broker_agencies.broker_agencies_by_market_kind(['both', "individual"]).map(&:broker_agency_profile).pluck(:id)
           Person.where(:"broker_role.benefit_sponsors_broker_agency_profile_id".in => broker_profile_ids, :"broker_role.aasm_state" => "active", :broker_role.ne => nil)
         end
 

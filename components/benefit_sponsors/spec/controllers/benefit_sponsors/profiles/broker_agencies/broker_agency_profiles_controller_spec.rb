@@ -1039,7 +1039,7 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
         context "with the correct permissions" do
           before :each do
             initialize_and_login_admin[super_permission]
-            get :inbox, params: { id: person02.id }, xhr: true
+            get :inbox, params: { id: organization2.broker_agency_profile.id }, xhr: true
           end
 
           it "should return http success" do
@@ -1054,7 +1054,7 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
         context "with the incorrect permissions" do
           before :each do
             initialize_and_login_admin[dev_permission]
-            get :inbox, params: { id: person02.id }, xhr: true
+            get :inbox, params: { id: organization2.broker_agency_profile.id }, xhr: true
           end
 
           it "should redirect to new of registration's controller for broker_agency" do
@@ -1072,7 +1072,7 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
 
           before :each do
             sign_in(user_with_broker_role2)
-            get :inbox, params: { id: person02.id }, xhr: true
+            get :inbox, params: { id: organization2.broker_agency_profile.id }, xhr: true
           end
 
           it "should return http success" do
@@ -1087,7 +1087,7 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
         context 'not in the agency' do
           before :each do
             initialize_and_login_broker[organization1]
-            get :inbox, params: { id: person02.id }, xhr: true
+            get :inbox, params: { id: organization2.broker_agency_profile.id }, xhr: true
           end
 
           it "should redirect to the profile page of their broker agency" do
@@ -1105,7 +1105,7 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
         context 'in the agency' do
           before :each do
             initialize_and_login_broker_agency_staff[organization2]
-            get :inbox, params: { id: person02.id }, xhr: true
+            get :inbox, params: { id: organization2.broker_agency_profile.id }, xhr: true
           end
 
           it "should return http success" do
@@ -1120,7 +1120,7 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
         context 'not in the agency' do
           before :each do
             initialize_and_login_broker_agency_staff[organization1]
-            get :inbox, params: { id: person02.id }, xhr: true
+            get :inbox, params: { id: organization2.broker_agency_profile.id }, xhr: true
           end
 
           it "should redirect to the profile page of their broker agency" do
