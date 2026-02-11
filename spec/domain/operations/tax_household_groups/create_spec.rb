@@ -21,6 +21,7 @@ RSpec.describe ::Operations::TaxHouseholdGroups::Create, dbclean: :after_each do
   end
 
   describe 'valid params' do
+    let(:current_year) { TimeKeeper.date_of_record.year }
     let(:params) do
       { family: family, th_group_info: tax_household_group.deep_symbolize_keys! }
     end
@@ -95,6 +96,22 @@ RSpec.describe ::Operations::TaxHouseholdGroups::Create, dbclean: :after_each do
       expect(eligibility_determination).to eq nil
       expect(tax_household_groups.size).to eq 1
       expect(tax_household_groups.first.tax_households.size).to eq 2
+    end
+
+    it 'should determine csr eligibility accurately' do
+      tax_household_2_members = JSON.parse(tax_household_group["tax_households"]["1"]["members"])
+      tax_household_2_members.each { |member| member["csr"] = "0" }
+      tax_household_group["tax_households"]["1"]["members"] = tax_household_2_members.to_json
+      params[:th_group_info] = tax_household_group.deep_symbolize_keys!
+
+      subject.call(params)
+      family = params[:family].reload
+      tax_household_group = family.active_thhg(current_year)
+      tax_household_1 = tax_household_group.tax_households.first
+      tax_household_2 = tax_household_group.tax_households.last
+
+      expect(tax_household_1.tax_household_members.all?(&:is_csr_eligible)).to be_truthy
+      expect(tax_household_2.tax_household_members.any?(&:is_csr_eligible)).to be_falsy
     end
   end
 end

@@ -52,6 +52,7 @@ module Operations
           result << {
             applicant_id: member_info[:family_member_id],
             is_ia_eligible: is_ia_eligible,
+            is_csr_eligible: is_ia_eligible && !member_info[:csr]&.to_i&.zero?,
             is_medicaid_chip_eligible: member_info[:pdc_type] == 'is_medicaid_chip_eligible',
             is_uqhp_eligible: is_uqhp_eligible,
             is_without_assistance: is_uqhp_eligible,
