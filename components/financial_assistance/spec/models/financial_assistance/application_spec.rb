@@ -2199,6 +2199,73 @@ RSpec.describe ::FinancialAssistance::Application, type: :model, dbclean: :after
     end
   end
 
+  describe '#create_rrv_evidences' do
+    before do
+      allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:non_esi_mec_determination).and_return(true)
+      allow(FinancialAssistanceRegistry).to receive(:feature_enabled?).with(:ifsv_determination).and_return(true)
+    end
+
+    context 'when all applicants are IA eligible' do
+      before do
+        application.active_applicants.each { |applicant| applicant.update_attributes!(is_ia_eligible: true) }
+        application.create_rrv_evidences
+      end
+
+      it 'creates income evidence for all applicants' do
+        application.active_applicants.each do |applicant|
+          expect(applicant.income_evidence).to be_present
+          expect(applicant.non_esi_evidence).to be_present
+        end
+      end
+    end
+
+    context 'when only primary applicant is IA eligible' do
+      let(:primary_applicant) { application.active_applicants.first }
+      let(:spouse_applicant) { application.active_applicants.last }
+
+      before do
+        primary_applicant.update_attributes!(is_ia_eligible: true, is_applying_coverage: true)
+        spouse_applicant.update_attributes!(is_ia_eligible: false, is_applying_coverage: false)
+        application.create_rrv_evidences
+      end
+
+      it 'creates income evidence only for IA eligible applicant' do
+        expect(primary_applicant.income_evidence).to be_present
+        expect(spouse_applicant.income_evidence).to be_blank
+      end
+    end
+
+    context 'when applicant is not IA eligible but is applying for coverage' do
+      let(:primary_applicant) { application.active_applicants.first }
+      let(:spouse_applicant) { application.active_applicants.last }
+
+      before do
+        primary_applicant.update_attributes!(is_ia_eligible: false, is_applying_coverage: true)
+        spouse_applicant.update_attributes!(is_ia_eligible: false, is_applying_coverage: false)
+        application.create_rrv_evidences
+      end
+
+      it 'creates income evidence for applicant applying for coverage' do
+        expect(primary_applicant.income_evidence).to be_present
+        expect(spouse_applicant.income_evidence).to be_blank
+      end
+    end
+
+    context 'when no applicants are IA eligible or applying for coverage' do
+      before do
+        application.active_applicants.each { |applicant| applicant.update_attributes!(is_ia_eligible: false, is_applying_coverage: false) }
+        application.create_rrv_evidences
+      end
+
+      it 'does not create any evidence for applicants' do
+        application.active_applicants.each do |applicant|
+          expect(applicant.income_evidence).to be_blank
+          expect(applicant.non_esi_evidence).to be_blank
+        end
+      end
+    end
+  end
+
   describe 'create_rrv_evidence_histories' do
 
     before do
