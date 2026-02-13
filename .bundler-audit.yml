@@ -27,3 +27,4 @@ ignore:
   - CVE-2024-43407  # GHSA-7r32-vfj5-c2jv – XSS in GeSHi plugin sample
   - CVE-2024-43411  # GHSA-6v96-m24v-f58j – Low-risk XSS via domain takeover
   - CVE-2025-61921  # GHSA-mr3q-g2mv-mr4q - Sinatra ReDoS via ETag header
+  - CVE-2026-25765 # GHSA-33mh-2634-fwr2 - faraday

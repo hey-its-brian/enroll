@@ -2,6 +2,23 @@
 
 ## Vulnerability Mitigations
 
+### CVE-2026-25765 - Faraday SSRF via protocol-relative URL host override
+
+**Vulnerability:** Faraday versions below `2.14.1` are affected by SSRF in URL handling (`GHSA-33mh-2634-fwr2`).
+
+**Current Status:** Enroll is currently pinned to Faraday `1.x` through the `event_source` dependency chain.
+
+**Mitigation:** This CVE is temporarily added to `.bundler-audit.yml` as we are upgrading Rails 8 in parallel. The long-term fix is to upgrade `event_source` to Faraday `>= 2.14.1`.
+
+**Actions Taken:**
+1. Documented vulnerability and mitigation plan in this file.
+2. Added `CVE-2026-25765` to bundler-audit ignore list as a temporary exception.
+3. Tracked follow-up to remove the exception after Faraday 2 upgrade.
+
+**Ongoing Measures:**
+1. Keep this exception time boxed for 90 days as Rails 8 upgrade is coming soon.
+2. Remove the ignore entry after dependency upgrade.
+
 ### CVE-2024-21510 - Sinatra
 
 **Vulnerability:** Sinatra vulnerable to Reliance on Untrusted Inputs in a Security Decision
