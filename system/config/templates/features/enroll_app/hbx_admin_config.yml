@@ -33,3 +33,5 @@ registry:
           is_enabled: <%= ENV['PEOPLE_TAB_IS_ENABLED'] || false %>
         - key: :reprint_tax_documents
           is_enabled: <%= ENV['REPRINT_TAX_DOCUMENTS_IS_ENABLED'] || false %>
+        - key: :select_enrollment_effective_on_for_create_eligibility
+          is_enabled: <%= ENV['SELECT_ENROLLMENT_EFFECTIVE_ON_FOR_CREATE_ELIGIBILITY_IS_ENABLED'] || false %>
