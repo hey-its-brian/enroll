@@ -5,11 +5,13 @@ on:
   push:
     branches:
       - 'trunk'
+      - 'buildx-multiarch'
     tags:
       - 'v*'
   pull_request:
     branches:
       - 'trunk'
+      - 'buildx-multiarch'
 
 concurrency:
   group: docker-${{ github.ref }}
@@ -100,6 +102,7 @@ jobs:
           echo -e "current branch: $(git rev-parse --abbrev-ref HEAD)\n\n$(git show --quiet HEAD)" > public/release.txt
 
       - name: Set up Docker Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v2
         with:
           install: true
@@ -146,6 +149,8 @@ jobs:
       - name: Build Image
         uses: docker/build-push-action@v3
         with:
+          # cross-compilation: build images for both amd64 and arm64 on non 'pull_request'
+          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: .docker/production/Dockerfile.gha
