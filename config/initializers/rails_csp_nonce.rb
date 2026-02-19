@@ -63,6 +63,7 @@ Rails.application.config.content_security_policy do |policy|
   csp_proto = Rails.env.production? ? :https : :http
   policy.default_src :self, csp_proto
   policy.object_src  :none
+  policy.base_uri    :self
   policy.font_src    :self, csp_proto, :data, "*.gstatic.com",  "*.fontawesome.com"
   policy.img_src     :self, csp_proto, :data, "*.google-analytics.com", "*.gstatic.com", "*.googletagmanager.com"
   policy.script_src  :self, csp_proto, "https://tagmanager.google.com", "https://www.googletagmanager.com", "https://apps.usw2.pure.cloud", "*.fontawesome.com", "*.google-analytics.com", "https://js-agent.newrelic.com"
