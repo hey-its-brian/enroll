@@ -142,7 +142,7 @@ module FinancialAssistance
         redirect_to edit_application_path(@application)
       else
         @applicant.save(validate: false)
-        flash[:error] = build_error_messages_for_other_qns(@applicant)
+        flash[:error] = build_error_messages_for_context
         redirect_to other_questions_application_applicant_path(@application, @applicant)
       end
     end
@@ -166,7 +166,7 @@ module FinancialAssistance
         redirect_to application_applicant_incomes_path(@application, @applicant)
       else
         @applicant.save(validate: false)
-        flash[:error] = build_error_messages_for_tax_info(@applicant)
+        flash[:error] = build_error_messages_for_context
         redirect_to tax_info_application_applicant_path(@application, @applicant)
       end
     end
@@ -323,16 +323,58 @@ module FinancialAssistance
       model_params["dependent_job_end_on"] = parse_date(model_params["dependent_job_end_on"].to_s) if model_params["dependent_job_end_on"].present?
     end
 
-    def build_error_messages_for_tax_info(model)
-      model.valid?(:tax_info) ? nil : model.errors.messages.first[1][0].titleize
-    end
-
     def build_error_messages(model)
       model.valid?("step_#{@current_step.to_i}".to_sym) ? nil : model.errors.messages.first[1][0].titleize
     end
 
-    def build_error_messages_for_other_qns(model)
-      model.valid?(:other_qns) ? nil : model.errors.messages.first[1][0].titleize
+    # Builds error messages for contextual validation failures, prioritizing errors relevant to the current action's domain
+    #
+    # @return [String, nil] formatted error message or nil if valid
+    def build_error_messages_for_context
+      context ||= case action_name
+                  when 'save_questions'
+                    :other_qns
+                  when 'save_tax_info'
+                    :tax_info
+                  end
+
+      return if @applicant.valid?(context)
+
+      attributes_in_domain = case action_name
+                             when 'save_questions'
+                               [:pregnancy_due_on, :children_expected_count, :is_post_partum_period, :pregnancy_end_on,
+                                :is_enrolled_on_medicaid, :is_primary_caregiver, :is_former_foster_care, :foster_care_us_state,
+                                :age_left_foster_care, :student_kind, :student_status_end_on, :student_school_kind, :is_student]
+                             when 'save_tax_info'
+                               [:is_joint_tax_filing, :claimed_as_tax_dependent_by, :is_required_to_file_taxes, :is_claimed_as_tax_dependent]
+                             end
+
+      errors = @applicant.errors
+      invalid_attributes = errors.map(&:attribute)
+      relevant_invalid_attributes = attributes_in_domain & invalid_attributes
+
+      if relevant_invalid_attributes.any?
+        errors.messages[relevant_invalid_attributes.first][0].titleize
+      elsif invalid_attributes.any?
+        handle_out_of_context_error(@applicant, context, invalid_attributes.first)
+      end
+    end
+
+    # Handles error messages for validation failures outside the current step's domain
+    #
+    # @param applicant [FinancialAssistance::Applicant] the applicant being validated
+    # @param context [Symbol] the validation context
+    # @param invalid_attribute [Symbol] the attribute that failed validation
+    # @return [String] formatted error message
+    def handle_out_of_context_error(applicant, context, invalid_attribute)
+      case invalid_attribute
+      when :incomes
+        relevant_domain = applicant.incomes.jobs.any?(&:invalid?) ? 'Job income' : 'Other income'
+        "#{relevant_domain} is missing required information. Please complete all required fields to proceed with submitting your application."
+      else
+        Rails.logger.warn("Applicant #{applicant.id}: Non-domain validation failed at #{context}: #{invalid_attribute}")
+        "Please review and complete all required information in your application to continue."
+      end
     end
 
     def permit_params(attributes)

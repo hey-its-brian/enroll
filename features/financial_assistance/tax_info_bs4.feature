@@ -25,3 +25,16 @@ Feature: A dedicated page that gives the user access to Tax Info page for a give
       | is_enabled | can_see_spousal_filing_informational_banner |
       | enabled    | see                                         |
       | disabled   | not see                                     |
+
+  Scenario Outline: User submits Tax Info form with applicant errors
+    And they click ADD INCOME & COVERAGE INFO for an applicant
+    And the applicant has a <error_domain> applicant error
+    And the enter in required tax info fields
+    When the user clicks on the CONTINUE button
+    Then they should see the <error_message> error banner
+
+    Examples:
+      | error_domain | error_message                                                                                                                  |
+      | job income   | Job income is missing required information. Please complete all required fields to proceed with submitting your application.   |
+      | other income | Other income is missing required information. Please complete all required fields to proceed with submitting your application. |
+

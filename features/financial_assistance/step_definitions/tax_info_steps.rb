@@ -25,6 +25,22 @@ Given(/^that the user is on the FAA Household Info page$/) do
   find('a.interaction-click-control-continue').click
 end
 
+Given(/the applicant has a (.*) applicant error/) do |error_domain|
+  applicant = application.primary_applicant
+  case error_domain
+  when 'other income'
+    applicant.incomes = [FactoryBot.build(:financial_assistance_income, kind: 'dividend', frequency_kind: nil)]
+  when 'job income'
+    applicant.incomes = [FactoryBot.build(:financial_assistance_income, kind: 'wages_and_salaries', frequency_kind: nil)]
+  end
+  applicant.save(validate: false)
+end
+
+Given(/the enter in required tax info fields/) do
+  find("#is_required_to_file_taxes_yes").click
+  find("#is_joint_tax_filing_yes").click
+  find("#is_claimed_as_tax_dependent_no").click
+end
 
 And(/^the user clicks add Income and Coverage Information$/) do
   find_all(".interaction-click-control-add-income---coverage-info")[0].click
@@ -145,9 +161,9 @@ end
 
 Given(/^the user is on the Tax Info page for a dependent applicant$/) do
   application.applicants.create!(family_member_id: consumer.primary_family.family_members.last.id,
-    first_name: consumer.primary_family.family_members.last.first_name,
-    last_name: consumer.primary_family.family_members.last.last_name,
-    dob: consumer.primary_family.family_members.last.dob)
+                                 first_name: consumer.primary_family.family_members.last.first_name,
+                                 last_name: consumer.primary_family.family_members.last.last_name,
+                                 dob: consumer.primary_family.family_members.last.dob)
   application.reload
   dependent_applicant = application.applicants.last
   visit financial_assistance.go_to_step_application_applicant_path(application, dependent_applicant, 1)
@@ -206,4 +222,8 @@ end
 
 And(/head of household is selected yes/) do
   choose('is_filing_as_head_of_household_yes')
+end
+
+Then(/they should see the (.*) error banner/) do |error_message|
+  expect(page).to have_css('.alert-error', text: error_message)
 end
