@@ -64,8 +64,3 @@ Feature: Create a new applicant with Bootstrap 4 layout enabled
       | vlp_document_option                                                        | should_see |
       | Certificate of Citizenship                                                 | should     |
       | Naturalization Certificate                                                 | should     |
-
- Scenario: User selects Other race or ethnicity option
-		Given Individual clicks on Add New Person
-		And the user selects Other option for race
-    Then the user should see the Other options autopopulate for ethnicity

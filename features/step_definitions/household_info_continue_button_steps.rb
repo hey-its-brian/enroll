@@ -405,11 +405,3 @@ end
 Then(/^user should only see one application in draft status$/) do
   expect(page).not_to have_content('Draft', count: 2)
 end
-
-When('the user selects Other option for race') do
-  find(IvlIapFamilyInformation.other_race_checkbox).click
-end
-
-Then('the user should see both of their Other options checked') do
-  expect(page).to have_checked_field(with: 'Other', count: 2)
-end

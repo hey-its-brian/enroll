@@ -234,17 +234,6 @@ function applyFaaListeners() {
       $('.featured-tribe-container').addClass('hide');
     }
   }
-
-  $(document).on('change', 'input[data-sync-identifier]', function() {
-    const changedInput = $(this);
-    const targetId = changedInput.attr('data-sync-identifier');
-    const parentForm = changedInput.closest('form');
-    const targetCheckboxes = parentForm.find(`input[data-sync-identifier="${targetId}"]`).not(changedInput);
-
-    if (targetCheckboxes.length) {
-      targetCheckboxes.prop('checked', changedInput.prop('checked'));
-    }
-  });
 }
 
 var ApplicantValidations = (function(window, undefined) {
