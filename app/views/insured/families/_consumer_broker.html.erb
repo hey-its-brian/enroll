@@ -24,8 +24,10 @@
       <dl class="parent">
         <dt><%= l10n("phone") %>:</dt>
         <dd><%= @person.primary_family.current_broker_agency.writing_agent.phone %></dd>
-        <dt><%= l10n("email") %>:</dt>
-        <dd><%= @person.primary_family.current_broker_agency.writing_agent.email.address %></dd>
+        <% if @person.primary_family.current_broker_agency.writing_agent.email_address.present? %>
+          <dt><%= l10n("email") %>:</dt>
+          <dd><%= @person.primary_family.current_broker_agency.writing_agent.email_address %></dd>
+        <% end %>
       </dl>
     </div>
   </div>
@@ -109,13 +111,13 @@
           </span>
         </div>
       <% end %>
-      <% if @person.primary_family.current_broker_agency.writing_agent.email.address.present? %>
+      <% if @person.primary_family.current_broker_agency.writing_agent.email_address.present? %>
         <div>
           <strong>
             <%= l10n("email_address") %>:
           </strong>
           <span>
-            <%= @person.primary_family.current_broker_agency.writing_agent.email.address %>
+            <%= @person.primary_family.current_broker_agency.writing_agent.email_address %>
           </span>
         </div>
       <% end %>
