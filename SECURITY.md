@@ -2,6 +2,23 @@
 
 ## Vulnerability Mitigations
 
+### GHSA-wx95-c6cv-8532 - Nokogiri canonicalization failure error handling
+
+**Vulnerability:** Nokogiri versions below `1.19.1` will not raise an exception when canonicalization fails, specifically when checking the return value of `xmlC14NExecute` in the associated canonicalization methods (`GHSA-wx95-c6cv-8532`).
+
+**Current Status:** Enroll is currently pinned to Nokogiri `1.18.x` through the `.ruby-version`.
+
+**Mitigation:** This GHSA is temporarily added to `.bundler-audit.yml` as we are upgrading Rails 8 (and therefore also Ruby) in parallel. The long-term fix is to upgrade `ruby` to `>= 3.2.x` and nokogiri to `1.19.1` simultaneously.
+
+**Actions Taken:**
+1. Documented vulnerability and mitigation plan in this file.
+2. Added `GHSA-wx95-c6cv-8532` to bundler-audit ignore list as a temporary exception.
+3. Tracked follow-up to remove the exception after Ruby upgrade.
+
+**Ongoing Measures:**
+1. Keep this exception time boxed for 90 days as Rails 8 upgrade is coming soon.
+2. Remove the ignore entry after dependency upgrade.
+
 ### CVE-2026-25765 - Faraday SSRF via protocol-relative URL host override
 
 **Vulnerability:** Faraday versions below `2.14.1` are affected by SSRF in URL handling (`GHSA-33mh-2634-fwr2`).
