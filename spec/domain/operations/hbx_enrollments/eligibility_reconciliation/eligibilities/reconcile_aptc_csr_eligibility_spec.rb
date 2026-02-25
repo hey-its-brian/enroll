@@ -133,7 +133,22 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
     end
 
     context 'when reconciliation raises an error' do
+      let(:tax_household_group) { double('TaxHouseholdGroup') }
+      let(:tax_household) { double('TaxHousehold') }
+      let(:tax_household_members_relation) { double('TaxHouseholdMembers') }
+      let(:tax_household_member) { double('TaxHouseholdMember', is_ia_eligible?: true) }
+      let(:mock_application) { double('Application', family: family) }
+
       before do
+        allow(applicant).to receive(:application).and_return(mock_application)
+        allow(applicant).to receive(:family_member_id).and_return('test_family_member_id')
+        allow(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(tax_household_group)
+        allow(tax_household_group).to receive(:tax_households).and_return([tax_household])
+        allow(tax_household).to receive(:tax_household_members).and_return(tax_household_members_relation)
+        allow(tax_household_members_relation).to receive(:where).with(applicant_id: 'test_family_member_id').and_return(tax_household_members_relation)
+        allow(tax_household_members_relation).to receive(:exists?).and_return(true)
+        allow(tax_household_members_relation).to receive(:first).and_return(tax_household_member)
+
         allow(aptc_csr_eligibility_double).to receive(:escalate_evidences_to_outstanding)
           .and_raise(StandardError.new('APTC CSR error'))
       end
@@ -260,10 +275,25 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
   describe '#reconcile (private method)' do
     let(:action) { 'enrollment_purchase' }
     let(:message) { "Enrollment #{enrollment.hbx_id} has been purchased" }
+    let(:tax_household_group) { double('TaxHouseholdGroup') }
+    let(:tax_household) { double('TaxHousehold') }
+    let(:tax_household_members_relation) { double('TaxHouseholdMembers') }
+    let(:tax_household_member) { double('TaxHouseholdMember', is_ia_eligible?: true) }
+    let(:mock_application) { double('Application', family: family) }
 
     before do
       allow(aptc_csr_eligibility_double).to receive(:escalate_evidences_to_outstanding)
       allow(aptc_csr_eligibility_double).to receive(:downgrade_evidences_to_nrr)
+
+      allow(applicant).to receive(:application).and_return(mock_application)
+      allow(applicant).to receive(:family_member_id).and_return('test_family_member_id')
+      allow(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(tax_household_group)
+      allow(tax_household_group).to receive(:tax_households).and_return([tax_household])
+      allow(tax_household).to receive(:tax_household_members).and_return(tax_household_members_relation)
+      allow(tax_household_members_relation).to receive(:where).with(applicant_id: 'test_family_member_id').and_return(tax_household_members_relation)
+      allow(tax_household_members_relation).to receive(:exists?).and_return(true)
+      allow(tax_household_members_relation).to receive(:first).and_return(tax_household_member)
+
       reconciler.call(valid_params) # Initialize instance variables
     end
 
@@ -282,7 +312,7 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
     context 'when eligibility is not applicable' do
       before do
         # Make applicant not IA eligible
-        allow(applicant).to receive(:is_ia_eligible?).and_return(false)
+        allow(tax_household_member).to receive(:is_ia_eligible?).and_return(false)
         reconciler.call(valid_params) # Re-initialize with new conditions
       end
 
@@ -315,8 +345,23 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
   end
 
   describe '#applicable? (private method)' do
+    let(:tax_household_group) { double('TaxHouseholdGroup') }
+    let(:tax_household) { double('TaxHousehold') }
+    let(:tax_household_members_relation) { double('TaxHouseholdMembers') }
+    let(:tax_household_member) { double('TaxHouseholdMember', is_ia_eligible?: true) }
+    let(:mock_application) { double('Application', family: family) }
+
     before do
-      reconciler.call(valid_params) # Initialize instance variables
+      allow(applicant).to receive(:application).and_return(mock_application)
+      allow(applicant).to receive(:family_member_id).and_return('test_family_member_id')
+      allow(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(tax_household_group)
+      allow(tax_household_group).to receive(:tax_households).and_return([tax_household])
+      allow(tax_household).to receive(:tax_household_members).and_return(tax_household_members_relation)
+      allow(tax_household_members_relation).to receive(:where).with(applicant_id: 'test_family_member_id').and_return(tax_household_members_relation)
+      allow(tax_household_members_relation).to receive(:exists?).and_return(true)
+      allow(tax_household_members_relation).to receive(:first).and_return(tax_household_member)
+
+      reconciler.call(valid_params)
     end
 
     context 'when applicant is IA eligible and has APTC/CSR benefits' do
@@ -327,7 +372,7 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
 
     context 'when applicant is not IA eligible' do
       before do
-        allow(applicant).to receive(:is_ia_eligible?).and_return(false)
+        allow(tax_household_member).to receive(:is_ia_eligible?).and_return(false)
         reconciler.call(valid_params) # Re-initialize with new conditions
       end
 
@@ -364,9 +409,11 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
     end
 
     context 'when applicant is not a FinancialAssistance::Applicant' do
-      let(:individual_market_applicant) { double('IndividualMarket::Applicant', is_ia_eligible?: true, aptc_csr_eligibility: nil) }
+      let(:individual_market_applicant) { double('IndividualMarket::Applicant', application: mock_application, family_member_id: 'other_id', aptc_csr_eligibility: nil) }
 
       before do
+        allow(individual_market_applicant).to receive(:application).and_return(mock_application)
+        allow(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(nil)
         reconciler.call(valid_params.merge(applicant: individual_market_applicant))
       end
 
@@ -378,18 +425,53 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
 
   describe '#applicant_ia_eligible? (private method)' do
     before do
-      reconciler.call(valid_params) # Initialize instance variables
+      reconciler.call(valid_params)
     end
 
-    context 'when applicant is a FinancialAssistance::Applicant and is IA eligible' do
-      it 'returns true' do
+    context 'when navigating through family structure to find IA eligibility' do
+      let(:tax_household_group) { double('TaxHouseholdGroup') }
+      let(:tax_household) { double('TaxHousehold') }
+      let(:tax_household_members_relation) { double('TaxHouseholdMembers') }
+      let(:tax_household_member) { double('TaxHouseholdMember', is_ia_eligible?: true) }
+      let(:mock_application) { double('Application', family: family) }
+
+      before do
+        allow(applicant).to receive(:application).and_return(mock_application)
+        allow(applicant).to receive(:family_member_id).and_return('test_family_member_id')
+        allow(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(tax_household_group)
+        allow(tax_household_group).to receive(:tax_households).and_return([tax_household])
+        allow(tax_household).to receive(:tax_household_members).and_return(tax_household_members_relation)
+        allow(tax_household_members_relation).to receive(:where).with(applicant_id: 'test_family_member_id').and_return(tax_household_members_relation)
+        allow(tax_household_members_relation).to receive(:exists?).and_return(true)
+        allow(tax_household_members_relation).to receive(:first).and_return(tax_household_member)
+      end
+
+      it 'returns true when tax household member is IA eligible' do
         expect(reconciler.send(:applicant_ia_eligible?)).to be true
       end
+
+      it 'navigates through family to find tax household group for enrollment year' do
+        expect(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(tax_household_group)
+        reconciler.send(:applicant_ia_eligible?)
+      end
     end
 
-    context 'when applicant is a FinancialAssistance::Applicant but not IA eligible' do
+    context 'when tax household member is not IA eligible' do
+      let(:tax_household_group) { double('TaxHouseholdGroup') }
+      let(:tax_household) { double('TaxHousehold') }
+      let(:tax_household_members_relation) { double('TaxHouseholdMembers') }
+      let(:tax_household_member) { double('TaxHouseholdMember', is_ia_eligible?: false) }
+      let(:mock_application) { double('Application', family: family) }
+
       before do
-        allow(applicant).to receive(:is_ia_eligible?).and_return(false)
+        allow(applicant).to receive(:application).and_return(mock_application)
+        allow(applicant).to receive(:family_member_id).and_return('test_family_member_id')
+        allow(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(tax_household_group)
+        allow(tax_household_group).to receive(:tax_households).and_return([tax_household])
+        allow(tax_household).to receive(:tax_household_members).and_return(tax_household_members_relation)
+        allow(tax_household_members_relation).to receive(:where).with(applicant_id: 'test_family_member_id').and_return(tax_household_members_relation)
+        allow(tax_household_members_relation).to receive(:exists?).and_return(true)
+        allow(tax_household_members_relation).to receive(:first).and_return(tax_household_member)
       end
 
       it 'returns false' do
@@ -397,15 +479,113 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
       end
     end
 
-    context 'when applicant is not a FinancialAssistance::Applicant' do
-      let(:individual_market_applicant) { double('IndividualMarket::Applicant', is_ia_eligible?: true, aptc_csr_eligibility: nil) }
+    context 'error handling scenarios' do
+      context 'when tax household group is nil' do
+        let(:mock_application) { double('Application', family: family) }
 
-      before do
-        reconciler.call(valid_params.merge(applicant: individual_market_applicant))
+        before do
+          allow(applicant).to receive(:application).and_return(mock_application)
+          allow(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(nil)
+        end
+
+        it 'returns false due to nil check' do
+          expect(reconciler.send(:applicant_ia_eligible?)).to be false
+        end
       end
 
-      it 'returns false' do
-        expect(reconciler.send(:applicant_ia_eligible?)).to be false
+      context 'when tax household is not found for the applicant' do
+        let(:tax_household_group) { double('TaxHouseholdGroup') }
+        let(:tax_household) { double('TaxHousehold') }
+        let(:tax_household_members_relation) { double('TaxHouseholdMembers') }
+        let(:mock_application) { double('Application', family: family) }
+
+        before do
+          allow(applicant).to receive(:application).and_return(mock_application)
+          allow(applicant).to receive(:family_member_id).and_return('test_family_member_id')
+          allow(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(tax_household_group)
+          allow(tax_household_group).to receive(:tax_households).and_return([tax_household])
+          allow(tax_household).to receive(:tax_household_members).and_return(tax_household_members_relation)
+          allow(tax_household_members_relation).to receive(:where).with(applicant_id: 'test_family_member_id').and_return(tax_household_members_relation)
+          allow(tax_household_members_relation).to receive(:exists?).and_return(false)
+        end
+
+        it 'returns false when no matching tax household exists' do
+          expect(reconciler.send(:applicant_ia_eligible?)).to be false
+        end
+      end
+
+      context 'when tax household member record is nil' do
+        let(:tax_household_group) { double('TaxHouseholdGroup') }
+        let(:tax_household) { double('TaxHousehold') }
+        let(:tax_household_members_relation) { double('TaxHouseholdMembers') }
+        let(:mock_application) { double('Application', family: family) }
+
+        before do
+          allow(applicant).to receive(:application).and_return(mock_application)
+          allow(applicant).to receive(:family_member_id).and_return('test_family_member_id')
+          allow(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(tax_household_group)
+          allow(tax_household_group).to receive(:tax_households).and_return([tax_household])
+          allow(tax_household).to receive(:tax_household_members).and_return(tax_household_members_relation)
+          allow(tax_household_members_relation).to receive(:where).with(applicant_id: 'test_family_member_id').and_return(tax_household_members_relation)
+          allow(tax_household_members_relation).to receive(:exists?).and_return(true)
+          allow(tax_household_members_relation).to receive(:first).and_return(nil)
+        end
+
+        it 'returns false due to nil check' do
+          expect(reconciler.send(:applicant_ia_eligible?)).to be false
+        end
+      end
+
+      context 'when family is nil' do
+        let(:mock_application) { double('Application', family: nil) }
+
+        before do
+          allow(applicant).to receive(:application).and_return(mock_application)
+        end
+
+        it 'returns false due to nil check' do
+          expect(reconciler.send(:applicant_ia_eligible?)).to be false
+        end
+      end
+
+      context 'when applicant application is nil' do
+        before do
+          allow(applicant).to receive(:application).and_return(nil)
+        end
+
+        it 'returns false due to nil check' do
+          expect(reconciler.send(:applicant_ia_eligible?)).to be false
+        end
+      end
+    end
+
+    context 'when multiple tax households exist' do
+      let(:tax_household_group) { double('TaxHouseholdGroup') }
+      let(:other_tax_household) { double('OtherTaxHousehold') }
+      let(:correct_tax_household) { double('CorrectTaxHousehold') }
+      let(:other_tax_household_members_relation) { double('OtherTaxHouseholdMembers') }
+      let(:correct_tax_household_members_relation) { double('CorrectTaxHouseholdMembers') }
+      let(:tax_household_member) { double('TaxHouseholdMember', is_ia_eligible?: true) }
+      let(:mock_application) { double('Application', family: family) }
+
+      before do
+        allow(applicant).to receive(:application).and_return(mock_application)
+        allow(applicant).to receive(:family_member_id).and_return('test_family_member_id')
+        allow(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(tax_household_group)
+        allow(tax_household_group).to receive(:tax_households).and_return([other_tax_household, correct_tax_household])
+
+        allow(other_tax_household).to receive(:tax_household_members).and_return(other_tax_household_members_relation)
+        allow(other_tax_household_members_relation).to receive(:where).with(applicant_id: 'test_family_member_id').and_return(other_tax_household_members_relation)
+        allow(other_tax_household_members_relation).to receive(:exists?).and_return(false)
+
+        allow(correct_tax_household).to receive(:tax_household_members).and_return(correct_tax_household_members_relation)
+        allow(correct_tax_household_members_relation).to receive(:where).with(applicant_id: 'test_family_member_id').and_return(correct_tax_household_members_relation)
+        allow(correct_tax_household_members_relation).to receive(:exists?).and_return(true)
+        allow(correct_tax_household_members_relation).to receive(:first).and_return(tax_household_member)
+      end
+
+      it 'finds the correct tax household containing the applicant' do
+        expect(reconciler.send(:applicant_ia_eligible?)).to be true
       end
     end
   end
@@ -483,9 +663,24 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
   end
 
   describe 'integration scenarios' do
+    let(:tax_household_group) { double('TaxHouseholdGroup') }
+    let(:tax_household) { double('TaxHousehold') }
+    let(:tax_household_members_relation) { double('TaxHouseholdMembers') }
+    let(:tax_household_member) { double('TaxHouseholdMember', is_ia_eligible?: true) }
+    let(:mock_application) { double('Application', family: family) }
+
     before do
       allow(aptc_csr_eligibility_double).to receive(:escalate_evidences_to_outstanding)
       allow(aptc_csr_eligibility_double).to receive(:downgrade_evidences_to_nrr)
+
+      allow(applicant).to receive(:application).and_return(mock_application)
+      allow(applicant).to receive(:family_member_id).and_return('test_family_member_id')
+      allow(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(tax_household_group)
+      allow(tax_household_group).to receive(:tax_households).and_return([tax_household])
+      allow(tax_household).to receive(:tax_household_members).and_return(tax_household_members_relation)
+      allow(tax_household_members_relation).to receive(:where).with(applicant_id: 'test_family_member_id').and_return(tax_household_members_relation)
+      allow(tax_household_members_relation).to receive(:exists?).and_return(true)
+      allow(tax_household_members_relation).to receive(:first).and_return(tax_household_member)
     end
 
     context 'when reconciling after new health enrollment with APTC' do
@@ -520,7 +715,7 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
 
     context 'when reconciling for non-IA eligible member' do
       before do
-        allow(applicant).to receive(:is_ia_eligible?).and_return(false)
+        allow(tax_household_member).to receive(:is_ia_eligible?).and_return(false)
       end
 
       it 'waives eligibility evidences for non-IA eligible member' do
@@ -538,6 +733,11 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
 
   describe 'integration with enrollment context' do
     let(:hbx_id) { 'TEST_APTC_CSR_HBX_ID_123' }
+    let(:tax_household_group) { double('TaxHouseholdGroup') }
+    let(:tax_household) { double('TaxHousehold') }
+    let(:tax_household_members_relation) { double('TaxHouseholdMembers') }
+    let(:tax_household_member) { double('TaxHouseholdMember', is_ia_eligible?: true) }
+    let(:mock_application) { double('Application', family: family) }
     let(:enrollment_with_hbx_id) do
       enrollment = FactoryBot.create(:hbx_enrollment,
                                      family: family,
@@ -556,6 +756,15 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
 
     before do
       allow(aptc_csr_eligibility_double).to receive(:escalate_evidences_to_outstanding)
+
+      allow(applicant).to receive(:application).and_return(mock_application)
+      allow(applicant).to receive(:family_member_id).and_return('test_family_member_id')
+      allow(family).to receive(:active_thhg).with(enrollment_with_hbx_id.effective_on.year).and_return(tax_household_group)
+      allow(tax_household_group).to receive(:tax_households).and_return([tax_household])
+      allow(tax_household).to receive(:tax_household_members).and_return(tax_household_members_relation)
+      allow(tax_household_members_relation).to receive(:where).with(applicant_id: 'test_family_member_id').and_return(tax_household_members_relation)
+      allow(tax_household_members_relation).to receive(:exists?).and_return(true)
+      allow(tax_household_members_relation).to receive(:first).and_return(tax_household_member)
     end
 
     it 'uses correct enrollment context in adjustment messages' do
@@ -582,7 +791,22 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
     end
 
     context 'when eligibility operations raise errors' do
+      let(:tax_household_group) { double('TaxHouseholdGroup') }
+      let(:tax_household) { double('TaxHousehold') }
+      let(:tax_household_members_relation) { double('TaxHouseholdMembers') }
+      let(:tax_household_member) { double('TaxHouseholdMember', is_ia_eligible?: true) }
+      let(:mock_application) { double('Application', family: family) }
+
       before do
+        allow(applicant).to receive(:application).and_return(mock_application)
+        allow(applicant).to receive(:family_member_id).and_return('test_family_member_id')
+        allow(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(tax_household_group)
+        allow(tax_household_group).to receive(:tax_households).and_return([tax_household])
+        allow(tax_household).to receive(:tax_household_members).and_return(tax_household_members_relation)
+        allow(tax_household_members_relation).to receive(:where).with(applicant_id: 'test_family_member_id').and_return(tax_household_members_relation)
+        allow(tax_household_members_relation).to receive(:exists?).and_return(true)
+        allow(tax_household_members_relation).to receive(:first).and_return(tax_household_member)
+
         allow(aptc_csr_eligibility_double).to receive(:escalate_evidences_to_outstanding).and_raise(StandardError.new('APTC CSR evidence error'))
       end
 
@@ -593,15 +817,24 @@ RSpec.describe Operations::HbxEnrollments::EligibilityReconciliation::Eligibilit
       end
     end
 
-    context 'when IA eligibility check raises an error' do
+    context 'when IA eligibility check returns false due to nil values' do
+      let(:mock_application) { double('Application', family: family) }
+
       before do
-        allow(applicant).to receive(:is_ia_eligible?).and_raise(StandardError.new('IA eligibility error'))
+        allow(applicant).to receive(:application).and_return(mock_application)
+        allow(family).to receive(:active_thhg).with(enrollment.effective_on.year).and_return(nil)
+        allow(aptc_csr_eligibility_double).to receive(:downgrade_evidences_to_nrr)
       end
 
-      it 'returns failure with error message' do
+      it 'treats nil as not IA eligible and downgrades evidences' do
         result = reconciler.call(valid_params)
-        expect(result).to be_failure
-        expect(result.failure).to include('Reconciliation failed: IA eligibility error')
+        expect(result).to be_success
+        expect(result.value![:reconciled]).to be true
+      end
+
+      it 'calls downgrade_evidences_to_nrr due to IA ineligibility' do
+        expect(aptc_csr_eligibility_double).to receive(:downgrade_evidences_to_nrr)
+        reconciler.call(valid_params)
       end
     end
   end

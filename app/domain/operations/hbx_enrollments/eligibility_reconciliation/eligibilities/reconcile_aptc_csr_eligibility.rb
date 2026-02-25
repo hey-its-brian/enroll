@@ -58,12 +58,27 @@ module Operations
 
           # Checks if the applicant has been marked as Insurance Assistance eligible
           #
-          # Only Financial Assistance applicants can be IA eligible. Other applicant
-          # types will always return false.
+          # Navigates through the family structure to locate the applicant's tax household
+          # member record and checks their IA eligibility status.
           #
-          # @return [Boolean] True if applicant is IA eligible, false otherwise
+          # @return [Boolean] True if applicant is IA eligible, false if not eligible or if any errors occur
           def applicant_ia_eligible?
-            @applicant.is_a?(::FinancialAssistance::Applicant) && @applicant.is_ia_eligible?
+            application = @applicant.application
+            return false unless application
+
+            family = application.family
+            return false unless family
+
+            tax_household_group = family.active_thhg(@enrollment.effective_on.year)
+            return false unless tax_household_group
+
+            tax_household = tax_household_group.tax_households.detect { |th| th.tax_household_members.where(applicant_id: @applicant.family_member_id).exists? }
+            return false unless tax_household
+
+            tax_household_member = tax_household.tax_household_members.where(applicant_id: @applicant.family_member_id).first
+            return false unless tax_household_member
+
+            tax_household_member.is_ia_eligible?
           end
 
           # Checks if the applicant has APTC or CSR benefits in any active enrollments
