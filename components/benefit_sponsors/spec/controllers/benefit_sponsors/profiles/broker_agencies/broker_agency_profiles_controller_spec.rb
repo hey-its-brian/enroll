@@ -226,43 +226,74 @@ module BenefitSponsors # rubocop:disable Metrics/ModuleLength
     describe "#staff_index" do
       context "admin" do
         context "with the correct permissions" do
-          before :each do
+          before do
             initialize_and_login_admin[super_permission]
             broker_agency1.set(market_kind: :both, aasm_state: 'is_approved')
             person01.broker_role.set(aasm_state: "active", benefit_sponsors_broker_agency_profile_id: broker_agency1.id)
-            get :staff_index, params: { id: bap_id, q: "#{person01.first_name} #{person01.last_name} " }, xhr: true
           end
 
-          it "should return http success" do
-            expect(response).to have_http_status(:success)
+          context "using the search feature" do
+            before :each do
+              get :staff_index, params: { id: bap_id, q: "#{person01.first_name} #{person01.last_name} " }, xhr: true
+            end
+
+            it "should return http success" do
+              expect(response).to have_http_status(:success)
+            end
+
+            it "should render the staff_index template" do
+              expect(response).to render_template("staff_index")
+            end
+
+            it "should assign a staff var" do
+              expect(assigns(:staff).count).to eq(1)
+            end
+
+            it "should handle array page parameters without error" do
+              # Test the grouped alphabet page parameter that was causing 500 errors
+              get :staff_index, params: { page: ["M", "N", "O", "P", "Q", "R"], bs4: "true" }, xhr: true
+              expect(response).to have_http_status(:success)
+              expect(response).to render_template("staff_index")
+              expect(assigns(:staff)).to be_present
+            end
+
+            it "should handle JSON encoded array page parameters without error" do
+              # Create a test broker with a last name starting with M
+              test_person = FactoryBot.create(:person, :with_broker_role, first_name: "Test", last_name: "Norris")
+              test_person.broker_role.update_attributes!(benefit_sponsors_broker_agency_profile_id: broker_agency1.id, aasm_state: 'active')
+
+              # Test the JSON encoded array that comes from the pagination links
+              get :staff_index, params: { page: '["M", "N", "O", "P", "Q", "R"]', bs4: "true" }, xhr: true
+              expect(response).to have_http_status(:success)
+              expect(response).to render_template("staff_index")
+              expect(assigns(:staff)).to be_present
+            end
           end
 
-          it "should render the staff_index template" do
-            expect(response).to render_template("staff_index")
-          end
+          context "when searching an agency name" do
+            let!(:person02) { FactoryBot.create(:person, :with_broker_role) }
+            let!(:user_with_broker_role2) { FactoryBot.create(:user, person: person02) }
 
-          it "should assign a staff var" do
-            expect(assigns(:staff).count).to eq(1)
-          end
+            before do
+              broker_agency2.set(market_kind: :both, aasm_state: 'is_approved')
+              person02.broker_role.set(aasm_state: "active", benefit_sponsors_broker_agency_profile_id: broker_agency2.id)
 
-          it "should handle array page parameters without error" do
-            # Test the grouped alphabet page parameter that was causing 500 errors
-            get :staff_index, params: { page: ["M", "N", "O", "P", "Q", "R"], bs4: "true" }, xhr: true
-            expect(response).to have_http_status(:success)
-            expect(response).to render_template("staff_index")
-            expect(assigns(:staff)).to be_present
-          end
+              person01.update(first_name: "John", last_name: "Smith")
+              person01.broker_role.update(benefit_sponsors_broker_agency_profile_id: broker_agency1.id)
+              person02.update(first_name: "Robert", last_name: "Duvall")
+              person02.broker_role.update(benefit_sponsors_broker_agency_profile_id: broker_agency2.id)
+              organization1.update(legal_name: "Generic Inc.")
+              organization2.update(legal_name: "Smith and Associates")
 
-          it "should handle JSON encoded array page parameters without error" do
-            # Create a test broker with a last name starting with M
-            test_person = FactoryBot.create(:person, :with_broker_role, first_name: "Test", last_name: "Norris")
-            test_person.broker_role.update_attributes!(benefit_sponsors_broker_agency_profile_id: broker_agency1.id, aasm_state: 'active')
+              get :staff_index, params: { id: bap_id, q: "Smith" }, xhr: true
+            end
 
-            # Test the JSON encoded array that comes from the pagination links
-            get :staff_index, params: { page: '["M", "N", "O", "P", "Q", "R"]', bs4: "true" }, xhr: true
-            expect(response).to have_http_status(:success)
-            expect(response).to render_template("staff_index")
-            expect(assigns(:staff)).to be_present
+            it "should return staff that match the agency legal name OR the primary broker's first/last name" do
+              staff = assigns(:staff)
+              expect(staff.count).to eq(2)
+
+              [person01, person02].each { |person| expect(staff).to include(person) }
+            end
           end
         end
 

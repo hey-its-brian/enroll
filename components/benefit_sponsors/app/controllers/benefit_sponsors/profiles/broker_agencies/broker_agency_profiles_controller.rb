@@ -68,7 +68,11 @@ module BenefitSponsors
                      # When no search query, show all staff sorted by last name
                      @staff.order_by(last_name: 1).to_a
                    else
-                     broker_profile_ids = BenefitSponsors::Organizations::Organization.where(legal_name: /^#{Regexp.escape(@q)}/i).pluck('profiles._id').flatten
+                     broker_profile_ids = BenefitSponsors::Organizations::Organization.collection.aggregate([
+                                            { '$match' => { 'legal_name' => /^#{Regexp.escape(@q)}/i } },
+                                            { '$unwind' => '$profiles' },
+                                            { '$project' => { '_id' => '$profiles._id' } }
+                                          ]).map { |doc| doc['_id'] }
                      find_by_agency_name = @staff.where(:'broker_role.benefit_sponsors_broker_agency_profile_id'.in => broker_profile_ids)
                      search_hash = @staff.search_hash(@q)
                      find_by_search_hash = @staff.where(search_hash)
