@@ -12,12 +12,14 @@ class User
   include PermissionsConcern
   attr_accessor :login
 
+  VALID_EMAIL_REGEX = %r{\A[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+\z}i
+
   validates_presence_of :oim_id
   validates_uniqueness_of :oim_id, :case_sensitive => false
   validate :oim_id_rules
   validates :email,
    uniqueness: { :case_sensitive => false },
-   format: { with: /\A[^@\s]+@([^@\s]+\.)+[^@\s]+\z/, allow_blank: true, message: "is invalid" }
+   format: { with: VALID_EMAIL_REGEX, allow_blank: true, message: "should be a valid email address" }
 
   def oim_id_rules
     if oim_id.present? && oim_id.match(/[;#%=|+,">< \\\/]/)

@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 describe Email, :dbclean => :after_each do
-  let(:person) {FactoryBot.create(:person, gender: "male", dob: "10/10/1974", ssn: "123456789" )}
+  let!(:person) {FactoryBot.create(:person, gender: "male", dob: "10/10/1974", ssn: "123456789")}
   let(:valid_params) do
     {
       kind: "home",
@@ -17,7 +19,7 @@ describe Email, :dbclean => :after_each do
     describe 'email type' do
 
       context 'when empty' do
-        let(:params){valid_params.deep_merge!({kind: ""})}
+        let(:params){valid_params.deep_merge({kind: ""})}
         it 'is invalid' do
           expect(Email.create(**params).errors[:kind].any?).to be_truthy
           expect(Email.create(**params).errors[:kind]).to eq ["Choose a type", " is not a valid email type"]
@@ -25,7 +27,7 @@ describe Email, :dbclean => :after_each do
       end
 
       context "when invalid" do
-        let(:params){valid_params.deep_merge!(kind: "fake")}
+        let(:params){valid_params.deep_merge(kind: "fake")}
         it 'is invalid' do
           expect(Email.create(**params).errors[:kind].any?).to be_truthy
           expect(Email.create(**params).errors[:kind]).to eq ["fake is not a valid email type"]
@@ -34,17 +36,18 @@ describe Email, :dbclean => :after_each do
 
       context "invalid address" do
 
-        let(:params){valid_params.deep_merge!(address: "test@test")}
+        let(:params){valid_params.deep_merge(address: "test@test")}
 
         it "is invalid" do
-          expect(Email.create(params).errors[:address]).to be_truthy
-          expect(Email.create(**params).errors[:address]).to eq ["should be a valid email address"]
+          record = Email.create(**params)
+          expect(record.errors[:address]).to be_truthy
+          expect(record.errors[:address]).to include("should be a valid email address")
         end
       end
 
       context "valid address" do
         let(:email) {"test@test.com"}
-        let(:params){valid_params.deep_merge!(address: email)}
+        let(:params){valid_params.deep_merge(address: email)}
 
         it "is valid" do
           Email.create(params)
@@ -56,9 +59,8 @@ describe Email, :dbclean => :after_each do
       valid_types = Email::KINDS
       valid_types.each do |type|
         context("when valid #{type} address") do
-          let(:params){valid_params}
+          let(:params){valid_params.deep_merge({kind: type, address: "#{type}@#{type}.com"})}
           it 'is valid' do
-            params.deep_merge!({kind: type, address: "#{type}@#{type}.com"})
             record = Email.create(**params)
             expect(record).to be_truthy
             expect(record.errors.messages.size).to eq 0
@@ -70,20 +72,20 @@ describe Email, :dbclean => :after_each do
     describe "address" do
 
       context "when empty" do
-        let(:params){valid_params.deep_merge!({address: ""})}
+        let(:params){valid_params.deep_merge({address: ""})}
         it "should give an error" do
           record = Email.create(**params)
           expect(record.errors[:address].any?).to be_truthy
-          expect(record.errors[:address]).to eq ["is not valid", "should be a valid email address", "can't be blank"]
+          expect(record.errors[:address]).to include("can't be blank")
         end
       end
 
       context "when invalid" do
-        let(:params){valid_params.deep_merge!({address: "something invalid"})}
+        let(:params){valid_params.deep_merge({address: "test@test"})}
         it "should give an error" do
           record = Email.create(**params)
           expect(record.errors[:address].any?).to be_truthy
-          expect(record.errors[:address]).to eq ["is not valid", "should be a valid email address"]
+          expect(record.errors[:address]).to include("should be a valid email address")
         end
       end
 
@@ -93,12 +95,66 @@ describe Email, :dbclean => :after_each do
           expect(Email.create(**params).valid?).to be_truthy
         end
       end
+
+      context "email format validation" do
+        context "with valid email formats" do
+          [
+            "user@example.com",
+            "user.name@example.com",
+            "user+tag@example.co.uk",
+            "user_name@example.com",
+            "user-name@example.com",
+            "user123!@example123.com",
+            "123@example.com",
+            "a@b.co",
+            "user@subdomain.example.com",
+            "user@example-domain.com"
+          ].each do |valid_email|
+            it "accepts #{valid_email}" do
+              params = valid_params.merge(address: valid_email)
+              record = Email.create(**params)
+              expect(record.errors[:address]).to be_empty
+            end
+          end
+        end
+
+        context "with invalid email formats" do
+          [
+            "user@",
+            "@example.com",
+            "user @example.com",
+            "user@example .com",
+            "user@.example.com",
+            "user@example..com",
+            "user@example.com.",
+            "user@-example.com",
+            "user@example-.com",
+            "user name@example.com",
+            "user@exam ple.com",
+            "user()@example.com",
+            "user[]@example.com",
+            "user,@example.com",
+            "user;@example.com",
+            "user:@example.com",
+            "user<>@example.com",
+            "plaintext",
+            "user@@example.com",
+            "user@example@com"
+          ].each do |invalid_email|
+            it "rejects #{invalid_email}" do
+              params = valid_params.merge(address: invalid_email)
+              record = Email.create(**params)
+              expect(record.errors[:address]).to include("should be a valid email address")
+            end
+          end
+        end
+      end
     end
 
     describe 'presence' do
       [:address].each do |missing|
-        it('is invalid without ' + missing.to_s) do
-          trait = 'without_email_' + missing.to_s
+        it("is invalid without #{missing}") do
+          trait = "without_email_#{missing}"
           email = FactoryBot.build(:email, trait.to_sym)
           expect(email).to be_invalid
         end

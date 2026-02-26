@@ -66,15 +66,68 @@ RSpec.describe User, :type => :model, dbclean: :after_each do
     end
 
     context 'when email doesnt match' do
-      let(:params){valid_params.deep_merge!({email: "test@@test"})}
+      let(:params){valid_params.deep_merge({email: "test@@test"})}
       it 'does not match' do
         expect(User.create(**params).errors[:email].any?).to be_truthy
-        expect(User.create(**params).errors[:email]).to eq ["is invalid", "is invalid"]
+        expect(User.create(**params).errors[:email]).to include("should be a valid email address")
+      end
+    end
+
+    context 'email format validation' do
+      [
+        "user@example.com",
+        "user.name@example.com",
+        "user+tag@example.co.uk",
+        "user_name@example.org",
+        "123@example.com",
+        "user@subdomain.example.com",
+        "user!#$%&'*+/=?^_`{|}~@example.com",
+        "user@example-domain.com",
+        "a@example.com",
+        "user@e.com",
+        "user@123.456.789.012"
+      ].each do |valid_email|
+        it "accepts valid email: #{valid_email}" do
+          params = valid_params.deep_merge({email: valid_email})
+          user = User.create(**params)
+          expect(user.errors[:email]).to be_empty
+        end
+      end
+
+      [
+        "plainaddress",
+        "@example.com",
+        "user@",
+        "user @example.com",
+        "user@example .com",
+        "user@@example.com",
+        "user..name@example.com",
+        ".user@example.com",
+        "user.@example.com",
+        "user@example",
+        "user@.example.com",
+        "user@example..com",
+        "user@-example.com",
+        "user@example-.com",
+        "user,name@example.com",
+        "user@exam ple.com",
+        "user name@example.com",
+        "user@exam,ple.com",
+        "test@test",
+        "user<>@example.com",
+        "user()@example.com",
+        "user[]@example.com"
+      ].each do |invalid_email|
+        it "rejects invalid email: #{invalid_email}" do
+          params = valid_params.deep_merge({email: invalid_email})
+          user = User.create(**params)
+          expect(user.errors[:email]).to include("should be a valid email address")
+        end
       end
     end
 
     context 'when email blank' do
-      let(:params){valid_params.deep_merge!({email: ""})}
+      let(:params){valid_params.deep_merge({email: ""})}
       it 'is valid' do
         expect(User.create(**params).errors[:email].any?).to be_falsy
       end

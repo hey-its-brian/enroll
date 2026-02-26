@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Email
   include Mongoid::Document
   include Mongoid::Timestamps
@@ -10,7 +12,7 @@ class Email
   embedded_in :census_member, class_name: "CensusMember"
   embedded_in :applicant, class_name: "IndividualMarket::Applicant"
 
-  KINDS = %W(home work)
+  KINDS = %w[home work].freeze
 
   field :kind, type: String
   field :address, type: String
@@ -20,22 +22,22 @@ class Email
                 :modifier_field => :modifier,
                 :modifier_field_optional => true,
                 :version_field => :tracking_version,
-                :track_create  => true,    # track document creation, default is false
-                :track_update  => true,    # track document updates, default is true
+                :track_create => true,    # track document creation, default is false
+                :track_update => true,    # track document updates, default is true
                 :track_destroy => true
 
   validates :address, :email => true, :allow_blank => false
   validates_presence_of  :kind, message: "Choose a type"
   validates_inclusion_of :kind, in: KINDS, message: "%{value} is not a valid email type"
 
-  validates :address,
-            format: {
-              :with => /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i,
-              :message => "should be a valid email address"
-            }
+  VALID_EMAIL_REGEX = %r{\A[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+\z}i
 
   validates :address,
-    presence: true
+            presence: true,
+            format: {
+              :with => VALID_EMAIL_REGEX,
+              :message => "should be a valid email address"
+            }
 
   def blank?
     address.blank?

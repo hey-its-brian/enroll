@@ -23,18 +23,18 @@ module Locations
     field :kind, type: String
     field :address, type: String, default: ''
 
+    VALID_EMAIL_REGEX = %r{\A[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+\z}i
+
     validates :address, :email => true, :allow_blank => false
     validates_presence_of  :kind, message: "Choose a type"
     validates_inclusion_of :kind, in: KINDS, message: "%{value} is not a valid email type"
 
     validates :address,
+              presence: true,
               format: {
-                :with => /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i,
+                :with => VALID_EMAIL_REGEX,
                 :message => "should be a valid email address"
               }
-
-    validates :address,
-              presence: true
 
     # Copies the email to a new emailable entity.
     #
